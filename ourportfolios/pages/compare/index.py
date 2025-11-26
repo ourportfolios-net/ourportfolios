@@ -19,7 +19,7 @@ def comparison_table_section() -> rx.Component:
             rx.vstack(
                 # Empty space for metric labels header
                 rx.box(
-                    height="2.8em",
+                    height="3.5em",
                     width="15em",
                 ),
                 # Scrollable stocks area (vertical only)
@@ -76,22 +76,33 @@ def comparison_table_section() -> rx.Component:
                                             text_decoration="none",
                                             _hover={"text_decoration": "none"},
                                             width="100%",
+                                            display="flex",
+                                            align_items="center",
+                                            height="100%",
                                         ),
                                         position="relative",
                                         width="100%",
+                                        height="100%",
+                                        display="flex",
+                                        align_items="center",
                                     ),
                                     width="15em",
-                                    height="2.8em",
+                                    height="3.5em",
                                     flex_shrink="0",
-                                    style={"transition": "transform 0.2s ease"},
-                                    _hover={"transform": "translateX(-0.4em)"},
+                                    style={
+                                        "transition": "all 0.2s ease",
+                                        "marginLeft": "0.6em",
+                                    },
+                                    _hover={
+                                        "marginLeft": "0",
+                                    },
                                 ),
                             ),
                             spacing="3",
                             margin_bottom="2em",
                         ),
                     ),
-                    height="70vh",
+                    max_height="calc(100vh - 12.8em)",
                     overflow_y="auto",
                     overflow_x="hidden",
                 ),
@@ -132,7 +143,7 @@ def comparison_table_section() -> rx.Component:
                         align="center",
                         style={"flex_wrap": "nowrap"},
                     ),
-                    height="2.8em",
+                    height="3.5em",
                     style={"flex_shrink": "0"},
                 ),
                 # All industries and stocks
@@ -145,12 +156,14 @@ def comparison_table_section() -> rx.Component:
                                 rx.hstack(
                                     rx.foreach(
                                         StockComparisonState.selected_metrics,
-                                        lambda metric_key: stock_metric_cell(stock, metric_key, item[0]),
+                                        lambda metric_key: stock_metric_cell(
+                                            stock, metric_key, item[0]
+                                        ),
                                     ),
                                     spacing="0",
                                     style={"flex_wrap": "nowrap"},
                                 ),
-                                height="2.8em",
+                                height="3.5em",
                                 style={"flex_shrink": "0"},
                             ),
                         ),
@@ -165,12 +178,13 @@ def comparison_table_section() -> rx.Component:
             type="auto",
             style={
                 "width": "100%",
-                "height": "70vh",
+                "max_height": "calc(100vh - 10em)",
             },
         ),
-        spacing="3",
+        spacing="5",
         align="start",
         width="100%",
+        overflow="visible",
     )
 
 
@@ -190,8 +204,9 @@ def comparison_section() -> rx.Component:
             style={
                 "max_width": "100vw",
                 "margin": "0 auto",
-                "padding": "1.5em",
-                "overflowX": "hidden",
+                "padding_top": "1.5em",
+                "padding_left": "1.5em",
+                "padding_right": "1.5em",
             },
         ),
         rx.center(
