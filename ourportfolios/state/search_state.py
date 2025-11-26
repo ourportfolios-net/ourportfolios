@@ -15,8 +15,9 @@ class SearchBarState(rx.State):
 
     search_query: str = ""
     display_suggestion: bool = False
+    empty_state_display_suggestion: bool = False
     outstanding_tickers: Dict[str, Any] = {}
-    ticker_list: List[Dict[str, Any]] = []
+    ticker_list: List[Dict[str, Any]] = {}
 
     @rx.event
     def set_query(self, text: str = ""):
@@ -29,10 +30,16 @@ class SearchBarState(rx.State):
         yield time.sleep(0.2)
         self.display_suggestion = state
 
+    @rx.event
+    def set_empty_state_display_suggestions(self, state: bool):
+        """Toggle empty state suggestion display with a delay."""
+        yield time.sleep(0.2)
+        self.empty_state_display_suggestion = state
+
     @rx.var
     def get_suggest_ticker(self) -> List[Dict[str, Any]]:
         """Get ticker suggestions based on search query."""
-        if not self.display_suggestion:
+        if not self.display_suggestion and not self.empty_state_display_suggestion:
             return []
         if self.search_query == "":
             return self.ticker_list

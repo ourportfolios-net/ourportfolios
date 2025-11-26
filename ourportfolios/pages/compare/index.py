@@ -9,6 +9,8 @@ from ...state import StockComparisonState
 
 from .controls import comparison_controls
 from .comparison_cards import stock_metric_cell
+from .skeleton import loading_comparison_skeleton
+from .empty_state import comparison_empty_state
 
 
 def comparison_table_section() -> rx.Component:
@@ -191,51 +193,36 @@ def comparison_table_section() -> rx.Component:
 def comparison_section() -> rx.Component:
     """Main comparison section with industry-grouped layout"""
     return rx.cond(
-        StockComparisonState.compare_list,
-        rx.box(
-            rx.vstack(
-                comparison_controls(),
-                # Table view with inline graphs
-                comparison_table_section(),
-                spacing="0",
+        StockComparisonState.is_loading_data,
+        # Show skeleton while loading
+        loading_comparison_skeleton(),
+        rx.cond(
+            StockComparisonState.compare_list,
+            # Show comparison table when data is loaded
+            rx.box(
+                rx.vstack(
+                    comparison_controls(),
+                    # Table view with inline graphs
+                    comparison_table_section(),
+                    spacing="0",
+                    width="100%",
+                ),
                 width="100%",
+                style={
+                    "max_width": "100vw",
+                    "margin": "0 auto",
+                    "padding_top": "1.5em",
+                    "padding_left": "1.5em",
+                    "padding_right": "1.5em",
+                },
             ),
-            width="100%",
-            style={
-                "max_width": "100vw",
-                "margin": "0 auto",
-                "padding_top": "1.5em",
-                "padding_left": "1.5em",
-                "padding_right": "1.5em",
-            },
-        ),
-        rx.center(
-            rx.vstack(
-                rx.text(
-                    "Your compare list is empty. ",
-                    size="3",
-                    weight="medium",
-                    align="center",
-                ),
-                rx.button(
-                    rx.hstack(
-                        rx.icon("shopping_cart", size=16),
-                        rx.text("Import from Cart"),
-                        spacing="2",
-                    ),
-                    on_click=StockComparisonState.import_and_fetch_compare,
-                    size="3",
-                ),
-                spacing="3",
-                align="center",
-            ),
-            min_height="40vh",
-            width="100%",
+            # Show empty state when no data
+            comparison_empty_state(),
         ),
     )
 
 
-@rx.page(route="/analyze/compare")
+@rx.page(route="/analyze/compare", on_load=StockComparisonState.auto_load_from_cart)
 def index() -> rx.Component:
     """Main page component"""
     return rx.fragment(

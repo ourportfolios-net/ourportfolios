@@ -32,6 +32,10 @@ class StockComparisonState(rx.State):
     # Historical financial data for graphs
     historical_data: Dict[str, List[Dict[str, Any]]] = {}
     is_loading_historical: bool = False
+    
+    # Loading states for auto-load functionality
+    is_loading_data: bool = False
+    has_initialized: bool = False
 
     @rx.var
     def available_metrics(self) -> List[str]:
@@ -319,6 +323,100 @@ class StockComparisonState(rx.State):
         await self.fetch_stocks_from_compare()
         # Auto-fetch historical data for graphs
         await self.fetch_historical_data()
+
+    @rx.event
+    async def auto_load_from_cart(self):
+        """Automatically load compare data from cart on page mount."""
+        if self.has_initialized:
+            return
+        
+        self.is_loading_data = True
+        self.has_initialized = True
+        
+        try:
+            await self.import_cart_to_compare()
+            
+            # Only fetch data if cart had items
+            if self.compare_list:
+                await self.fetch_stocks_from_compare()
+                await self.fetch_historical_data()
+        finally:
+            self.is_loading_data = False
+
+    @rx.event
+    async def add_ticker_to_compare(self, ticker: str):
+        """Add a single ticker directly to the compare list and fetch its data."""
+        # Check if already in compare list
+        if ticker in self.compare_list:
+            yield rx.toast.error(f"{ticker} is already in the comparison!")
+            return
+        
+        self.is_loading_data = True
+        
+        try:
+            # Add to compare list
+            self.compare_list = self.compare_list + [ticker]
+            
+            # Fetch data for the new ticker
+            if not db_settings.conn:
+                yield rx.toast.error("Database connection unavailable")
+                return
+            
+            try:
+                overview_query = text(
+                    "SELECT symbol, industry, market_cap "
+                    "FROM tickers.overview_df WHERE symbol = :symbol"
+                )
+                overview_df = pd.read_sql(
+                    overview_query, db_settings.conn, params={"symbol": ticker}
+                )
+
+                stats_query = text(
+                    "SELECT symbol, roe, roa, ev_ebitda, dividend_yield, "
+                    "gross_margin, net_margin, doe, alpha, beta, pe, pb, eps, ps, rsi14 "
+                    "FROM tickers.stats_df WHERE symbol = :symbol"
+                )
+                stats_df = pd.read_sql(
+                    stats_query, db_settings.conn, params={"symbol": ticker}
+                )
+
+                if not overview_df.empty and not stats_df.empty:
+                    stock_data = {
+                        "symbol": ticker,
+                        "industry": overview_df.iloc[0]["industry"],
+                        "market_cap": overview_df.iloc[0]["market_cap"],
+                        "roe": stats_df.iloc[0]["roe"],
+                        "roa": stats_df.iloc[0]["roa"],
+                        "ev_ebitda": stats_df.iloc[0]["ev_ebitda"],
+                        "dividend_yield": stats_df.iloc[0]["dividend_yield"],
+                        "gross_margin": stats_df.iloc[0]["gross_margin"],
+                        "net_margin": stats_df.iloc[0]["net_margin"],
+                        "doe": stats_df.iloc[0]["doe"],
+                        "alpha": stats_df.iloc[0]["alpha"],
+                        "beta": stats_df.iloc[0]["beta"],
+                        "pe": stats_df.iloc[0]["pe"],
+                        "pb": stats_df.iloc[0]["pb"],
+                        "eps": stats_df.iloc[0]["eps"],
+                        "ps": stats_df.iloc[0]["ps"],
+                        "rsi14": stats_df.iloc[0]["rsi14"],
+                    }
+                    self.stocks = self.stocks + [stock_data]
+                    
+                    # Fetch historical data for the new ticker
+                    await self.fetch_historical_data()
+                    
+                    yield rx.toast.success(f"{ticker} added to comparison!")
+                else:
+                    # Remove from compare list if data not found
+                    self.compare_list = [t for t in self.compare_list if t != ticker]
+                    yield rx.toast.error(f"No data found for {ticker}")
+            except Exception as e:
+                # Remove from compare list on error
+                self.compare_list = [t for t in self.compare_list if t != ticker]
+                print(f"Error fetching data for {ticker}: {e}")
+                yield rx.toast.error(f"Error loading {ticker}")
+        finally:
+            self.is_loading_data = False
 
     @rx.event
     def toggle_view_mode(self):
