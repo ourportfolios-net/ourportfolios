@@ -11,6 +11,56 @@ from .controls import comparison_controls
 from .comparison_cards import metric_labels_column, industry_group_section
 
 
+def comparison_table_section() -> rx.Component:
+    """Table view of comparison data"""
+    return rx.hstack(
+        # Fixed metric labels column
+        metric_labels_column(),
+        # Scrollable grouped stock columns area
+        rx.box(
+            rx.scroll_area(
+                rx.box(
+                    rx.hstack(
+                        # Industry groups
+                        rx.foreach(
+                            StockComparisonState.grouped_stocks.items(),
+                            lambda item: industry_group_section(
+                                item[0],
+                                item[1],
+                            ),
+                        ),
+                        spacing="7",  # Space between industry groups
+                        align="start",
+                        style={"flex_wrap": "nowrap"},
+                    ),
+                    padding_top="0.5em",
+                    padding_bottom="0.5em",
+                ),
+                direction="horizontal",
+                scrollbars="horizontal",
+                style={
+                    "width": "100%",
+                    "maxWidth": "90vw",
+                    "overflowX": "auto",
+                    "overflowY": "hidden",
+                },
+            ),
+            width="100%",
+            margin_left="1.8em",
+            style={
+                "maxWidth": "90vw",
+                "overflowX": "auto",
+                "overflowY": "hidden",
+                "position": "relative",
+            },
+        ),
+        spacing="0",
+        align="start",
+        width="100%",
+        style={"flex_wrap": "nowrap"},
+    )
+
+
 def comparison_section() -> rx.Component:
     """Main comparison section with industry-grouped layout"""
     return rx.cond(
@@ -18,53 +68,8 @@ def comparison_section() -> rx.Component:
         rx.box(
             rx.vstack(
                 comparison_controls(),
-                # Main comparison table
-                rx.hstack(
-                    # Fixed metric labels column
-                    metric_labels_column(),
-                    # Scrollable grouped stock columns area
-                    rx.box(
-                        rx.scroll_area(
-                            rx.box(
-                                rx.hstack(
-                                    # Industry groups
-                                    rx.foreach(
-                                        StockComparisonState.grouped_stocks.items(),
-                                        lambda item: industry_group_section(
-                                            item[0],
-                                            item[1],
-                                        ),
-                                    ),
-                                    spacing="7",  # Space between industry groups
-                                    align="start",
-                                    style={"flex_wrap": "nowrap"},
-                                ),
-                                padding_top="0.5em",
-                                padding_bottom="0.5em",
-                            ),
-                            direction="horizontal",
-                            scrollbars="horizontal",
-                            style={
-                                "width": "100%",
-                                "maxWidth": "90vw",
-                                "overflowX": "auto",
-                                "overflowY": "hidden",
-                            },
-                        ),
-                        width="100%",
-                        margin_left="1.8em",
-                        style={
-                            "maxWidth": "90vw",
-                            "overflowX": "auto",
-                            "overflowY": "hidden",
-                            "position": "relative",
-                        },
-                    ),
-                    spacing="0",
-                    align="start",
-                    width="100%",
-                    style={"flex_wrap": "nowrap"},
-                ),
+                # Table view with inline graphs
+                comparison_table_section(),
                 spacing="0",
                 width="100%",
             ),
