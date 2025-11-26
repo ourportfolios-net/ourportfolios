@@ -128,11 +128,21 @@ def metric_line_graph(metric_key: str) -> rx.Component:
                         },
                     ),
                     rx.recharts.legend(),
-                    rx.recharts.tooltip(),
+                    rx.recharts.tooltip(
+                        cursor={"strokeDasharray": "3 3"},
+                        content_style={
+                            "backgroundColor": "rgba(0, 0, 0, 0.9)",
+                            "border": "1px solid #666",
+                            "borderRadius": "6px",
+                            "padding": "10px",
+                        },
+                        wrapper_style={"zIndex": "1000"},
+                    ),
                     rx.recharts.cartesian_grid(stroke_dasharray="3 3", opacity=0.3),
                     data=StockComparisonState.get_metric_data[metric_key],
                     width="100%",
                     height=400,
+                    style={"cursor": "crosshair"},
                 ),
                 rx.center(
                     rx.text(

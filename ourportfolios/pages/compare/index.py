@@ -8,56 +8,169 @@ from ...components.loading import loading_screen
 from ...state import StockComparisonState
 
 from .controls import comparison_controls
-from .comparison_cards import metric_labels_column, industry_group_section
+from .comparison_cards import stock_metric_cell
 
 
 def comparison_table_section() -> rx.Component:
-    """Table view of comparison data"""
+    """Table view of comparison data (rotated 90 degrees - horizontal tickers, vertical metrics)"""
     return rx.hstack(
-        # Fixed metric labels column
-        metric_labels_column(),
-        # Scrollable grouped stock columns area
+        # Fixed ticker symbols column on the left
         rx.box(
-            rx.scroll_area(
+            rx.vstack(
+                # Empty space for metric labels header
                 rx.box(
-                    rx.hstack(
-                        # Industry groups
-                        rx.foreach(
-                            StockComparisonState.grouped_stocks.items(),
-                            lambda item: industry_group_section(
-                                item[0],
+                    height="2.8em",
+                    width="15em",
+                ),
+                # Scrollable stocks area (vertical only)
+                rx.box(
+                    rx.foreach(
+                        StockComparisonState.grouped_stocks.items(),
+                        lambda item: rx.vstack(
+                            rx.foreach(
                                 item[1],
+                                lambda stock: rx.card(
+                                    rx.box(
+                                        rx.button(
+                                            rx.icon("x", size=12),
+                                            on_click=lambda: StockComparisonState.remove_stock_from_compare(
+                                                stock["symbol"]
+                                            ),
+                                            variant="ghost",
+                                            size="2",
+                                            style={
+                                                "position": "absolute",
+                                                "top": "0.5em",
+                                                "right": "0.5em",
+                                                "min_width": "auto",
+                                                "height": "auto",
+                                                "opacity": "0.7",
+                                            },
+                                        ),
+                                        rx.link(
+                                            rx.hstack(
+                                                rx.text(
+                                                    stock["symbol"],
+                                                    weight="medium",
+                                                    size="5",
+                                                    color=rx.color("gray", 12),
+                                                    letter_spacing="0.05em",
+                                                ),
+                                                rx.badge(
+                                                    stock.get("industry", ""),
+                                                    size="1",
+                                                    variant="soft",
+                                                    style={"font_size": "0.65em"},
+                                                ),
+                                                rx.text(
+                                                    f"{stock.get('market_cap', '')} B. VND",
+                                                    size="1",
+                                                    color=rx.color("gray", 10),
+                                                    weight="medium",
+                                                ),
+                                                spacing="2",
+                                                align="center",
+                                                width="100%",
+                                            ),
+                                            href=f"/analyze/{stock['symbol']}",
+                                            text_decoration="none",
+                                            _hover={"text_decoration": "none"},
+                                            width="100%",
+                                        ),
+                                        position="relative",
+                                        width="100%",
+                                    ),
+                                    width="15em",
+                                    height="2.8em",
+                                    flex_shrink="0",
+                                    style={"transition": "transform 0.2s ease"},
+                                    _hover={"transform": "translateX(-0.4em)"},
+                                ),
+                            ),
+                            spacing="3",
+                            margin_bottom="2em",
+                        ),
+                    ),
+                    height="70vh",
+                    overflow_y="auto",
+                    overflow_x="hidden",
+                ),
+                spacing="0",
+                width="15em",
+            ),
+            width="15em",
+            flex_shrink="0",
+        ),
+        # Single scroll area for all metrics (horizontal + vertical)
+        rx.scroll_area(
+            rx.vstack(
+                # Metric labels at the top
+                rx.card(
+                    rx.hstack(
+                        rx.foreach(
+                            StockComparisonState.selected_metrics,
+                            lambda metric_key: rx.box(
+                                rx.text(
+                                    StockComparisonState.metric_labels[metric_key],
+                                    size="2",
+                                    weight="medium",
+                                    color=rx.color("gray", 12),
+                                ),
+                                width="12em",
+                                min_width="12em",
+                                display="flex",
+                                align_items="center",
+                                justify_content="center",
+                                height="100%",
+                                padding_left="0.3em",
+                                padding_right="0.3em",
+                                border_right=f"1px solid {rx.color('gray', 4)}",
                             ),
                         ),
-                        spacing="7",  # Space between industry groups
-                        align="start",
+                        spacing="0",
+                        height="100%",
+                        align="center",
                         style={"flex_wrap": "nowrap"},
                     ),
-                    padding_top="0.5em",
-                    padding_bottom="0.5em",
+                    height="2.8em",
+                    style={"flex_shrink": "0"},
                 ),
-                direction="horizontal",
-                scrollbars="horizontal",
-                style={
-                    "width": "100%",
-                    "maxWidth": "90vw",
-                    "overflowX": "auto",
-                    "overflowY": "hidden",
-                },
+                # All industries and stocks
+                rx.foreach(
+                    StockComparisonState.grouped_stocks.items(),
+                    lambda item: rx.vstack(
+                        rx.foreach(
+                            item[1],
+                            lambda stock: rx.card(
+                                rx.hstack(
+                                    rx.foreach(
+                                        StockComparisonState.selected_metrics,
+                                        lambda metric_key: stock_metric_cell(stock, metric_key, item[0]),
+                                    ),
+                                    spacing="0",
+                                    style={"flex_wrap": "nowrap"},
+                                ),
+                                height="2.8em",
+                                style={"flex_shrink": "0"},
+                            ),
+                        ),
+                        spacing="3",
+                        margin_bottom="2em",
+                    ),
+                ),
+                spacing="0",
+                align="start",
             ),
-            width="100%",
-            margin_left="1.8em",
+            scrollbars="both",
+            type="auto",
             style={
-                "maxWidth": "90vw",
-                "overflowX": "auto",
-                "overflowY": "hidden",
-                "position": "relative",
+                "width": "100%",
+                "height": "70vh",
             },
         ),
-        spacing="0",
+        spacing="3",
         align="start",
         width="100%",
-        style={"flex_wrap": "nowrap"},
     )
 
 

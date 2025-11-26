@@ -329,9 +329,11 @@ class StockComparisonState(rx.State):
             self.view_mode = "table"
 
     @rx.event
-    def set_time_period(self, period: str):
+    async def set_time_period(self, period: str):
         """Set the time period for historical data (quarter or year)."""
         self.time_period = period
+        # Re-fetch historical data with new period
+        await self.fetch_historical_data()
 
     @rx.event
     async def fetch_historical_data(self):
@@ -360,7 +362,7 @@ class StockComparisonState(rx.State):
                     ticker_data[ticker] = None
                     continue
                     
-                if "error" in result:
+                if isinstance(result, dict) and "error" in result:
                     print(f"API error for {ticker}: {result['error']}")
                     ticker_data[ticker] = None
                     continue
@@ -372,7 +374,7 @@ class StockComparisonState(rx.State):
             max_periods = 8 if self.time_period == "quarter" else 4
             
             # We'll use the categorized_ratios for most metrics
-            all_periods = set()
+            all_periods = []  # Use list to maintain order
             metrics_by_ticker_period = defaultdict(lambda: defaultdict(dict))
             
             for ticker, data in ticker_data.items():
@@ -391,11 +393,25 @@ class StockComparisonState(rx.State):
                     if df.empty:
                         continue
                     
-                    # Create period identifier
-                    if "Quarter" in df.columns:
+                    # Filter by period type FIRST
+                    if self.time_period == "quarter":
+                        # Only include rows that have Quarter column (quarterly data)
+                        if "Quarter" not in df.columns:
+                            continue
                         df["period"] = "Q" + df["Quarter"].astype(str) + " " + df["Year"].astype(str)
-                    else:
+                        # Sort by Year and Quarter descending
+                        df = df.sort_values(by=["Year", "Quarter"], ascending=False)
+                    else:  # yearly
+                        # Only include rows without Quarter column OR aggregate by year
+                        if "Quarter" in df.columns:
+                            # Skip quarterly data when year is selected
+                            continue
                         df["period"] = df["Year"].astype(str)
+                        # Sort by Year descending
+                        df = df.sort_values(by="Year", ascending=False)
+                    
+                    # Limit to last N periods for this ticker
+                    df = df.head(max_periods)
                     
                     # Map API metric names to our metric keys
                     metric_mapping = {
@@ -409,9 +425,10 @@ class StockComparisonState(rx.State):
                         "Net Margin": "net_margin",
                     }
                     
-                    for period in df["period"]:
-                        all_periods.add(period)
-                        period_row = df[df["period"] == period].iloc[0]
+                    for _, period_row in df.iterrows():
+                        period = period_row["period"]
+                        if period not in all_periods:
+                            all_periods.append(period)
                         
                         # Extract metrics for this period
                         for api_name, metric_key in metric_mapping.items():
@@ -422,10 +439,31 @@ class StockComparisonState(rx.State):
             
             # Now format the data for recharts
             # Each metric gets an array of {period, ticker1, ticker2, ...}
-            sorted_periods = sorted(list(all_periods))
+            # Remove duplicates while preserving order
+            seen = set()
+            unique_periods = []
+            for period in all_periods:
+                if period not in seen:
+                    seen.add(period)
+                    unique_periods.append(period)
             
-            # Take only the last N periods
-            limited_periods = sorted_periods[-max_periods:] if len(sorted_periods) > max_periods else sorted_periods
+            # Sort periods properly
+            if self.time_period == "quarter":
+                # Sort quarterly periods (Q1 2023, Q2 2023, etc.)
+                def quarter_sort_key(p):
+                    parts = p.split()
+                    if len(parts) == 2:
+                        quarter = int(parts[0][1:])  # Remove 'Q' and convert to int
+                        year = int(parts[1])
+                        return (year, quarter)
+                    return (0, 0)
+                sorted_periods = sorted(unique_periods, key=quarter_sort_key)
+            else:
+                # Sort yearly periods
+                sorted_periods = sorted(unique_periods, key=lambda p: int(p) if p.isdigit() else 0)
+            
+            # Already limited per-ticker above, so use all collected periods
+            limited_periods = sorted_periods
             
             for metric in self.selected_metrics:
                 metric_data = []
