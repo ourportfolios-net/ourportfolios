@@ -322,10 +322,12 @@ class StockComparisonState(rx.State):
     @rx.event
     async def import_and_fetch_compare(self):
         """Import tickers from cart and fetch their stock data."""
+        prev_compare_list = set(self.compare_list)
         await self.import_cart_to_compare()
         await self.fetch_stocks_from_compare()
-        # Auto-fetch historical data for graphs
-        await self.fetch_historical_data()
+        # Only fetch historical data if new tickers were added
+        if set(self.compare_list) != prev_compare_list:
+            await self.fetch_historical_data()
 
     @rx.event
     async def auto_load_from_cart(self):
