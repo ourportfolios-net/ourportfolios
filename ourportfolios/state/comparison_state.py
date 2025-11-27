@@ -24,18 +24,21 @@ class StockComparisonState(rx.State):
         "net_margin",
         "rsi14",
     ]
-    
+
     # View mode and time period
     view_mode: str = "table"  # "table" or "graph"
     time_period: str = "quarter"  # "quarter" or "year"
-    
+
     # Historical financial data for graphs
     historical_data: Dict[str, List[Dict[str, Any]]] = {}
     is_loading_historical: bool = False
-    
+
     # Loading states for auto-load functionality
     is_loading_data: bool = False
     has_initialized: bool = False
+
+    # Cache for API data - stores raw transformed dataframes by ticker and period
+    _data_cache: Dict[str, Dict[str, Any]] = {}
 
     @rx.var
     def available_metrics(self) -> List[str]:
@@ -77,27 +80,27 @@ class StockComparisonState(rx.State):
             "rsi14": "RSI (14)",
         }
 
-    @rx.var
+    @rx.var(cache=True)
     def get_metric_data(self) -> Dict[str, List[Dict[str, Any]]]:
         """Get historical data for all metrics."""
         return self.historical_data
 
-    @rx.var
+    @rx.var(cache=True)
     def has_historical_data(self) -> bool:
         """Check if any historical data is available."""
         return any(len(data) > 0 for data in self.historical_data.values())
 
-    @rx.var
+    @rx.var(cache=True)
     def compare_list_length(self) -> int:
         """Get the length of compare_list."""
         return len(self.compare_list)
 
-    @rx.var
+    @rx.var(cache=True)
     def selected_metrics_length(self) -> int:
         """Get the length of selected_metrics."""
         return len(self.selected_metrics)
 
-    @rx.var
+    @rx.var(cache=True)
     def industry_stock_lists(self) -> Dict[str, List[str]]:
         """Get dictionary mapping industry to list of stock symbols."""
         result = {}
@@ -105,35 +108,35 @@ class StockComparisonState(rx.State):
             result[industry] = [stock.get("symbol", "") for stock in stocks]
         return result
 
-    @rx.var
+    @rx.var(cache=True)
     def industry_metric_data_map(self) -> Dict[str, Dict[str, List[Dict[str, Any]]]]:
         """Get nested dictionary: industry -> metric -> data for inline graphs."""
         result = {}
-        
+
         for industry, stocks in self.grouped_stocks.items():
             industry_tickers = [stock.get("symbol", "") for stock in stocks]
             result[industry] = {}
-            
+
             for metric_key in self.selected_metrics:
                 if metric_key not in self.historical_data:
                     result[industry][metric_key] = []
                     continue
-                
+
                 # Filter the metric data to only include this industry's stocks
                 metric_data = self.historical_data.get(metric_key, [])
                 filtered_data = []
-                
+
                 for period_data in metric_data:
                     # Only include if at least one ticker from this industry has data
                     has_data = any(ticker in period_data for ticker in industry_tickers)
                     if has_data:
                         filtered_data.append(period_data)
-                
+
                 result[industry][metric_key] = filtered_data
-        
+
         return result
 
-    @rx.var
+    @rx.var(cache=True)
     def grouped_stocks(self) -> Dict[str, List[Dict[str, Any]]]:
         """Group formatted stocks by industry."""
         groups = defaultdict(list)
@@ -142,7 +145,7 @@ class StockComparisonState(rx.State):
             groups[industry].append(stock)
         return dict(groups)
 
-    @rx.var
+    @rx.var(cache=True)
     def formatted_stocks(self) -> List[Dict[str, Any]]:
         """Pre-format all stock values for display."""
         formatted = []
@@ -156,7 +159,7 @@ class StockComparisonState(rx.State):
             formatted.append(formatted_stock)
         return formatted
 
-    @rx.var
+    @rx.var(cache=True)
     def industry_best_performers(self) -> Dict[str, Dict[str, str]]:
         """Calculate best performer for each metric within each industry."""
         industry_best = {}
@@ -329,13 +332,13 @@ class StockComparisonState(rx.State):
         """Automatically load compare data from cart on page mount."""
         if self.has_initialized:
             return
-        
+
         self.is_loading_data = True
         self.has_initialized = True
-        
+
         try:
             await self.import_cart_to_compare()
-            
+
             # Only fetch data if cart had items
             if self.compare_list:
                 await self.fetch_stocks_from_compare()
@@ -350,18 +353,18 @@ class StockComparisonState(rx.State):
         if ticker in self.compare_list:
             yield rx.toast.error(f"{ticker} is already in the comparison!")
             return
-        
+
         self.is_loading_data = True
-        
+
         try:
             # Add to compare list
             self.compare_list = self.compare_list + [ticker]
-            
+
             # Fetch data for the new ticker
             if not db_settings.conn:
                 yield rx.toast.error("Database connection unavailable")
                 return
-            
+
             try:
                 overview_query = text(
                     "SELECT symbol, industry, market_cap "
@@ -401,10 +404,10 @@ class StockComparisonState(rx.State):
                         "rsi14": stats_df.iloc[0]["rsi14"],
                     }
                     self.stocks = self.stocks + [stock_data]
-                    
-                    # Fetch historical data for the new ticker
+
+                    # Fetch historical data only for the new ticker using cache-aware method
                     await self.fetch_historical_data()
-                    
+
                     yield rx.toast.success(f"{ticker} added to comparison!")
                 else:
                     # Remove from compare list if data not found
@@ -434,69 +437,99 @@ class StockComparisonState(rx.State):
         await self.fetch_historical_data()
 
     @rx.event
+    async def toggle_time_period(self, checked: bool):
+        """Toggle between quarterly and yearly time periods."""
+        period = "year" if checked else "quarter"
+        self.time_period = period
+        # Re-fetch historical data with new period
+        await self.fetch_historical_data()
+
+    @rx.event
     async def fetch_historical_data(self):
         """Fetch historical financial data for all stocks in compare list."""
         if not self.compare_list:
             return
-        
+
         self.is_loading_historical = True
-        
+
         # Initialize historical_data dictionary for each metric
         historical_data_temp = {metric: [] for metric in self.selected_metrics}
-        
+
         try:
-            # Fetch financial data for all tickers concurrently
-            tasks = [
-                get_transformed_dataframes(ticker, period=self.time_period)
-                for ticker in self.compare_list
-            ]
-            results = await asyncio.gather(*tasks, return_exceptions=True)
-            
-            # Process results for each ticker
+            # Determine which tickers need to be fetched
+            tickers_to_fetch = []
             ticker_data = {}
-            for ticker, result in zip(self.compare_list, results):
-                if isinstance(result, Exception):
-                    print(f"Error fetching historical data for {ticker}: {result}")
-                    ticker_data[ticker] = None
-                    continue
-                    
-                if isinstance(result, dict) and "error" in result:
-                    print(f"API error for {ticker}: {result['error']}")
-                    ticker_data[ticker] = None
-                    continue
-                
-                ticker_data[ticker] = result
-            
+
+            for ticker in self.compare_list:
+                cache_key = f"{ticker}_{self.time_period}"
+
+                # Check if data is cached
+                if cache_key in self._data_cache:
+                    print(f"Using cached data for {ticker} ({self.time_period})")
+                    ticker_data[ticker] = self._data_cache[cache_key]
+                else:
+                    tickers_to_fetch.append(ticker)
+
+            # Fetch only non-cached tickers
+            if tickers_to_fetch:
+                tasks = [
+                    get_transformed_dataframes(ticker, period=self.time_period)
+                    for ticker in tickers_to_fetch
+                ]
+                results = await asyncio.gather(*tasks, return_exceptions=True)
+
+                # Process results and cache them
+                for ticker, result in zip(tickers_to_fetch, results):
+                    if isinstance(result, Exception):
+                        print(f"Error fetching historical data for {ticker}: {result}")
+                        ticker_data[ticker] = None
+                        continue
+
+                    if isinstance(result, dict) and "error" in result:
+                        print(f"API error for {ticker}: {result['error']}")
+                        ticker_data[ticker] = None
+                        continue
+
+                    # Cache the result
+                    cache_key = f"{ticker}_{self.time_period}"
+                    self._data_cache[cache_key] = result
+                    ticker_data[ticker] = result
+
             # Extract metric values for each period
             # Limit to last 8 quarters or 4 years
             max_periods = 8 if self.time_period == "quarter" else 4
-            
+
             # We'll use the categorized_ratios for most metrics
             all_periods = []  # Use list to maintain order
             metrics_by_ticker_period = defaultdict(lambda: defaultdict(dict))
-            
+
             for ticker, data in ticker_data.items():
                 if not data or "categorized_ratios" not in data:
                     continue
-                
+
                 ratios = data["categorized_ratios"]
-                
+
                 # Process each category
                 for category, category_data in ratios.items():
                     if not category_data:
                         continue
-                    
+
                     # Convert to DataFrame for easier processing
                     df = pd.DataFrame(category_data)
                     if df.empty:
                         continue
-                    
+
                     # Filter by period type FIRST
                     if self.time_period == "quarter":
                         # Only include rows that have Quarter column (quarterly data)
                         if "Quarter" not in df.columns:
                             continue
-                        df["period"] = "Q" + df["Quarter"].astype(str) + " " + df["Year"].astype(str)
+                        df["period"] = (
+                            "Q"
+                            + df["Quarter"].astype(str)
+                            + " "
+                            + df["Year"].astype(str)
+                        )
                         # Sort by Year and Quarter descending
                         df = df.sort_values(by=["Year", "Quarter"], ascending=False)
                     else:  # yearly
@@ -507,10 +540,10 @@ class StockComparisonState(rx.State):
                         df["period"] = df["Year"].astype(str)
                         # Sort by Year descending
                         df = df.sort_values(by="Year", ascending=False)
-                    
+
                     # Limit to last N periods for this ticker
                     df = df.head(max_periods)
-                    
+
                     # Map API metric names to our metric keys
                     metric_mapping = {
                         "ROE": "roe",
@@ -522,19 +555,24 @@ class StockComparisonState(rx.State):
                         "Gross Margin": "gross_margin",
                         "Net Margin": "net_margin",
                     }
-                    
+
                     for _, period_row in df.iterrows():
                         period = period_row["period"]
                         if period not in all_periods:
                             all_periods.append(period)
-                        
+
                         # Extract metrics for this period
                         for api_name, metric_key in metric_mapping.items():
-                            if api_name in df.columns and metric_key in self.selected_metrics:
+                            if (
+                                api_name in df.columns
+                                and metric_key in self.selected_metrics
+                            ):
                                 value = period_row[api_name]
                                 if pd.notna(value):
-                                    metrics_by_ticker_period[ticker][period][metric_key] = float(value)
-            
+                                    metrics_by_ticker_period[ticker][period][
+                                        metric_key
+                                    ] = float(value)
+
             # Now format the data for recharts
             # Each metric gets an array of {period, ticker1, ticker2, ...}
             # Remove duplicates while preserving order
@@ -544,7 +582,7 @@ class StockComparisonState(rx.State):
                 if period not in seen:
                     seen.add(period)
                     unique_periods.append(period)
-            
+
             # Sort periods properly
             if self.time_period == "quarter":
                 # Sort quarterly periods (Q1 2023, Q2 2023, etc.)
@@ -555,36 +593,44 @@ class StockComparisonState(rx.State):
                         year = int(parts[1])
                         return (year, quarter)
                     return (0, 0)
+
                 sorted_periods = sorted(unique_periods, key=quarter_sort_key)
             else:
                 # Sort yearly periods
-                sorted_periods = sorted(unique_periods, key=lambda p: int(p) if p.isdigit() else 0)
-            
+                sorted_periods = sorted(
+                    unique_periods, key=lambda p: int(p) if p.isdigit() else 0
+                )
+
             # Already limited per-ticker above, so use all collected periods
             limited_periods = sorted_periods
-            
+
             for metric in self.selected_metrics:
                 metric_data = []
                 for period in limited_periods:
                     period_obj = {"period": period}
                     has_data = False
                     for ticker in self.compare_list:
-                        if ticker in metrics_by_ticker_period and period in metrics_by_ticker_period[ticker]:
+                        if (
+                            ticker in metrics_by_ticker_period
+                            and period in metrics_by_ticker_period[ticker]
+                        ):
                             if metric in metrics_by_ticker_period[ticker][period]:
-                                period_obj[ticker] = metrics_by_ticker_period[ticker][period][metric]
+                                period_obj[ticker] = metrics_by_ticker_period[ticker][
+                                    period
+                                ][metric]
                                 has_data = True
-                    
+
                     if has_data:
                         metric_data.append(period_obj)
-                
+
                 historical_data_temp[metric] = metric_data
-            
+
             self.historical_data = historical_data_temp
-            
+
         except Exception as e:
             print(f"Error fetching historical data: {e}")
             self.historical_data = {metric: [] for metric in self.selected_metrics}
-        
+
         finally:
             self.is_loading_historical = False
 
@@ -594,7 +640,15 @@ class StockComparisonState(rx.State):
         if self.view_mode == "table":
             self.view_mode = "graph"
             # Fetch historical data if not already loaded or if period changed
-            if not self.historical_data or len(self.historical_data.get(self.selected_metrics[0] if self.selected_metrics else "roe", [])) == 0:
+            if (
+                not self.historical_data
+                or len(
+                    self.historical_data.get(
+                        self.selected_metrics[0] if self.selected_metrics else "roe", []
+                    )
+                )
+                == 0
+            ):
                 await self.fetch_historical_data()
         else:
             self.view_mode = "table"
