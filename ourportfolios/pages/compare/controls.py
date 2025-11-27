@@ -14,19 +14,19 @@ def comparison_search_bar() -> rx.Component:
                 placeholder="Add tickers to compare",
                 type="search",
                 size="2",
-                value=SearchBarState.search_query,
-                on_change=SearchBarState.set_query,
+                value=SearchBarState.comparison_search_query,
+                on_change=SearchBarState.set_comparison_query,
                 on_blur=lambda: SearchBarState.set_empty_state_display_suggestions(False),
                 on_focus=lambda: SearchBarState.set_empty_state_display_suggestions(True),
                 width="100%",
             ),
             rx.cond(
                 SearchBarState.empty_state_display_suggestion
-                & (SearchBarState.get_suggest_ticker.length() > 0),
+                & (SearchBarState.get_comparison_suggest_ticker.length() > 0),
                 rx.card(
                     rx.scroll_area(
                         rx.foreach(
-                            SearchBarState.get_suggest_ticker,
+                            SearchBarState.get_comparison_suggest_ticker,
                             lambda ticker_value: comparison_search_suggestion(ticker_value),
                         ),
                         scrollbars="vertical",

@@ -58,8 +58,8 @@ def empty_state_search_bar() -> rx.Component:
                 placeholder="Add tickers to compare",
                 type="search",
                 size="3",
-                value=SearchBarState.search_query,
-                on_change=SearchBarState.set_query,
+                value=SearchBarState.comparison_search_query,
+                on_change=SearchBarState.set_comparison_query,
                 on_blur=lambda: SearchBarState.set_empty_state_display_suggestions(False),
                 on_focus=lambda: SearchBarState.set_empty_state_display_suggestions(True),
                 on_mount=SearchBarState.load_state,
@@ -67,11 +67,11 @@ def empty_state_search_bar() -> rx.Component:
             ),
             rx.cond(
                 SearchBarState.empty_state_display_suggestion
-                & (SearchBarState.get_suggest_ticker.length() > 0),
+                & (SearchBarState.get_comparison_suggest_ticker.length() > 0),
                 rx.card(
                     rx.scroll_area(
                         rx.foreach(
-                            SearchBarState.get_suggest_ticker,
+                            SearchBarState.get_comparison_suggest_ticker,
                             empty_state_search_suggestion,
                         ),
                         scrollbars="vertical",
