@@ -7,6 +7,7 @@ from typing import List, Dict, Any
 from collections import defaultdict
 from ..utils.scheduler import db_settings
 from ..utils.preprocessing.financial_statements import get_transformed_dataframes
+from .framework_state import GlobalFrameworkState
 import asyncio
 
 
@@ -41,9 +42,10 @@ class StockComparisonState(rx.State):
     _data_cache: Dict[str, Dict[str, Any]] = {}
 
     @rx.var
-    def available_metrics(self) -> List[str]:
+    def all_available_metrics(self) -> List[str]:
         """All available metrics that can be selected."""
         return [
+            "market_cap",
             "roe",
             "roa",
             "pe",
@@ -61,9 +63,59 @@ class StockComparisonState(rx.State):
         ]
 
     @rx.var
+    def metric_to_category_map(self) -> Dict[str, str]:
+        """Map metrics to their categories."""
+        return {
+            "market_cap": "Valuation",
+            "earnings": "Per Share Value",
+            "book_value": "Per Share Value",
+            "free_cash_flow": "Per Share Value",
+            "dividend": "Per Share Value",
+            "revenues": "Per Share Value",
+            "eps": "Per Share Value",
+            "roe": "Profitability",
+            "roa": "Efficiency",
+            "gross_margin": "Profitability",
+            "net_margin": "Profitability",
+            "pe": "Valuation",
+            "pb": "Valuation",
+            "ps": "Valuation",
+            "ev_ebitda": "Valuation",
+            "dividend_yield": "Profitability",
+            "doe": "Leverage & Liquidity",
+            "alpha": "Profitability",
+            "beta": "Valuation",
+            "rsi14": "Valuation",
+        }
+
+    @rx.var
+    def all_metrics_by_category(self) -> Dict[str, List[str]]:
+        """All metrics organized by category."""
+        return {
+            "Per Share Value": ["eps"],
+            "Profitability": ["roe", "gross_margin", "net_margin", "dividend_yield", "alpha"],
+            "Valuation": ["market_cap", "pe", "pb", "ps", "ev_ebitda", "beta", "rsi14"],
+            "Leverage & Liquidity": ["doe"],
+            "Efficiency": ["roa"],
+        }
+
+    @rx.var(cache=True)
+    def available_metrics_by_category(self) -> Dict[str, List[str]]:
+        """Get available metrics organized by category based on selected framework."""
+        # Note: We need to access GlobalFrameworkState synchronously
+        # The framework filtering will be handled in the UI layer
+        return self.all_metrics_by_category
+
+    @rx.var
+    def available_metrics(self) -> List[str]:
+        """Flat list of all available metrics (for backwards compatibility)."""
+        return self.all_available_metrics
+
+    @rx.var
     def metric_labels(self) -> Dict[str, str]:
         """Get human-readable labels for metrics."""
         return {
+            "market_cap": "Market Cap",
             "roe": "ROE",
             "roa": "ROA",
             "pe": "P/E Ratio",
@@ -108,7 +160,7 @@ class StockComparisonState(rx.State):
             result[industry] = [stock.get("symbol", "") for stock in stocks]
         return result
 
-    @rx.var(cache=True)
+    @rx.var
     def industry_metric_data_map(self) -> Dict[str, Dict[str, List[Dict[str, Any]]]]:
         """Get nested dictionary: industry -> metric -> data for inline graphs."""
         result = {}
@@ -136,7 +188,7 @@ class StockComparisonState(rx.State):
 
         return result
 
-    @rx.var(cache=True)
+    @rx.var
     def grouped_stocks(self) -> Dict[str, List[Dict[str, Any]]]:
         """Group formatted stocks by industry."""
         groups = defaultdict(list)
@@ -145,23 +197,41 @@ class StockComparisonState(rx.State):
             groups[industry].append(stock)
         return dict(groups)
 
-    @rx.var(cache=True)
+    @rx.var
     def formatted_stocks(self) -> List[Dict[str, Any]]:
-        """Pre-format all stock values for display."""
+        """Pre-format all stock values for display using latest period data."""
         formatted = []
+        
+        # Get the latest period data for each metric
+        latest_values_by_ticker = defaultdict(dict)
+        for metric_key, metric_data in self.historical_data.items():
+            if metric_data and len(metric_data) > 0:
+                # Get the most recent period (last item in the list)
+                latest_period = metric_data[-1]
+                for ticker in self.compare_list:
+                    if ticker in latest_period:
+                        latest_values_by_ticker[ticker][metric_key] = latest_period[ticker]
+        
         for stock in self.stocks:
             formatted_stock = {}
+            ticker = stock.get("symbol", "")
+            
             for key, value in stock.items():
-                if key in self.selected_metrics:
-                    formatted_stock[key] = self._format_value(key, value)
+                if key in self.selected_metrics or key == "market_cap":
+                    # Use latest historical data if available, otherwise fall back to static data
+                    if ticker in latest_values_by_ticker and key in latest_values_by_ticker[ticker]:
+                        formatted_value = latest_values_by_ticker[ticker][key]
+                        formatted_stock[key] = self._format_value(key, formatted_value)
+                    else:
+                        formatted_stock[key] = self._format_value(key, value)
                 else:
                     formatted_stock[key] = value
             formatted.append(formatted_stock)
         return formatted
 
-    @rx.var(cache=True)
+    @rx.var
     def industry_best_performers(self) -> Dict[str, Dict[str, str]]:
-        """Calculate best performer for each metric within each industry."""
+        """Calculate best performer for each metric within each industry using latest period data."""
         industry_best = {}
         higher_better = [
             "roe",
@@ -174,24 +244,42 @@ class StockComparisonState(rx.State):
         ]
         lower_better = ["pe", "pb", "ps", "ev_ebitda", "beta", "doe"]
 
+        # Get the latest period data for each metric
+        latest_values_by_ticker = defaultdict(dict)
+        for metric_key, metric_data in self.historical_data.items():
+            if metric_data and len(metric_data) > 0:
+                # Get the most recent period (last item in the list)
+                latest_period = metric_data[-1]
+                for ticker in self.compare_list:
+                    if ticker in latest_period:
+                        latest_values_by_ticker[ticker][metric_key] = latest_period[ticker]
+
         for industry, stocks in self.grouped_stocks.items():
             industry_best[industry] = {}
 
             for metric in self.selected_metrics:
                 values = []
                 for stock in stocks:
-                    original_stock = next(
-                        (
-                            s
-                            for s in self.stocks
-                            if s.get("symbol") == stock.get("symbol")
-                        ),
-                        None,
-                    )
-                    if original_stock:
-                        val = original_stock.get(metric)
+                    ticker = stock.get("symbol")
+                    # Try to get value from latest historical data first
+                    if ticker in latest_values_by_ticker and metric in latest_values_by_ticker[ticker]:
+                        val = latest_values_by_ticker[ticker][metric]
                         if val is not None and isinstance(val, (int, float)):
-                            values.append((val, stock.get("symbol")))
+                            values.append((val, ticker))
+                    else:
+                        # Fall back to static data
+                        original_stock = next(
+                            (
+                                s
+                                for s in self.stocks
+                                if s.get("symbol") == ticker
+                            ),
+                            None,
+                        )
+                        if original_stock:
+                            val = original_stock.get(metric)
+                            if val is not None and isinstance(val, (int, float)):
+                                values.append((val, ticker))
 
                 if values:
                     if metric in higher_better:
@@ -209,11 +297,15 @@ class StockComparisonState(rx.State):
 
     def _format_value(self, key: str, value: Any) -> str:
         """Format values for display."""
-        if value is None:
+        if value is None or (isinstance(value, float) and pd.isna(value)):
             return "N/A"
 
         if key == "market_cap":
-            return f"{value}B VND"
+            # Format market cap with B VND suffix for table display
+            try:
+                return f"{float(value):.2f}B VND"
+            except (ValueError, TypeError):
+                return "N/A"
         elif key in [
             "roe",
             "roa",

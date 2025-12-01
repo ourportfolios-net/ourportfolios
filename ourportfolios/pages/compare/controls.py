@@ -3,6 +3,7 @@
 import reflex as rx
 
 from ...state import StockComparisonState, SearchBarState
+from ...state.framework_state import GlobalFrameworkState
 
 
 def comparison_search_bar() -> rx.Component:
@@ -16,8 +17,12 @@ def comparison_search_bar() -> rx.Component:
                 size="2",
                 value=SearchBarState.comparison_search_query,
                 on_change=SearchBarState.set_comparison_query,
-                on_blur=lambda: SearchBarState.set_empty_state_display_suggestions(False),
-                on_focus=lambda: SearchBarState.set_empty_state_display_suggestions(True),
+                on_blur=lambda: SearchBarState.set_empty_state_display_suggestions(
+                    False
+                ),
+                on_focus=lambda: SearchBarState.set_empty_state_display_suggestions(
+                    True
+                ),
                 width="100%",
             ),
             rx.cond(
@@ -27,7 +32,9 @@ def comparison_search_bar() -> rx.Component:
                     rx.scroll_area(
                         rx.foreach(
                             SearchBarState.get_comparison_suggest_ticker,
-                            lambda ticker_value: comparison_search_suggestion(ticker_value),
+                            lambda ticker_value: comparison_search_suggestion(
+                                ticker_value
+                            ),
                         ),
                         scrollbars="vertical",
                         type="scroll",
@@ -120,6 +127,63 @@ def view_mode_toggle() -> rx.Component:
     )
 
 
+def metric_category_group(category: str) -> rx.Component:
+    """Render a group of metrics for a specific category"""
+    # Check if this category should be shown based on framework
+    should_show = rx.cond(
+        GlobalFrameworkState.has_selected_framework,
+        GlobalFrameworkState.framework_metrics.contains(category),
+        True,  # Show all categories if no framework selected
+    )
+
+    return rx.cond(
+        should_show,
+        rx.vstack(
+            rx.text(category, size="3", weight="bold", color=rx.color("accent", 11)),
+            rx.foreach(
+                StockComparisonState.all_metrics_by_category[category],
+                lambda metric: rx.hstack(
+                    rx.checkbox(
+                        checked=StockComparisonState.selected_metrics.contains(metric),
+                        on_change=lambda: StockComparisonState.toggle_metric(metric),
+                        size="2",
+                    ),
+                    rx.text(StockComparisonState.metric_labels[metric], size="2"),
+                    spacing="2",
+                    align="center",
+                    width="100%",
+                ),
+            ),
+            spacing="2",
+            align="start",
+            width="100%",
+            padding_bottom="0.5em",
+        ),
+        rx.fragment(),  # Empty if should not be shown
+    )
+
+
+def market_cap_metric() -> rx.Component:
+    """Always show Market Cap metric regardless of framework"""
+    return rx.vstack(
+        rx.hstack(
+            rx.checkbox(
+                checked=StockComparisonState.selected_metrics.contains("market_cap"),
+                on_change=lambda: StockComparisonState.toggle_metric("market_cap"),
+                size="2",
+            ),
+            rx.text("Market Cap", size="2"),
+            spacing="2",
+            align="center",
+            width="100%",
+        ),
+        spacing="2",
+        align="start",
+        width="100%",
+        padding_bottom="0.5em",
+    )
+
+
 def settings_dialog() -> rx.Component:
     """Dialog component for all settings (metrics + time period + import)"""
     return rx.dialog.root(
@@ -145,85 +209,95 @@ def settings_dialog() -> rx.Component:
                     width="100%",
                     align="center",
                 ),
-                # Import from Cart Button
-                rx.button(
-                    rx.hstack(
-                        rx.icon("import", size=16),
-                        rx.text("Import from Cart"),
-                        spacing="2",
-                    ),
-                    on_click=StockComparisonState.import_and_fetch_compare,
-                    size="2",
-                    variant="soft",
-                    width="100%",
-                ),
-                # Time Period Switch
-                rx.divider(),
-                rx.vstack(
-                    rx.hstack(
-                        rx.text("Time Period", size="3", weight="medium"),
-                        rx.spacer(),
+                # Import from Cart Button + Time Period Switch on same line
+                rx.hstack(
+                    rx.button(
                         rx.hstack(
-                            rx.text(
-                                "Quarterly",
-                                size="2",
-                                color=rx.cond(
-                                    StockComparisonState.time_period == "quarter",
-                                    rx.color("accent", 11),
-                                    rx.color("gray", 10),
-                                ),
-                            ),
-                            rx.switch(
-                                checked=StockComparisonState.time_period == "year",
-                                on_change=StockComparisonState.toggle_time_period,
-                                size="2",
-                            ),
-                            rx.text(
-                                "Yearly",
-                                size="2",
-                                color=rx.cond(
-                                    StockComparisonState.time_period == "year",
-                                    rx.color("accent", 11),
-                                    rx.color("gray", 10),
-                                ),
-                            ),
+                            rx.icon("import", size=16),
+                            rx.text("Import from Cart"),
                             spacing="2",
-                            align="center",
                         ),
-                        width="100%",
+                        on_click=StockComparisonState.import_and_fetch_compare,
+                        size="2",
+                        variant="soft",
+                    ),
+                    rx.spacer(),
+                    rx.hstack(
+                        rx.text(
+                            "Quarterly",
+                            size="2",
+                            color=rx.cond(
+                                StockComparisonState.time_period == "quarter",
+                                rx.color("accent", 11),
+                                rx.color("gray", 10),
+                            ),
+                        ),
+                        rx.switch(
+                            checked=StockComparisonState.time_period == "year",
+                            on_change=StockComparisonState.toggle_time_period,
+                            size="2",
+                        ),
+                        rx.text(
+                            "Yearly",
+                            size="2",
+                            color=rx.cond(
+                                StockComparisonState.time_period == "year",
+                                rx.color("accent", 11),
+                                rx.color("gray", 10),
+                            ),
+                        ),
+                        spacing="2",
                         align="center",
                     ),
-                    spacing="2",
-                    align="start",
                     width="100%",
+                    align="center",
                 ),
-                # Metrics Selection
+                # Metrics Selection by Category
                 rx.divider(),
                 rx.vstack(
                     rx.heading("Select Metrics", size="4"),
+                    # Framework indicator if framework is selected
+                    rx.cond(
+                        GlobalFrameworkState.has_selected_framework,
+                        rx.callout.root(
+                            rx.callout.icon(rx.icon("target", size=16)),
+                            rx.callout.text(
+                                rx.hstack(
+                                    rx.text("Framework: ", size="1", weight="medium"),
+                                    rx.text(
+                                        GlobalFrameworkState.framework_display_name,
+                                        size="1",
+                                        weight="bold",
+                                    ),
+                                    spacing="1",
+                                )
+                            ),
+                            size="1",
+                            variant="surface",
+                            color_scheme="violet",
+                        ),
+                        rx.callout.root(
+                            rx.callout.icon(rx.icon("info", size=16)),
+                            rx.callout.text(
+                                "No framework selected. Showing all metrics.",
+                                size="1",
+                            ),
+                            size="1",
+                            variant="surface",
+                            color_scheme="gray",
+                        ),
+                    ),
                     rx.scroll_area(
                         rx.vstack(
-                            rx.foreach(
-                                StockComparisonState.available_metrics,
-                                lambda metric: rx.hstack(
-                                    rx.checkbox(
-                                        checked=StockComparisonState.selected_metrics.contains(
-                                            metric
-                                        ),
-                                        on_change=lambda: StockComparisonState.toggle_metric(
-                                            metric
-                                        ),
-                                        size="2",
-                                    ),
-                                    rx.text(
-                                        StockComparisonState.metric_labels[metric], size="2"
-                                    ),
-                                    spacing="2",
-                                    align="center",
-                                    width="100%",
-                                ),
-                            ),
-                            spacing="2",
+                            # Always show Market Cap first
+                            market_cap_metric(),
+                            # Iterate through all categories - they'll be filtered by framework in metric_category_group
+                            metric_category_group("Per Share Value"),
+                            metric_category_group("Profitability"),
+                            metric_category_group("Valuation"),
+                            metric_category_group("Leverage & Liquidity"),
+                            metric_category_group("Efficiency"),
+                            spacing="3",
                             align="start",
                             width="100%",
                         ),
@@ -253,7 +327,7 @@ def settings_dialog() -> rx.Component:
                 spacing="3",
                 width="100%",
             ),
-            max_width="450px",
+            max_width="500px",
         ),
     )
 

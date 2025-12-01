@@ -83,7 +83,6 @@ def stock_metric_cell(stock: Dict[str, Any], metric_key: str, industry: str) -> 
 
 def stock_column_card(stock: Dict[str, Any], industry: str) -> rx.Component:
     """Create a column with separate header card and metrics card for each stock"""
-    market_cap = stock.get("market_cap", "")
     ticker = stock.get("symbol", "")
 
     return rx.vstack(
@@ -120,12 +119,6 @@ def stock_column_card(stock: Dict[str, Any], industry: str) -> rx.Component:
                             size="1",
                             variant="soft",
                             style={"font_size": "0.7em"},
-                        ),
-                        rx.text(
-                            f"{market_cap} B. VND",
-                            size="1",
-                            color=rx.color("gray", 10),
-                            weight="medium",
                         ),
                         spacing="2",
                         justify="center",

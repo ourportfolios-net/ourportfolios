@@ -64,12 +64,6 @@ def comparison_table_section() -> rx.Component:
                                                     variant="soft",
                                                     style={"font_size": "0.65em"},
                                                 ),
-                                                rx.text(
-                                                    f"{stock.get('market_cap', '')} B. VND",
-                                                    size="1",
-                                                    color=rx.color("gray", 10),
-                                                    weight="medium",
-                                                ),
                                                 spacing="2",
                                                 align="center",
                                                 width="100%",
