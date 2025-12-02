@@ -24,12 +24,14 @@ PRICE_DB_URI = os.getenv("PRICE_DB_URI")
 COMPANY_DB_URI = os.getenv("COMPANY_DB_URI")
 
 
-def _ensure_async_pg(url: str) -> str:
+def _ensure_async_pg(url: str | None) -> str:
     """Ensure the provided PostgreSQL URL uses asyncpg dialect.
 
     Accepts both `postgresql://` and `postgresql+psycopg2://` forms and
     returns a URL using `postgresql+asyncpg://`.
     """
+    if url is None:
+        raise ValueError("Database URL cannot be None. Check environment variables.")
     if "postgresql+asyncpg" in url:
         return url
     if "postgresql+psycopg2" in url:
