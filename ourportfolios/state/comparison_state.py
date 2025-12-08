@@ -6,6 +6,7 @@ from sqlalchemy import text
 from typing import List, Dict, Any
 from collections import defaultdict
 from ..utils.preprocessing.financial_statements import get_transformed_dataframes
+from ..utils.database.database import get_company_session
 import asyncio
 
 
