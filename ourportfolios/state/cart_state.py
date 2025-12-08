@@ -1,38 +1,35 @@
 """Cart state management for storing and managing selected tickers."""
 
 import reflex as rx
-import pandas as pd
+import asyncio
 from sqlalchemy import text
-from ..utils.scheduler import db_settings
+from ..utils.database.database import CompanySession
 
 
-def get_industry(ticker: str) -> str:
+async def get_industry(ticker: str) -> str:
     """Fetch industry for a given ticker."""
-    if not db_settings.conn:
-        return "Unknown"
-
     max_retries = 3
     retry_count = 0
 
     while retry_count < max_retries:
         try:
-            with db_settings.conn.connect() as connection:
+            async with CompanySession.begin() as session:
                 query = text("""
                     SELECT industry
                     FROM tickers.overview_df
                     WHERE symbol = :pattern
                 """)
-                df = pd.read_sql(query, connection, params={"pattern": ticker})
-                return df["industry"].iloc[0]
-
-        except Exception:
+                result = await session.execute(query, {"pattern": ticker})
+                row = result.mappings().first()
+                if row:
+                    return row["industry"]
+                return "Unknown"
+        except Exception as e:
             retry_count += 1
             if retry_count >= max_retries:
+                print(f"Error fetching industry for {ticker}: {e}")
                 return "Unknown"
-            try:
-                db_settings.conn.dispose()
-            except Exception:
-                pass
+            await asyncio.sleep(0.1)  # Small delay before retry
 
     return "Unknown"
 
@@ -63,11 +60,11 @@ class CartState(rx.State):
         self.cart_items.pop(index)
 
     @rx.event
-    def add_item(self, ticker: str):
+    async def add_item(self, ticker: str):
         """Add a ticker to the cart."""
         if any(item["name"] == ticker for item in self.cart_items):
             yield rx.toast.error(f"{ticker} already in cart!")
         else:
-            industry = get_industry(ticker)
+            industry = await get_industry(ticker)
             self.cart_items.append({"name": ticker, "industry": industry})
             yield rx.toast(f"{ticker} added to cart!")

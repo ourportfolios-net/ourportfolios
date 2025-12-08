@@ -3,10 +3,9 @@
 import pandas as pd
 import reflex as rx
 from typing import Any, List, Dict, Optional
-from vnstock import Finance
 
 from ...state.framework_state import GlobalFrameworkState
-from ...utils.load_data import fetch_company_data
+from ...utils.database.queries import fetch_company_data
 from ...utils.preprocessing.financial_statements import get_transformed_dataframes
 
 
@@ -160,17 +159,12 @@ class State(rx.State):
         return self.officers_df.to_dict("records")
 
     @rx.event
-    def load_financial_ratios(self):
-        """Load financial ratios data dynamically."""
-        ticker = self.ticker
-
-        report_range = self.switch_value
-        financial_df = Finance(symbol=ticker, source="VCI").ratio(
-            report_range=report_range, is_all=True
-        )
-        financial_df.columns = financial_df.columns.droplevel(0)
-
-        self.financial_df = financial_df
+    async def load_financial_ratios(self):
+        """Load financial ratios data dynamically from database via transformed_dataframes."""
+        # Financial ratios are now loaded via load_transformed_dataframes
+        # This method is kept for backward compatibility but delegates to the main loader
+        if not self.transformed_dataframes:
+            await self.load_transformed_dataframes()
 
     @rx.event
     async def load_transformed_dataframes(self):

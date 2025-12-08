@@ -11,6 +11,7 @@ import os
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
+from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
@@ -41,11 +42,31 @@ def _ensure_async_pg(url: str | None) -> str:
     return url
 
 
+def _clean_sync_pg(url: str | None) -> str:
+    """Clean PostgreSQL URL for psycopg2 by moving query params to connect_args.
+
+    Removes sslmode and other query params that should be in connect_args.
+    """
+    if url is None:
+        raise ValueError("Database URL cannot be None. Check environment variables.")
+    if "?" in url:
+        url = url.split("?")[0]
+    return url
+
+
 PRICE_DB_URI_ASYNC = _ensure_async_pg(PRICE_DB_URI)
 COMPANY_DB_URI_ASYNC = _ensure_async_pg(COMPANY_DB_URI)
 
 price_engine = create_async_engine(PRICE_DB_URI_ASYNC)
 company_engine = create_async_engine(COMPANY_DB_URI_ASYNC)
+
+# Sync engines for pandas to_sql operations
+price_sync_engine = create_engine(
+    _clean_sync_pg(PRICE_DB_URI), connect_args={"sslmode": "require"}
+)
+company_sync_engine = create_engine(
+    _clean_sync_pg(COMPANY_DB_URI), connect_args={"sslmode": "require"}
+)
 
 
 PriceSession = async_sessionmaker(
