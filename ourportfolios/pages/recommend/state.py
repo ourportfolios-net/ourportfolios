@@ -5,7 +5,7 @@ from typing import List, Dict, Any, cast
 from sqlalchemy import text
 
 from ...state import GlobalFrameworkState
-from ...utils.database.database import get_company_session, CompanySession
+from ...utils.database.database import get_company_session
 
 
 class FrameworkState(rx.State):
@@ -232,8 +232,7 @@ class FrameworkState(rx.State):
     async def load_frameworks(self):
         self.loading_frameworks = True
         try:
-            # Use CompanySession directly without the context manager's auto-commit
-            async with CompanySession() as session:
+            async with get_company_session() as session:
                 query = text("""
                     SELECT 
                         f.*,
@@ -256,7 +255,6 @@ class FrameworkState(rx.State):
                 result = await session.execute(query, {"scope": self.active_scope})
                 frameworks = result.mappings().all()
                 self.frameworks = [dict(row) for row in frameworks]
-                # No commit needed for read-only query
         except Exception as e:
             print(f"Error loading frameworks: {e}")
             self.frameworks = []

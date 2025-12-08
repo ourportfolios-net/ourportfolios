@@ -3,7 +3,7 @@
 import reflex as rx
 from typing import Dict, List, Optional
 from sqlalchemy import text
-from ..utils.database.database import CompanySession
+from ..utils.database.database import get_company_session
 
 
 class GlobalFrameworkState(rx.State):
@@ -23,7 +23,7 @@ class GlobalFrameworkState(rx.State):
 
         # Load framework details
         try:
-            async with CompanySession.begin() as session:
+            async with get_company_session() as session:
                 query = text(
                     "SELECT * FROM frameworks.frameworks_df WHERE id = :framework_id"
                 )
@@ -43,7 +43,7 @@ class GlobalFrameworkState(rx.State):
             return
 
         try:
-            async with CompanySession.begin() as session:
+            async with get_company_session() as session:
                 query = text("""
                     SELECT category, metrics, display_order
                     FROM frameworks.framework_metrics_df

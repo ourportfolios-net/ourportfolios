@@ -7,7 +7,7 @@ import asyncio
 from typing import List, Dict, Set
 
 from ...state import TickerBoardState
-from ...utils.database.database import CompanySession
+from ...utils.database.database import get_company_session
 from sqlalchemy import text
 
 
@@ -107,7 +107,7 @@ class State(rx.State):
     @rx.event
     async def get_all_industries(self):
         try:
-            async with CompanySession.begin() as session:
+            async with get_company_session() as session:
                 result = await session.execute(
                     text("SELECT DISTINCT industry FROM tickers.overview_df")
                 )
@@ -122,7 +122,7 @@ class State(rx.State):
     @rx.event
     async def get_all_exchanges(self):
         try:
-            async with CompanySession.begin() as session:
+            async with get_company_session() as session:
                 result = await session.execute(
                     text("SELECT DISTINCT exchange FROM tickers.overview_df")
                 )

@@ -3,7 +3,7 @@
 import reflex as rx
 import asyncio
 from sqlalchemy import text
-from ..utils.database.database import CompanySession
+from ..utils.database.database import get_company_session
 
 
 async def get_industry(ticker: str) -> str:
@@ -13,7 +13,7 @@ async def get_industry(ticker: str) -> str:
 
     while retry_count < max_retries:
         try:
-            async with CompanySession.begin() as session:
+            async with get_company_session() as session:
                 query = text("""
                     SELECT industry
                     FROM tickers.overview_df
