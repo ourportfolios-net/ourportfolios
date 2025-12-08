@@ -16,6 +16,6 @@ def load_historical_data(
     end: str = (date.today() + timedelta(days=1)).strftime("%Y-%m-%d"),
     interval: str = "15m",
 ) -> pd.DataFrame:
-    stock = Vnstock().stock(symbol=symbol, source="TCBS")
+    stock = Vnstock().stock(symbol=symbol, source="VCI")
     df = stock.quote.history(start=start, end=end, interval=interval)
     return df.drop_duplicates(keep="last")
