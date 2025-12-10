@@ -6,11 +6,13 @@ from dateutil.relativedelta import relativedelta
 import json
 
 from ..utils.compute_instrument import compute_ma, compute_rsi
-from ..utils.database.load_data import load_historical_data
+from ..utils.database.fetch_data import load_historical_data
 
 
 # Price chart State
 class PriceChartState(rx.State):
+    # Flag to track if chart.js has loaded
+    chart_script_loaded: bool = False
     df: pd.DataFrame = pd.DataFrame()
     selected_interval: str = "1D"
     selected_chart: str = "Candlestick"
@@ -50,6 +52,8 @@ class PriceChartState(rx.State):
         #     1W: 5 years (default)
         #     1M: all (default)
         # }
+        # NOTE: Historical price data is fetched from vnstock API, not database
+        # TODO: Store historical prices in database for better performance
         self.df_by_interval = {
             i_range: load_historical_data(
                 symbol=ticker,
@@ -71,8 +75,20 @@ class PriceChartState(rx.State):
 
     @rx.event
     def render_price_chart(self):
+        # Only render if script is loaded
         yield rx.call_script(
-            f"""render_price_chart({self.chart_options}, {self.chart_data})"""
+            f"""
+            if (typeof render_price_chart === 'function') {{
+                render_price_chart({self.chart_options}, {self.chart_data});
+            }} else {{
+                console.warn('render_price_chart not yet loaded, scheduling retry...');
+                setTimeout(() => {{
+                    if (typeof render_price_chart === 'function') {{
+                        render_price_chart({self.chart_options}, {self.chart_data});
+                    }}
+                }}, 100);
+            }}
+            """
         )
 
     @rx.event
