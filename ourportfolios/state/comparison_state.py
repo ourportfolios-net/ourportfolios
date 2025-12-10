@@ -5,9 +5,12 @@ import pandas as pd
 from sqlalchemy import text
 from typing import List, Dict, Any
 from collections import defaultdict
-from ..utils.preprocessing.financial_statements import get_transformed_dataframes
-from ..utils.database.database import get_company_session
 import asyncio
+
+from ourportfolios.preprocessing.financial_statements import (
+    get_transformed_dataframes,
+)
+from ..utils.database.database import get_company_session
 
 
 class StockComparisonState(rx.State):
@@ -604,7 +607,7 @@ class StockComparisonState(rx.State):
 
                     # Cache the result
                     cache_key = f"{ticker}_{self.time_period}"
-                    self._data_cache[cache_key] = result
+                    self._data_cache[cache_key] = result  # type: ignore
                     ticker_data[ticker] = result
 
             # Extract metric values for each period

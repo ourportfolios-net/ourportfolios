@@ -6,7 +6,7 @@ from typing import Any, List, Dict, Optional
 
 from ...state.framework_state import GlobalFrameworkState
 from ...utils.database.queries import fetch_company_data
-from ...utils.preprocessing.financial_statements import get_transformed_dataframes
+from ...preprocessing.financial_statements import get_transformed_dataframes
 
 
 class State(rx.State):

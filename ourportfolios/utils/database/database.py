@@ -57,8 +57,32 @@ def _clean_sync_pg(url: str | None) -> str:
 PRICE_DB_URI_ASYNC = _ensure_async_pg(PRICE_DB_URI)
 COMPANY_DB_URI_ASYNC = _ensure_async_pg(COMPANY_DB_URI)
 
-price_engine = create_async_engine(PRICE_DB_URI_ASYNC)
-company_engine = create_async_engine(COMPANY_DB_URI_ASYNC)
+price_engine = create_async_engine(
+    PRICE_DB_URI_ASYNC,
+    pool_size=5,
+    max_overflow=10,
+    pool_pre_ping=True,
+    pool_recycle=3600,
+    echo_pool=False,
+    pool_timeout=30,
+    connect_args={
+        "server_settings": {"jit": "off"},
+        "timeout": 10,
+    },
+)
+company_engine = create_async_engine(
+    COMPANY_DB_URI_ASYNC,
+    pool_size=5,
+    max_overflow=10,
+    pool_pre_ping=True,
+    pool_recycle=3600,
+    echo_pool=False,
+    pool_timeout=30,
+    connect_args={
+        "server_settings": {"jit": "off"},
+        "timeout": 10,
+    },
+)
 
 # Sync engines for pandas to_sql operations
 price_sync_engine = create_engine(
