@@ -5,7 +5,7 @@ import reflex as rx
 from typing import Any, List, Dict, Optional
 
 from ...state.framework_state import GlobalFrameworkState
-from ...utils.database.queries import fetch_company_data
+from ...utils.database.fetch_data import fetch_company_data, fetch_price_data_async
 from ...preprocessing.financial_statements import get_transformed_dataframes
 
 
@@ -87,6 +87,7 @@ class State(rx.State):
 
     @rx.event
     async def load_company_data(self):
+        """Load company metadata and price data from database."""
         ticker = self.ticker
 
         # Check if still mounted before fetching data
@@ -94,9 +95,10 @@ class State(rx.State):
             return
 
         try:
+            # Fetch company metadata (sync for now, but fast query)
             company_data = fetch_company_data(ticker)
 
-            # Check again after async operation
+            # Check again after operation
             if not self._is_mounted:
                 return
 
@@ -106,8 +108,16 @@ class State(rx.State):
             self.news_df = company_data.get("news", pd.DataFrame())
             self.profile_df = company_data.get("profile", pd.DataFrame())
             self.officers_df = company_data.get("officers", pd.DataFrame())
+
+            # Fetch current price board data from database (async)
+            # Note: Historical price data is fetched separately by PriceChartState from vnstock API
+            self.price_data = await fetch_price_data_async(ticker)
+
         except Exception as e:
             print(f"Error loading company data: {e}")
+            import traceback
+
+            traceback.print_exc()
             # Set empty dataframes to allow page to continue loading
             self.overview_df = pd.DataFrame()
             self.shareholders_df = pd.DataFrame()
@@ -115,6 +125,7 @@ class State(rx.State):
             self.news_df = pd.DataFrame()
             self.profile_df = pd.DataFrame()
             self.officers_df = pd.DataFrame()
+            self.price_data = pd.DataFrame()
 
     @rx.var(cache=True)
     def overview(self) -> dict:
@@ -193,6 +204,9 @@ class State(rx.State):
                     self.income_statement = []
                     self.balance_sheet = []
                     self.cash_flow = []
+                    self.available_metrics_by_category = {}
+                    self.selected_metrics = {}
+                    return
                 else:
                     self.transformed_dataframes = result
                     self.income_statement = result["transformed_income_statement"]
@@ -210,6 +224,8 @@ class State(rx.State):
                 self.income_statement = []
                 self.balance_sheet = []
                 self.cash_flow = []
+                self.available_metrics_by_category = {}
+                self.selected_metrics = {}
                 return
         else:
             result = self.transformed_dataframes
@@ -236,12 +252,14 @@ class State(rx.State):
             self.available_metrics_by_category = {}
             self.selected_metrics = {}
 
-            # Only include categories that are in the framework
+            # Include ALL categories from the framework, even if they don't have data yet
             for (
                 category,
                 framework_metric_names,
             ) in global_state.framework_metrics.items():
+                # Check if category has data in the database
                 if category in all_available_metrics:
+                    # Category has data - use the metrics from database
                     self.available_metrics_by_category[category] = (
                         all_available_metrics[category]
                     )
@@ -261,6 +279,20 @@ class State(rx.State):
                         self.selected_metrics[category] = all_available_metrics[
                             category
                         ][0]
+                else:
+                    # Category is in framework but has no data yet - still include it
+                    # Use the framework's metric list as available metrics
+                    if (
+                        isinstance(framework_metric_names, list)
+                        and len(framework_metric_names) > 0
+                    ):
+                        self.available_metrics_by_category[category] = (
+                            framework_metric_names
+                        )
+                        self.selected_metrics[category] = framework_metric_names[0]
+                    else:
+                        # No metrics defined in framework for this category
+                        self.available_metrics_by_category[category] = []
 
             # DO NOT add categories that aren't in the framework
         else:
@@ -306,7 +338,9 @@ class State(rx.State):
                 continue
 
             chart_points = []
-            for row in reversed(data):
+            # Data comes sorted by year ASC (oldest first) from categorization
+            # We want the most recent 8 years in chronological order
+            for row in data:
                 year = row.get("Year", "")
                 value = row.get(selected_metric)
 
