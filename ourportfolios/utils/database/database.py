@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
+from sqlalchemy.pool import NullPool
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -29,10 +30,14 @@ def _ensure_async_pg(url: str | None) -> str:
     """Ensure the provided PostgreSQL URL uses asyncpg dialect.
 
     Accepts both `postgresql://` and `postgresql+psycopg2://` forms and
-    returns a URL using `postgresql+asyncpg://`.
+    returns a URL using `postgresql+asyncpg://`. Also removes query parameters
+    like sslmode that should be in connect_args for asyncpg.
     """
     if url is None:
         raise ValueError("Database URL cannot be None. Check environment variables.")
+    if "?" in url:
+        url = url.split("?")[0]
+
     if "postgresql+asyncpg" in url:
         return url
     if "postgresql+psycopg2" in url:
@@ -57,14 +62,11 @@ def _clean_sync_pg(url: str | None) -> str:
 PRICE_DB_URI_ASYNC = _ensure_async_pg(PRICE_DB_URI)
 COMPANY_DB_URI_ASYNC = _ensure_async_pg(COMPANY_DB_URI)
 
+# Use NullPool for async engines to avoid event loop closure issues
+# Each connection is created fresh and not tied to a specific event loop
 price_engine = create_async_engine(
     PRICE_DB_URI_ASYNC,
-    pool_size=5,
-    max_overflow=10,
-    pool_pre_ping=True,
-    pool_recycle=3600,
-    echo_pool=False,
-    pool_timeout=30,
+    poolclass=NullPool,
     connect_args={
         "server_settings": {"jit": "off"},
         "timeout": 10,
@@ -72,12 +74,7 @@ price_engine = create_async_engine(
 )
 company_engine = create_async_engine(
     COMPANY_DB_URI_ASYNC,
-    pool_size=5,
-    max_overflow=10,
-    pool_pre_ping=True,
-    pool_recycle=3600,
-    echo_pool=False,
-    pool_timeout=30,
+    poolclass=NullPool,
     connect_args={
         "server_settings": {"jit": "off"},
         "timeout": 10,
