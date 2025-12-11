@@ -1,6 +1,15 @@
 import reflex as rx
 
 # MUST BE IMPORTED!!!
+from ourportfolios.pages import (
+    landing,
+    recommend,
+    select,
+    ticker_analysis,
+    industry_analysis,
+    analyze,
+    compare,
+)  # noqa: F401
 
 
 app = rx.App(
