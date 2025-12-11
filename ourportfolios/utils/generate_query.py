@@ -1,6 +1,5 @@
 import pandas as pd
 import itertools
-import asyncio
 from typing import Any, List, Tuple
 from .database.database import get_company_session
 from sqlalchemy import text

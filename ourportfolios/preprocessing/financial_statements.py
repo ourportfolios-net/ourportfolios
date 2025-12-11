@@ -94,8 +94,6 @@ async def get_transformed_dataframes(
         return result
 
     except Exception as e:
-        import traceback
-
         error_msg = f"{type(e).__name__}: {str(e)}"
         return {
             "transformed_income_statement": [],
@@ -189,7 +187,7 @@ def _categorize_ratios(
     ]
 
     # Growth metrics - will be computed from the time-series data
-    growth_metrics = []  # Computed from YoY changes
+    # growth_metrics = []  # Computed from YoY changes
 
     profitability_metrics = [
         "Gross Profit Margin (%)",
@@ -772,7 +770,7 @@ def _compute_ratios_from_statements(
         )
         categorized_ratios["Efficiency"] = efficiency.to_dict(orient="records")
 
-    except Exception as e:
+    except Exception:
         pass
 
     return categorized_ratios

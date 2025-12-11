@@ -389,7 +389,7 @@ async def fetch_income_statement_async(
             pivot_df = pivot_df.sort_values("year", ascending=False)
             return pivot_df
 
-    except Exception as e:
+    except Exception:
         return pd.DataFrame()
 
 
@@ -449,7 +449,7 @@ async def fetch_balance_sheet_async(
             pivot_df = pivot_df.sort_values("year", ascending=False)
             return pivot_df
 
-    except Exception as e:
+    except Exception:
         return pd.DataFrame()
 
 
@@ -509,7 +509,7 @@ async def fetch_cash_flow_async(
             pivot_df = pivot_df.sort_values("year", ascending=False)
             return pivot_df
 
-    except Exception as e:
+    except Exception:
         return pd.DataFrame()
 
 
@@ -567,5 +567,5 @@ async def fetch_ratios_async(ticker_symbol: str, period: str = "year") -> pd.Dat
             pivot_df = pivot_df.sort_values("year", ascending=False)
             return pivot_df
 
-    except Exception as e:
+    except Exception:
         return pd.DataFrame()

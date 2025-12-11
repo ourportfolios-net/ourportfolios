@@ -1,7 +1,6 @@
 """State for stock comparison functionality."""
 
 import reflex as rx
-import pandas as pd
 from sqlalchemy import text
 from typing import List, Dict, Any
 from collections import defaultdict
