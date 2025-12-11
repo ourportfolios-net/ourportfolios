@@ -1,7 +1,6 @@
 """Financial statements transformation and ratio computation."""
 
 import asyncio
-import warnings
 import pandas as pd
 from datetime import datetime, timedelta
 from typing import Dict, Any
@@ -12,10 +11,6 @@ from ..utils.database.fetch_data import (
     fetch_cash_flow_async,
     fetch_ratios_async,
 )
-
-# Suppress pandas deprecation warnings about frequency aliases and fill_method #https://github.com/sktime/sktime/issues/6245
-warnings.filterwarnings("ignore", category=FutureWarning, module="pandas")
-
 
 _cache = {}
 _cache_duration = timedelta(minutes=30)
@@ -99,6 +94,8 @@ async def get_transformed_dataframes(
         return result
 
     except Exception as e:
+        import traceback
+
         error_msg = f"{type(e).__name__}: {str(e)}"
         return {
             "transformed_income_statement": [],
@@ -192,7 +189,7 @@ def _categorize_ratios(
     ]
 
     # Growth metrics - will be computed from the time-series data
-    # growth_metrics = []  # Computed from YoY changes
+    growth_metrics = []  # Computed from YoY changes
 
     profitability_metrics = [
         "Gross Profit Margin (%)",
@@ -349,7 +346,7 @@ def _compute_growth_rates(ratios_df: pd.DataFrame, period: str) -> list:
             series = df[source_metric]
             # Convert Decimal to float to avoid division issues
             series = series.apply(lambda x: float(x) if x is not None else None)
-            pct_change = series.pct_change(fill_method=None) * 100
+            pct_change = series.pct_change() * 100
             growth_df[growth_name] = pct_change
 
     # Remove rows with all NaN growth values (typically the first row)
@@ -775,7 +772,7 @@ def _compute_ratios_from_statements(
         )
         categorized_ratios["Efficiency"] = efficiency.to_dict(orient="records")
 
-    except Exception:
+    except Exception as e:
         pass
 
     return categorized_ratios

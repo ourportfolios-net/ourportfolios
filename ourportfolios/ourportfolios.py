@@ -1,5 +1,7 @@
 import reflex as rx
-from ourportfolios.pages import (  # noqa: F401
+
+# MUST BE IMPORTED!!!
+from .pages import (
     landing,
     recommend,
     select,
@@ -7,7 +9,8 @@ from ourportfolios.pages import (  # noqa: F401
     industry_analysis,
     analyze,
     compare,
-)
+)  # noqa: F401
+
 
 app = rx.App(
     style={"font_family": "Outfit"},

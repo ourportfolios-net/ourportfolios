@@ -1,7 +1,7 @@
 """State management for framework recommendation page."""
 
 import reflex as rx
-from typing import List, Dict
+from typing import List, Dict, Any, cast
 from sqlalchemy import text
 
 from ...state import GlobalFrameworkState

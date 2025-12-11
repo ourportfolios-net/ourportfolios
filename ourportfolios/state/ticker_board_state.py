@@ -1,6 +1,7 @@
 """Ticker board state for filtering and displaying ticker lists."""
 
 import reflex as rx
+import pandas as pd
 from typing import List, Dict, Any, Set
 from sqlalchemy import TextClause, text
 from ..utils.database.database import get_company_session
