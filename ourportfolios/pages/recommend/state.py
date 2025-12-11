@@ -1,44 +1,11 @@
 """State management for framework recommendation page."""
 
 import reflex as rx
-from typing import List, Dict, Any, cast
-import os
-import psycopg2
-from psycopg2.extras import RealDictCursor
+from typing import List, Dict
+from sqlalchemy import text
 
 from ...state import GlobalFrameworkState
-
-DATABASE_URI = os.getenv("DATABASE_URI")
-
-
-def get_db_connection():
-    try:
-        if not DATABASE_URI:
-            print("WARNING: DATABASE_URI environment variable is not set")
-            return None
-        return psycopg2.connect(DATABASE_URI, cursor_factory=RealDictCursor)
-    except Exception as e:
-        print(f"Error connecting to database: {e}")
-        return None
-
-
-def execute_query(query: str, params: tuple | None = None) -> List[Dict]:
-    try:
-        conn = get_db_connection()
-        if conn is None:
-            print("WARNING: Cannot execute query - no database connection")
-            return []
-
-        with conn:
-            with conn.cursor() as cur:
-                cur.execute(query, params)
-                if cur.description:
-                    results = cur.fetchall()
-                    return [dict(row) for row in results] if results else []
-                return []
-    except Exception as e:
-        print(f"Error executing query: {e}")
-        return []
+from ...utils.database.database import get_company_session
 
 
 class FrameworkState(rx.State):
@@ -265,27 +232,29 @@ class FrameworkState(rx.State):
     async def load_frameworks(self):
         self.loading_frameworks = True
         try:
-            query = """
-                SELECT 
-                    f.*,
-                    COALESCE(
-                        json_agg(
-                            json_build_object(
-                                'name', m.metrics,
-                                'type', m.category,
-                                'order', m.display_order
-                            ) ORDER BY m.display_order
-                        ) FILTER (WHERE m.id IS NOT NULL),
-                        '[]'::json
-                    ) as metrics
-                FROM frameworks.frameworks_df f
-                LEFT JOIN frameworks.framework_metrics_df m ON f.id = m.framework_id
-                WHERE f.scope = %s
-                GROUP BY f.id
-                ORDER BY f.title
-            """
-            frameworks = execute_query(query, (self.active_scope,))
-            self.frameworks = frameworks
+            async with get_company_session() as session:
+                query = text("""
+                    SELECT 
+                        f.*,
+                        COALESCE(
+                            json_agg(
+                                json_build_object(
+                                    'name', m.metrics,
+                                    'type', m.category,
+                                    'order', m.display_order
+                                ) ORDER BY m.display_order
+                            ) FILTER (WHERE m.id IS NOT NULL),
+                            '[]'::json
+                        ) as metrics
+                    FROM frameworks.frameworks_df f
+                    LEFT JOIN frameworks.framework_metrics_df m ON f.id = m.framework_id
+                    WHERE f.scope = :scope
+                    GROUP BY f.id
+                    ORDER BY f.title
+                """)
+                result = await session.execute(query, {"scope": self.active_scope})
+                frameworks = result.mappings().all()
+                self.frameworks = [dict(row) for row in frameworks]
         except Exception as e:
             print(f"Error loading frameworks: {e}")
             self.frameworks = []
@@ -335,54 +304,50 @@ class FrameworkState(rx.State):
             return
 
         try:
-            framework_query = """
-                INSERT INTO frameworks.frameworks_df 
-                (title, description, author, complexity, scope, industry, source_name, source_url)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                RETURNING id
-            """
+            async with get_company_session() as session:
+                framework_query = text("""
+                    INSERT INTO frameworks.frameworks_df 
+                    (title, description, author, complexity, scope, industry, source_name, source_url)
+                    VALUES (:title, :description, :author, :complexity, :scope, :industry, :source_name, :source_url)
+                    RETURNING id
+                """)
 
-            conn = get_db_connection()
-            if conn is None:
-                print("ERROR: Cannot submit framework - no database connection")
-                return
+                result = await session.execute(
+                    framework_query,
+                    {
+                        "title": self.form_title,
+                        "description": self.form_description,
+                        "author": self.form_author,
+                        "complexity": self.form_complexity,
+                        "scope": self.form_scope,
+                        "industry": self.form_industry,
+                        "source_name": self.form_source_name
+                        if self.form_source_name
+                        else None,
+                        "source_url": self.form_source_url
+                        if self.form_source_url
+                        else None,
+                    },
+                )
+                framework_row = result.first()
+                framework_id = framework_row[0] if framework_row else None
 
-            with conn:
-                with conn.cursor() as cur:
-                    cur.execute(
-                        framework_query,
-                        (
-                            self.form_title,
-                            self.form_description,
-                            self.form_author,
-                            self.form_complexity,
-                            self.form_scope,
-                            self.form_industry,
-                            self.form_source_name if self.form_source_name else None,
-                            self.form_source_url if self.form_source_url else None,
-                        ),
-                    )
-                    result = cast(Dict[str, Any], cur.fetchone())
-                    framework_id = result["id"]
-
-                    if self.form_metrics:
-                        metrics_query = """
-                            INSERT INTO frameworks.framework_metrics_df 
-                            (framework_id, category, metrics, display_order)
-                            VALUES (%s, %s, ARRAY[%s], %s)
-                        """
-                        for metric in self.form_metrics:
-                            cur.execute(
-                                metrics_query,
-                                (
-                                    framework_id,
-                                    metric["category"],
-                                    metric["name"],
-                                    metric["order"],
-                                ),
-                            )
-
-                    conn.commit()
+                if framework_id and self.form_metrics:
+                    metrics_query = text("""
+                        INSERT INTO frameworks.framework_metrics_df 
+                        (framework_id, category, metrics, display_order)
+                        VALUES (:framework_id, :category, ARRAY[:metric_name], :order)
+                    """)
+                    for metric in self.form_metrics:
+                        await session.execute(
+                            metrics_query,
+                            {
+                                "framework_id": framework_id,
+                                "category": metric["category"],
+                                "metric_name": metric["name"],
+                                "order": metric["order"],
+                            },
+                        )
 
             self.close_add_dialog()
             await self.load_frameworks()
