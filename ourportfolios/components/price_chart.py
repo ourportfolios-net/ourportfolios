@@ -6,7 +6,7 @@ from dateutil.relativedelta import relativedelta
 import json
 
 from ..utils.compute_instrument import compute_ma, compute_rsi
-from ..utils.load_data import load_historical_data
+from ..utils.database.fetch_data import load_historical_data
 
 
 # Price chart State

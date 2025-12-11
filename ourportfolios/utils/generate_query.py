@@ -1,11 +1,11 @@
 import pandas as pd
 import itertools
 from typing import Any, List, Tuple
-from .scheduler import db_settings
+from .database.database import get_company_session
 from sqlalchemy import text
 
 
-def get_suggest_ticker(
+async def get_suggest_ticker(
     search_query: str, return_type: str
 ) -> Tuple[str, Any] | pd.DataFrame:
     """Attempt to retrieve data with strategy:
@@ -23,7 +23,7 @@ def get_suggest_ticker(
     # Fetch exact ticker
     match_query = "pb.symbol LIKE :pattern"
     match_params = {"pattern": f"{search_query}%"}
-    result: pd.DataFrame = fetch_ticker(
+    result: pd.DataFrame = await fetch_ticker(
         match_query=match_query, params=match_params, return_type=return_type
     )
 
@@ -39,7 +39,7 @@ def get_suggest_ticker(
             [f"pb.symbol LIKE :pattern_{i}" for i in range(len(match_params))]
         )
 
-        result: pd.DataFrame = fetch_ticker(
+        result: pd.DataFrame = await fetch_ticker(
             match_query=match_query, params=match_params, return_type=return_type
         )
 
@@ -47,7 +47,7 @@ def get_suggest_ticker(
     if result.empty:
         match_query = "pb.symbol LIKE :pattern"
         match_params = {"pattern": f"{search_query[0]}%"}  # First letter
-        result: bool = fetch_ticker(
+        result: bool = await fetch_ticker(
             match_query=match_query, params=match_params, return_type=return_type
         )
 
@@ -58,7 +58,7 @@ def get_suggest_ticker(
     )
 
 
-def fetch_ticker(
+async def fetch_ticker(
     match_query: str = "all", params: Any = None, return_type: str = "df"
 ) -> pd.DataFrame:
     """Fetch data from NeonDB.
@@ -89,13 +89,11 @@ def fetch_ticker(
     if return_type == "df":
         completed_query += "ORDER BY accumulated_volume DESC"
 
-    with db_settings.conn.connect() as connection:
-        try:
-            if connection.in_transaction():
-                try:
-                    db_settings.conn.rollback()
-                except Exception:
-                    pass
-            return pd.read_sql(text(completed_query), connection, params=params)
-        except Exception:
-            return pd.DataFrame()
+    try:
+        async with get_company_session() as session:
+            result = await session.execute(text(completed_query), params or {})
+            rows = result.mappings().all()
+            return pd.DataFrame([dict(row) for row in rows])
+    except Exception as e:
+        print(f"Database error in fetch_ticker: {e}")
+        return pd.DataFrame()

@@ -1,6 +1,6 @@
 [project]
 name = "ourportfolios"
-version = "0.1.0"
+version = "0.3.0"
 description = "An investment strategy analyzing platform"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -13,6 +13,7 @@ dependencies = [
     "vnstock>=3.2.6",
     "psycopg2-binary>=2.9.10",
     "reflex>=0.8.16",
+    "asyncpg>=0.31.0",
 ]
 
 [tool.semantic_release]

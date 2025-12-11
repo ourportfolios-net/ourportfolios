@@ -1,11 +1,9 @@
 """Ticker board state for filtering and displaying ticker lists."""
 
 import reflex as rx
-import pandas as pd
 from typing import List, Dict, Any, Set
 from sqlalchemy import TextClause, text
-from ..utils.scheduler import db_settings
-from ..utils.generate_query import get_suggest_ticker
+from ..utils.database.database import get_company_session
 
 
 class TickerBoardState(rx.State):
@@ -59,7 +57,7 @@ class TickerBoardState(rx.State):
         self.selected_sort_order = order
 
     @rx.var
-    def get_all_tickers(self) -> List[Dict[str, Any]]:
+    async def get_all_tickers(self) -> List[Dict[str, Any]]:
         """Get all tickers matching current filters and search."""
         query: List[str] = [
             f"""SELECT 
@@ -73,7 +71,9 @@ class TickerBoardState(rx.State):
         ]
 
         if self.search_query != "":
-            match_query, params = get_suggest_ticker(
+            from ..utils.generate_query import get_suggest_ticker
+
+            match_query, params = await get_suggest_ticker(
                 search_query=self.search_query.upper(), return_type="query"
             )
             query.append(match_query)
@@ -123,14 +123,11 @@ class TickerBoardState(rx.State):
 
         full_query: TextClause = text(" ".join(query))
 
-        if not db_settings.conn:
+        try:
+            async with get_company_session() as session:
+                result = await session.execute(full_query, params or {})
+                rows = result.mappings().all()
+                return [dict(row) for row in rows]
+        except Exception as e:
+            print(f"Error fetching tickers: {e}")
             return []
-
-        with db_settings.conn.connect() as connection:
-            try:
-                return pd.read_sql(full_query, connection, params=params).to_dict(
-                    "records"
-                )
-            except Exception as e:
-                print(e)
-                return []

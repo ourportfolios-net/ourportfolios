@@ -1,38 +1,9 @@
 """Global framework state management for cross-page framework selection."""
 
 import reflex as rx
-import os
-import psycopg2
-from psycopg2.extras import RealDictCursor
 from typing import Dict, List, Optional
-
-DATABASE_URI = os.getenv("DATABASE_URI")
-
-
-def get_db_connection():
-    if not DATABASE_URI:
-        print("WARNING: DATABASE_URI environment variable is not set")
-        return None
-    return psycopg2.connect(DATABASE_URI, cursor_factory=RealDictCursor)
-
-
-def execute_query(query: str, params: tuple | None = None) -> List[Dict]:
-    try:
-        conn = get_db_connection()
-        if conn is None:
-            print("WARNING: Cannot execute query - no database connection")
-            return []
-
-        with conn:
-            with conn.cursor() as cur:
-                cur.execute(query, params)
-                if cur.description:
-                    results = cur.fetchall()
-                    return [dict(row) for row in results] if results else []
-                return []
-    except Exception as e:
-        print(f"Database query error: {e}")
-        return []
+from sqlalchemy import text
+from ..utils.database.database import get_company_session
 
 
 class GlobalFrameworkState(rx.State):
@@ -51,12 +22,20 @@ class GlobalFrameworkState(rx.State):
         self.selected_framework_id = framework_id
 
         # Load framework details
-        query = "SELECT * FROM frameworks.frameworks_df WHERE id = %s"
-        framework_data = execute_query(query, (framework_id,))
+        try:
+            async with get_company_session() as session:
+                query = text(
+                    "SELECT * FROM frameworks.frameworks_df WHERE id = :framework_id"
+                )
+                result = await session.execute(query, {"framework_id": framework_id})
+                framework_data = result.mappings().all()
 
-        if framework_data:
-            self.selected_framework = framework_data[0]
-            await self.load_framework_metrics()
+                if framework_data:
+                    self.selected_framework = dict(framework_data[0])
+                    await self.load_framework_metrics()
+        except Exception as e:
+            print(f"Error loading framework: {e}")
+            self.selected_framework = {}
 
     @rx.event
     async def load_framework_metrics(self):
@@ -64,30 +43,34 @@ class GlobalFrameworkState(rx.State):
             return
 
         try:
-            query = """
-                SELECT category, metrics, display_order
-                FROM frameworks.framework_metrics_df
-                WHERE framework_id = %s
-                ORDER BY display_order
-            """
-            metrics_data = execute_query(query, (self.selected_framework_id,))
+            async with get_company_session() as session:
+                query = text("""
+                    SELECT category, metrics, display_order
+                    FROM frameworks.framework_metrics_df
+                    WHERE framework_id = :framework_id
+                    ORDER BY display_order
+                """)
+                result = await session.execute(
+                    query, {"framework_id": self.selected_framework_id}
+                )
+                metrics_data = result.mappings().all()
 
-            # Aggregate metrics by category
-            self.framework_metrics = {}
-            for row in metrics_data:
-                category = row["category"]
-                metrics = row["metrics"]  # This is already an array from the DB
+                # Aggregate metrics by category
+                self.framework_metrics = {}
+                for row in metrics_data:
+                    category = row["category"]
+                    metrics = row["metrics"]  # This is already an array from the DB
 
-                # Initialize category if not exists
-                if category not in self.framework_metrics:
-                    self.framework_metrics[category] = []
+                    # Initialize category if not exists
+                    if category not in self.framework_metrics:
+                        self.framework_metrics[category] = []
 
-                # Metrics is an array, so extend our list with it
-                if isinstance(metrics, list):
-                    self.framework_metrics[category].extend(metrics)
-                else:
-                    # Fallback if it's a single value
-                    self.framework_metrics[category].append(metrics)
+                    # Metrics is an array, so extend our list with it
+                    if isinstance(metrics, list):
+                        self.framework_metrics[category].extend(metrics)
+                    else:
+                        # Fallback if it's a single value
+                        self.framework_metrics[category].append(metrics)
         except Exception as e:
             print(f"Error loading framework metrics: {e}")
             self.framework_metrics = {}

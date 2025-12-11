@@ -1,11 +1,10 @@
 """State for stock comparison functionality."""
 
 import reflex as rx
-import pandas as pd
 from sqlalchemy import text
 from typing import List, Dict, Any
 from collections import defaultdict
-from ..utils.scheduler import db_settings
+from ..utils.database.database import get_company_session
 
 
 class StockComparisonState(rx.State):
@@ -196,53 +195,59 @@ class StockComparisonState(rx.State):
         """Fetch stock data for tickers in compare_list from database."""
         tickers = self.compare_list
         stocks = []
-        if not tickers or not db_settings.conn:
+        if not tickers:
             self.stocks = []
             return
 
-        for ticker in tickers:
-            try:
-                overview_query = text(
-                    "SELECT symbol, industry, market_cap "
-                    "FROM tickers.overview_df WHERE symbol = :symbol"
-                )
-                overview_df = pd.read_sql(
-                    overview_query, db_settings.conn, params={"symbol": ticker}
-                )
+        try:
+            async with get_company_session() as session:
+                for ticker in tickers:
+                    try:
+                        overview_query = text(
+                            "SELECT symbol, industry, market_cap "
+                            "FROM tickers.overview_df WHERE symbol = :symbol"
+                        )
+                        overview_result = await session.execute(
+                            overview_query, {"symbol": ticker}
+                        )
+                        overview_row = overview_result.mappings().first()
 
-                stats_query = text(
-                    "SELECT symbol, roe, roa, ev_ebitda, dividend_yield, "
-                    "gross_margin, net_margin, doe, alpha, beta, pe, pb, eps, ps, rsi14 "
-                    "FROM tickers.stats_df WHERE symbol = :symbol"
-                )
-                stats_df = pd.read_sql(
-                    stats_query, db_settings.conn, params={"symbol": ticker}
-                )
+                        stats_query = text(
+                            "SELECT symbol, roe, roa, ev_ebitda, dividend_yield, "
+                            "gross_margin, net_margin, doe, alpha, beta, pe, pb, eps, ps, rsi14 "
+                            "FROM tickers.stats_df WHERE symbol = :symbol"
+                        )
+                        stats_result = await session.execute(
+                            stats_query, {"symbol": ticker}
+                        )
+                        stats_row = stats_result.mappings().first()
 
-                if not overview_df.empty and not stats_df.empty:
-                    stock_data = {
-                        "symbol": ticker,
-                        "industry": overview_df.iloc[0]["industry"],
-                        "market_cap": overview_df.iloc[0]["market_cap"],
-                        "roe": stats_df.iloc[0]["roe"],
-                        "roa": stats_df.iloc[0]["roa"],
-                        "ev_ebitda": stats_df.iloc[0]["ev_ebitda"],
-                        "dividend_yield": stats_df.iloc[0]["dividend_yield"],
-                        "gross_margin": stats_df.iloc[0]["gross_margin"],
-                        "net_margin": stats_df.iloc[0]["net_margin"],
-                        "doe": stats_df.iloc[0]["doe"],
-                        "alpha": stats_df.iloc[0]["alpha"],
-                        "beta": stats_df.iloc[0]["beta"],
-                        "pe": stats_df.iloc[0]["pe"],
-                        "pb": stats_df.iloc[0]["pb"],
-                        "eps": stats_df.iloc[0]["eps"],
-                        "ps": stats_df.iloc[0]["ps"],
-                        "rsi14": stats_df.iloc[0]["rsi14"],
-                    }
-                    stocks.append(stock_data)
-            except Exception as e:
-                print(f"Error fetching data for {ticker}: {e}")
-                continue
+                        if overview_row and stats_row:
+                            stock_data = {
+                                "symbol": ticker,
+                                "industry": overview_row["industry"],
+                                "market_cap": overview_row["market_cap"],
+                                "roe": stats_row["roe"],
+                                "roa": stats_row["roa"],
+                                "ev_ebitda": stats_row["ev_ebitda"],
+                                "dividend_yield": stats_row["dividend_yield"],
+                                "gross_margin": stats_row["gross_margin"],
+                                "net_margin": stats_row["net_margin"],
+                                "doe": stats_row["doe"],
+                                "alpha": stats_row["alpha"],
+                                "beta": stats_row["beta"],
+                                "pe": stats_row["pe"],
+                                "pb": stats_row["pb"],
+                                "eps": stats_row["eps"],
+                                "ps": stats_row["ps"],
+                                "rsi14": stats_row["rsi14"],
+                            }
+                            stocks.append(stock_data)
+                    except Exception as e:
+                        print(f"Error fetching data for {ticker}: {e}")
+                        continue
+        except Exception as e:
+            print(f"Database session error: {e}")
 
         self.stocks = stocks
 

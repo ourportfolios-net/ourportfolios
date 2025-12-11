@@ -1,13 +1,13 @@
 """State management for the select page."""
 
 import reflex as rx
-import pandas as pd
 import asyncio
 
 from typing import List, Dict, Set
 
 from ...state import TickerBoardState
-from ...utils.scheduler import db_settings
+from ...utils.database.database import get_company_session
+from sqlalchemy import text
 
 
 class State(rx.State):
@@ -104,40 +104,33 @@ class State(rx.State):
 
     # Set all metrics/options to their default setting
     @rx.event
-    def get_all_industries(self):
-        connection = None
+    async def get_all_industries(self):
         try:
-            with db_settings.conn.connect() as connection:
-                industries = pd.read_sql(
-                    "SELECT DISTINCT industry FROM tickers.overview_df;",
-                    connection,
+            async with get_company_session() as session:
+                result = await session.execute(
+                    text("SELECT DISTINCT industry FROM tickers.overview_df")
                 )
+                industries = [row[0] for row in result.all()]
                 self.industry_filter: Dict[str, bool] = {
-                    item: False for item in industries["industry"].tolist()
+                    item: False for item in industries
                 }
         except Exception as e:
             print(f"Database error: {e}")
             self.industry_filter: Dict[str, bool] = {}
 
     @rx.event
-    def get_all_exchanges(self):
+    async def get_all_exchanges(self):
         try:
-            with db_settings.conn.connect() as connection:
-                exchanges: pd.DataFrame = pd.read_sql(
-                    "SELECT DISTINCT exchange FROM tickers.overview_df;",
-                    connection,
+            async with get_company_session() as session:
+                result = await session.execute(
+                    text("SELECT DISTINCT exchange FROM tickers.overview_df")
                 )
-
+                exchanges = [row[0] for row in result.all()]
                 self.exchange_filter: Dict[str, bool] = {
-                    item: False for item in exchanges["exchange"].tolist()
+                    item: False for item in exchanges
                 }
         except Exception as e:
             print(f"Database error: {e}")
-            if connection is not None:
-                try:
-                    connection.rollback()
-                except Exception:
-                    pass
             self.exchange_filter: Dict[str, bool] = {}
 
     @rx.event
