@@ -1,8 +1,9 @@
-name: our_check
+name: our_check (pr)
 
 on:
-  push:
+  pull_request:
     branches: [main]
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -23,7 +24,3 @@ jobs:
           python-version: "3.13"
       - name: Ruff
         uses: astral-sh/ruff-action@v3.5.0
-      - name: Semantic Release
-        uses: python-semantic-release/python-semantic-release@v10.3.1
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
