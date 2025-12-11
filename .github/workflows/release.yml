@@ -1,9 +1,8 @@
-name: our_check
+name: our_check (release)
 
 on:
   push:
     branches: [main]
-
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -21,9 +20,11 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: "3.13"
+
       - name: Ruff
         uses: astral-sh/ruff-action@v3.5.0
+
       - name: Semantic Release
         uses: python-semantic-release/python-semantic-release@v10.3.1
         with:
