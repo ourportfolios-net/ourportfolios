@@ -11,6 +11,7 @@ from ourportfolios.preprocessing.financial_statements import (
     get_transformed_dataframes,
 )
 from ..utils.database.database import get_company_session
+from .framework_state import GlobalFrameworkState
 
 
 class StockComparisonState(rx.State):
@@ -19,13 +20,17 @@ class StockComparisonState(rx.State):
     stocks: List[Dict[str, Any]] = []
     compare_list: List[str] = []
     selected_metrics: List[str] = [
+        "eps",
+        "bvps",
+        "dividends",
         "roe",
-        "pe",
-        "pb",
-        "dividend_yield",
         "gross_margin",
         "net_margin",
-        "rsi14",
+        "pe",
+        "pb",
+        "ev_ebitda",
+        "doe",
+        "roa",
     ]
 
     # View mode and time period
@@ -40,78 +45,177 @@ class StockComparisonState(rx.State):
     is_loading_data: bool = False
     has_initialized: bool = False
 
+    # Framework integration
+    framework_filtered_metrics: Dict[str, List[str]] = {}
+
     # Cache for API data - stores raw transformed dataframes by ticker and period
     _data_cache: Dict[str, Dict[str, Any]] = {}
 
     @rx.var
-    def all_available_metrics(self) -> List[str]:
-        """All available metrics that can be selected."""
-        return [
-            "market_cap",
-            "roe",
-            "roa",
-            "pe",
-            "pb",
-            "ps",
-            "ev_ebitda",
-            "dividend_yield",
-            "gross_margin",
-            "net_margin",
-            "doe",
-            "alpha",
-            "beta",
-            "eps",
-            "rsi14",
-        ]
-
-    @rx.var
-    def metric_to_category_map(self) -> Dict[str, str]:
-        """Map metrics to their categories."""
+    def framework_metric_name_to_db_column(self) -> Dict[str, str]:
+        """Map framework metric names (from database) to internal column identifiers."""
         return {
-            "market_cap": "Valuation",
-            "earnings": "Per Share Value",
-            "book_value": "Per Share Value",
-            "free_cash_flow": "Per Share Value",
-            "dividend": "Per Share Value",
-            "revenues": "Per Share Value",
-            "eps": "Per Share Value",
-            "roe": "Profitability",
-            "roa": "Efficiency",
-            "gross_margin": "Profitability",
-            "net_margin": "Profitability",
-            "pe": "Valuation",
-            "pb": "Valuation",
-            "ps": "Valuation",
-            "ev_ebitda": "Valuation",
-            "dividend_yield": "Profitability",
-            "doe": "Leverage & Liquidity",
-            "alpha": "Profitability",
-            "beta": "Valuation",
-            "rsi14": "Valuation",
+            # Per Share Value - match exact names from database
+            "Earnings": "eps",
+            "EPS (VND)": "eps",
+            "Book Value": "bvps",
+            "BVPS (VND)": "bvps",
+            "Net Sales": "net_sales",
+            "Free Cash Flow": "free_cash_flow",
+            "Dividend": "dividends",
+            "Dividends paid": "dividends",
+            "OWNER'S EQUITY(Bn.VND)": "owners_equity",
+            # Profitability - match exact names from database
+            "ROE": "roe",
+            "ROE (%)": "roe",
+            "ROA": "roa",
+            "ROA (%)": "roa",
+            "ROIC": "roic",
+            "ROIC (%)": "roic",
+            "Gross Margin": "gross_margin",
+            "Gross Profit Margin (%)": "gross_margin",
+            "Net Margin": "net_margin",
+            "Net Profit Margin (%)": "net_margin",
+            "EBIT Margin": "ebit_margin",
+            "EBIT Margin (%)": "ebit_margin",
+            "Operating Margin": "operating_margin",
+            "Operating Profit/Loss": "operating_margin",
+            "EBITDA Margin": "ebitda_margin",
+            "Dividend Yield": "dividend_yield",
+            "Alpha": "alpha",
+            # Valuation - match exact names from database
+            "P/E": "pe",
+            "P/B": "pb",
+            "P/S": "ps",
+            "P/Cash Flow": "p_cash_flow",
+            "EV/EBITDA": "ev_ebitda",
+            "Market Capital (Bn. VND)": "market_cap",
+            "Beta": "beta",
+            "RSI (14)": "rsi14",
+            "Outstanding Share (Mil. Shares)": "outstanding_shares",
+            # Leverage & Liquidity - match exact names from database
+            "Debt/Equity": "doe",
+            "(ST+LT borrowings)/Equity": "debt_to_equity_alt",
+            "Financial Leverage": "financial_leverage",
+            "Current Ratio": "current_ratio",
+            "Quick Ratio": "quick_ratio",
+            "Cash Ratio": "cash_ratio",
+            "Interest Coverage": "interest_coverage",
+            "Short-term borrowings (Bn. VND)": "st_borrowings",
+            "Long-term borrowings (Bn. VND)": "lt_borrowings",
+            "EBITDA (Bn. VND)": "ebitda",
+            # Efficiency - match exact names from database
+            "Asset Turnover": "asset_turnover",
+            "Fixed Asset Turnover": "fixed_asset_turnover",
+            "Inventory Turnover": "inventory_turnover",
+            "Days Sales Outstanding": "days_sales_outstanding",
+            "Days Inventory Outstanding": "days_inventory_outstanding",
+            "Days Payable Outstanding": "days_payable_outstanding",
+            "Cash Cycle": "cash_cycle",
+            "Fixed Asset-To-Equity": "fixed_asset_to_equity",
+            "Owners' Equity/Charter Capital": "equity_to_charter_capital",
+            "Dividend Payout %": "dividend_payout",
+            # Growth Rates - match exact names from database
+            "Revenues YoY": "revenue_growth",
+            "Revenue YoY (%)": "revenue_growth",
+            "Earnings YoY": "earnings_growth",
+            "Earnings YoY (%)": "earnings_growth",
+            "Free Cash Flow YoY": "fcf_growth",
+            "FCF YoY (%)": "fcf_growth",
+            "Book Value YoY": "book_value_growth",
+            "Book Value YoY (%)": "book_value_growth",
         }
 
     @rx.var
+    def all_available_metrics(self) -> List[str]:
+        """All available metrics that can be selected - dynamically computed from data."""
+        # Return all metrics from all_metrics_by_category
+        all_metrics = []
+        for metrics_list in self.all_metrics_by_category.values():
+            all_metrics.extend(metrics_list)
+        return list(set(all_metrics))  # Remove duplicates
+
+    @rx.var
+    def metric_to_category_map(self) -> Dict[str, str]:
+        """Map metrics to their categories - dynamically computed."""
+        result = {}
+        for category, metrics_list in self.all_metrics_by_category.items():
+            for metric in metrics_list:
+                result[metric] = category
+        return result
+
+    @rx.var
     def all_metrics_by_category(self) -> Dict[str, List[str]]:
-        """All metrics organized by category."""
+        """All metrics organized by category - comprehensive list from database."""
         return {
-            "Per Share Value": ["eps"],
+            "Per Share Value": [
+                "eps",
+                "bvps",
+                "net_sales",
+                "free_cash_flow",
+                "dividends",
+                "owners_equity",
+            ],
             "Profitability": [
                 "roe",
+                "roa",
+                "roic",
                 "gross_margin",
                 "net_margin",
+                "ebit_margin",
+                "operating_margin",
                 "dividend_yield",
                 "alpha",
             ],
-            "Valuation": ["market_cap", "pe", "pb", "ps", "ev_ebitda", "beta", "rsi14"],
-            "Leverage & Liquidity": ["doe"],
-            "Efficiency": ["roa"],
+            "Valuation": [
+                "market_cap",
+                "pe",
+                "pb",
+                "ps",
+                "p_cash_flow",
+                "ev_ebitda",
+                "beta",
+                "rsi14",
+                "outstanding_shares",
+            ],
+            "Leverage & Liquidity": [
+                "doe",
+                "debt_to_equity_alt",
+                "financial_leverage",
+                "current_ratio",
+                "quick_ratio",
+                "cash_ratio",
+                "interest_coverage",
+                "st_borrowings",
+                "lt_borrowings",
+                "ebitda",
+            ],
+            "Efficiency": [
+                "asset_turnover",
+                "fixed_asset_turnover",
+                "inventory_turnover",
+                "days_sales_outstanding",
+                "days_inventory_outstanding",
+                "days_payable_outstanding",
+                "cash_cycle",
+                "fixed_asset_to_equity",
+                "equity_to_charter_capital",
+                "dividend_payout",
+            ],
+            "Growth Rate": [
+                "revenue_growth",
+                "earnings_growth",
+                "fcf_growth",
+                "book_value_growth",
+            ],
         }
 
     @rx.var(cache=True)
     def available_metrics_by_category(self) -> Dict[str, List[str]]:
         """Get available metrics organized by category based on selected framework."""
-        # Note: We need to access GlobalFrameworkState synchronously
-        # The framework filtering will be handled in the UI layer
+        # If framework filtered metrics exist, use them, otherwise show all
+        if self.framework_filtered_metrics:
+            return self.framework_filtered_metrics
         return self.all_metrics_by_category
 
     @rx.var
@@ -120,24 +224,82 @@ class StockComparisonState(rx.State):
         return self.all_available_metrics
 
     @rx.var
+    def visible_categories(self) -> List[str]:
+        """Get list of categories that should be visible based on framework."""
+        if self.framework_filtered_metrics:
+            return list(self.framework_filtered_metrics.keys())
+        return list(self.all_metrics_by_category.keys())
+
+    @rx.var
+    def category_selection_state(self) -> Dict[str, bool]:
+        """Get selection state for each category (all selected = True, none/some = False)."""
+        state = {}
+        # Use available_metrics_by_category which respects framework filtering
+        for category, metrics in self.available_metrics_by_category.items():
+            if not metrics:
+                state[category] = False
+            else:
+                state[category] = all(m in self.selected_metrics for m in metrics)
+        return state
+
+    @rx.var
     def metric_labels(self) -> Dict[str, str]:
         """Get human-readable labels for metrics."""
         return {
-            "market_cap": "Market Cap",
-            "roe": "ROE",
-            "roa": "ROA",
-            "pe": "P/E Ratio",
-            "pb": "P/B Ratio",
-            "ps": "P/S Ratio",
-            "ev_ebitda": "EV/EBITDA",
-            "dividend_yield": "Dividend Yield",
-            "gross_margin": "Gross Margin",
-            "net_margin": "Net Margin",
-            "doe": "DOE",
-            "alpha": "Alpha",
-            "beta": "Beta",
+            # Per Share Value
             "eps": "EPS",
+            "bvps": "BVPS",
+            "net_sales": "Net Sales",
+            "free_cash_flow": "Free Cash Flow",
+            "dividends": "Dividends",
+            "owners_equity": "Owner's Equity",
+            # Profitability
+            "roe": "ROE (%)",
+            "roa": "ROA (%)",
+            "roic": "ROIC (%)",
+            "gross_margin": "Gross Margin (%)",
+            "net_margin": "Net Margin (%)",
+            "ebit_margin": "EBIT Margin (%)",
+            "operating_margin": "Operating Margin",
+            "dividend_yield": "Dividend Yield",
+            "alpha": "Alpha",
+            # Valuation
+            "market_cap": "Market Cap",
+            "pe": "P/E",
+            "pb": "P/B",
+            "ps": "P/S",
+            "p_cash_flow": "P/Cash Flow",
+            "ev_ebitda": "EV/EBITDA",
+            "beta": "Beta",
             "rsi14": "RSI (14)",
+            "outstanding_shares": "Outstanding Shares",
+            # Leverage & Liquidity
+            "doe": "Debt/Equity",
+            "debt_to_equity_alt": "(ST+LT borrowings)/Equity",
+            "financial_leverage": "Financial Leverage",
+            "current_ratio": "Current Ratio",
+            "quick_ratio": "Quick Ratio",
+            "cash_ratio": "Cash Ratio",
+            "interest_coverage": "Interest Coverage",
+            "st_borrowings": "Short-term Borrowings",
+            "lt_borrowings": "Long-term Borrowings",
+            "ebitda": "EBITDA",
+            # Efficiency
+            "asset_turnover": "Asset Turnover",
+            "fixed_asset_turnover": "Fixed Asset Turnover",
+            "inventory_turnover": "Inventory Turnover",
+            "days_sales_outstanding": "Days Sales Outstanding",
+            "days_inventory_outstanding": "Days Inventory Outstanding",
+            "days_payable_outstanding": "Days Payable Outstanding",
+            "cash_cycle": "Cash Cycle",
+            "fixed_asset_to_equity": "Fixed Asset-To-Equity",
+            "equity_to_charter_capital": "Equity/Charter Capital",
+            "dividend_payout": "Dividend Payout %",
+            # Growth Rates
+            "revenue_growth": "Revenue YoY (%)",
+            "earnings_growth": "Earnings YoY (%)",
+            "fcf_growth": "FCF YoY (%)",
+            "book_value_growth": "Book Value YoY (%)",
         }
 
     @rx.var(cache=True)
@@ -254,6 +416,8 @@ class StockComparisonState(rx.State):
             "net_margin",
             "alpha",
             "eps",
+            "bvps",
+            "dividends",
         ]
         lower_better = ["pe", "pb", "ps", "ev_ebitda", "beta", "doe"]
 
@@ -329,8 +493,14 @@ class StockComparisonState(rx.State):
             "doe",
         ]:
             return f"{value:.1f}%"
-        elif key in ["pe", "pb", "ps", "ev_ebitda", "alpha", "beta", "eps"]:
+        elif key in ["pe", "pb", "ps", "ev_ebitda", "alpha", "beta"]:
             return f"{value:.2f}"
+        elif key in ["eps", "bvps", "dividends"]:
+            # Format as currency
+            try:
+                return f"{float(value):,.0f}"
+            except (ValueError, TypeError):
+                return "N/A"
         elif key == "rsi14":
             return f"{value:.0f}"
         else:
@@ -345,9 +515,32 @@ class StockComparisonState(rx.State):
             self.selected_metrics = self.selected_metrics + [metric]
 
     @rx.event
+    def toggle_category(self, category: str):
+        """Toggle all metrics in a category."""
+        # Use available_metrics_by_category which respects framework filtering
+        category_metrics = self.available_metrics_by_category.get(category, [])
+        # Check if all metrics in category are selected
+        all_selected = all(m in self.selected_metrics for m in category_metrics)
+
+        if all_selected:
+            # Deselect all metrics in this category
+            self.selected_metrics = [
+                m for m in self.selected_metrics if m not in category_metrics
+            ]
+        else:
+            # Select all metrics in this category
+            new_metrics = [
+                m for m in category_metrics if m not in self.selected_metrics
+            ]
+            self.selected_metrics = self.selected_metrics + new_metrics
+
+    @rx.event
     def select_all_metrics(self):
-        """Select all available metrics."""
-        self.selected_metrics = self.available_metrics.copy()
+        """Select all available metrics (respecting framework if selected)."""
+        all_metrics = []
+        for metrics in self.available_metrics_by_category.values():
+            all_metrics.extend(metrics)
+        self.selected_metrics = list(set(all_metrics))  # Remove duplicates
 
     @rx.event
     def clear_all_metrics(self):
@@ -392,9 +585,11 @@ class StockComparisonState(rx.State):
                         )
                         overview_row = overview_result.mappings().first()
 
+                        # Fetch all available metrics dynamically
                         stats_query = text(
                             "SELECT symbol, roe, roa, ev_ebitda, dividend_yield, "
-                            "gross_margin, net_margin, doe, alpha, beta, pe, pb, eps, ps, rsi14 "
+                            "gross_margin, net_margin, doe, alpha, beta, pe, pb, eps, ps, "
+                            "rsi14 "
                             "FROM tickers.stats_df WHERE symbol = :symbol"
                         )
                         stats_result = await session.execute(
@@ -421,13 +616,15 @@ class StockComparisonState(rx.State):
                                 "eps": stats_row["eps"],
                                 "ps": stats_row["ps"],
                                 "rsi14": stats_row["rsi14"],
+                                # These will be calculated from historical data
+                                "bvps": None,
+                                "dividends": None,
                             }
                             stocks.append(stock_data)
-                    except Exception as e:
-                        print(f"Error fetching data for {ticker}: {e}")
+                    except Exception:
                         continue
-        except Exception as e:
-            print(f"Database session error: {e}")
+        except Exception:
+            pass
 
         self.stocks = stocks
 
@@ -435,6 +632,16 @@ class StockComparisonState(rx.State):
     async def import_and_fetch_compare(self):
         """Import tickers from cart and fetch their stock data."""
         prev_compare_list = set(self.compare_list)
+
+        # Reload framework metrics in case it changed
+        framework_state = await self.get_state(GlobalFrameworkState)
+
+        if framework_state.selected_framework_id is not None:
+            # Ensure framework metrics are loaded
+            if not framework_state.framework_metrics:
+                await framework_state.load_framework_metrics()
+            await self.initialize_metrics_from_framework()
+
         await self.import_cart_to_compare()
         await self.fetch_stocks_from_compare()
         # Only fetch historical data if new tickers were added
@@ -444,19 +651,26 @@ class StockComparisonState(rx.State):
     @rx.event
     async def auto_load_from_cart(self):
         """Automatically load compare data from cart on page mount."""
-        if self.has_initialized:
-            return
-
         self.is_loading_data = True
-        self.has_initialized = True
 
         try:
-            await self.import_cart_to_compare()
+            # Load framework if present
+            framework_state = await self.get_state(GlobalFrameworkState)
 
-            # Only fetch data if cart had items
-            if self.compare_list:
-                await self.fetch_stocks_from_compare()
-                await self.fetch_historical_data()
+            if framework_state.selected_framework_id is not None:
+                if not framework_state.framework_metrics:
+                    await framework_state.load_framework_metrics()
+                await self.initialize_metrics_from_framework()
+
+            if not self.has_initialized:
+                await self.import_cart_to_compare()
+
+                # Only fetch data if cart had items
+                if self.compare_list:
+                    await self.fetch_stocks_from_compare()
+                    await self.fetch_historical_data()
+
+                self.has_initialized = True
         finally:
             self.is_loading_data = False
 
@@ -488,7 +702,8 @@ class StockComparisonState(rx.State):
 
                     stats_query = text(
                         "SELECT symbol, roe, roa, ev_ebitda, dividend_yield, "
-                        "gross_margin, net_margin, doe, alpha, beta, pe, pb, eps, ps, rsi14 "
+                        "gross_margin, net_margin, doe, alpha, beta, pe, pb, eps, ps, "
+                        "rsi14 "
                         "FROM tickers.stats_df WHERE symbol = :symbol"
                     )
                     stats_result = await session.execute(
@@ -515,6 +730,9 @@ class StockComparisonState(rx.State):
                             "eps": stats_row["eps"],
                             "ps": stats_row["ps"],
                             "rsi14": stats_row["rsi14"],
+                            # These will be from historical data
+                            "bvps": None,
+                            "dividends": None,
                         }
                         self.stocks = self.stocks + [stock_data]
 
@@ -528,10 +746,9 @@ class StockComparisonState(rx.State):
                             t for t in self.compare_list if t != ticker
                         ]
                         yield rx.toast.error(f"No data found for {ticker}")
-            except Exception as e:
+            except Exception:
                 # Remove from compare list on error
                 self.compare_list = [t for t in self.compare_list if t != ticker]
-                print(f"Error fetching data for {ticker}: {e}")
                 yield rx.toast.error(f"Error loading {ticker}")
         finally:
             self.is_loading_data = False
@@ -580,7 +797,6 @@ class StockComparisonState(rx.State):
 
                 # Check if data is cached
                 if cache_key in self._data_cache:
-                    print(f"Using cached data for {ticker} ({self.time_period})")
                     ticker_data[ticker] = self._data_cache[cache_key]
                 else:
                     tickers_to_fetch.append(ticker)
@@ -596,12 +812,10 @@ class StockComparisonState(rx.State):
                 # Process results and cache them
                 for ticker, result in zip(tickers_to_fetch, results):
                     if isinstance(result, Exception):
-                        print(f"Error fetching historical data for {ticker}: {result}")
                         ticker_data[ticker] = None
                         continue
 
                     if isinstance(result, dict) and "error" in result:
-                        print(f"API error for {ticker}: {result['error']}")
                         ticker_data[ticker] = None
                         continue
 
@@ -655,21 +869,9 @@ class StockComparisonState(rx.State):
                         df["period"] = df["Year"].astype(str)
                         # Sort by Year descending
                         df = df.sort_values(by="Year", ascending=False)
-
-                    # Limit to last N periods for this ticker
                     df = df.head(max_periods)
-
-                    # Map API metric names to our metric keys
-                    metric_mapping = {
-                        "ROE": "roe",
-                        "ROA": "roa",
-                        "P/E": "pe",
-                        "P/B": "pb",
-                        "P/S": "ps",
-                        "EV/EBITDA": "ev_ebitda",
-                        "Gross Margin": "gross_margin",
-                        "Net Margin": "net_margin",
-                    }
+                    # Use the comprehensive framework mapping
+                    metric_mapping = self.framework_metric_name_to_db_column
 
                     for _, period_row in df.iterrows():
                         period = period_row["period"]
@@ -740,14 +942,46 @@ class StockComparisonState(rx.State):
 
                 historical_data_temp[metric] = metric_data
 
-            self.historical_data = historical_data_temp
+            # Force state update by creating a new dict reference
+            self.historical_data = dict(historical_data_temp)
 
-        except Exception as e:
-            print(f"Error fetching historical data: {e}")
+        except Exception:
             self.historical_data = {metric: [] for metric in self.selected_metrics}
 
         finally:
             self.is_loading_historical = False
+
+    @rx.event
+    async def initialize_metrics_from_framework(self):
+        """Initialize selected metrics from framework."""
+        framework_state = await self.get_state(GlobalFrameworkState)
+
+        if not framework_state.has_selected_framework:
+            # No framework - reset to show all metrics
+            self.framework_filtered_metrics = {}
+            return
+
+        # Collect all metrics from framework and map to DB columns
+        framework_db_metrics = []
+        filtered_by_category = {}
+
+        for category, framework_metrics in framework_state.framework_metrics.items():
+            category_db_metrics = []
+            for metric_name in framework_metrics:
+                db_column = self.framework_metric_name_to_db_column.get(metric_name)
+                if db_column and db_column in self.all_available_metrics:
+                    framework_db_metrics.append(db_column)
+                    category_db_metrics.append(db_column)
+
+            if category_db_metrics:
+                filtered_by_category[category] = category_db_metrics
+
+        # Store filtered metrics for UI
+        self.framework_filtered_metrics = filtered_by_category
+
+        # Update selected metrics if we found any
+        if framework_db_metrics:
+            self.selected_metrics = framework_db_metrics
 
     @rx.event
     async def toggle_and_load_graphs(self):
