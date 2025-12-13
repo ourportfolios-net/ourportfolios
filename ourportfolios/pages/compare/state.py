@@ -17,8 +17,8 @@ from ourportfolios.preprocessing.formatters import (
     format_integer,
     format_currency_vnd,
 )
-from ..utils.database.database import get_company_session
-from .framework_state import GlobalFrameworkState
+from ...utils.database.database import get_company_session
+from ...state.framework_state import GlobalFrameworkState
 
 
 class StockComparisonState(rx.State):
@@ -612,7 +612,7 @@ class StockComparisonState(rx.State):
     async def import_cart_to_compare(self):
         """Import tickers from cart to comparison list."""
         # Import here to avoid circular dependency
-        from ..state import CartState
+        from ...state import CartState
 
         cart_state = await self.get_state(CartState)
         tickers = [item["name"] for item in cart_state.cart_items]

@@ -5,7 +5,7 @@ from .cart_state import CartState
 from .search_state import SearchBarState
 from .ticker_board_state import TickerBoardState
 from .financial_statement_state import FinancialStatementState
-from .comparison_state import StockComparisonState
+from ..pages.compare.state import StockComparisonState
 
 __all__ = [
     "GlobalFrameworkState",

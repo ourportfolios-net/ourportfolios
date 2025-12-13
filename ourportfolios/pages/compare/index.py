@@ -14,7 +14,7 @@ from .empty_state import comparison_empty_state
 
 
 def comparison_table_section() -> rx.Component:
-    """Table view of comparison data (rotated 90 degrees - horizontal tickers, vertical metrics)"""
+    """Table view of comparison data"""
     return rx.hstack(
         # Fixed ticker symbols column on the left
         rx.box(
