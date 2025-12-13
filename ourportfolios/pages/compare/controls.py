@@ -155,9 +155,7 @@ def metric_category_card(category: str) -> rx.Component:
                     StockComparisonState.available_metrics_by_category[category],
                     lambda metric: rx.hstack(
                         rx.checkbox(
-                            checked=StockComparisonState.selected_metrics.contains(
-                                metric
-                            ),
+                            checked=StockComparisonState.metric_selection_state[metric],
                             on_change=lambda: StockComparisonState.toggle_metric(
                                 metric
                             ),

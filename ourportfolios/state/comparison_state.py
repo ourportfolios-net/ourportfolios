@@ -10,6 +10,13 @@ import asyncio
 from ourportfolios.preprocessing.financial_statements import (
     get_transformed_dataframes,
 )
+from ourportfolios.preprocessing.formatters import (
+    format_large_number,
+    format_percentage,
+    format_ratio,
+    format_integer,
+    format_currency_vnd,
+)
 from ..utils.database.database import get_company_session
 from .framework_state import GlobalFrameworkState
 
@@ -20,17 +27,17 @@ class StockComparisonState(rx.State):
     stocks: List[Dict[str, Any]] = []
     compare_list: List[str] = []
     selected_metrics: List[str] = [
-        "eps",
-        "bvps",
-        "dividends",
-        "roe",
-        "gross_margin",
-        "net_margin",
-        "pe",
-        "pb",
-        "ev_ebitda",
-        "doe",
-        "roa",
+        "EPS (VND)",
+        "BVPS (VND)",
+        "Dividends paid",
+        "ROE (%)",
+        "Gross Profit Margin (%)",
+        "Net Profit Margin (%)",
+        "P/E",
+        "P/B",
+        "EV/EBITDA",
+        "Debt/Equity",
+        "ROA (%)",
     ]
 
     # View mode and time period
@@ -53,77 +60,40 @@ class StockComparisonState(rx.State):
 
     @rx.var
     def framework_metric_name_to_db_column(self) -> Dict[str, str]:
-        """Map framework metric names (from database) to internal column identifiers."""
+        """Map framework metric names to actual data column names from categorized_ratios."""
         return {
-            # Per Share Value - match exact names from database
-            "Earnings": "eps",
-            "EPS (VND)": "eps",
-            "Book Value": "bvps",
-            "BVPS (VND)": "bvps",
-            "Net Sales": "net_sales",
-            "Free Cash Flow": "free_cash_flow",
-            "Dividend": "dividends",
-            "Dividends paid": "dividends",
-            "OWNER'S EQUITY(Bn.VND)": "owners_equity",
-            # Profitability - match exact names from database
-            "ROE": "roe",
-            "ROE (%)": "roe",
-            "ROA": "roa",
-            "ROA (%)": "roa",
-            "ROIC": "roic",
-            "ROIC (%)": "roic",
-            "Gross Margin": "gross_margin",
-            "Gross Profit Margin (%)": "gross_margin",
-            "Net Margin": "net_margin",
-            "Net Profit Margin (%)": "net_margin",
-            "EBIT Margin": "ebit_margin",
-            "EBIT Margin (%)": "ebit_margin",
-            "Operating Margin": "operating_margin",
-            "Operating Profit/Loss": "operating_margin",
-            "EBITDA Margin": "ebitda_margin",
-            "Dividend Yield": "dividend_yield",
-            "Alpha": "alpha",
-            # Valuation - match exact names from database
-            "P/E": "pe",
-            "P/B": "pb",
-            "P/S": "ps",
-            "P/Cash Flow": "p_cash_flow",
-            "EV/EBITDA": "ev_ebitda",
-            "Market Capital (Bn. VND)": "market_cap",
-            "Beta": "beta",
-            "RSI (14)": "rsi14",
-            "Outstanding Share (Mil. Shares)": "outstanding_shares",
-            # Leverage & Liquidity - match exact names from database
-            "Debt/Equity": "doe",
-            "(ST+LT borrowings)/Equity": "debt_to_equity_alt",
-            "Financial Leverage": "financial_leverage",
-            "Current Ratio": "current_ratio",
-            "Quick Ratio": "quick_ratio",
-            "Cash Ratio": "cash_ratio",
-            "Interest Coverage": "interest_coverage",
-            "Short-term borrowings (Bn. VND)": "st_borrowings",
-            "Long-term borrowings (Bn. VND)": "lt_borrowings",
-            "EBITDA (Bn. VND)": "ebitda",
-            # Efficiency - match exact names from database
-            "Asset Turnover": "asset_turnover",
-            "Fixed Asset Turnover": "fixed_asset_turnover",
-            "Inventory Turnover": "inventory_turnover",
-            "Days Sales Outstanding": "days_sales_outstanding",
-            "Days Inventory Outstanding": "days_inventory_outstanding",
-            "Days Payable Outstanding": "days_payable_outstanding",
-            "Cash Cycle": "cash_cycle",
-            "Fixed Asset-To-Equity": "fixed_asset_to_equity",
-            "Owners' Equity/Charter Capital": "equity_to_charter_capital",
-            "Dividend Payout %": "dividend_payout",
-            # Growth Rates - match exact names from database
-            "Revenues YoY": "revenue_growth",
-            "Revenue YoY (%)": "revenue_growth",
-            "Earnings YoY": "earnings_growth",
-            "Earnings YoY (%)": "earnings_growth",
-            "Free Cash Flow YoY": "fcf_growth",
-            "FCF YoY (%)": "fcf_growth",
-            "Book Value YoY": "book_value_growth",
-            "Book Value YoY (%)": "book_value_growth",
+            # Per Share Value - framework name -> actual column name in data
+            "Earnings": "EPS (VND)",
+            "Book Value": "BVPS (VND)",
+            "Free Cash Flow": "Free Cash Flow",
+            "Dividend": "Dividends paid",
+            # Profitability
+            "ROE": "ROE (%)",
+            "ROIC": "ROIC (%)",
+            "Net Margin": "Net Profit Margin (%)",
+            "Gross Margin": "Gross Profit Margin (%)",
+            "Operating Margin": "Operating Profit/Loss",
+            "EBITDA Margin": "EBITDA (Bn. VND)",
+            "ROA": "ROA (%)",
+            # Valuation
+            "P/E": "P/E",
+            "P/B": "P/B",
+            "P/S": "P/S",
+            "P/Cash Flow": "P/Cash Flow",
+            "EV/EBITDA": "EV/EBITDA",
+            # Leverage & Liquidity
+            "Debt/Equity": "Debt/Equity",
+            "Current Ratio": "Current Ratio",
+            "Quick Ratio": "Quick Ratio",
+            "Interest Coverage": "Interest Coverage",
+            "Cash Ratio": "Cash Ratio",
+            # Efficiency
+            "Asset Turnover": "Asset Turnover",
+            # Growth Rates
+            "Revenues YoY": "Revenue YoY",
+            "Earnings YoY": "Earnings YoY",
+            "Free Cash Flow YoY": "Free Cash Flow YoY",
+            "Book Value YoY": "Book Value YoY",
         }
 
     @rx.var
@@ -146,67 +116,62 @@ class StockComparisonState(rx.State):
 
     @rx.var
     def all_metrics_by_category(self) -> Dict[str, List[str]]:
-        """All metrics organized by category - comprehensive list from database."""
+        """All metrics organized by category - using actual data column names."""
         return {
             "Per Share Value": [
-                "eps",
-                "bvps",
-                "net_sales",
-                "free_cash_flow",
-                "dividends",
-                "owners_equity",
+                "EPS (VND)",
+                "BVPS (VND)",
+                "Net Sales",
+                "Free Cash Flow",
+                "Dividends paid",
+                "OWNER'S EQUITY(Bn.VND)",
             ],
             "Profitability": [
-                "roe",
-                "roa",
-                "roic",
-                "gross_margin",
-                "net_margin",
-                "ebit_margin",
-                "operating_margin",
-                "dividend_yield",
-                "alpha",
+                "ROE (%)",
+                "ROA (%)",
+                "ROIC (%)",
+                "Gross Profit Margin (%)",
+                "Net Profit Margin (%)",
+                "EBIT Margin (%)",
+                "Operating Profit/Loss",
+                "EBITDA (Bn. VND)",
             ],
             "Valuation": [
-                "market_cap",
-                "pe",
-                "pb",
-                "ps",
-                "p_cash_flow",
-                "ev_ebitda",
-                "beta",
-                "rsi14",
-                "outstanding_shares",
+                "P/E",
+                "P/B",
+                "P/S",
+                "P/Cash Flow",
+                "EV/EBITDA",
+                "Market Capital (Bn. VND)",
+                "Outstanding Share (Mil. Shares)",
             ],
             "Leverage & Liquidity": [
-                "doe",
-                "debt_to_equity_alt",
-                "financial_leverage",
-                "current_ratio",
-                "quick_ratio",
-                "cash_ratio",
-                "interest_coverage",
-                "st_borrowings",
-                "lt_borrowings",
-                "ebitda",
+                "Debt/Equity",
+                "(ST+LT borrowings)/Equity",
+                "Financial Leverage",
+                "Current Ratio",
+                "Quick Ratio",
+                "Cash Ratio",
+                "Interest Coverage",
+                "Short-term borrowings (Bn. VND)",
+                "Long-term borrowings (Bn. VND)",
             ],
             "Efficiency": [
-                "asset_turnover",
-                "fixed_asset_turnover",
-                "inventory_turnover",
-                "days_sales_outstanding",
-                "days_inventory_outstanding",
-                "days_payable_outstanding",
-                "cash_cycle",
-                "fixed_asset_to_equity",
-                "equity_to_charter_capital",
-                "dividend_payout",
+                "Asset Turnover",
+                "Fixed Asset Turnover",
+                "Inventory Turnover",
+                "Days Sales Outstanding",
+                "Days Inventory Outstanding",
+                "Days Payable Outstanding",
+                "Cash Cycle",
+                "Fixed Asset-To-Equity",
+                "Owners' Equity/Charter Capital",
             ],
             "Growth Rate": [
-                "revenue_growth",
-                "earnings_growth",
-                "fcf_growth",
-                "book_value_growth",
+                "Revenue YoY",
+                "Earnings YoY",
+                "Free Cash Flow YoY",
+                "Book Value YoY",
             ],
         }
 
@@ -243,63 +208,66 @@ class StockComparisonState(rx.State):
         return state
 
     @rx.var
+    def metric_selection_state(self) -> Dict[str, bool]:
+        """Get selection state for each metric."""
+        return {
+            metric: metric in self.selected_metrics
+            for metric in self.all_available_metrics
+        }
+
+    @rx.var
     def metric_labels(self) -> Dict[str, str]:
-        """Get human-readable labels for metrics."""
+        """Get human-readable labels for metrics - using actual column names as keys."""
         return {
             # Per Share Value
-            "eps": "EPS",
-            "bvps": "BVPS",
-            "net_sales": "Net Sales",
-            "free_cash_flow": "Free Cash Flow",
-            "dividends": "Dividends",
-            "owners_equity": "Owner's Equity",
+            "EPS (VND)": "EPS",
+            "BVPS (VND)": "BVPS",
+            "Net Sales": "Net Sales",
+            "Free Cash Flow": "Free Cash Flow",
+            "Dividends paid": "Dividends",
+            "OWNER'S EQUITY(Bn.VND)": "Owner's Equity",
             # Profitability
-            "roe": "ROE (%)",
-            "roa": "ROA (%)",
-            "roic": "ROIC (%)",
-            "gross_margin": "Gross Margin (%)",
-            "net_margin": "Net Margin (%)",
-            "ebit_margin": "EBIT Margin (%)",
-            "operating_margin": "Operating Margin",
-            "dividend_yield": "Dividend Yield",
-            "alpha": "Alpha",
+            "ROE (%)": "ROE",
+            "ROA (%)": "ROA",
+            "ROIC (%)": "ROIC",
+            "Gross Profit Margin (%)": "Gross Margin",
+            "Net Profit Margin (%)": "Net Margin",
+            "EBIT Margin (%)": "EBIT Margin",
+            "Operating Profit/Loss": "Operating Margin",
+            "EBITDA (Bn. VND)": "EBITDA",
             # Valuation
-            "market_cap": "Market Cap",
-            "pe": "P/E",
-            "pb": "P/B",
-            "ps": "P/S",
-            "p_cash_flow": "P/Cash Flow",
-            "ev_ebitda": "EV/EBITDA",
-            "beta": "Beta",
-            "rsi14": "RSI (14)",
-            "outstanding_shares": "Outstanding Shares",
+            "Market Capital (Bn. VND)": "Market Cap",
+            "P/E": "P/E",
+            "P/B": "P/B",
+            "P/S": "P/S",
+            "P/Cash Flow": "P/Cash Flow",
+            "EV/EBITDA": "EV/EBITDA",
+            "Outstanding Share (Mil. Shares)": "Outstanding Shares",
             # Leverage & Liquidity
-            "doe": "Debt/Equity",
-            "debt_to_equity_alt": "(ST+LT borrowings)/Equity",
-            "financial_leverage": "Financial Leverage",
-            "current_ratio": "Current Ratio",
-            "quick_ratio": "Quick Ratio",
-            "cash_ratio": "Cash Ratio",
-            "interest_coverage": "Interest Coverage",
-            "st_borrowings": "Short-term Borrowings",
-            "lt_borrowings": "Long-term Borrowings",
-            "ebitda": "EBITDA",
+            "Debt/Equity": "Debt/Equity",
+            "(ST+LT borrowings)/Equity": "(ST+LT borrowings)/Equity",
+            "Financial Leverage": "Financial Leverage",
+            "Current Ratio": "Current Ratio",
+            "Quick Ratio": "Quick Ratio",
+            "Cash Ratio": "Cash Ratio",
+            "Interest Coverage": "Interest Coverage",
+            "Short-term borrowings (Bn. VND)": "Short-term Borrowings",
+            "Long-term borrowings (Bn. VND)": "Long-term Borrowings",
             # Efficiency
-            "asset_turnover": "Asset Turnover",
-            "fixed_asset_turnover": "Fixed Asset Turnover",
-            "inventory_turnover": "Inventory Turnover",
-            "days_sales_outstanding": "Days Sales Outstanding",
-            "days_inventory_outstanding": "Days Inventory Outstanding",
-            "days_payable_outstanding": "Days Payable Outstanding",
-            "cash_cycle": "Cash Cycle",
-            "fixed_asset_to_equity": "Fixed Asset-To-Equity",
-            "equity_to_charter_capital": "Equity/Charter Capital",
-            "dividend_payout": "Dividend Payout %",
+            "Asset Turnover": "Asset Turnover",
+            "Fixed Asset Turnover": "Fixed Asset Turnover",
+            "Inventory Turnover": "Inventory Turnover",
+            "Days Sales Outstanding": "Days Sales Outstanding",
+            "Days Inventory Outstanding": "Days Inventory Outstanding",
+            "Days Payable Outstanding": "Days Payable Outstanding",
+            "Cash Cycle": "Cash Cycle",
+            "Fixed Asset-To-Equity": "Fixed Asset-To-Equity",
+            "Owners' Equity/Charter Capital": "Equity/Charter Capital",
             # Growth Rates
-            "revenue_growth": "Revenue YoY (%)",
-            "earnings_growth": "Earnings YoY (%)",
-            "fcf_growth": "FCF YoY (%)",
-            "book_value_growth": "Book Value YoY (%)",
+            "Revenue YoY": "Revenue YoY",
+            "Earnings YoY": "Earnings YoY",
+            "Free Cash Flow YoY": "FCF YoY",
+            "Book Value YoY": "Book Value YoY",
         }
 
     @rx.var(cache=True)
@@ -372,7 +340,6 @@ class StockComparisonState(rx.State):
         """Pre-format all stock values for display using latest period data."""
         formatted = []
 
-        # Get the latest period data for each metric
         latest_values_by_ticker = defaultdict(dict)
         for metric_key, metric_data in self.historical_data.items():
             if metric_data and len(metric_data) > 0:
@@ -388,19 +355,36 @@ class StockComparisonState(rx.State):
             formatted_stock = {}
             ticker = stock.get("symbol", "")
 
-            for key, value in stock.items():
-                if key in self.selected_metrics or key == "market_cap":
-                    # Use latest historical data if available, otherwise fall back to static data
-                    if (
-                        ticker in latest_values_by_ticker
-                        and key in latest_values_by_ticker[ticker]
-                    ):
-                        formatted_value = latest_values_by_ticker[ticker][key]
-                        formatted_stock[key] = self._format_value(key, formatted_value)
-                    else:
-                        formatted_stock[key] = self._format_value(key, value)
+            # Always include symbol and industry
+            formatted_stock["symbol"] = ticker
+            formatted_stock["industry"] = stock.get("industry", "Unknown")
+
+            # Add market_cap if available
+            if "market_cap" in stock:
+                formatted_stock["market_cap"] = self._format_value(
+                    "market_cap", stock["market_cap"]
+                )
+
+            # Add all selected metrics
+            for metric_key in self.selected_metrics:
+                # Use latest historical data if available
+                if (
+                    ticker in latest_values_by_ticker
+                    and metric_key in latest_values_by_ticker[ticker]
+                ):
+                    formatted_value = latest_values_by_ticker[ticker][metric_key]
+                    formatted_stock[metric_key] = self._format_value(
+                        metric_key, formatted_value
+                    )
+                # Otherwise fall back to static data if available
+                elif metric_key in stock:
+                    formatted_stock[metric_key] = self._format_value(
+                        metric_key, stock[metric_key]
+                    )
+                # If metric not available, show N/A
                 else:
-                    formatted_stock[key] = value
+                    formatted_stock[metric_key] = "N/A"
+
             formatted.append(formatted_stock)
         return formatted
 
@@ -408,18 +392,45 @@ class StockComparisonState(rx.State):
     def industry_best_performers(self) -> Dict[str, Dict[str, str]]:
         """Calculate best performer for each metric within each industry using latest period data."""
         industry_best = {}
+        # Metrics where higher is better
         higher_better = [
-            "roe",
-            "roa",
-            "dividend_yield",
-            "gross_margin",
-            "net_margin",
-            "alpha",
-            "eps",
-            "bvps",
-            "dividends",
+            "ROE (%)",
+            "ROA (%)",
+            "ROIC (%)",
+            "Gross Profit Margin (%)",
+            "Net Profit Margin (%)",
+            "EBIT Margin (%)",
+            "EPS (VND)",
+            "BVPS (VND)",
+            "Dividends paid",
+            "Free Cash Flow",
+            "Current Ratio",
+            "Quick Ratio",
+            "Cash Ratio",
+            "Interest Coverage",
+            "Asset Turnover",
+            "Fixed Asset Turnover",
+            "Inventory Turnover",
+            "Revenue YoY",
+            "Earnings YoY",
+            "Free Cash Flow YoY",
+            "Book Value YoY",
         ]
-        lower_better = ["pe", "pb", "ps", "ev_ebitda", "beta", "doe"]
+        # Metrics where lower is better
+        lower_better = [
+            "P/E",
+            "P/B",
+            "P/S",
+            "P/Cash Flow",
+            "EV/EBITDA",
+            "Debt/Equity",
+            "(ST+LT borrowings)/Equity",
+            "Financial Leverage",
+            "Days Sales Outstanding",
+            "Days Inventory Outstanding",
+            "Days Payable Outstanding",
+            "Cash Cycle",
+        ]
 
         # Get the latest period data for each metric
         latest_values_by_ticker = defaultdict(dict)
@@ -474,37 +485,81 @@ class StockComparisonState(rx.State):
         return industry_best
 
     def _format_value(self, key: str, value: Any) -> str:
-        """Format values for display."""
+        """Format values for display using formatting utilities."""
         if value is None or (isinstance(value, float) and pd.isna(value)):
             return "N/A"
 
-        if key == "market_cap":
-            # Format market cap with B VND suffix for table display
-            try:
-                return f"{float(value):.2f}B VND"
-            except (ValueError, TypeError):
-                return "N/A"
-        elif key in [
-            "roe",
-            "roa",
-            "dividend_yield",
-            "gross_margin",
-            "net_margin",
-            "doe",
+        # Percentage metrics
+        if key in [
+            "ROE (%)",
+            "ROA (%)",
+            "ROIC (%)",
+            "Gross Profit Margin (%)",
+            "Net Profit Margin (%)",
+            "EBIT Margin (%)",
+            "Revenue YoY",
+            "Earnings YoY",
+            "Free Cash Flow YoY",
+            "Book Value YoY",
         ]:
-            return f"{value:.1f}%"
-        elif key in ["pe", "pb", "ps", "ev_ebitda", "alpha", "beta"]:
-            return f"{value:.2f}"
-        elif key in ["eps", "bvps", "dividends"]:
-            # Format as currency
-            try:
-                return f"{float(value):,.0f}"
-            except (ValueError, TypeError):
-                return "N/A"
-        elif key == "rsi14":
-            return f"{value:.0f}"
+            return format_percentage(value, decimals=2)
+
+        # Operating Profit/Loss and EBITDA are in billions, need B suffix
+        elif key in ["Operating Profit/Loss", "EBITDA (Bn. VND)"]:
+            return format_large_number(value, decimals=2)
+
+        # Ratio metrics (2 decimal places)
+        elif key in [
+            "P/E",
+            "P/B",
+            "P/S",
+            "P/Cash Flow",
+            "EV/EBITDA",
+            "Debt/Equity",
+            "(ST+LT borrowings)/Equity",
+            "Financial Leverage",
+            "Current Ratio",
+            "Quick Ratio",
+            "Cash Ratio",
+            "Interest Coverage",
+            "Asset Turnover",
+            "Fixed Asset Turnover",
+            "Inventory Turnover",
+            "Fixed Asset-To-Equity",
+            "Owners' Equity/Charter Capital",
+        ]:
+            return format_ratio(value, decimals=2)
+
+        # Large number currency metrics (VND) - use K/M/B suffixes
+        elif key in [
+            "EPS (VND)",
+            "BVPS (VND)",
+            "Dividends paid",
+            "Net Sales",
+            "Free Cash Flow",
+            "OWNER'S EQUITY(Bn.VND)",
+            "Market Capital (Bn. VND)",
+            "Short-term borrowings (Bn. VND)",
+            "Long-term borrowings (Bn. VND)",
+        ]:
+            return format_currency_vnd(value, use_suffix=True)
+
+        # Million shares (already in millions)
+        elif key == "Outstanding Share (Mil. Shares)":
+            return format_ratio(value, decimals=2)
+
+        # Days metrics (integer)
+        elif key in [
+            "Days Sales Outstanding",
+            "Days Inventory Outstanding",
+            "Days Payable Outstanding",
+            "Cash Cycle",
+        ]:
+            return format_integer(value)
+
+        # Default: try to format as number with 2 decimals
         else:
-            return str(value)
+            return format_ratio(value, decimals=2)
 
     @rx.event
     def toggle_metric(self, metric: str):
@@ -651,6 +706,7 @@ class StockComparisonState(rx.State):
     @rx.event
     async def auto_load_from_cart(self):
         """Automatically load compare data from cart on page mount."""
+
         self.is_loading_data = True
 
         try:
@@ -662,15 +718,15 @@ class StockComparisonState(rx.State):
                     await framework_state.load_framework_metrics()
                 await self.initialize_metrics_from_framework()
 
-            if not self.has_initialized:
-                await self.import_cart_to_compare()
+            # Always reload from cart to ensure fresh data
+            await self.import_cart_to_compare()
 
-                # Only fetch data if cart had items
-                if self.compare_list:
-                    await self.fetch_stocks_from_compare()
-                    await self.fetch_historical_data()
+            # Only fetch data if cart had items
+            if self.compare_list:
+                await self.fetch_stocks_from_compare()
+                await self.fetch_historical_data()
 
-                self.has_initialized = True
+            self.has_initialized = True
         finally:
             self.is_loading_data = False
 
@@ -779,6 +835,7 @@ class StockComparisonState(rx.State):
     @rx.event
     async def fetch_historical_data(self):
         """Fetch historical financial data for all stocks in compare list."""
+        # Fetch historical data for tickers in `compare_list`
         if not self.compare_list:
             return
 
@@ -870,24 +927,26 @@ class StockComparisonState(rx.State):
                         # Sort by Year descending
                         df = df.sort_values(by="Year", ascending=False)
                     df = df.head(max_periods)
-                    # Use the comprehensive framework mapping
-                    metric_mapping = self.framework_metric_name_to_db_column
+
+                    # Extract all available columns from this category's data
+                    available_columns = [
+                        col
+                        for col in df.columns
+                        if col not in ["Year", "Quarter", "period"]
+                    ]
 
                     for _, period_row in df.iterrows():
                         period = period_row["period"]
                         if period not in all_periods:
                             all_periods.append(period)
 
-                        # Extract metrics for this period
-                        for api_name, metric_key in metric_mapping.items():
-                            if (
-                                api_name in df.columns
-                                and metric_key in self.selected_metrics
-                            ):
-                                value = period_row[api_name]
+                        # Extract metrics for this period - check if column is in selected_metrics
+                        for column_name in available_columns:
+                            if column_name in self.selected_metrics:
+                                value = period_row[column_name]
                                 if pd.notna(value):
                                     metrics_by_ticker_period[ticker][period][
-                                        metric_key
+                                        column_name
                                     ] = float(value)
 
             # Now format the data for recharts
@@ -946,6 +1005,7 @@ class StockComparisonState(rx.State):
             self.historical_data = dict(historical_data_temp)
 
         except Exception:
+            # If an error occurs, reset historical_data for the selected metrics
             self.historical_data = {metric: [] for metric in self.selected_metrics}
 
         finally:
@@ -961,27 +1021,31 @@ class StockComparisonState(rx.State):
             self.framework_filtered_metrics = {}
             return
 
-        # Collect all metrics from framework and map to DB columns
-        framework_db_metrics = []
+        # Map framework metric names to actual data column names
+        framework_to_data_mapping = self.framework_metric_name_to_db_column
+
+        # Collect metrics by category using the actual column names
         filtered_by_category = {}
 
         for category, framework_metrics in framework_state.framework_metrics.items():
-            category_db_metrics = []
+            category_data_columns = []
             for metric_name in framework_metrics:
-                db_column = self.framework_metric_name_to_db_column.get(metric_name)
-                if db_column and db_column in self.all_available_metrics:
-                    framework_db_metrics.append(db_column)
-                    category_db_metrics.append(db_column)
+                # Get the actual data column name
+                data_column = framework_to_data_mapping.get(metric_name, metric_name)
+                category_data_columns.append(data_column)
 
-            if category_db_metrics:
-                filtered_by_category[category] = category_db_metrics
+            if category_data_columns:
+                filtered_by_category[category] = category_data_columns
 
         # Store filtered metrics for UI
         self.framework_filtered_metrics = filtered_by_category
 
-        # Update selected metrics if we found any
-        if framework_db_metrics:
-            self.selected_metrics = framework_db_metrics
+        # Update selected metrics to use actual data column names
+        if filtered_by_category:
+            all_framework_columns = []
+            for columns in filtered_by_category.values():
+                all_framework_columns.extend(columns)
+            self.selected_metrics = all_framework_columns
 
     @rx.event
     async def toggle_and_load_graphs(self):
