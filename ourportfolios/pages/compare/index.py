@@ -1,4 +1,4 @@
-"""Stock comparison page - compare multiple stocks side by side."""
+"""Simplified stock comparison page - compare multiple stocks side by side."""
 
 import reflex as rx
 
@@ -8,23 +8,53 @@ from ...components.loading import loading_screen
 from ...state import StockComparisonState
 
 from .controls import comparison_controls
-from .comparison_cards import stock_metric_cell
-from .skeleton import loading_comparison_skeleton
-from .empty_state import comparison_empty_state
+
+
+def stock_metric_cell(stock: dict, metric_key: str, industry: str) -> rx.Component:
+    """Single metric cell with highlighting for best performer."""
+    ticker = stock["symbol"].to(str)
+
+    return rx.box(
+        rx.text(
+            stock.get(metric_key, "N/A"),
+            size="2",
+            weight="medium",
+            color=rx.cond(
+                StockComparisonState.industry_best_performers[industry][metric_key]
+                == ticker,
+                rx.color("green", 11),
+                rx.color("gray", 11),
+            ),
+        ),
+        width="12em",
+        min_width="12em",
+        display="flex",
+        align_items="center",
+        justify_content="center",
+        height="100%",
+        padding_left="0.3em",
+        padding_right="0.3em",
+        border_right=f"1px solid {rx.color('gray', 4)}",
+        style={
+            "background_color": rx.cond(
+                StockComparisonState.industry_best_performers[industry][metric_key]
+                == ticker,
+                rx.color("green", 2),
+                "transparent",
+            ),
+        },
+    )
 
 
 def comparison_table_section() -> rx.Component:
-    """Table view of comparison data (rotated 90 degrees - horizontal tickers, vertical metrics)"""
+    """Table view of comparison data."""
     return rx.hstack(
-        # Fixed ticker symbols column on the left
+        # Fixed ticker symbols column
         rx.box(
             rx.vstack(
                 # Empty space for metric labels header
-                rx.box(
-                    height="3.5em",
-                    width="15em",
-                ),
-                # Scrollable stocks area (vertical only)
+                rx.box(height="3.5em", width="15em"),
+                # Scrollable stocks area
                 rx.box(
                     rx.foreach(
                         StockComparisonState.grouped_stocks.items(),
@@ -89,9 +119,7 @@ def comparison_table_section() -> rx.Component:
                                         "transition": "all 0.2s ease",
                                         "marginLeft": "0.6em",
                                     },
-                                    _hover={
-                                        "marginLeft": "0",
-                                    },
+                                    _hover={"marginLeft": "0"},
                                 ),
                             ),
                             spacing="2",
@@ -108,10 +136,10 @@ def comparison_table_section() -> rx.Component:
             width="15em",
             flex_shrink="0",
         ),
-        # Single scroll area for all metrics (horizontal + vertical)
+        # Scrollable metrics area
         rx.scroll_area(
             rx.vstack(
-                # Metric labels at the top
+                # Metric labels header
                 rx.card(
                     rx.hstack(
                         rx.foreach(
@@ -142,7 +170,7 @@ def comparison_table_section() -> rx.Component:
                     height="3.5em",
                     style={"flex_shrink": "0"},
                 ),
-                # All industries and stocks
+                # All stocks with metrics
                 rx.foreach(
                     StockComparisonState.grouped_stocks.items(),
                     lambda item: rx.vstack(
@@ -184,19 +212,54 @@ def comparison_table_section() -> rx.Component:
     )
 
 
+def loading_skeleton() -> rx.Component:
+    """Loading skeleton while data is being fetched."""
+    return rx.vstack(
+        rx.skeleton(height="3em", width="100%"),
+        rx.skeleton(height="20em", width="100%"),
+        spacing="4",
+        width="100%",
+    )
+
+
+def empty_state() -> rx.Component:
+    """Empty state when no stocks are selected."""
+    return rx.center(
+        rx.vstack(
+            rx.icon("inbox", size=48, color=rx.color("gray", 8)),
+            rx.heading("No stocks to compare", size="6"),
+            rx.text(
+                "Add stocks from the search bar or import from your cart",
+                size="3",
+                color=rx.color("gray", 10),
+            ),
+            rx.hstack(
+                rx.button(
+                    rx.icon("import", size=16),
+                    "Import from Cart",
+                    on_click=StockComparisonState.import_and_fetch_compare,
+                    size="3",
+                    variant="soft",
+                ),
+                spacing="3",
+            ),
+            spacing="4",
+            align="center",
+        ),
+        height="60vh",
+    )
+
+
 def comparison_section() -> rx.Component:
-    """Main comparison section with industry-grouped layout"""
+    """Main comparison section."""
     return rx.cond(
         StockComparisonState.is_loading_data,
-        # Show skeleton while loading
-        loading_comparison_skeleton(),
+        loading_skeleton(),
         rx.cond(
-            StockComparisonState.compare_list,
-            # Show comparison table when data is loaded
+            StockComparisonState.compare_list.length() > 0,
             rx.box(
                 rx.vstack(
                     comparison_controls(),
-                    # Table view with inline graphs
                     comparison_table_section(),
                     spacing="0",
                     width="100%",
@@ -210,15 +273,14 @@ def comparison_section() -> rx.Component:
                     "padding_right": "1.5em",
                 },
             ),
-            # Show empty state when no data
-            comparison_empty_state(),
+            empty_state(),
         ),
     )
 
 
 @rx.page(route="/analyze/compare", on_load=StockComparisonState.auto_load_from_cart)
 def index() -> rx.Component:
-    """Main page component"""
+    """Main page component."""
     return rx.fragment(
         loading_screen(),
         navbar(),

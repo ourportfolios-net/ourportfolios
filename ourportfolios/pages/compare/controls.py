@@ -1,4 +1,4 @@
-"""Metric selector and comparison controls."""
+"""Simplified metric selector and comparison controls."""
 
 import reflex as rx
 
@@ -64,13 +64,7 @@ def comparison_search_suggestion(ticker_value: dict) -> rx.Component:
     return rx.box(
         rx.hstack(
             rx.vstack(
-                # ticker tag
-                rx.text(
-                    ticker,
-                    size="3",
-                    weight="medium",
-                ),
-                # industry tag
+                rx.text(ticker, size="3", weight="medium"),
                 rx.badge(
                     industry,
                     size="1",
@@ -83,7 +77,6 @@ def comparison_search_suggestion(ticker_value: dict) -> rx.Component:
                 align="start",
             ),
             rx.spacer(),
-            # Add button
             rx.button(
                 rx.icon("plus", size=16),
                 on_click=StockComparisonState.add_ticker_to_compare(ticker),
@@ -101,37 +94,11 @@ def comparison_search_suggestion(ticker_value: dict) -> rx.Component:
     )
 
 
-def view_mode_toggle() -> rx.Component:
-    """Button to toggle between table and graph view"""
-    return rx.button(
-        rx.hstack(
-            rx.cond(
-                StockComparisonState.view_mode == "table",
-                rx.icon("line_chart", size=16),
-                rx.icon("table", size=16),
-            ),
-            rx.text(
-                rx.cond(
-                    StockComparisonState.view_mode == "table",
-                    "Show Graphs",
-                    "Show Table",
-                ),
-                size="2",
-            ),
-            spacing="2",
-        ),
-        on_click=StockComparisonState.toggle_and_load_graphs,
-        size="2",
-        variant="soft",
-        loading=StockComparisonState.is_loading_historical,
-    )
-
-
 def metric_category_card(category: str) -> rx.Component:
-    """Render a card for a metric category with checkbox to toggle all"""
+    """Render a card for a metric category with checkbox to toggle all."""
     return rx.card(
         rx.vstack(
-            # Category header with checkbox to toggle all
+            # Category header with checkbox
             rx.hstack(
                 rx.text(
                     category,
@@ -149,7 +116,7 @@ def metric_category_card(category: str) -> rx.Component:
                 width="100%",
                 justify="between",
             ),
-            # Individual metrics in 2-3 column grid
+            # Individual metrics
             rx.box(
                 rx.foreach(
                     StockComparisonState.available_metrics_by_category[category],
@@ -192,13 +159,8 @@ def metric_category_card(category: str) -> rx.Component:
     )
 
 
-def market_cap_metric() -> rx.Component:
-    """Market Cap is now part of Valuation category, no longer needed separately"""
-    return rx.fragment()
-
-
 def settings_dialog() -> rx.Component:
-    """Dialog component for all settings (metrics + time period + import)"""
+    """Dialog component for all settings (metrics + time period + import)."""
     return rx.dialog.root(
         rx.dialog.trigger(
             rx.button(
@@ -209,7 +171,7 @@ def settings_dialog() -> rx.Component:
         ),
         rx.dialog.content(
             rx.vstack(
-                # Header with Settings title and close button
+                # Header
                 rx.hstack(
                     rx.heading("Settings", size="6", weight="bold"),
                     rx.spacer(),
@@ -220,9 +182,7 @@ def settings_dialog() -> rx.Component:
                             style={
                                 "cursor": "pointer",
                                 "color": rx.color("violet", 9),
-                                "_hover": {
-                                    "color": rx.color("violet", 10),
-                                },
+                                "_hover": {"color": rx.color("violet", 10)},
                             },
                         )
                     ),
@@ -230,7 +190,7 @@ def settings_dialog() -> rx.Component:
                     align="center",
                     spacing="3",
                 ),
-                # Framework and Import/Time period controls
+                # Framework and controls
                 rx.hstack(
                     rx.cond(
                         GlobalFrameworkState.has_selected_framework,
@@ -314,13 +274,13 @@ def settings_dialog() -> rx.Component:
                     align="center",
                     spacing="3",
                 ),
-                rx.box(height="1.5em"),  # Spacer to act like divider
+                rx.box(height="1.5em"),
                 # Scrollable metrics section
                 rx.scroll_area(
                     rx.vstack(
                         rx.box(
                             rx.foreach(
-                                StockComparisonState.visible_categories,
+                                StockComparisonState.available_metrics_by_category.keys(),
                                 metric_category_card,
                             ),
                             display="grid",
@@ -335,7 +295,7 @@ def settings_dialog() -> rx.Component:
                     scrollbars="vertical",
                     style={"height": "50vh"},
                 ),
-                # Action buttons at bottom
+                # Action buttons
                 rx.hstack(
                     rx.spacer(),
                     rx.button(
@@ -363,10 +323,9 @@ def settings_dialog() -> rx.Component:
 
 
 def comparison_controls() -> rx.Component:
-    """Controls section with search bar and settings"""
+    """Controls section with search bar and settings."""
     return rx.hstack(
         rx.spacer(),
-        # Search bar and settings on the right
         rx.hstack(
             comparison_search_bar(),
             settings_dialog(),
