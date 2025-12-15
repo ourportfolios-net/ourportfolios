@@ -1,12 +1,14 @@
 """Comparison cards and controls components."""
 
 import reflex as rx
-from typing import List, Dict, Any
+from typing import Dict, Any
 
 from ...state import StockComparisonState
 
 
-def stock_metric_cell(stock: Dict[str, Any], metric_key: str, industry: str) -> rx.Component:
+def stock_metric_cell(
+    stock: Dict[str, Any], metric_key: str, industry: str
+) -> rx.Component:
     """Create a single metric cell with value and graph for one stock (horizontal layout)"""
     return rx.hstack(
         # Value
@@ -37,7 +39,10 @@ def stock_metric_cell(stock: Dict[str, Any], metric_key: str, industry: str) -> 
         # Graph
         rx.box(
             rx.cond(
-                StockComparisonState.industry_metric_data_map[industry][metric_key].length() > 0,
+                StockComparisonState.industry_metric_data_map[industry][
+                    metric_key
+                ].length()
+                > 0,
                 rx.recharts.area_chart(
                     rx.recharts.area(
                         data_key=stock["symbol"],
@@ -57,7 +62,9 @@ def stock_metric_cell(stock: Dict[str, Any], metric_key: str, industry: str) -> 
                         },
                         wrapper_style={"zIndex": "1000"},
                     ),
-                    data=StockComparisonState.industry_metric_data_map[industry][metric_key],
+                    data=StockComparisonState.industry_metric_data_map[industry][
+                        metric_key
+                    ],
                     width="100%",
                     height=56,
                     margin={"top": 0, "right": 0, "left": 0, "bottom": 0},

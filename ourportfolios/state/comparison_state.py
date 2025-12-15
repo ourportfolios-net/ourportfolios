@@ -41,6 +41,7 @@ class StockComparisonState(rx.State):
     # View configuration
     view_mode: str = "table"  # "table" or "graph"
     time_period: str = "quarter"  # "quarter" or "year"
+    show_graphs: bool = True  # Toggle inline sparklines on/off
 
     # Loading states
     is_loading_data: bool = False
@@ -49,6 +50,21 @@ class StockComparisonState(rx.State):
 
     # Cache for API data
     _data_cache: Dict[str, Dict[str, Any]] = {}
+
+    @rx.var(cache=True)
+    def compare_list_length(self) -> int:
+        """Get the length of compare_list."""
+        return len(self.compare_list)
+
+    @rx.var(cache=True)
+    def selected_metrics_length(self) -> int:
+        """Get the length of selected_metrics."""
+        return len(self.selected_metrics)
+
+    @rx.var(cache=True)
+    def get_metric_data(self) -> Dict[str, List[Dict[str, Any]]]:
+        """Get historical data for all metrics."""
+        return self.historical_data
 
     @rx.var
     def available_metrics_by_category(self) -> Dict[str, List[str]]:
@@ -183,6 +199,28 @@ class StockComparisonState(rx.State):
                     industry_best[industry][metric] = best_ticker
 
         return industry_best
+
+    @rx.var
+    def industry_metric_data_map(self) -> Dict[str, Dict[str, List[Dict[str, Any]]]]:
+        """Get nested dictionary: industry -> metric -> data for inline graphs."""
+        result = {}
+
+        for industry, stocks in self.grouped_stocks.items():
+            industry_tickers = [stock.get("symbol", "") for stock in stocks]
+            result[industry] = {}
+
+            for metric_key in self.selected_metrics:
+                metric_data = self.historical_data.get(metric_key, [])
+                filtered_data = []
+
+                for period_data in metric_data:
+                    has_data = any(ticker in period_data for ticker in industry_tickers)
+                    if has_data:
+                        filtered_data.append(period_data)
+
+                result[industry][metric_key] = filtered_data
+
+        return result
 
     def _get_latest_values_by_ticker(self) -> Dict[str, Dict[str, Any]]:
         """Get latest period values for each ticker and metric."""
@@ -569,6 +607,7 @@ class StockComparisonState(rx.State):
             if self.compare_list:
                 # Fetch data for cart items
                 await self.fetch_stocks_from_compare()
+                # Always fetch historical data for inline graphs
                 await self.fetch_historical_data()
 
             # Apply framework filtering after data is loaded
@@ -627,6 +666,11 @@ class StockComparisonState(rx.State):
     def toggle_view_mode(self):
         """Toggle between table and graph view."""
         self.view_mode = "graph" if self.view_mode == "table" else "table"
+
+    @rx.event
+    def toggle_graphs(self):
+        """Toggle inline sparkline graphs on/off."""
+        self.show_graphs = not self.show_graphs
 
     @rx.event
     async def toggle_time_period(self, checked: bool):

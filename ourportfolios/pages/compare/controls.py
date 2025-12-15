@@ -328,6 +328,27 @@ def comparison_controls() -> rx.Component:
         rx.spacer(),
         rx.hstack(
             comparison_search_bar(),
+            rx.button(
+                rx.hstack(
+                    rx.cond(
+                        StockComparisonState.show_graphs,
+                        rx.icon("eye-off", size=16),
+                        rx.icon("eye", size=16),
+                    ),
+                    rx.text(
+                        rx.cond(
+                            StockComparisonState.show_graphs,
+                            "Hide Graphs",
+                            "Show Graphs",
+                        ),
+                        size="2",
+                    ),
+                    spacing="2",
+                ),
+                on_click=StockComparisonState.toggle_graphs,
+                size="2",
+                variant="soft",
+            ),
             settings_dialog(),
             spacing="3",
             align="center",
