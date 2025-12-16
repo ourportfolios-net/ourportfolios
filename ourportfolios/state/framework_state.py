@@ -9,17 +9,21 @@ from ..utils.database.database import get_company_session
 class GlobalFrameworkState(rx.State):
     """Global state for managing selected investment framework across the application."""
 
-    # Currently selected framework
+    # Currently selected framework - regular state variable
     selected_framework_id: Optional[int] = None
     selected_framework: Dict = {}
 
     # Framework metrics mapping
     framework_metrics: Dict[str, List[str]] = {}
 
+    # Track if framework has been initialized
+    _framework_initialized: bool = False
+
     @rx.event
     async def select_framework(self, framework_id: int):
         """Select a framework and load its associated metrics."""
         self.selected_framework_id = framework_id
+        self._framework_initialized = False
 
         # Load framework details
         try:
@@ -33,8 +37,8 @@ class GlobalFrameworkState(rx.State):
                 if framework_data:
                     self.selected_framework = dict(framework_data[0])
                     await self.load_framework_metrics()
-        except Exception as e:
-            print(f"Error loading framework: {e}")
+                    self._framework_initialized = True
+        except Exception:
             self.selected_framework = {}
 
     @rx.event
@@ -71,8 +75,7 @@ class GlobalFrameworkState(rx.State):
                     else:
                         # Fallback if it's a single value
                         self.framework_metrics[category].append(metrics)
-        except Exception as e:
-            print(f"Error loading framework metrics: {e}")
+        except Exception:
             self.framework_metrics = {}
 
     @rx.var
@@ -93,3 +96,4 @@ class GlobalFrameworkState(rx.State):
         self.selected_framework_id = None
         self.selected_framework = {}
         self.framework_metrics = {}
+        self._framework_initialized = False

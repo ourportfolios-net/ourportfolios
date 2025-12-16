@@ -56,7 +56,7 @@ def fetch_income_statement(ticker_symbol: str, period: str = "year") -> pd.DataF
             # Add year and quarter columns back
             period_map = df.set_index("period")[["year", "quarter"]].drop_duplicates()
             pivot_df = pivot_df.merge(period_map, on="period")
-            # Sort by year and quarter descending to show newest first
+            pivot_df = pivot_df.drop(columns=["period"])
             pivot_df = pivot_df.sort_values(
                 ["year", "quarter"], ascending=False
             ).reset_index(drop=True)
@@ -118,7 +118,7 @@ def fetch_balance_sheet(ticker_symbol: str, period: str = "year") -> pd.DataFram
             # Add year and quarter columns back
             period_map = df.set_index("period")[["year", "quarter"]].drop_duplicates()
             pivot_df = pivot_df.merge(period_map, on="period")
-            # Sort by year and quarter descending to show newest first
+            pivot_df = pivot_df.drop(columns=["period"])
             pivot_df = pivot_df.sort_values(
                 ["year", "quarter"], ascending=False
             ).reset_index(drop=True)
@@ -177,10 +177,9 @@ def fetch_cash_flow(ticker_symbol: str, period: str = "year") -> pd.DataFrame:
             pivot_df = df.pivot(
                 index="period", columns="metric", values="value"
             ).reset_index()
-            # Add year and quarter columns back
             period_map = df.set_index("period")[["year", "quarter"]].drop_duplicates()
             pivot_df = pivot_df.merge(period_map, on="period")
-            # Sort by year and quarter descending to show newest first
+            pivot_df = pivot_df.drop(columns=["period"])
             pivot_df = pivot_df.sort_values(
                 ["year", "quarter"], ascending=False
             ).reset_index(drop=True)
@@ -556,6 +555,7 @@ async def fetch_ratios_async(ticker_symbol: str, period: str = "year") -> pd.Dat
             ).reset_index()
             period_map = df.set_index("period")[["year", "quarter"]].drop_duplicates()
             pivot_df = pivot_df.merge(period_map, on="period", how="left")
+            pivot_df = pivot_df.drop(columns=["period"])
             pivot_df = pivot_df.sort_values(
                 ["year", "quarter"], ascending=[False, False]
             )
