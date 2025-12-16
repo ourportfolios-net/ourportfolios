@@ -60,7 +60,7 @@ def stock_metric_cell(stock: dict, metric_key: str, industry: str) -> rx.Compone
                                 "borderRadius": "4px",
                                 "padding": "6px 10px",
                             },
-                            wrapper_style={"zIndex": "1000"},
+                            wrapper_style={"zIndex": "9999"},
                         ),
                         data=StockComparisonState.industry_metric_data_map[industry][
                             metric_key
@@ -75,6 +75,7 @@ def stock_metric_cell(stock: dict, metric_key: str, industry: str) -> rx.Compone
                 width="7em",
                 min_width="7em",
                 position="relative",
+                overflow="visible",
             ),
             rx.fragment(),
         ),
@@ -82,12 +83,12 @@ def stock_metric_cell(stock: dict, metric_key: str, industry: str) -> rx.Compone
         width=rx.cond(
             StockComparisonState.show_graphs,
             "12em",
-            "4em",
+            "8em",
         ),
         min_width=rx.cond(
             StockComparisonState.show_graphs,
             "12em",
-            "4em",
+            "8em",
         ),
         height="3.5em",
         align="center",
@@ -205,12 +206,12 @@ def comparison_table_section() -> rx.Component:
                                 width=rx.cond(
                                     StockComparisonState.show_graphs,
                                     "12em",
-                                    "4em",
+                                    "8em",
                                 ),
                                 min_width=rx.cond(
                                     StockComparisonState.show_graphs,
                                     "12em",
-                                    "4em",
+                                    "8em",
                                 ),
                                 display="flex",
                                 align_items="center",
@@ -227,7 +228,7 @@ def comparison_table_section() -> rx.Component:
                         style={"flex_wrap": "nowrap"},
                     ),
                     height="3.5em",
-                    style={"flex_shrink": "0"},
+                    style={"flex_shrink": "0", "overflow": "visible"},
                 ),
                 # All stocks with metrics
                 rx.foreach(

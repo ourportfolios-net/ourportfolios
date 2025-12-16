@@ -7,6 +7,8 @@ from typing import List, Dict, Any, Optional
 from collections import defaultdict
 import asyncio
 
+from ourportfolios.state.cart_state import CartState
+
 from ourportfolios.preprocessing.financial_statements import (
     get_transformed_dataframes,
 )
@@ -341,9 +343,7 @@ class StockComparisonState(rx.State):
     @rx.event
     async def import_cart_to_compare(self):
         """Import tickers from cart to comparison list."""
-        # Import here to avoid circular dependency
-        from ...state import CartState
-        from ..state import CartState
+        # Import here to avoid circular dependenc
 
         cart_state = await self.get_state(CartState)
         tickers = [item["name"] for item in cart_state.cart_items]
