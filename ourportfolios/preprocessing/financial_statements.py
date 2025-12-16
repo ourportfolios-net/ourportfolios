@@ -5,7 +5,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 from typing import Dict, Any
 
-from ..utils.database.fetch_data import (
+from ourportfolios.utils.database.fetch_data import (
     fetch_income_statement_async,
     fetch_balance_sheet_async,
     fetch_cash_flow_async,
@@ -187,9 +187,6 @@ def _categorize_ratios(
         "Dividends paid",
         "OWNER'S EQUITY(Bn.VND)",  # Book Value
     ]
-
-    # Growth metrics - will be computed from the time-series data
-    growth_metrics = []  # Computed from YoY changes
 
     profitability_metrics = [
         "Gross Profit Margin (%)",

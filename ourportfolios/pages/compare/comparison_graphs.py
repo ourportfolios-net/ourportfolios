@@ -7,7 +7,7 @@ from ...state import StockComparisonState
 
 def metric_line_graph(metric_key: str) -> rx.Component:
     """Create a line chart for a specific metric showing all stocks over time"""
-    
+
     return rx.card(
         rx.vstack(
             # Title
