@@ -2,10 +2,10 @@
 
 import reflex as rx
 
-from ...components.navbar import navbar
-from ...components.drawer import drawer_button
-from ...components.loading import loading_screen
-from ...state import StockComparisonState
+from ourportfolios.components.navbar import navbar
+from ourportfolios.components.drawer import drawer_button
+from ourportfolios.components.loading import loading_screen
+from .state import StockComparisonState
 
 from ourportfolios.pages.compare.comparison_table import comparison_section
 

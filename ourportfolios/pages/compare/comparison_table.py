@@ -1,5 +1,5 @@
 import reflex as rx
-from ourportfolios.state.comparison_state import StockComparisonState
+from .state import StockComparisonState
 from ourportfolios.pages.compare.controls import comparison_controls
 
 

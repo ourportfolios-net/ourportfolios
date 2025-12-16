@@ -2,7 +2,8 @@
 
 import reflex as rx
 
-from ...state import StockComparisonState, SearchBarState
+from .state import StockComparisonState
+from ...state import SearchBarState
 from ...state.framework_state import GlobalFrameworkState
 
 
