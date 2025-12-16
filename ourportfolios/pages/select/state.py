@@ -1,7 +1,6 @@
 """State management for the select page."""
 
 import reflex as rx
-import pandas as pd
 import asyncio
 
 from typing import List, Dict, Set

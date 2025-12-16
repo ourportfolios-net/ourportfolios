@@ -94,7 +94,6 @@ async def get_transformed_dataframes(
         return result
 
     except Exception as e:
-        import traceback
 
         error_msg = f"{type(e).__name__}: {str(e)}"
         return {
@@ -769,7 +768,7 @@ def _compute_ratios_from_statements(
         )
         categorized_ratios["Efficiency"] = efficiency.to_dict(orient="records")
 
-    except Exception as e:
+    except Exception:
         pass
 
     return categorized_ratios
