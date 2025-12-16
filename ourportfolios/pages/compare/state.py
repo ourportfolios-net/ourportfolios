@@ -132,9 +132,7 @@ class StockComparisonState(rx.State):
                     stock["market_cap"], decimals=2
                 )
 
-            # Add all selected metrics
             for metric_name in self.selected_metrics:
-                # Try latest historical data first
                 if (
                     ticker in latest_values_by_ticker
                     and metric_name in latest_values_by_ticker[ticker]
@@ -143,16 +141,13 @@ class StockComparisonState(rx.State):
                     formatted_stock[metric_name] = self._format_value(
                         metric_name, value
                     )
-                # Fall back to static data
                 elif metric_name in stock:
                     formatted_stock[metric_name] = self._format_value(
                         metric_name, stock[metric_name]
                     )
                 else:
                     formatted_stock[metric_name] = "N/A"
-
             formatted.append(formatted_stock)
-
         return formatted
 
     @rx.var
@@ -234,7 +229,6 @@ class StockComparisonState(rx.State):
                 for ticker in self.compare_list:
                     if ticker in latest_period:
                         latest_values[ticker][metric_key] = latest_period[ticker]
-
         return latest_values
 
     def _format_value(self, metric_name: str, value: Any) -> str:
@@ -551,43 +545,19 @@ class StockComparisonState(rx.State):
         framework_state = await self.get_state(GlobalFrameworkState)
 
         if not framework_state.has_selected_framework:
-            # No framework - reset filtering
             self.framework_metrics = {}
             return
 
-        # Load framework metrics if needed
         if not framework_state.framework_metrics:
             await framework_state.load_framework_metrics()
 
-        # Match framework metrics to database metrics
         framework_categories = {}
-
-        for (
-            category,
-            framework_metric_names,
-        ) in framework_state.framework_metrics.items():
-            matched_metrics = []
-
-            for framework_name in framework_metric_names:
-                # Normalize framework name
-                fw_name = str(framework_name).strip().lower()
-
-                # Search in all available metrics
-                for db_category, db_metrics in self.all_metrics.items():
-                    for db_metric in db_metrics:
-                        db_name = str(db_metric).strip().lower()
-
-                        # Simple substring matching
-                        if fw_name in db_name or db_name in fw_name:
-                            matched_metrics.append(db_metric)
-                            break
-
-            if matched_metrics:
-                framework_categories[category] = list(set(matched_metrics))
+        for category in framework_state.framework_metrics.keys():
+            if category in self.all_metrics:
+                framework_categories[category] = self.all_metrics[category]
 
         self.framework_metrics = framework_categories
 
-        # Auto-select framework metrics
         if framework_categories:
             all_framework_metrics = []
             for metrics in framework_categories.values():
