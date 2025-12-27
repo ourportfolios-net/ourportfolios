@@ -37,11 +37,7 @@ async def get_industry(ticker: str) -> str:
 class CartState(rx.State):
     """Global state for managing the shopping cart of tickers."""
 
-    cart_items: list[dict] = [
-        {"name": "FPT", "industry": "Technology"},
-        {"name": "CMG", "industry": "Technology"},
-        {"name": "BCM", "industry": "Real Estate"},
-    ]
+    cart_items: list[dict] = []
     is_open: bool = False
 
     @rx.var
