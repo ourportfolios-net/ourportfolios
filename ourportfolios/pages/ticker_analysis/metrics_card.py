@@ -46,7 +46,6 @@ def key_metrics_card():
                     performance_cards(),
                     value="performance",
                     padding_top="1em",
-                    on_mount=State.load_transformed_dataframes,
                 ),
                 rx.tabs.content(
                     rx.box(
@@ -67,10 +66,6 @@ def key_metrics_card():
                     ),
                     value="statement",
                     padding_top="1em",
-                    on_mount=lambda: [
-                        State.load_financial_ratios(),
-                        State.load_transformed_dataframes(),
-                    ],
                 ),
                 default_value="performance",
                 width="100%",

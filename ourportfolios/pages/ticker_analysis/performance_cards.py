@@ -1,4 +1,4 @@
-"""Performance and metrics cards for the ticker landing page."""
+"""Performance and metrics cards for the ticker landing page - FIXED."""
 
 import reflex as rx
 
@@ -6,32 +6,58 @@ from ...state.framework_state import GlobalFrameworkState
 from .state import State
 
 
-def create_dynamic_chart(category: str):
-    """Create a dynamic chart for a specific category"""
+def performance_card_skeleton():
+    """Skeleton for a single performance chart card"""
     return rx.card(
         rx.vstack(
             rx.hstack(
-                rx.heading(category, size="4", weight="medium"),
+                rx.skeleton(height="1.5rem", width="8rem"),
                 rx.spacer(),
-                rx.cond(
-                    State.available_metrics_by_category.contains(category),
-                    rx.select(
-                        State.available_metrics_by_category[category],
-                        value=State.selected_metrics.get(category, ""),
-                        on_change=lambda value: State.set_metric_for_category(
-                            category, value
-                        ),
-                        size="1",
-                    ),
-                    rx.text("No metrics", size="1", color="gray"),
-                ),
+                rx.skeleton(height="2rem", width="10rem", border_radius="6px"),
                 align="center",
                 justify="between",
                 width="100%",
             ),
-            rx.box(
-                rx.cond(
-                    (State.get_chart_data_for_category[category].length() > 0),
+            rx.skeleton(height="250px", width="100%"),
+            spacing="2",
+            align="stretch",
+            height="100%",
+        ),
+        width="100%",
+        height="100%",
+        style={"padding": "0.75em"},
+    )
+
+
+def create_dynamic_chart(category: str):
+    """Create a dynamic chart for a specific category"""
+    has_no_chart_data = State.get_chart_data_for_category[category].length() == 0
+
+    return rx.cond(
+        has_no_chart_data,
+        performance_card_skeleton(),
+        rx.card(
+            rx.vstack(
+                rx.hstack(
+                    rx.heading(category, size="4", weight="medium"),
+                    rx.spacer(),
+                    rx.cond(
+                        State.available_metrics_by_category.contains(category),
+                        rx.select(
+                            State.available_metrics_by_category[category],
+                            value=State.selected_metrics.get(category, ""),
+                            on_change=lambda value: State.set_metric_for_category(
+                                category, value
+                            ),
+                            size="1",
+                        ),
+                        rx.text("No metrics", size="1", color="gray"),
+                    ),
+                    align="center",
+                    justify="between",
+                    width="100%",
+                ),
+                rx.box(
                     rx.recharts.line_chart(
                         rx.recharts.line(
                             data_key="value",
@@ -56,22 +82,18 @@ def create_dynamic_chart(category: str):
                         height=250,
                         margin={"top": 15, "right": 30, "left": 10, "bottom": 5},
                     ),
-                    rx.center(
-                        rx.text("No data available", color="gray", size="2"),
-                        height="250px",
-                    ),
+                    width="100%",
+                    height="250px",
+                    style={"overflow": "hidden"},
                 ),
-                width="100%",
-                height="250px",
-                style={"overflow": "hidden"},
+                spacing="2",
+                align="stretch",
+                height="100%",
             ),
-            spacing="2",
-            align="stretch",
+            width="100%",
             height="100%",
+            style={"padding": "0.75em"},
         ),
-        width="100%",
-        height="100%",
-        style={"padding": "0.75em"},
     )
 
 
@@ -114,10 +136,26 @@ def performance_cards():
     """Create performance cards with dynamic charts that adapt to any number of categories"""
     categories = State.get_categories_list
 
+    # Use loading flag instead of checking data directly
     return rx.cond(
-        categories.length() > 0,
+        State.is_loading_financial,
+        # Show skeleton grid while loading
+        rx.box(
+            rx.fragment(
+                performance_card_skeleton(),
+                performance_card_skeleton(),
+                performance_card_skeleton(),
+                performance_card_skeleton(),
+                performance_card_skeleton(),
+                performance_card_skeleton(),
+            ),
+            display="grid",
+            grid_template_columns="repeat(3, 1fr)",
+            gap="1rem",
+            width="100%",
+        ),
+        # Show actual content when loaded
         rx.vstack(
-            # Show framework selection prompt if no framework is selected
             rx.cond(
                 ~GlobalFrameworkState.has_selected_framework,
                 rx.callout.root(
@@ -153,7 +191,6 @@ def performance_cards():
                 ),
                 None,
             ),
-            # Dynamic 3-column grid that adapts to number of categories (3 per row)
             rx.box(
                 rx.foreach(
                     categories,
@@ -168,8 +205,5 @@ def performance_cards():
             ),
             spacing="3",
             width="100%",
-        ),
-        rx.center(
-            rx.spinner(size="3"),
         ),
     )
