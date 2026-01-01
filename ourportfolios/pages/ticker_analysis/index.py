@@ -64,6 +64,7 @@ def index():
                         width="100%",
                         justify="between",
                         align="start",
+                        key=State.render_key,
                     ),
                     width="86vw",
                     style={"minHeight": "80vh"},
@@ -75,6 +76,4 @@ def index():
             ),
             drawer_button(),
         ),
-        # REMOVED: on_unmount=State.on_unmount
-        # This was causing premature unmount events
     )
