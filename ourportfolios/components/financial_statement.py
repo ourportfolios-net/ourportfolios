@@ -72,10 +72,10 @@ def preview_table(data, idx, show_skeleton=False):
     # Table content - either skeleton or actual data
     table_content = rx.cond(
         show_skeleton,
-        # Skeleton for loading state
+        # Skeleton for loading state - simple rectangle
         rx.skeleton(
             height="200px",
-            width="100%",
+            width="43em",
             border_radius="8px",
         ),
         # Actual table or "No data available"
