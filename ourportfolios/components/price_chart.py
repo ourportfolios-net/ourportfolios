@@ -13,6 +13,10 @@ from ..utils.database.fetch_data import load_historical_data
 class PriceChartState(rx.State):
     # Flag to track if chart.js has loaded
     chart_script_loaded: bool = False
+    # Loading state
+    is_loading: bool = True
+    _last_ticker: str = ""
+
     df: pd.DataFrame = pd.DataFrame()
     selected_interval: str = "1D"
     selected_chart: str = "Candlestick"
@@ -43,35 +47,73 @@ class PriceChartState(rx.State):
     rsi_period: int = 14
 
     @rx.event
-    def load_state(self):
-        """Initialize chart with default settings"""
-        ticker: str = self.ticker
+    def trigger_load(self):
+        """Trigger loading if needed - called by on_mount."""
+        # Get ticker from URL route parameter (last segment of path)
+        ticker = self.router.url.path.split("/")[-1]
 
-        # Fetch data for each interval. Time ranges are {
-        #     1D: 3 years
-        #     1W: 5 years (default)
-        #     1M: all (default)
-        # }
-        # NOTE: Historical price data is fetched from vnstock API, not database
-        # TODO: Store historical prices in database for better performance
-        self.df_by_interval = {
-            i_range: load_historical_data(
-                symbol=ticker,
-                start=(self.interval_range[i_range]).strftime("%Y-%m-%d"),
-                end=(date.today() + relativedelta(days=1)).strftime("%Y-%m-%d"),
-                interval=i_range,
-            )
-            for i_range in self.df_by_interval.keys()
-        }
+        # Skip if invalid ticker
+        if not ticker or ticker == "select" or ticker == "[ticker]":
+            self.is_loading = False
+            return
 
-        # Default range
-        self.df: pd.DataFrame = self.df_by_interval[self.selected_interval]
+        # Check if we need to reload
+        needs_reload = ticker != self._last_ticker or self.df.empty
 
-        # Loads MA options
-        self.selected_ma_period = {item: False for item in self.ma_period.keys()}
+        if needs_reload:
+            print(f"[PriceChartState] Loading price chart for: {ticker}")
+            self.is_loading = True
+            self._last_ticker = ticker
+            return PriceChartState.load_state
+        else:
+            # Data already loaded for this ticker
+            print(f"[PriceChartState] Price chart already loaded for: {ticker}")
+            self.is_loading = False
 
-        # Initialize chart
-        yield from self.render_price_chart()
+    @rx.event(background=True)
+    async def load_state(self):
+        """Initialize chart with default settings - runs in background"""
+        async with self:
+            # Get ticker from URL route parameter (last segment of path)
+            ticker: str = self.router.url.path.split("/")[-1]
+            print(f"[PriceChartState] Starting background load for: {ticker}")
+
+        try:
+            # Fetch data for each interval. Time ranges are {
+            #     1D: 3 years
+            #     1W: 5 years (default)
+            #     1M: all (default)
+            # }
+            # NOTE: Historical price data is fetched from vnstock API, not database
+            # TODO: Store historical prices in database for better performance
+            df_by_interval = {
+                i_range: load_historical_data(
+                    symbol=ticker,
+                    start=(self.interval_range[i_range]).strftime("%Y-%m-%d"),
+                    end=(date.today() + relativedelta(days=1)).strftime("%Y-%m-%d"),
+                    interval=i_range,
+                )
+                for i_range in self.df_by_interval.keys()
+            }
+
+            async with self:
+                self.df_by_interval = df_by_interval
+                # Default range
+                self.df = self.df_by_interval[self.selected_interval]
+                # Loads MA options
+                self.selected_ma_period = {
+                    item: False for item in self.ma_period.keys()
+                }
+                print(f"[PriceChartState] Price chart data loaded ✓")
+                self.is_loading = False
+                
+                # Trigger chart render after data is loaded
+                yield PriceChartState.render_price_chart
+
+        except Exception as e:
+            print(f"[PriceChartState] Error loading price chart: {e}")
+            async with self:
+                self.is_loading = False
 
     @rx.event
     def render_price_chart(self):

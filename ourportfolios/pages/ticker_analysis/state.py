@@ -3,6 +3,7 @@
 import pandas as pd
 import reflex as rx
 from typing import Any, List, Dict, Optional
+import time
 
 from ...state.framework_state import GlobalFrameworkState
 from ...utils.database.fetch_data import fetch_company_data, fetch_price_data_async
@@ -13,13 +14,18 @@ class State(rx.State):
     switch_value: str = "year"
     company_control: str = "shares"
 
-    is_loading_company: bool = True
-    is_loading_financial: bool = True
+    is_loading_company: bool = True  # Start as True for initial page load
+    is_loading_financial: bool = True  # Start as True for initial page load
 
     error_company: str = ""
     error_financial: str = ""
 
     _current_ticker: str = ""
+    _page_loaded: bool = False
+    _last_load_time: float = 0.0
+
+    # Chart rendering flag
+    chart_rendered: bool = False
 
     @rx.event
     def set_company_control(self, value: str | List[str]):
@@ -65,55 +71,110 @@ class State(rx.State):
         return self.router.url.path.split("/")[-1]
 
     @rx.event
-    def initialize_page_data(self):
+    async def initialize_page_data(self):
         """Initialize loading - triggers independent background tasks."""
-        ticker = self._get_ticker()
+        async with self:
+            ticker = self._get_ticker()
 
-        if ticker != self._current_ticker:
-            print(f"[State] New ticker: {ticker}")
+            # Validate ticker - don't load if it's invalid
+            if not ticker or ticker == "select" or ticker == "[ticker]":
+                print(f"[State] Invalid ticker: '{ticker}', skipping load")
+                # Reset loading flags so skeletons don't show for invalid state
+                self.is_loading_company = False
+                self.is_loading_financial = False
+                return
+
+            # Determine if we need to load data
+            is_different_ticker = ticker != self._current_ticker
+
+            print(f"[State] initialize_page_data called:")
+            print(f"  - URL ticker: {ticker}")
+            print(f"  - Current ticker: {self._current_ticker}")
+            print(f"  - Is different: {is_different_ticker}")
+            print(f"  - Loading company: {self.is_loading_company}")
+            print(f"  - Loading financial: {self.is_loading_financial}")
+
+            # Case 1: Same ticker with data = page refresh, keep existing data
+            if not is_different_ticker and not self.overview_df.empty:
+                print(f"[State] ✓ Page refresh, keeping existing data for {ticker}")
+                # Set flags to False since we're not loading
+                self.is_loading_company = False
+                self.is_loading_financial = False
+                return
+
+            # Case 2: Different ticker OR no data = need to load
+            print(
+                f"[State] → Loading data for {ticker} (different={is_different_ticker})"
+            )
+
+            # ALWAYS update ticker FIRST before any other state changes
+            old_ticker = self._current_ticker
             self._current_ticker = ticker
+            self._page_loaded = True
+
+            # Reset chart rendered flag
+            self.chart_rendered = False
+
+            # Set loading flags
             self.is_loading_company = True
             self.is_loading_financial = True
             self.error_company = ""
             self.error_financial = ""
 
+            # Clear ALL data immediately - this is critical!
             self.overview_df = pd.DataFrame()
             self.profile_df = pd.DataFrame()
             self.shareholders_df = pd.DataFrame()
             self.events_df = pd.DataFrame()
             self.news_df = pd.DataFrame()
             self.officers_df = pd.DataFrame()
+            self.price_data = pd.DataFrame()
+            self.income_statement = []
+            self.balance_sheet = []
+            self.cash_flow = []
+            self.financial_df = pd.DataFrame()
             self.transformed_dataframes = {}
             self.available_metrics_by_category = {}
             self.selected_metrics = {}
+            self._last_framework_id = None
 
-            return [
-                State.load_company_data,
-                State.load_transformed_dataframes,
-            ]
+            print(
+                f"[State] Cleared data (old ticker: {old_ticker}, new ticker: {ticker})"
+            )
+
+        # State update sent here - skeletons should appear
+
+        # Now start background tasks - don't await them, just fire and forget
+        import asyncio
+
+        asyncio.create_task(self.load_company_data())
+        asyncio.create_task(self.load_transformed_dataframes())
+        asyncio.create_task(self.load_price_data())
+
+        print(f"[State] Background tasks started independently")
+
+    @rx.event
+    def mark_chart_rendered(self):
+        """Called by JavaScript when chart finishes rendering."""
+        self.chart_rendered = True
+        print(f"[State] Chart rendered successfully")
 
     @rx.event
     async def on_unmount(self):
-        """Called when page is unmounted."""
-        self.overview_df = pd.DataFrame()
-        self.profile_df = pd.DataFrame()
-        self.shareholders_df = pd.DataFrame()
-        self.events_df = pd.DataFrame()
-        self.news_df = pd.DataFrame()
-        self.officers_df = pd.DataFrame()
-        self.transformed_dataframes = {}
-        self.financial_df = pd.DataFrame()
-        self._last_framework_id = None
-        self._current_ticker = ""
-        self.error_company = ""
-        self.error_financial = ""
+        """Called when page is unmounted - keeping this minimal to avoid issues."""
+        print(f"[State] Page unmount event (doing nothing to preserve state)")
 
     @rx.event
     def toggle_switch(self, value: bool):
+        print(f"[State] Toggling switch to: {'year' if value else 'quarter'}")
         self.switch_value = "year" if value else "quarter"
+        # Reset financial data state
         self.transformed_dataframes = {}
         self.available_metrics_by_category = {}
         self.selected_metrics = {}
+        self.income_statement = []
+        self.balance_sheet = []
+        self.cash_flow = []
         self.is_loading_financial = True
         self.error_financial = ""
         return State.load_transformed_dataframes
@@ -127,7 +188,6 @@ class State(rx.State):
 
         try:
             company_data = fetch_company_data(ticker)
-            price_data = await fetch_price_data_async(ticker)
 
             async with self:
                 self.overview_df = company_data.get("overview", pd.DataFrame())
@@ -136,7 +196,6 @@ class State(rx.State):
                 self.news_df = company_data.get("news", pd.DataFrame())
                 self.profile_df = company_data.get("profile", pd.DataFrame())
                 self.officers_df = company_data.get("officers", pd.DataFrame())
-                self.price_data = price_data
 
                 print(f"[State] Company data loaded ✓")
                 self.is_loading_company = False
@@ -149,41 +208,88 @@ class State(rx.State):
                 self.is_loading_company = False
                 self.error_company = error_msg
 
+    @rx.event(background=True)
+    async def load_price_data(self):
+        """Load price data - runs independently in background."""
+        async with self:
+            ticker = self._get_ticker()
+            print(f"[State] Loading price data for: {ticker}")
+
+        try:
+            price_data = await fetch_price_data_async(ticker)
+
+            async with self:
+                self.price_data = price_data
+                print(f"[State] Price data loaded ✓")
+                print(
+                    f"[State] Price data shape: {price_data.shape if not price_data.empty else 'EMPTY'}"
+                )
+
+        except Exception as e:
+            error_msg = f"Failed to load price data: {str(e)}"
+            print(f"[State] Error: {error_msg}")
+            async with self:
+                self.price_data = pd.DataFrame()
+
     @rx.var
     def overview(self) -> dict:
-        if self.overview_df.empty:
+        if self.overview_df.empty or len(self.overview_df) == 0:
             return {}
-        return self.overview_df.iloc[0].to_dict()
+        try:
+            return self.overview_df.iloc[0].to_dict()
+        except Exception as e:
+            print(f"[State] Error getting overview: {e}")
+            return {}
 
     @rx.var
     def profile(self) -> dict:
-        if self.profile_df.empty:
+        if self.profile_df.empty or len(self.profile_df) == 0:
             return {}
-        return self.profile_df.iloc[0].to_dict()
+        try:
+            return self.profile_df.iloc[0].to_dict()
+        except Exception as e:
+            print(f"[State] Error getting profile: {e}")
+            return {}
 
     @rx.var
     def shareholders(self) -> list[dict]:
-        if self.shareholders_df.empty:
+        if self.shareholders_df.empty or len(self.shareholders_df) == 0:
             return []
-        return self.shareholders_df.to_dict("records")
+        try:
+            return self.shareholders_df.to_dict("records")
+        except Exception as e:
+            print(f"[State] Error getting shareholders: {e}")
+            return []
 
     @rx.var
     def events(self) -> list[dict]:
-        if self.events_df.empty:
+        if self.events_df.empty or len(self.events_df) == 0:
             return []
-        return self.events_df.to_dict("records")
+        try:
+            return self.events_df.to_dict("records")
+        except Exception as e:
+            print(f"[State] Error getting events: {e}")
+            return []
 
     @rx.var
     def news(self) -> list[dict]:
-        if self.news_df.empty:
+        if self.news_df.empty or len(self.news_df) == 0:
             return []
-        return self.news_df.to_dict("records")
+        try:
+            return self.news_df.to_dict("records")
+        except Exception as e:
+            print(f"[State] Error getting news: {e}")
+            return []
 
     @rx.var
     def officers(self) -> list[dict]:
-        if self.officers_df.empty:
+        if self.officers_df.empty or len(self.officers_df) == 0:
             return []
-        return self.officers_df.to_dict("records")
+        try:
+            return self.officers_df.to_dict("records")
+        except Exception as e:
+            print(f"[State] Error getting officers: {e}")
+            return []
 
     @rx.event
     def load_financial_ratios(self):
@@ -305,7 +411,7 @@ class State(rx.State):
     def set_metric_for_category(self, category: str, metric: str):
         self.selected_metrics[category] = metric
 
-    @rx.var(cache=True)
+    @rx.var
     def get_chart_data_for_category(self) -> Dict[str, List[Dict[str, Any]]]:
         chart_data = {}
         categorized_ratios = self.transformed_dataframes.get("categorized_ratios", {})
@@ -356,21 +462,28 @@ class State(rx.State):
     def get_categories_list(self) -> List[str]:
         return list(self.available_metrics_by_category.keys())
 
-    @rx.var(cache=True)
+    @rx.var
     def pie_data(self) -> list[dict[str, object]]:
-        palettes = ["accent", "plum", "iris"]
-        indices = [6, 7, 8]
-        colors = [
-            rx.color(palette, idx, True) for palette in palettes for idx in indices
-        ]
+        if not self.shareholders or len(self.shareholders) == 0:
+            return []
 
-        pie_data = [
-            {
-                "name": shareholder["share_holder"],
-                "value": shareholder["share_own_percent"],
-            }
-            for shareholder in self.shareholders
-        ]
-        for idx, d in enumerate(pie_data):
-            d["fill"] = colors[idx % len(colors)]
-        return pie_data
+        try:
+            palettes = ["accent", "plum", "iris"]
+            indices = [6, 7, 8]
+            colors = [
+                rx.color(palette, idx, True) for palette in palettes for idx in indices
+            ]
+
+            pie_data = [
+                {
+                    "name": shareholder["share_holder"],
+                    "value": shareholder["share_own_percent"],
+                }
+                for shareholder in self.shareholders
+            ]
+            for idx, d in enumerate(pie_data):
+                d["fill"] = colors[idx % len(colors)]
+            return pie_data
+        except Exception as e:
+            print(f"[State] Error generating pie_data: {e}")
+            return []

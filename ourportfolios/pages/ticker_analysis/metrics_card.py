@@ -54,7 +54,8 @@ def key_metrics_card():
                                 State.income_statement,
                                 State.balance_sheet,
                                 State.cash_flow,
-                            ]
+                            ],
+                            show_skeleton=State.is_loading_financial,
                         ),
                         width="100%",
                         padding_top="2em",

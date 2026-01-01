@@ -75,5 +75,6 @@ def index():
             ),
             drawer_button(),
         ),
-        on_unmount=State.on_unmount,
+        # REMOVED: on_unmount=State.on_unmount
+        # This was causing premature unmount events
     )

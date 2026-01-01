@@ -1,5 +1,12 @@
 function render_price_chart(chart_options, chart_data) {
   container = document.getElementById("price_chart");
+
+  // Defensive check - element might not be ready yet
+  if (!container) {
+    console.warn("price_chart element not found, skipping render");
+    return;
+  }
+
   container.innerHTML = "";
 
   // Chart layout settings
@@ -81,5 +88,4 @@ function render_price_chart(chart_options, chart_data) {
     });
     rsiSeries.setData(rsi_line_data);
   }
-
 }
