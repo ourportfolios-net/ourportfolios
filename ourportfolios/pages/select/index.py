@@ -158,6 +158,7 @@ def card_with_scrollable_area():
 @rx.page(
     route="/select",
     on_load=[
+        State.on_mount,
         State.get_all_industries,
         State.get_all_exchanges,
         State.get_fundamentals_default_value,

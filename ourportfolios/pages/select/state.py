@@ -7,16 +7,31 @@ from typing import List, Dict, Set
 
 from ...state import TickerBoardState
 from ...utils.database.database import get_company_session
+from ...utils.session_manager import (
+    SessionIsolatedStateMixin,
+    session_isolated,
+    SessionCancelledError,
+)
 from sqlalchemy import text
 
 
-class State(rx.State):
+class State(SessionIsolatedStateMixin, rx.State):
     control: str = "home"
     show_arrow: bool = True
     data: List[Dict] = []
 
     # Search bar
     search_query = ""
+
+    @rx.event
+    async def on_mount(self):
+        """Initialize session when page is mounted."""
+        super().on_mount()
+
+    @rx.event
+    async def on_unmount(self):
+        """Cleanup when page is unmounted."""
+        await super().on_unmount()
 
     @rx.event
     def set_control(self, value: str | List[str]):
@@ -84,6 +99,7 @@ class State(rx.State):
         return False
 
     @rx.event(background=True)
+    @session_isolated
     async def apply_filters(self):
         async with self:
             ticker_board_state = await self.get_state(TickerBoardState)
@@ -105,6 +121,7 @@ class State(rx.State):
     # Set all metrics/options to their default setting
     @rx.event
     async def get_all_industries(self):
+        """Get all industries from database. Called via rx.run_in_thread."""
         try:
             async with get_company_session() as session:
                 result = await session.execute(
@@ -120,6 +137,7 @@ class State(rx.State):
 
     @rx.event
     async def get_all_exchanges(self):
+        """Get all exchanges from database. Called via rx.run_in_thread."""
         try:
             async with get_company_session() as session:
                 result = await session.execute(

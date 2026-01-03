@@ -17,8 +17,6 @@ from .company_info import company_generic_info_card
     route="/analyze/[ticker]",
     on_load=[
         State.on_mount,
-        State.load_company_data,
-        State.load_transformed_dataframes,
     ],
 )
 def index():

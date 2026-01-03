@@ -10,7 +10,13 @@ from .state import StockComparisonState
 from ourportfolios.pages.compare.comparison_table import comparison_section
 
 
-@rx.page(route="/analyze/compare", on_load=StockComparisonState.auto_load_from_cart)
+@rx.page(
+    route="/analyze/compare",
+    on_load=[
+        StockComparisonState.on_mount,
+        StockComparisonState.auto_load_from_cart,
+    ],
+)
 def index() -> rx.Component:
     """Main page component."""
     return rx.fragment(

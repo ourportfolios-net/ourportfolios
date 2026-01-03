@@ -21,9 +21,14 @@ from ourportfolios.preprocessing.formatters import (
 )
 from ...utils.database.database import get_company_session
 from ...state.framework_state import GlobalFrameworkState
+from ...utils.session_manager import (
+    SessionIsolatedStateMixin,
+    session_isolated,
+    SessionCancelledError,
+)
 
 
-class StockComparisonState(rx.State):
+class StockComparisonState(SessionIsolatedStateMixin, rx.State):
     """State for comparing multiple stocks side by side."""
 
     # Core data
@@ -52,6 +57,11 @@ class StockComparisonState(rx.State):
 
     # Cache for API data
     _data_cache: Dict[str, Dict[str, Any]] = {}
+
+    @rx.event
+    async def on_unmount(self):
+        """Cleanup when page is unmounted."""
+        await super().on_unmount()
 
     @rx.var(cache=True)
     def compare_list_length(self) -> int:
@@ -253,6 +263,7 @@ class StockComparisonState(rx.State):
             return format_ratio(value, decimals=2)
 
     @rx.event
+    @session_isolated
     async def discover_all_metrics_from_db(self):
         """Discover ALL available metrics by fetching a sample ticker's data."""
         try:
@@ -344,6 +355,7 @@ class StockComparisonState(rx.State):
         self.compare_list = tickers
 
     @rx.event
+    @session_isolated
     async def fetch_stocks_from_compare(self):
         """Fetch stock data for tickers in compare_list from database."""
         if not self.compare_list:
@@ -380,6 +392,7 @@ class StockComparisonState(rx.State):
         self.stocks = stocks
 
     @rx.event
+    @session_isolated
     async def fetch_historical_data(self):
         """Fetch historical financial data for all stocks in compare list."""
         if not self.compare_list:
@@ -540,6 +553,7 @@ class StockComparisonState(rx.State):
         return historical_data
 
     @rx.event
+    @session_isolated
     async def apply_framework_filter(self):
         """Apply framework filtering to available metrics."""
         framework_state = await self.get_state(GlobalFrameworkState)
@@ -565,24 +579,42 @@ class StockComparisonState(rx.State):
             self.selected_metrics = list(set(all_framework_metrics))
 
     @rx.event
+    async def on_mount(self):
+        """Initialize session when page mounts."""
+        super().on_mount()
+
+    @rx.event
+    async def on_unmount(self):
+        """Cleanup when page unmounts."""
+        await super().on_unmount()
+
+    @rx.event
     async def auto_load_from_cart(self):
-        """Automatically load compare data from cart on page mount."""
+        """Automatically load compare data from cart on page load.
+
+        This orchestrator method doesn't need @session_isolated because
+        all the actual API-calling methods it calls are already isolated.
+        """
         self.is_loading_data = True
 
         try:
-            # Discover all available metrics first
+            # Check if still mounted
+            if not self.is_mounted():
+                return
+
+            # Discover all available metrics first (isolated)
             await self.discover_all_metrics_from_db()
 
             # Import from cart
             await self.import_cart_to_compare()
 
             if self.compare_list:
-                # Fetch data for cart items
+                # Fetch data for cart items (isolated)
                 await self.fetch_stocks_from_compare()
-                # Always fetch historical data for inline graphs
+                # Always fetch historical data for inline graphs (isolated)
                 await self.fetch_historical_data()
 
-            # Apply framework filtering after data is loaded
+            # Apply framework filtering after data is loaded (isolated)
             await self.apply_framework_filter()
 
             self.has_initialized = True
@@ -590,6 +622,7 @@ class StockComparisonState(rx.State):
             self.is_loading_data = False
 
     @rx.event
+    @session_isolated
     async def add_ticker_to_compare(self, ticker: str):
         """Add a single ticker directly to the compare list and fetch its data."""
         if ticker in self.compare_list:
@@ -645,12 +678,14 @@ class StockComparisonState(rx.State):
         self.show_graphs = not self.show_graphs
 
     @rx.event
+    @session_isolated
     async def toggle_time_period(self, checked: bool):
         """Toggle between quarterly and yearly time periods."""
         self.time_period = "year" if checked else "quarter"
         await self.fetch_historical_data()
 
     @rx.event
+    @session_isolated
     async def import_and_fetch_compare(self):
         """Import tickers from cart and fetch their stock data."""
         prev_compare_list = set(self.compare_list)
@@ -663,6 +698,7 @@ class StockComparisonState(rx.State):
             await self.apply_framework_filter()
 
     @rx.event
+    @session_isolated
     async def toggle_and_load_graphs(self):
         """Toggle to graph view and load historical data if needed."""
         if self.view_mode == "table":

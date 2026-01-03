@@ -7,9 +7,14 @@ from typing import Any, List, Dict, Optional
 from ...state.framework_state import GlobalFrameworkState
 from ...utils.database.fetch_data import fetch_company_data, fetch_price_data_async
 from ...preprocessing.financial_statements import get_transformed_dataframes
+from ...utils.session_manager import (
+    SessionIsolatedStateMixin,
+    session_isolated,
+    SessionCancelledError,
+)
 
 
-class State(rx.State):
+class State(SessionIsolatedStateMixin, rx.State):
     switch_value: str = "year"
     company_control: str = "shares"
 
@@ -60,7 +65,24 @@ class State(rx.State):
     @rx.event
     async def on_mount(self):
         """Called when page is mounted."""
+        print("🔵 TICKER_ANALYSIS: on_mount called")
+        try:
+            await super().on_mount()  # Initialize session
+            print(f"🔵 TICKER_ANALYSIS: session created, _session_id = {self._session_id}")
+        except Exception as e:
+            print(f"❌ TICKER_ANALYSIS: Error in super().on_mount(): {e}")
+            import traceback
+            traceback.print_exc()
+            return
+        
         self._is_mounted = True
+
+        # Trigger data loading AFTER session is created
+        print("🔵 TICKER_ANALYSIS: Starting data loading")
+        await self.load_company_data()
+        await self.load_transformed_dataframes()
+        await self.load_financial_ratios()
+        print("🔵 TICKER_ANALYSIS: Data loading complete")
 
     @rx.event
     async def on_unmount(self):
@@ -76,8 +98,10 @@ class State(rx.State):
         self.transformed_dataframes = {}
         self.financial_df = pd.DataFrame()
         self._last_framework_id = None
+        await super().on_unmount()  # Cancel session
 
     @rx.event
+    @session_isolated
     async def toggle_switch(self, value: bool):
         self.switch_value = "year" if value else "quarter"
         self.transformed_dataframes = {}
@@ -86,12 +110,13 @@ class State(rx.State):
         await self.load_transformed_dataframes()
 
     @rx.event
+    @session_isolated
     async def load_company_data(self):
         """Load company metadata and price data from database."""
         ticker = self.ticker
 
         # Check if still mounted before fetching data
-        if not self._is_mounted:
+        if not self.is_mounted():
             return
 
         try:
@@ -99,7 +124,7 @@ class State(rx.State):
             company_data = fetch_company_data(ticker)
 
             # Check again after operation
-            if not self._is_mounted:
+            if not self.is_mounted():
                 return
 
             self.overview_df = company_data.get("overview", pd.DataFrame())
@@ -113,6 +138,9 @@ class State(rx.State):
             # Note: Historical price data is fetched separately by PriceChartState from vnstock API
             self.price_data = await fetch_price_data_async(ticker)
 
+        except SessionCancelledError:
+            # User navigated away, silently exit
+            return
         except Exception as e:
             print(f"Error loading company data: {e}")
             import traceback
@@ -170,6 +198,7 @@ class State(rx.State):
         return self.officers_df.to_dict("records")
 
     @rx.event
+    @session_isolated
     async def load_financial_ratios(self):
         """Load financial ratios data dynamically from database via transformed_dataframes."""
         # Financial ratios are now loaded via load_transformed_dataframes
@@ -178,11 +207,12 @@ class State(rx.State):
             await self.load_transformed_dataframes()
 
     @rx.event
+    @session_isolated
     async def load_transformed_dataframes(self):
         ticker = self.ticker
 
         # Check if still mounted before loading
-        if not self._is_mounted:
+        if not self.is_mounted():
             return
 
         # Only fetch data if not already loaded
@@ -193,7 +223,7 @@ class State(rx.State):
                 )
 
                 # Check again after async operation
-                if not self._is_mounted:
+                if not self.is_mounted():
                     return
 
                 # Check if API call returned an error
@@ -304,6 +334,7 @@ class State(rx.State):
                     self.selected_metrics[category] = metrics[0]
 
     @rx.event
+    @session_isolated
     async def reload_for_framework_change(self):
         """Force reload when framework changes - call this explicitly when needed"""
         self.transformed_dataframes = {}

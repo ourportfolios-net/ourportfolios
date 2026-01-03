@@ -6,9 +6,14 @@ from sqlalchemy import text
 
 from ...state import GlobalFrameworkState
 from ...utils.database.database import get_company_session
+from ...utils.session_manager import (
+    SessionIsolatedStateMixin,
+    session_isolated,
+    SessionCancelledError,
+)
 
 
-class FrameworkState(rx.State):
+class FrameworkState(SessionIsolatedStateMixin, rx.State):
     active_scope: str = "fundamental"
     scopes: List[Dict] = []
     frameworks: List[Dict] = []
@@ -200,10 +205,13 @@ class FrameworkState(rx.State):
 
     @rx.event
     async def on_load(self):
+        super().on_mount()  # Initialize session
         await self.load_scopes()
         if self.scopes:
             await self.change_scope(self.scopes[0]["value"])
 
+    @rx.event
+    @session_isolated
     async def load_scopes(self):
         self.loading_scopes = True
         try:
@@ -225,10 +233,14 @@ class FrameworkState(rx.State):
             self.loading_scopes = False
 
     @rx.event
+    @rx.event
+    @session_isolated
     async def change_scope(self, scope: str):
         self.active_scope = scope
         await self.load_frameworks()
 
+    @rx.event
+    @session_isolated
     async def load_frameworks(self):
         self.loading_frameworks = True
         try:
@@ -299,6 +311,7 @@ class FrameworkState(rx.State):
             self.close_add_dialog()
 
     @rx.event
+    @session_isolated
     async def submit_framework(self):
         if not self.form_title or not self.form_author:
             return
@@ -355,6 +368,7 @@ class FrameworkState(rx.State):
             print(f"Error adding framework: {e}")
 
     @rx.event
+    @session_isolated
     async def select_and_navigate_framework(self):
         """Select the current framework and navigate to ticker selection."""
         if not self.selected_framework:
