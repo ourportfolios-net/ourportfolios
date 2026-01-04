@@ -13,17 +13,17 @@ def create_metric_chart(
     stroke_width: int = 3,
 ):
     """
-        Create a single metric chart with customizable options
+    Create a single metric chart with customizable options
 
-        Args:
-            available_metrics: list of available metrics for the dropdown
-            selected_metr        category: The title/category name for the chart
+    Args:
+        available_metrics: list of available metrics for the dropdown
+        selected_metr        category: The title/category name for the chart
     ic: Currently selected metric
-            chart_data: Data for the chart in format [{"year": "2023", "value": 100}, ...]
-            on_metric_change: Callback function when metric selection changes
-            chart_height: Height of the chart in pixels
-            stroke_color: Color of the line chart
-            stroke_width: Width of the line stroke
+        chart_data: Data for the chart in format [{"year": "2023", "value": 100}, ...]
+        on_metric_change: Callback function when metric selection changes
+        chart_height: Height of the chart in pixels
+        stroke_color: Color of the line chart
+        stroke_width: Width of the line stroke
     """
     return rx.card(
         rx.vstack(

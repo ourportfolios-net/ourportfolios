@@ -1,12 +1,16 @@
 """State for financial statement display and management."""
 
 import reflex as rx
+from typing import TYPE_CHECKING
 import io
 import csv
 
 
 class FinancialStatementState(rx.State):
     """State for managing financial statement dialogs and exports."""
+
+    if TYPE_CHECKING:
+        ticker: str
 
     expanded_table: int = -1
 
@@ -34,7 +38,7 @@ class FinancialStatementState(rx.State):
         if not data:
             return
         output = io.StringIO()
-        writer = csv.dictWriter(output, fieldnames=list(data[0].keys()))
+        writer = csv.DictWriter(output, fieldnames=list(data[0].keys()))
         writer.writeheader()
         for row in data:
             writer.writerow(row)

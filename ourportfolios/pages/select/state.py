@@ -158,7 +158,7 @@ class State(SessionIsolatedStateMixin, rx.State):
                 }
             )
 
-    # set all metrics/options to their default setting
+    # Set all metrics/options to their default setting
     @rx.event
     @session_isolated
     async def get_all_industries(self):
@@ -174,7 +174,8 @@ class State(SessionIsolatedStateMixin, rx.State):
                 self.industry_filter: dict[str, bool] = {
                     item: False for item in industries
                 }
-        except Exception:
+        except Exception as e:
+            print(f"Database error: {e}")
             self.industry_filter: dict[str, bool] = {}
 
     @rx.event
@@ -192,7 +193,8 @@ class State(SessionIsolatedStateMixin, rx.State):
                 self.exchange_filter: dict[str, bool] = {
                     item: False for item in exchanges
                 }
-        except Exception:
+        except Exception as e:
+            print(f"Database error: {e}")
             self.exchange_filter: dict[str, bool] = {}
 
     @rx.event
