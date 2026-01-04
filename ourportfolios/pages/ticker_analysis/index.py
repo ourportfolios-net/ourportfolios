@@ -15,11 +15,7 @@ from .company_info import company_generic_info_card
 
 @rx.page(
     route="/analyze/[ticker]",
-    on_load=[
-        State.on_mount,
-        State.load_company_data,
-        State.load_transformed_dataframes,
-    ],
+    on_load=[State.on_mount],  # Keep for compatibility but session created earlier
 )
 def index():
     return rx.box(

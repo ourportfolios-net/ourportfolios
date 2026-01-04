@@ -3,7 +3,7 @@
 import asyncio
 import pandas as pd
 from datetime import datetime, timedelta
-from typing import Dict, Any
+from typing import Any
 
 from ourportfolios.utils.database.fetch_data import (
     fetch_income_statement_async,
@@ -26,7 +26,7 @@ def calculate_yoy_growth(series):
 
 async def get_transformed_dataframes(
     ticker_symbol: str, period: str = "year"
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Fetch pre-computed financial ratios from database.
 
     This function fetches ratios that have already been computed and stored
@@ -54,26 +54,25 @@ async def get_transformed_dataframes(
             fetch_cash_flow_async(ticker_symbol, period),
         )
 
+        # Continue even if ratios are empty - we still have financial statements
         if ratios_df.empty:
-            return {
-                "transformed_income_statement": [],
-                "transformed_balance_sheet": [],
-                "transformed_cash_flow": [],
-                "categorized_ratios": {
-                    "Per Share Value": [],
-                    "Growth Rate": [],
-                    "Profitability": [],
-                    "Valuation": [],
-                    "Leverage & Liquidity": [],
-                    "Efficiency": [],
-                },
-                "error": "No ratio data found in database. Data may need to be loaded via ourscheduler.",
+            print(
+                f"Warning: No ratio data found for {ticker_symbol}, using financial statements only"
+            )
+            # Initialize empty ratios but continue processing
+            categorized_ratios = {
+                "Per Share Value": [],
+                "Growth Rate": [],
+                "Profitability": [],
+                "Valuation": [],
+                "Leverage & Liquidity": [],
+                "Efficiency": [],
             }
-
-        # Categorize the ratios based on metric names, including financial statement metrics
-        categorized_ratios = _categorize_ratios(
-            ratios_df, period, income_df, balance_df, cashflow_df
-        )
+        else:
+            # Categorize the ratios based on metric names, including financial statement metrics
+            categorized_ratios = _categorize_ratios(
+                ratios_df, period, income_df, balance_df, cashflow_df
+            )
 
         # Convert DataFrames to list of dicts for UI
         result = {
@@ -94,7 +93,6 @@ async def get_transformed_dataframes(
         return result
 
     except Exception as e:
-
         error_msg = f"{type(e).__name__}: {str(e)}"
         return {
             "transformed_income_statement": [],
@@ -118,7 +116,7 @@ def _categorize_ratios(
     income_df: pd.DataFrame = None,
     balance_df: pd.DataFrame = None,
     cashflow_df: pd.DataFrame = None,
-) -> Dict[str, list]:
+) -> dict[str, list]:
     """Categorize ratios from database into display categories.
 
     Args:
@@ -297,7 +295,7 @@ def _compute_growth_rates(ratios_df: pd.DataFrame, period: str) -> list:
         period: 'year' or 'quarter'
 
     Returns:
-        List of dictionaries with computed growth rates
+        list of dictionaries with computed growth rates
     """
     if ratios_df.empty:
         return []
@@ -360,7 +358,7 @@ def _compute_ratios_from_statements(
     balance_df: pd.DataFrame,
     cash_flow_df: pd.DataFrame,
     period: str,
-) -> Dict[str, list]:
+) -> dict[str, list]:
     """DEPRECATED: Compute comprehensive financial ratios from raw statement data.
 
     This function is no longer used in production. Ratios are pre-computed

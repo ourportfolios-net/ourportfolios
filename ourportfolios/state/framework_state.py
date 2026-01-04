@@ -1,7 +1,7 @@
 """Global framework state management for cross-page framework selection."""
 
 import reflex as rx
-from typing import Dict, List, Optional
+from typing import Optional
 from sqlalchemy import text
 from ..utils.database.database import get_company_session
 
@@ -11,10 +11,10 @@ class GlobalFrameworkState(rx.State):
 
     # Currently selected framework - regular state variable
     selected_framework_id: Optional[int] = None
-    selected_framework: Dict = {}
+    selected_framework: dict = {}
 
     # Framework metrics mapping
-    framework_metrics: Dict[str, List[str]] = {}
+    framework_metrics: dict[str, list[str]] = {}
 
     # Track if framework has been initialized
     _framework_initialized: bool = False
