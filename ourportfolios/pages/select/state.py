@@ -163,8 +163,6 @@ class State(SessionIsolatedStateMixin, rx.State):
     @session_isolated
     async def get_all_industries(self):
         """Load all available industries from database."""
-        await asyncio.sleep(0)
-
         try:
             async with get_company_session() as session:
                 result = await session.execute(
@@ -175,15 +173,15 @@ class State(SessionIsolatedStateMixin, rx.State):
                     item: False for item in industries
                 }
         except Exception as e:
-            print(f"Database error: {e}")
+            print(
+                f"SELECT PAGE ERROR: Failed to load industries: {type(e).__name__}: {e}"
+            )
             self.industry_filter: dict[str, bool] = {}
 
     @rx.event
     @session_isolated
     async def get_all_exchanges(self):
         """Load all available exchanges from database."""
-        await asyncio.sleep(0)
-
         try:
             async with get_company_session() as session:
                 result = await session.execute(
@@ -194,7 +192,9 @@ class State(SessionIsolatedStateMixin, rx.State):
                     item: False for item in exchanges
                 }
         except Exception as e:
-            print(f"Database error: {e}")
+            print(
+                f"SELECT PAGE ERROR: Failed to load exchanges: {type(e).__name__}: {e}"
+            )
             self.exchange_filter: dict[str, bool] = {}
 
     @rx.event

@@ -73,16 +73,18 @@ class TickerBoardState(rx.State):
                 self._all_tickers_cache = [dict(row) for row in rows]
                 self._cache_loaded = True
         except Exception as e:
-            print(f"Error loading ticker cache: {e}")
+            print(
+                f"TICKER BOARD ERROR: Failed to load ticker cache: {type(e).__name__}: {e}"
+            )
 
     @rx.event
     def set_sort_option(self, option: str):
-        """set column to sort by."""
+        """Set column to sort by."""
         self.selected_sort_option = option
 
     @rx.event
     def set_sort_order(self, order: str):
-        """set sort order (ASC/DESC)."""
+        """Set sort order (ASC/DESC)."""
         self.selected_sort_order = order
 
     @rx.var(cache=True)
