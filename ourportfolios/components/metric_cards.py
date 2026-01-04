@@ -16,9 +16,9 @@ def create_metric_chart(
     Create a single metric chart with customizable options
 
     Args:
+        category: The title/category name for the chart
         available_metrics: list of available metrics for the dropdown
-        selected_metr        category: The title/category name for the chart
-    ic: Currently selected metric
+        selected_metric: Currently selected metric
         chart_data: Data for the chart in format [{"year": "2023", "value": 100}, ...]
         on_metric_change: Callback function when metric selection changes
         chart_height: Height of the chart in pixels

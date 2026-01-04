@@ -390,7 +390,8 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
 
             self.close_add_dialog()
             await self.load_frameworks()
-        except Exception:
+        except Exception as e:
+            print(f"Error: {e}")
             pass
 
     @rx.event
