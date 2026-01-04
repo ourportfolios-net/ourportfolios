@@ -14,7 +14,6 @@ import reflex as rx
 class SessionCancelledError(Exception):
     """Raised when an operation is cancelled due to session termination."""
 
-    pass
 
 
 class SessionManager:
