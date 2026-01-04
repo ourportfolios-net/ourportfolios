@@ -3,7 +3,7 @@
 import asyncio
 import pandas as pd
 import reflex as rx
-from typing import Any, List, Dict, Optional
+from typing import Any, List, Dict, Optional, TYPE_CHECKING
 
 from ...state.framework_state import GlobalFrameworkState
 from ...components.price_chart import PriceChartState
@@ -17,16 +17,11 @@ from ...utils.session_manager import (
 
 
 class State(SessionIsolatedStateMixin, rx.State):
+    if TYPE_CHECKING:  # for Pylance
+        ticker: str
+
     switch_value: str = "year"
     company_control: str = "shares"
-
-    @rx.var
-    def current_ticker(self) -> str:
-        """Get ticker from route parameter."""
-        try:
-            return self.router.url.params.get("ticker", "")
-        except AttributeError:
-            return ""
 
     @rx.event
     def set_company_control(self, value: str | List[str]):
@@ -108,6 +103,12 @@ class State(SessionIsolatedStateMixin, rx.State):
             if not self.is_mounted():
                 return
 
+            if not self.ticker:
+                print("ERROR: No ticker available for loading data")
+                return
+
+            ticker = self.ticker
+
         await self.load_company_data()
 
         async with self:
@@ -120,7 +121,8 @@ class State(SessionIsolatedStateMixin, rx.State):
             if not self.is_mounted():
                 return
 
-        yield PriceChartState.load_state
+        # Pass ticker to PriceChartState.load_state()
+        yield PriceChartState.load_state(ticker)
 
         async with self:
             self._data_loaded = True
@@ -140,7 +142,11 @@ class State(SessionIsolatedStateMixin, rx.State):
     async def load_company_data(self):
         """Load company metadata and price data from database."""
         async with self:
-            ticker = self.current_ticker
+            ticker = self.ticker
+
+        if not ticker:
+            print("✗ ERROR: No ticker specified for load_company_data")
+            return
 
         if not self.is_mounted():
             return
@@ -151,6 +157,7 @@ class State(SessionIsolatedStateMixin, rx.State):
             if not self.is_mounted():
                 return
 
+            print(f"  → Fetching company data for: {ticker}")
             company_data = fetch_company_data(ticker)
 
             if not self.is_mounted():
@@ -170,7 +177,7 @@ class State(SessionIsolatedStateMixin, rx.State):
         except SessionCancelledError:
             return
         except Exception as e:
-            print(f"Error loading company data for {ticker}: {e}")
+            print(f"✗ Error loading company data for {ticker}: {e}")
             async with self:
                 self.overview_df = pd.DataFrame()
                 self.shareholders_df = pd.DataFrame()
@@ -226,54 +233,36 @@ class State(SessionIsolatedStateMixin, rx.State):
     @session_isolated
     async def load_financial_ratios(self):
         """Load financial ratios data dynamically from database via transformed_dataframes."""
-        # Financial ratios are now loaded via load_transformed_dataframes
-        # This method is kept for backward compatibility but delegates to the main loader
         if not self.transformed_dataframes:
             await self.load_transformed_dataframes()
 
     @rx.event
     @session_isolated
     async def load_transformed_dataframes(self):
-        ticker = self.current_ticker
-
-        # CRITICAL: Add await point so task cancellation can take effect
-        await asyncio.sleep(0)
-
-        # Check if still mounted before loading
+        ticker = self.ticker
         if not self.is_mounted():
             return
 
-        # Only fetch data if not already loaded
         if not self.transformed_dataframes:
             try:
+                print(f"  → Fetching financial statements for: {ticker}")
                 result = await get_transformed_dataframes(
                     ticker, period=self.switch_value
                 )
 
-                # Check again after async operation
                 if not self.is_mounted():
                     return
 
-                # Check if API call returned an error
                 async with self:
-                    if "error" in result:
-                        print(f"API error loading financial data: {result['error']}")
-                        # Set empty state but continue - UI will show empty cards gracefully
-                        self.transformed_dataframes = result
-                        self.income_statement = []
-                        self.balance_sheet = []
-                        self.cash_flow = []
-                        self.available_metrics_by_category = {}
-                        self.selected_metrics = {}
-                        return
-                    else:
-                        self.transformed_dataframes = result
-                        self.income_statement = result["transformed_income_statement"]
-                        self.balance_sheet = result["transformed_balance_sheet"]
-                        self.cash_flow = result["transformed_cash_flow"]
+                    self.transformed_dataframes = result
+                    self.income_statement = result.get(
+                        "transformed_income_statement", []
+                    )
+                    self.balance_sheet = result.get("transformed_balance_sheet", [])
+                    self.cash_flow = result.get("transformed_cash_flow", [])
+
             except Exception as e:
-                print(f"Error loading transformed dataframes: {e}")
-                # Set empty data to allow page to continue loading
+                print(f"Error loading transformed dataframes for {ticker}: {e}")
                 async with self:
                     self.transformed_dataframes = {
                         "transformed_income_statement": [],
@@ -290,15 +279,10 @@ class State(SessionIsolatedStateMixin, rx.State):
         else:
             result = self.transformed_dataframes
 
-        # Get current framework state and update state within context manager
         async with self:
             global_state = await self.get_state(GlobalFrameworkState)
             current_framework_id = global_state.selected_framework_id
-
-            # Update tracked framework ID
             self._last_framework_id = current_framework_id
-
-            # Cache framework properties that we'll need later
             has_selected_framework = global_state.has_selected_framework
             framework_metrics = global_state.framework_metrics
 
@@ -318,14 +302,8 @@ class State(SessionIsolatedStateMixin, rx.State):
                 self.available_metrics_by_category = {}
                 self.selected_metrics = {}
 
-                # Include ALL categories from the framework, even if they don't have data yet
-                for (
-                    category,
-                    framework_metric_names,
-                ) in framework_metrics.items():
-                    # Check if category has data in the database
+                for category, framework_metric_names in framework_metrics.items():
                     if category in all_available_metrics:
-                        # Category has data - use the metrics from database
                         self.available_metrics_by_category[category] = (
                             all_available_metrics[category]
                         )
@@ -346,8 +324,6 @@ class State(SessionIsolatedStateMixin, rx.State):
                                 category
                             ][0]
                     else:
-                        # Category is in framework but has no data yet - still include it
-                        # Use the framework's metric list as available metrics
                         if (
                             isinstance(framework_metric_names, list)
                             and len(framework_metric_names) > 0
@@ -357,10 +333,7 @@ class State(SessionIsolatedStateMixin, rx.State):
                             )
                             self.selected_metrics[category] = framework_metric_names[0]
                         else:
-                            # No metrics defined in framework for this category
                             self.available_metrics_by_category[category] = []
-
-                # DO NOT add categories that aren't in the framework
             else:
                 self.available_metrics_by_category = all_available_metrics
                 self.selected_metrics = {}
@@ -372,7 +345,7 @@ class State(SessionIsolatedStateMixin, rx.State):
     @rx.event
     @session_isolated
     async def reload_for_framework_change(self):
-        """Force reload when framework changes - call this explicitly when needed"""
+        """Force reload when framework changes"""
         async with self:
             self.transformed_dataframes = {}
             self.available_metrics_by_category = {}
@@ -406,8 +379,6 @@ class State(SessionIsolatedStateMixin, rx.State):
                 continue
 
             chart_points = []
-            # Data comes sorted by year ASC (oldest first) from categorization
-            # We want the most recent 8 years in chronological order
             for row in data:
                 year = row.get("Year", "")
                 value = row.get(selected_metric)

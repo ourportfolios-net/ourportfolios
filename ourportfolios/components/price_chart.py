@@ -1,6 +1,8 @@
+"""Price chart component State"""
+
 import reflex as rx
 import pandas as pd
-from typing import List, Dict, Any
+from typing import List, Dict, Any, TYPE_CHECKING
 from datetime import date
 from dateutil.relativedelta import relativedelta
 import json
@@ -11,6 +13,8 @@ from ..utils.database.fetch_data import load_historical_data
 
 # Price chart State
 class PriceChartState(rx.State):
+    if TYPE_CHECKING:
+        ticker: str
     # Flag to track if chart.js has loaded
     chart_script_loaded: bool = False
     df: pd.DataFrame = pd.DataFrame()
@@ -42,20 +46,9 @@ class PriceChartState(rx.State):
 
     rsi_period: int = 14
 
-    @rx.var
-    def current_ticker(self) -> str:
-        """Get ticker from route parameter."""
-        try:
-            return self.router.url.params.get("ticker", "")
-        except AttributeError:
-            return ""
-
     @rx.event(background=True)
-    async def load_state(self):
-        """Initialize chart with default settings - runs in background to not block page load"""
-        async with self:
-            ticker: str = self.current_ticker
-
+    async def load_state(self, ticker: str):
+        """Initialize chart with default settings"""
         # Fetch data for each interval outside the state context
         # NOTE: Historical price data is fetched from vnstock API, not database
         # TODO: Store historical prices in database for better performance

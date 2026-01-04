@@ -54,26 +54,25 @@ async def get_transformed_dataframes(
             fetch_cash_flow_async(ticker_symbol, period),
         )
 
+        # Continue even if ratios are empty - we still have financial statements
         if ratios_df.empty:
-            return {
-                "transformed_income_statement": [],
-                "transformed_balance_sheet": [],
-                "transformed_cash_flow": [],
-                "categorized_ratios": {
-                    "Per Share Value": [],
-                    "Growth Rate": [],
-                    "Profitability": [],
-                    "Valuation": [],
-                    "Leverage & Liquidity": [],
-                    "Efficiency": [],
-                },
-                "error": "No ratio data found in database. Data may need to be loaded via ourscheduler.",
+            print(
+                f"Warning: No ratio data found for {ticker_symbol}, using financial statements only"
+            )
+            # Initialize empty ratios but continue processing
+            categorized_ratios = {
+                "Per Share Value": [],
+                "Growth Rate": [],
+                "Profitability": [],
+                "Valuation": [],
+                "Leverage & Liquidity": [],
+                "Efficiency": [],
             }
-
-        # Categorize the ratios based on metric names, including financial statement metrics
-        categorized_ratios = _categorize_ratios(
-            ratios_df, period, income_df, balance_df, cashflow_df
-        )
+        else:
+            # Categorize the ratios based on metric names, including financial statement metrics
+            categorized_ratios = _categorize_ratios(
+                ratios_df, period, income_df, balance_df, cashflow_df
+            )
 
         # Convert DataFrames to list of dicts for UI
         result = {
@@ -94,7 +93,6 @@ async def get_transformed_dataframes(
         return result
 
     except Exception as e:
-
         error_msg = f"{type(e).__name__}: {str(e)}"
         return {
             "transformed_income_statement": [],
