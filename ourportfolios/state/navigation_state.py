@@ -16,7 +16,9 @@ class GlobalNavigationState(rx.State):
             if current_route != self._last_route and self._last_route != "":
                 # Cancel all sessions immediately
                 manager = get_session_manager()
-                manager.cancel_all_sessions()
+                cancel_all = getattr(manager, "cancel_all_sessions", None)
+                if callable(cancel_all):
+                    cancel_all()
             self._last_route = current_route
         except (AttributeError, KeyError):
             pass  # Router not ready yet
