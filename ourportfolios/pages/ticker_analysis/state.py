@@ -1,4 +1,30 @@
-"""State management for ticker analysis page."""
+"""State management for ticker analysis page.
+
+INSTANT SKELETON FIX - NO DATA FLASH:
+======================================
+
+The key insight: We need SYNCHRONOUS checks in the render cycle to detect
+ticker mismatches and force skeletons IMMEDIATELY, before any async operations.
+
+SOLUTION:
+---------
+1. Track which ticker the current data belongs to: `_data_ticker`
+2. Create computed vars (rx.var) that check: current ticker == _data_ticker?
+3. If mismatch, these vars return True to show skeletons INSTANTLY
+4. This happens synchronously during render, preventing any flash
+
+FLOW:
+-----
+1. User clicks ticker "XYZ" (was on "ABC")
+2. Router updates: ticker = "XYZ"
+3. RENDER CYCLE STARTS
+4. Computed vars see: ticker="XYZ" != _data_ticker="ABC"
+5. should_show_skeleton_company returns True INSTANTLY
+6. Skeleton renders (no old data shown!)
+7. on_mount() fires, auto_load_data() starts
+8. Data loads, _data_ticker updated to "XYZ"
+9. Next render shows real data
+"""
 
 import asyncio
 import pandas as pd
@@ -23,10 +49,13 @@ class State(SessionIsolatedStateMixin, rx.State):
     switch_value: str = "year"
     company_control: str = "shares"
 
-    # Loading flags - start True so skeletons show on first render
-    is_loading_company: bool = True
-    is_loading_financial: bool = True
-    is_loading_price: bool = True
+    # Track which ticker the current data belongs to
+    _data_ticker: str = ""
+
+    # Actual loading flags (set by async operations)
+    _is_loading_company: bool = True
+    _is_loading_financial: bool = True
+    _is_loading_price: bool = True
 
     error_company: str = ""
     error_financial: str = ""
@@ -75,6 +104,33 @@ class State(SessionIsolatedStateMixin, rx.State):
     _data_loaded: bool = False
     _last_framework_id: Optional[int] = None
 
+    # ============================================================================
+    # COMPUTED VARS - These run SYNCHRONOUSLY during render to prevent data flash
+    # ============================================================================
+
+    @rx.var
+    def is_loading_company(self) -> bool:
+        """Show skeleton if ticker changed OR actually loading."""
+        # If ticker doesn't match data, force skeleton
+        if self.ticker != self._data_ticker:
+            return True
+        # Otherwise use actual loading state
+        return self._is_loading_company
+
+    @rx.var
+    def is_loading_financial(self) -> bool:
+        """Show skeleton if ticker changed OR actually loading."""
+        if self.ticker != self._data_ticker:
+            return True
+        return self._is_loading_financial
+
+    @rx.var
+    def is_loading_price(self) -> bool:
+        """Show skeleton if ticker changed OR actually loading."""
+        if self.ticker != self._data_ticker:
+            return True
+        return self._is_loading_price
+
     def on_mount(self):
         """Initialize session and trigger background data loading."""
         super().on_mount()
@@ -98,11 +154,12 @@ class State(SessionIsolatedStateMixin, rx.State):
         self._data_loaded = False
         self._last_framework_id = None
         self.render_key = 0
+        self._data_ticker = ""
 
         # Reset loading states
-        self.is_loading_company = True
-        self.is_loading_financial = True
-        self.is_loading_price = True
+        self._is_loading_company = True
+        self._is_loading_financial = True
+        self._is_loading_price = True
         self.error_company = ""
         self.error_financial = ""
 
@@ -114,29 +171,56 @@ class State(SessionIsolatedStateMixin, rx.State):
         Automatically exits if the user navigates away during loading.
         """
         async with self:
-            if self._data_loaded:
-                return
-
             if not self.is_mounted():
                 return
 
             if not self.ticker:
-                print("ERROR: No ticker available for loading data")
-                self.is_loading_company = False
-                self.is_loading_financial = False
-                self.is_loading_price = False
+                self._is_loading_company = False
+                self._is_loading_financial = False
+                self._is_loading_price = False
                 return
 
             ticker = self.ticker
-            print(f"[State] Loading page for: {ticker}")
 
-            # Increment render key to force re-render
-            self.render_key += 1
+            # Check if we're loading a different ticker
+            ticker_changed = ticker != self._current_ticker
 
-            # Set loading states
-            self.is_loading_company = True
-            self.is_loading_financial = True
-            self.is_loading_price = True
+            # ALWAYS reset loading states when ticker changes OR when data hasn't been loaded
+            if ticker_changed or not self._data_loaded:
+                # Reset ALL state including old data to prevent flashing
+                self._current_ticker = ticker
+                self._data_loaded = False
+                self._data_ticker = ""  # Clear data ticker to trigger skeletons
+
+                # Clear old data immediately
+                self.overview_df = pd.DataFrame()
+                self.profile_df = pd.DataFrame()
+                self.shareholders_df = pd.DataFrame()
+                self.events_df = pd.DataFrame()
+                self.news_df = pd.DataFrame()
+                self.officers_df = pd.DataFrame()
+                self.price_data = pd.DataFrame()
+                self.transformed_dataframes = {}
+                self.income_statement = []
+                self.balance_sheet = []
+                self.cash_flow = []
+                self.available_metrics_by_category = {}
+                self.selected_metrics = {}
+
+                # Reset errors
+                self.error_company = ""
+                self.error_financial = ""
+
+                # Increment render key to force re-render
+                self.render_key += 1
+
+                # Set internal loading states to True
+                self._is_loading_company = True
+                self._is_loading_financial = True
+                self._is_loading_price = True
+            else:
+                # Data already loaded for this ticker, just return
+                return
 
         # Load company data (includes price_data now)
         await self.load_company_data()
@@ -169,7 +253,7 @@ class State(SessionIsolatedStateMixin, rx.State):
             self.income_statement = []
             self.balance_sheet = []
             self.cash_flow = []
-            self.is_loading_financial = True
+            self._is_loading_financial = True
             self.error_financial = ""
         await self.load_transformed_dataframes()
 
@@ -181,10 +265,9 @@ class State(SessionIsolatedStateMixin, rx.State):
             ticker = self.ticker
 
         if not ticker:
-            print("✗ ERROR: No ticker specified for load_company_data")
             async with self:
-                self.is_loading_company = False
-                self.is_loading_price = False
+                self._is_loading_company = False
+                self._is_loading_price = False
             return
 
         if not self.is_mounted():
@@ -196,13 +279,11 @@ class State(SessionIsolatedStateMixin, rx.State):
             if not self.is_mounted():
                 return
 
-            print(f"[State] 🔵 Loading company: {ticker}")
             company_data = fetch_company_data(ticker)
 
             if not self.is_mounted():
                 return
 
-            print(f"[State] 🟡 Loading price: {ticker}")
             price_data = await fetch_price_data_async(ticker)
 
             async with self:
@@ -213,15 +294,16 @@ class State(SessionIsolatedStateMixin, rx.State):
                 self.profile_df = company_data.get("profile", pd.DataFrame())
                 self.officers_df = company_data.get("officers", pd.DataFrame())
                 self.price_data = price_data
-                self.is_loading_company = False
-                self.is_loading_price = False
+
+                # Update data ticker when company data is loaded
+                self._data_ticker = ticker
+                self._is_loading_company = False
+                self._is_loading_price = False
                 self.error_company = ""
-                print("[State] ✅ Company & Price loaded")
 
         except SessionCancelledError:
             return
         except Exception as e:
-            print(f"[State] ❌ Company/Price error: {e}")
             async with self:
                 self.overview_df = pd.DataFrame()
                 self.shareholders_df = pd.DataFrame()
@@ -230,8 +312,9 @@ class State(SessionIsolatedStateMixin, rx.State):
                 self.profile_df = pd.DataFrame()
                 self.officers_df = pd.DataFrame()
                 self.price_data = pd.DataFrame()
-                self.is_loading_company = False
-                self.is_loading_price = False
+                self._data_ticker = ticker  # Still update to prevent infinite skeleton
+                self._is_loading_company = False
+                self._is_loading_price = False
                 self.error_company = str(e)
 
     @rx.var
@@ -240,8 +323,7 @@ class State(SessionIsolatedStateMixin, rx.State):
             return {}
         try:
             return self.overview_df.iloc[0].to_dict()
-        except Exception as e:
-            print(f"[State] Warning: Error getting overview - {e}")
+        except Exception:
             return {}
 
     @rx.var
@@ -250,8 +332,7 @@ class State(SessionIsolatedStateMixin, rx.State):
             return {}
         try:
             return self.profile_df.iloc[0].to_dict()
-        except Exception as e:
-            print(f"[State] Warning: Error getting profile - {e}")
+        except Exception:
             return {}
 
     @rx.var
@@ -260,8 +341,7 @@ class State(SessionIsolatedStateMixin, rx.State):
             return []
         try:
             return self.shareholders_df.to_dict("records")
-        except Exception as e:
-            print(f"[State] Warning: Error getting shareholders - {e}")
+        except Exception:
             return []
 
     @rx.var
@@ -270,8 +350,7 @@ class State(SessionIsolatedStateMixin, rx.State):
             return []
         try:
             return self.events_df.to_dict("records")
-        except Exception as e:
-            print(f"[State] Warning: Error getting events - {e}")
+        except Exception:
             return []
 
     @rx.var
@@ -280,8 +359,7 @@ class State(SessionIsolatedStateMixin, rx.State):
             return []
         try:
             return self.news_df.to_dict("records")
-        except Exception as e:
-            print(f"[State] Warning: Error getting news - {e}")
+        except Exception:
             return []
 
     @rx.var
@@ -290,8 +368,7 @@ class State(SessionIsolatedStateMixin, rx.State):
             return []
         try:
             return self.officers_df.to_dict("records")
-        except Exception as e:
-            print(f"[State] Warning: Error getting officers - {e}")
+        except Exception:
             return []
 
     @rx.event
@@ -311,16 +388,14 @@ class State(SessionIsolatedStateMixin, rx.State):
 
         async with self:
             switch_value = self.switch_value
-            print(f"[State] 🟢 Loading financial: {ticker}")
 
         if not self.transformed_dataframes:
             try:
                 result = await get_transformed_dataframes(ticker, period=switch_value)
 
                 if "error" in result:
-                    print(f"[State] ❌ Financial API error: {result['error']}")
                     async with self:
-                        self.is_loading_financial = False
+                        self._is_loading_financial = False
                         self.error_financial = result["error"]
                     return
 
@@ -336,10 +411,6 @@ class State(SessionIsolatedStateMixin, rx.State):
                     self.cash_flow = result.get("transformed_cash_flow", [])
 
             except Exception as e:
-                print(f"[State] ❌ Financial error: {e}")
-                import traceback
-
-                traceback.print_exc()
                 async with self:
                     self.transformed_dataframes = {
                         "transformed_income_statement": [],
@@ -352,7 +423,7 @@ class State(SessionIsolatedStateMixin, rx.State):
                     self.cash_flow = []
                     self.available_metrics_by_category = {}
                     self.selected_metrics = {}
-                    self.is_loading_financial = False
+                    self._is_loading_financial = False
                     self.error_financial = str(e)
                 return
 
@@ -420,9 +491,8 @@ class State(SessionIsolatedStateMixin, rx.State):
                     if metrics and len(metrics) > 0:
                         self.selected_metrics[category] = metrics[0]
 
-            self.is_loading_financial = False
+            self._is_loading_financial = False
             self.error_financial = ""
-            print("[State] ✅ Financial loaded")
 
     @rx.event
     @session_isolated
@@ -439,7 +509,7 @@ class State(SessionIsolatedStateMixin, rx.State):
     def set_metric_for_category(self, category: str, metric: str):
         self.selected_metrics[category] = metric
 
-    @rx.var(cache=True)
+    @rx.var
     def get_chart_data_for_category(self) -> dict[str, list[dict[str, Any]]]:
         """Get chart data for all categories."""
         chart_data = {}
@@ -475,10 +545,7 @@ class State(SessionIsolatedStateMixin, rx.State):
                         value_float = float(value)
                     else:
                         value_float = 0
-                except (ValueError, TypeError) as e:
-                    print(
-                        f"[State] Warning: Error converting value to float: {value} - {e}"
-                    )
+                except (ValueError, TypeError):
                     value_float = 0
 
                 chart_points.append({"year": year, "value": value_float})
@@ -515,6 +582,5 @@ class State(SessionIsolatedStateMixin, rx.State):
             for idx, d in enumerate(pie_data):
                 d["fill"] = colors[idx % len(colors)]
             return pie_data
-        except Exception as e:
-            print(f"[State] Warning: Error creating pie_data - {e}")
+        except Exception:
             return []

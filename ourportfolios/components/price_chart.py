@@ -56,14 +56,12 @@ class PriceChartState(rx.State):
         # Check if we already loaded for this ticker
         async with self:
             if ticker == self._last_ticker and not self.df.empty:
-                print(f"[PriceChartState] Price chart already loaded for: {ticker}")
                 self.is_loading = False
                 yield PriceChartState.render_price_chart
                 return
 
             self._last_ticker = ticker
             self.is_loading = True
-            print(f"[PriceChartState] Starting background load for: {ticker}")
 
         try:
             # Fetch data for each interval outside the state context
@@ -88,7 +86,6 @@ class PriceChartState(rx.State):
                     item: False for item in self.ma_period.keys()
                 }
                 self.is_loading = False
-                print("[PriceChartState] Price chart data loaded ✓")
 
             # Initialize chart
             yield PriceChartState.render_price_chart
