@@ -50,6 +50,7 @@ class TickerBoardState(rx.State):
         """Update search query."""
         self.search_query = value
 
+    @rx.event
     async def load_all_tickers_cache(self):
         """Load all tickers into memory once for instant filtering."""
         if self._cache_loaded:
