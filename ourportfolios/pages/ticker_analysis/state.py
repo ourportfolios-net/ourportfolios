@@ -157,7 +157,6 @@ class State(SessionIsolatedStateMixin, rx.State):
             if not self.is_mounted():
                 return
 
-            print(f"  → Fetching company data for: {ticker}")
             company_data = fetch_company_data(ticker)
 
             if not self.is_mounted():
@@ -245,7 +244,6 @@ class State(SessionIsolatedStateMixin, rx.State):
 
         if not self.transformed_dataframes:
             try:
-                print(f"  → Fetching financial statements for: {ticker}")
                 result = await get_transformed_dataframes(
                     ticker, period=self.switch_value
                 )
