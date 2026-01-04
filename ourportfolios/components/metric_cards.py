@@ -17,7 +17,7 @@ def create_metric_chart(
 
     Args:
         category: The title/category name for the chart
-        available_metrics: list of available metrics for the dropdown
+        available_metrics: List of available metrics for the dropdown
         selected_metric: Currently selected metric
         chart_data: Data for the chart in format [{"year": "2023", "value": 100}, ...]
         on_metric_change: Callback function when metric selection changes

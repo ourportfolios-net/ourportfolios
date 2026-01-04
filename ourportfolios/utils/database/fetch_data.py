@@ -205,7 +205,7 @@ def fetch_company_data(symbol: str) -> dict[str, pd.DataFrame]:
         symbol: Ticker symbol to fetch data for
 
     Returns:
-        dictionary with dataframes for each data type
+        Dictionary with dataframes for each data type
     """
     tables = [
         "overview",

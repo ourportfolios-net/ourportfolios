@@ -37,7 +37,7 @@ async def get_transformed_dataframes(
         period: 'year' or 'quarter'
 
     Returns:
-        dictionary containing categorized ratios ready for display
+        Dictionary containing categorized ratios ready for display
     """
     cache_key = f"{ticker_symbol}_{period}"
     if cache_key in _cache:
@@ -127,7 +127,7 @@ def _categorize_ratios(
         cashflow_df: Cash flow DataFrame (optional)
 
     Returns:
-        dictionary of categorized ratios ready for display
+        Dictionary of categorized ratios ready for display
     """
     categorized_ratios = {
         "Per Share Value": [],
