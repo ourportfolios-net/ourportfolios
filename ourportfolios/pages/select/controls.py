@@ -104,7 +104,7 @@ def display_sort_options() -> rx.Component:
 
 
 def ticker_filter():
-    """Filter bar with fast search that directly filters the ticker board below."""
+    """Filter bar with a search input that directly filters the ticker board below."""
     return rx.flex(
         rx.box(
             rx.input(
