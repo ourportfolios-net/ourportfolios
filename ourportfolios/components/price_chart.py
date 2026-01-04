@@ -60,7 +60,7 @@ class PriceChartState(rx.State):
                 self.is_loading = False
                 yield PriceChartState.render_price_chart
                 return
-            
+
             self._last_ticker = ticker
             self.is_loading = True
             print(f"[PriceChartState] Starting background load for: {ticker}")
@@ -84,9 +84,11 @@ class PriceChartState(rx.State):
                 # Default range
                 self.df: pd.DataFrame = self.df_by_interval[self.selected_interval]
                 # Loads MA options
-                self.selected_ma_period = {item: False for item in self.ma_period.keys()}
+                self.selected_ma_period = {
+                    item: False for item in self.ma_period.keys()
+                }
                 self.is_loading = False
-                print(f"[PriceChartState] Price chart data loaded ✓")
+                print("[PriceChartState] Price chart data loaded ✓")
 
             # Initialize chart
             yield PriceChartState.render_price_chart

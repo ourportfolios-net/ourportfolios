@@ -216,7 +216,7 @@ class State(SessionIsolatedStateMixin, rx.State):
                 self.is_loading_company = False
                 self.is_loading_price = False
                 self.error_company = ""
-                print(f"[State] ✅ Company & Price loaded")
+                print("[State] ✅ Company & Price loaded")
 
         except SessionCancelledError:
             return
@@ -240,7 +240,8 @@ class State(SessionIsolatedStateMixin, rx.State):
             return {}
         try:
             return self.overview_df.iloc[0].to_dict()
-        except:
+        except Exception as e:
+            print(f"[State] Warning: Error getting overview - {e}")
             return {}
 
     @rx.var
@@ -249,7 +250,8 @@ class State(SessionIsolatedStateMixin, rx.State):
             return {}
         try:
             return self.profile_df.iloc[0].to_dict()
-        except:
+        except Exception as e:
+            print(f"[State] Warning: Error getting profile - {e}")
             return {}
 
     @rx.var
@@ -258,7 +260,8 @@ class State(SessionIsolatedStateMixin, rx.State):
             return []
         try:
             return self.shareholders_df.to_dict("records")
-        except:
+        except Exception as e:
+            print(f"[State] Warning: Error getting shareholders - {e}")
             return []
 
     @rx.var
@@ -267,7 +270,8 @@ class State(SessionIsolatedStateMixin, rx.State):
             return []
         try:
             return self.events_df.to_dict("records")
-        except:
+        except Exception as e:
+            print(f"[State] Warning: Error getting events - {e}")
             return []
 
     @rx.var
@@ -276,7 +280,8 @@ class State(SessionIsolatedStateMixin, rx.State):
             return []
         try:
             return self.news_df.to_dict("records")
-        except:
+        except Exception as e:
+            print(f"[State] Warning: Error getting news - {e}")
             return []
 
     @rx.var
@@ -285,7 +290,8 @@ class State(SessionIsolatedStateMixin, rx.State):
             return []
         try:
             return self.officers_df.to_dict("records")
-        except:
+        except Exception as e:
+            print(f"[State] Warning: Error getting officers - {e}")
             return []
 
     @rx.event
@@ -309,9 +315,7 @@ class State(SessionIsolatedStateMixin, rx.State):
 
         if not self.transformed_dataframes:
             try:
-                result = await get_transformed_dataframes(
-                    ticker, period=switch_value
-                )
+                result = await get_transformed_dataframes(ticker, period=switch_value)
 
                 if "error" in result:
                     print(f"[State] ❌ Financial API error: {result['error']}")
@@ -334,6 +338,7 @@ class State(SessionIsolatedStateMixin, rx.State):
             except Exception as e:
                 print(f"[State] ❌ Financial error: {e}")
                 import traceback
+
                 traceback.print_exc()
                 async with self:
                     self.transformed_dataframes = {
@@ -417,7 +422,7 @@ class State(SessionIsolatedStateMixin, rx.State):
 
             self.is_loading_financial = False
             self.error_financial = ""
-            print(f"[State] ✅ Financial loaded")
+            print("[State] ✅ Financial loaded")
 
     @rx.event
     @session_isolated
@@ -470,7 +475,10 @@ class State(SessionIsolatedStateMixin, rx.State):
                         value_float = float(value)
                     else:
                         value_float = 0
-                except:
+                except (ValueError, TypeError) as e:
+                    print(
+                        f"[State] Warning: Error converting value to float: {value} - {e}"
+                    )
                     value_float = 0
 
                 chart_points.append({"year": year, "value": value_float})
@@ -507,5 +515,6 @@ class State(SessionIsolatedStateMixin, rx.State):
             for idx, d in enumerate(pie_data):
                 d["fill"] = colors[idx % len(colors)]
             return pie_data
-        except:
+        except Exception as e:
+            print(f"[State] Warning: Error creating pie_data - {e}")
             return []
