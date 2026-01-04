@@ -2,7 +2,7 @@
 
 import reflex as rx
 from typing import Any
-from sqlalchemy import TextClause, text
+from sqlalchemy import text
 from ..utils.database.database import get_company_session
 
 
@@ -10,6 +10,10 @@ class TickerBoardState(rx.State):
     """State for managing ticker board filters, sorts, and display."""
 
     search_query: str = ""
+
+    # Cache all tickers in memory for instant filtering
+    _all_tickers_cache: list[dict[str, Any]] = []
+    _cache_loaded: bool = False
 
     # Filters
     selected_exchange: set[str] = set()
@@ -46,6 +50,31 @@ class TickerBoardState(rx.State):
         """Update search query."""
         self.search_query = value
 
+    async def load_all_tickers_cache(self):
+        """Load all tickers into memory once for instant filtering."""
+        if self._cache_loaded:
+            return
+
+        query = """
+            SELECT 
+                pb.symbol, pb.current_price, pb.accumulated_volume, 
+                pb.pct_price_change, pd.company_name, od.market_cap,
+                od.industry, od.exchange
+            FROM tickers.price_df AS pb 
+            JOIN tickers.profile_df AS pd ON pb.symbol = pd.symbol 
+            JOIN tickers.overview_df AS od ON pd.symbol = od.symbol
+            ORDER BY pb.accumulated_volume DESC
+        """
+
+        try:
+            async with get_company_session() as session:
+                result = await session.execute(text(query))
+                rows = result.mappings().all()
+                self._all_tickers_cache = [dict(row) for row in rows]
+                self._cache_loaded = True
+        except Exception as e:
+            print(f"Error loading ticker cache: {e}")
+
     @rx.event
     def set_sort_option(self, option: str):
         """set column to sort by."""
@@ -56,75 +85,39 @@ class TickerBoardState(rx.State):
         """set sort order (ASC/DESC)."""
         self.selected_sort_order = order
 
-    @rx.var
-    async def get_all_tickers(self) -> list[dict[str, Any]]:
-        """Get all tickers matching current filters and search."""
-        query: list[str] = [
-            f"""SELECT 
-                pb.symbol, pb.current_price, pb.accumulated_volume, pb.pct_price_change, pd.company_name, od.market_cap
-                FROM tickers.price_df AS pb 
-                JOIN tickers.profile_df AS pd ON pb.symbol = pd.symbol 
-                JOIN tickers.overview_df AS od ON pd.symbol = od.symbol
-                {"JOIN tickers.stats_df AS sd ON pd.symbol = sd.symbol" if len(self.selected_fundamental_metric) > 0 or len(self.selected_technical_metric) > 0 else ""}
-                WHERE
-            """
-        ]
+    @rx.var(cache=True)
+    def get_all_tickers(self) -> list[dict[str, Any]]:
+        """Get all tickers matching current filters and search - client-side filtering."""
+        if not self._cache_loaded or not self._all_tickers_cache:
+            return []
 
-        if self.search_query != "":
-            # Fast simple search - just prefix match
-            query.append("pb.symbol LIKE :pattern")
-            params = {"pattern": f"{self.search_query.upper()}%"}
-        else:
-            query.append("1=1")
-            params = None
+        # Start with all cached tickers
+        results = self._all_tickers_cache
+
+        # Filter by search query (client-side)
+        if self.search_query:
+            search_upper = self.search_query.upper()
+            results = [t for t in results if t["symbol"].startswith(search_upper)]
 
         # Filter by industry
-        if len(self.selected_industry) > 0:
-            query.append(
-                f"AND industry IN ({', '.join(f"'{industry}'" for industry in self.selected_industry)})"
-            )
+        if self.selected_industry:
+            results = [
+                t for t in results if t.get("industry") in self.selected_industry
+            ]
 
         # Filter by exchange
-        if len(self.selected_exchange) > 0:
-            query.append(
-                f"AND exchange IN ({', '.join(f"'{exchange}'" for exchange in self.selected_exchange)})"
-            )
-
-        # Filter by fundamental metrics
-        if len(self.selected_fundamental_metric) > 0:
-            query.append(
-                " ".join(
-                    [
-                        f"AND {metric} BETWEEN {value_range[0]} AND {value_range[1]}"
-                        for metric, value_range in self.selected_fundamental_metric.items()
-                    ]
-                )
-            )
-
-        # Filter by technical metrics
-        if len(self.selected_technical_metric) > 0:
-            query.append(
-                " ".join(
-                    [
-                        f"AND {metric} BETWEEN {value_range[0]} AND {value_range[1]}"
-                        for metric, value_range in self.selected_technical_metric.items()
-                    ]
-                )
-            )
+        if self.selected_exchange:
+            results = [
+                t for t in results if t.get("exchange") in self.selected_exchange
+            ]
 
         # Apply sorting
-        if self.selected_sort_option:
-            query.append(
-                f"ORDER BY {self.selected_sort_option} {self.selected_sort_order}"
+        if self.selected_sort_option and results:
+            reverse = self.selected_sort_order == "DESC"
+            results = sorted(
+                results,
+                key=lambda x: x.get(self.selected_sort_option, 0),
+                reverse=reverse,
             )
 
-        full_query: TextClause = text(" ".join(query))
-
-        try:
-            async with get_company_session() as session:
-                result = await session.execute(full_query, params or {})
-                rows = result.mappings().all()
-                return [dict(row) for row in rows]
-        except Exception as e:
-            print(f"Error fetching tickers: {e}")
-            return []
+        return results

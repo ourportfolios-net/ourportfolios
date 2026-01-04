@@ -68,6 +68,9 @@ class State(SessionIsolatedStateMixin, rx.State):
             self.get_technicals_default_value()
             self.search_query = ""
 
+            ticker_board_state = await self.get_state(TickerBoardState)
+            await ticker_board_state.load_all_tickers_cache()
+
             self._data_loaded = True
 
     @rx.event
@@ -217,7 +220,7 @@ class State(SessionIsolatedStateMixin, rx.State):
 
     @rx.event
     def set_search_query(self, value: str):
-        """Set search query and update ticker board filter immediately."""
+        """Set search query with instant update."""
         self.search_query = value
         return TickerBoardState.set_search_query(value)
 
