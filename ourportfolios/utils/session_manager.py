@@ -91,7 +91,8 @@ class SessionManager:
             for task in active_tasks:
                 try:
                     task.cancel()
-                except Exception:
+                except Exception as e:
+                    print(f"Error: {e}")
                     pass
 
         if session_id in self._session_tasks:
