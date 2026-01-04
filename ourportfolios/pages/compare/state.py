@@ -24,7 +24,6 @@ from ...state.framework_state import GlobalFrameworkState
 from ...utils.session_manager import (
     SessionIsolatedStateMixin,
     session_isolated,
-    SessionCancelledError,
 )
 
 
@@ -55,13 +54,7 @@ class StockComparisonState(SessionIsolatedStateMixin, rx.State):
     is_loading_historical: bool = False
     has_initialized: bool = False
 
-    # Cache for API data
     _data_cache: Dict[str, Dict[str, Any]] = {}
-
-    @rx.event
-    async def on_unmount(self):
-        """Cleanup when page is unmounted."""
-        await super().on_unmount()
 
     @rx.var(cache=True)
     def compare_list_length(self) -> int:
@@ -275,12 +268,11 @@ class StockComparisonState(SessionIsolatedStateMixin, rx.State):
             )
 
             if sample_data and "categorized_ratios" in sample_data:
-                self._extract_all_metrics(sample_data)
+                await self._extract_all_metrics_async(sample_data)
                 return True
             return False
 
-        except Exception as e:
-            print(f"[ERROR] Failed to discover metrics: {e}")
+        except Exception:
             return False
 
     def _extract_all_metrics(self, data: Dict[str, Any]) -> None:
@@ -304,6 +296,29 @@ class StockComparisonState(SessionIsolatedStateMixin, rx.State):
             new_metrics[category] = metric_columns
 
         self.all_metrics = new_metrics
+
+    async def _extract_all_metrics_async(self, data: Dict[str, Any]) -> None:
+        """Extract all metrics from API data and update state in async context."""
+        if "categorized_ratios" not in data:
+            return
+
+        categorized_ratios = data["categorized_ratios"]
+        new_metrics = {}
+
+        for category, category_data in categorized_ratios.items():
+            if not category_data or len(category_data) == 0:
+                continue
+
+            df = pd.DataFrame(category_data)
+            # Get all column names except Year, Quarter, period
+            metric_columns = [
+                col for col in df.columns if col not in ["Year", "Quarter", "period"]
+            ]
+
+            new_metrics[category] = metric_columns
+
+        async with self:
+            self.all_metrics = new_metrics
 
     @rx.event
     def toggle_metric(self, metric: str):
@@ -348,25 +363,28 @@ class StockComparisonState(SessionIsolatedStateMixin, rx.State):
     @rx.event
     async def import_cart_to_compare(self):
         """Import tickers from cart to comparison list."""
-        # Import here to avoid circular dependenc
-
-        cart_state = await self.get_state(CartState)
-        tickers = [item["name"] for item in cart_state.cart_items]
-        self.compare_list = tickers
+        async with self:
+            cart_state = await self.get_state(CartState)
+            tickers = [item["name"] for item in cart_state.cart_items]
+            self.compare_list = tickers
 
     @rx.event
     @session_isolated
     async def fetch_stocks_from_compare(self):
         """Fetch stock data for tickers in compare_list from database."""
-        if not self.compare_list:
-            self.stocks = []
-            return
+        async with self:
+            if not self.compare_list:
+                self.stocks = []
+                return
 
         stocks = []
 
         try:
             async with get_company_session() as session:
-                for ticker in self.compare_list:
+                async with self:
+                    compare_list_copy = list(self.compare_list)
+
+                for ticker in compare_list_copy:
                     try:
                         overview_query = text(
                             "SELECT symbol, industry, market_cap "
@@ -389,32 +407,36 @@ class StockComparisonState(SessionIsolatedStateMixin, rx.State):
         except Exception:
             pass
 
-        self.stocks = stocks
+        async with self:
+            self.stocks = stocks
 
     @rx.event
     @session_isolated
     async def fetch_historical_data(self):
         """Fetch historical financial data for all stocks in compare list."""
-        if not self.compare_list:
-            return
-
-        self.is_loading_historical = True
+        async with self:
+            if not self.compare_list:
+                return
+            self.is_loading_historical = True
+            compare_list_copy = list(self.compare_list)
+            time_period_copy = self.time_period
+            data_cache_copy = dict(self._data_cache)
 
         try:
             ticker_data = {}
             tickers_to_fetch = []
 
-            for ticker in self.compare_list:
-                cache_key = f"{ticker}_{self.time_period}"
-                if cache_key in self._data_cache:
-                    ticker_data[ticker] = self._data_cache[cache_key]
+            for ticker in compare_list_copy:
+                cache_key = f"{ticker}_{time_period_copy}"
+                if cache_key in data_cache_copy:
+                    ticker_data[ticker] = data_cache_copy[cache_key]
                 else:
                     tickers_to_fetch.append(ticker)
 
             # Fetch non-cached tickers
             if tickers_to_fetch:
                 tasks = [
-                    get_transformed_dataframes(ticker, period=self.time_period)
+                    get_transformed_dataframes(ticker, period=time_period_copy)
                     for ticker in tickers_to_fetch
                 ]
                 results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -426,27 +448,108 @@ class StockComparisonState(SessionIsolatedStateMixin, rx.State):
                         ticker_data[ticker] = None
                         continue
 
-                    cache_key = f"{ticker}_{self.time_period}"
-                    self._data_cache[cache_key] = result
+                    cache_key = f"{ticker}_{time_period_copy}"
+                    data_cache_copy[cache_key] = result
                     ticker_data[ticker] = result
 
                     # Extract metrics from this data
-                    self._extract_all_metrics(result)
+                    await self._extract_all_metrics_async(result)
 
             # Extract historical values
-            historical_data_temp = self._extract_historical_data(ticker_data)
-            self.historical_data = dict(historical_data_temp)
+            historical_data_temp = self._extract_historical_data_static(
+                ticker_data, time_period_copy
+            )
 
-        except Exception as e:
-            print(f"[ERROR] Failed to fetch historical data: {e}")
-            self.historical_data = {}
+            async with self:
+                self._data_cache.update(data_cache_copy)
+                self.historical_data = dict(historical_data_temp)
+
+        except Exception:
+            async with self:
+                self.historical_data = {}
         finally:
-            self.is_loading_historical = False
+            async with self:
+                self.is_loading_historical = False
+
+    @staticmethod
+    def _extract_historical_data_static(
+        ticker_data: Dict[str, Optional[Dict[str, Any]]], time_period: str
+    ) -> Dict[str, List[Dict[str, Any]]]:
+        """Extract historical data from ticker data for all metrics (static version)."""
+        max_periods = 8 if time_period == "quarter" else 4
+
+        metrics_by_ticker_period = defaultdict(lambda: defaultdict(dict))
+        all_periods = []
+
+        for ticker, data in ticker_data.items():
+            if not data or "categorized_ratios" not in data:
+                continue
+
+            ratios = data["categorized_ratios"]
+
+            for category, category_data in ratios.items():
+                if not category_data:
+                    continue
+
+                df = pd.DataFrame(category_data)
+                if df.empty:
+                    continue
+
+                # Filter by period type
+                if time_period == "quarter":
+                    if "Quarter" not in df.columns:
+                        continue
+                    df["period"] = (
+                        "Q" + df["Quarter"].astype(str) + " " + df["Year"].astype(str)
+                    )
+                    df = df.sort_values(by=["Year", "Quarter"], ascending=False)
+                else:
+                    if "Quarter" in df.columns:
+                        continue
+                    df["period"] = df["Year"].astype(str)
+                    df = df.sort_values(by="Year", ascending=False)
+
+                df = df.head(max_periods)
+
+                available_columns = [
+                    col
+                    for col in df.columns
+                    if col not in ["Year", "Quarter", "period"]
+                ]
+
+                for _, row in df.iterrows():
+                    period = row["period"]
+                    if period not in all_periods:
+                        all_periods.append(period)
+
+                    for metric in available_columns:
+                        value = row[metric]
+                        if pd.notna(value):
+                            metrics_by_ticker_period[metric][ticker][period] = value
+
+        # Convert to the format expected by components
+        result = {}
+        for metric, tickers in metrics_by_ticker_period.items():
+            metric_data = []
+            for period in all_periods:
+                period_data = {"period": period}
+                for ticker, periods in tickers.items():
+                    period_data[ticker] = periods.get(period)
+                metric_data.append(period_data)
+            result[metric] = metric_data
+
+        return result
 
     def _extract_historical_data(
         self, ticker_data: Dict[str, Optional[Dict[str, Any]]]
     ) -> Dict[str, List[Dict[str, Any]]]:
         """Extract historical data from ticker data for all metrics."""
+        return self._extract_historical_data_static(ticker_data, self.time_period)
+
+    def _extract_historical_data_old(
+        self, ticker_data: Dict[str, Optional[Dict[str, Any]]]
+    ) -> Dict[str, List[Dict[str, Any]]]:
+        """Extract historical data from ticker data for all metrics (old implementation)."""
         max_periods = 8 if self.time_period == "quarter" else 4
 
         metrics_by_ticker_period = defaultdict(lambda: defaultdict(dict))
@@ -556,46 +659,47 @@ class StockComparisonState(SessionIsolatedStateMixin, rx.State):
     @session_isolated
     async def apply_framework_filter(self):
         """Apply framework filtering to available metrics."""
-        framework_state = await self.get_state(GlobalFrameworkState)
+        async with self:
+            framework_state = await self.get_state(GlobalFrameworkState)
 
-        if not framework_state.has_selected_framework:
-            self.framework_metrics = {}
-            return
+            if not framework_state.has_selected_framework:
+                self.framework_metrics = {}
+                return
 
-        if not framework_state.framework_metrics:
-            await framework_state.load_framework_metrics()
+            if not framework_state.framework_metrics:
+                await framework_state.load_framework_metrics()
 
-        framework_categories = {}
-        for category in framework_state.framework_metrics.keys():
-            if category in self.all_metrics:
-                framework_categories[category] = self.all_metrics[category]
+            framework_categories = {}
+            for category in framework_state.framework_metrics.keys():
+                if category in self.all_metrics:
+                    framework_categories[category] = self.all_metrics[category]
 
-        self.framework_metrics = framework_categories
+            self.framework_metrics = framework_categories
 
-        if framework_categories:
-            all_framework_metrics = []
-            for metrics in framework_categories.values():
-                all_framework_metrics.extend(metrics)
-            self.selected_metrics = list(set(all_framework_metrics))
+            if framework_categories:
+                all_framework_metrics = []
+                for metrics in framework_categories.values():
+                    all_framework_metrics.extend(metrics)
+                self.selected_metrics = list(set(all_framework_metrics))
 
-    @rx.event
-    async def on_mount(self):
-        """Initialize session when page mounts."""
-        super().on_mount()
+    def on_mount(self):
+        """Initialize session when page is mounted - SYNCHRONOUS for instant load."""
+        super().on_mount()  # Initialize session synchronously
+        return StockComparisonState.auto_load_from_cart
 
-    @rx.event
-    async def on_unmount(self):
-        """Cleanup when page unmounts."""
-        await super().on_unmount()
+    def on_unmount(self):
+        """Cleanup when page is unmounted - SYNCHRONOUS for instant navigation."""
+        super().on_unmount()
 
-    @rx.event
+    @rx.event(background=True)
+    @session_isolated
     async def auto_load_from_cart(self):
-        """Automatically load compare data from cart on page load.
+        """Automatically load compare data from cart on page load (non-blocking)."""
+        async with self:
+            if not self.is_mounted():
+                return
 
-        This orchestrator method doesn't need @session_isolated because
-        all the actual API-calling methods it calls are already isolated.
-        """
-        self.is_loading_data = True
+            self.is_loading_data = True
 
         try:
             # Check if still mounted
@@ -605,34 +709,52 @@ class StockComparisonState(SessionIsolatedStateMixin, rx.State):
             # Discover all available metrics first (isolated)
             await self.discover_all_metrics_from_db()
 
+            if not self.is_mounted():
+                return
+
             # Import from cart
             await self.import_cart_to_compare()
+
+            if not self.is_mounted():
+                return
 
             if self.compare_list:
                 # Fetch data for cart items (isolated)
                 await self.fetch_stocks_from_compare()
+
+                if not self.is_mounted():
+                    return
+
                 # Always fetch historical data for inline graphs (isolated)
                 await self.fetch_historical_data()
 
-            # Apply framework filtering after data is loaded (isolated)
+            if not self.is_mounted():
+                return
+
             await self.apply_framework_filter()
 
-            self.has_initialized = True
+            async with self:
+                self.has_initialized = True
+        except Exception:
+            pass
         finally:
-            self.is_loading_data = False
+            async with self:
+                self.is_loading_data = False
 
     @rx.event
     @session_isolated
     async def add_ticker_to_compare(self, ticker: str):
         """Add a single ticker directly to the compare list and fetch its data."""
-        if ticker in self.compare_list:
-            yield rx.toast.error(f"{ticker} is already in the comparison!")
-            return
+        async with self:
+            if ticker in self.compare_list:
+                yield rx.toast.error(f"{ticker} is already in the comparison!")
+                return
 
-        self.is_loading_data = True
+            self.is_loading_data = True
 
         try:
-            self.compare_list = self.compare_list + [ticker]
+            async with self:
+                self.compare_list = self.compare_list + [ticker]
 
             try:
                 async with get_company_session() as session:
@@ -651,21 +773,25 @@ class StockComparisonState(SessionIsolatedStateMixin, rx.State):
                             "industry": overview_row["industry"],
                             "market_cap": overview_row["market_cap"],
                         }
-                        self.stocks = self.stocks + [stock_data]
+                        async with self:
+                            self.stocks = self.stocks + [stock_data]
 
                         await self.fetch_historical_data()
 
                         yield rx.toast.success(f"{ticker} added to comparison!")
                     else:
-                        self.compare_list = [
-                            t for t in self.compare_list if t != ticker
-                        ]
+                        async with self:
+                            self.compare_list = [
+                                t for t in self.compare_list if t != ticker
+                            ]
                         yield rx.toast.error(f"No data found for {ticker}")
             except Exception:
-                self.compare_list = [t for t in self.compare_list if t != ticker]
+                async with self:
+                    self.compare_list = [t for t in self.compare_list if t != ticker]
                 yield rx.toast.error(f"Error loading {ticker}")
         finally:
-            self.is_loading_data = False
+            async with self:
+                self.is_loading_data = False
 
     @rx.event
     def toggle_view_mode(self):
@@ -681,19 +807,30 @@ class StockComparisonState(SessionIsolatedStateMixin, rx.State):
     @session_isolated
     async def toggle_time_period(self, checked: bool):
         """Toggle between quarterly and yearly time periods."""
-        self.time_period = "year" if checked else "quarter"
+        async with self:
+            self.time_period = "year" if checked else "quarter"
         await self.fetch_historical_data()
 
     @rx.event
     @session_isolated
     async def import_and_fetch_compare(self):
         """Import tickers from cart and fetch their stock data."""
-        prev_compare_list = set(self.compare_list)
+        async with self:
+            prev_compare_list = set(self.compare_list)
 
         await self.import_cart_to_compare()
         await self.fetch_stocks_from_compare()
 
-        if set(self.compare_list) != prev_compare_list:
+        async with self:
+            if set(self.compare_list) != prev_compare_list:
+                pass  # Need to continue outside context
+
+        # Check if changed
+        changed = False
+        async with self:
+            changed = set(self.compare_list) != prev_compare_list
+
+        if changed:
             await self.fetch_historical_data()
             await self.apply_framework_filter()
 
@@ -701,9 +838,14 @@ class StockComparisonState(SessionIsolatedStateMixin, rx.State):
     @session_isolated
     async def toggle_and_load_graphs(self):
         """Toggle to graph view and load historical data if needed."""
-        if self.view_mode == "table":
-            self.view_mode = "graph"
-            if not self.historical_data:
-                await self.fetch_historical_data()
-        else:
-            self.view_mode = "table"
+        should_load = False
+        async with self:
+            if self.view_mode == "table":
+                self.view_mode = "graph"
+                if not self.historical_data:
+                    should_load = True
+            else:
+                self.view_mode = "table"
+
+        if should_load:
+            await self.fetch_historical_data()

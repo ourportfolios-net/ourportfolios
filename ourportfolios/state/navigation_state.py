@@ -14,9 +14,6 @@ class GlobalNavigationState(rx.State):
         try:
             current_route = self.router.page.path
             if current_route != self._last_route and self._last_route != "":
-                print(
-                    f"🔀 GLOBAL: Route changed from {self._last_route} to {current_route}"
-                )
                 # Cancel all sessions immediately
                 manager = get_session_manager()
                 manager.cancel_all_sessions()

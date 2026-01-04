@@ -42,19 +42,24 @@ class PriceChartState(rx.State):
 
     rsi_period: int = 14
 
-    @rx.event
-    def load_state(self):
-        """Initialize chart with default settings"""
-        ticker: str = self.ticker
+    @rx.var
+    def current_ticker(self) -> str:
+        """Get ticker from route parameter."""
+        try:
+            return self.router.url.params.get("ticker", "")
+        except AttributeError:
+            return ""
 
-        # Fetch data for each interval. Time ranges are {
-        #     1D: 3 years
-        #     1W: 5 years (default)
-        #     1M: all (default)
-        # }
+    @rx.event(background=True)
+    async def load_state(self):
+        """Initialize chart with default settings - runs in background to not block page load"""
+        async with self:
+            ticker: str = self.current_ticker
+
+        # Fetch data for each interval outside the state context
         # NOTE: Historical price data is fetched from vnstock API, not database
         # TODO: Store historical prices in database for better performance
-        self.df_by_interval = {
+        df_by_interval_temp = {
             i_range: load_historical_data(
                 symbol=ticker,
                 start=(self.interval_range[i_range]).strftime("%Y-%m-%d"),
@@ -64,32 +69,36 @@ class PriceChartState(rx.State):
             for i_range in self.df_by_interval.keys()
         }
 
-        # Default range
-        self.df: pd.DataFrame = self.df_by_interval[self.selected_interval]
+        async with self:
+            self.df_by_interval = df_by_interval_temp
 
-        # Loads MA options
-        self.selected_ma_period = {item: False for item in self.ma_period.keys()}
+            # Default range
+            self.df: pd.DataFrame = self.df_by_interval[self.selected_interval]
+
+            # Loads MA options
+            self.selected_ma_period = {item: False for item in self.ma_period.keys()}
 
         # Initialize chart
-        yield from self.render_price_chart()
+        yield PriceChartState.render_price_chart
 
-    @rx.event
-    def render_price_chart(self):
+    @rx.event(background=True)
+    async def render_price_chart(self):
         # Only render if script is loaded
-        yield rx.call_script(
-            f"""
-            if (typeof render_price_chart === 'function') {{
-                render_price_chart({self.chart_options}, {self.chart_data});
-            }} else {{
-                console.warn('render_price_chart not yet loaded, scheduling retry...');
-                setTimeout(() => {{
-                    if (typeof render_price_chart === 'function') {{
-                        render_price_chart({self.chart_options}, {self.chart_data});
-                    }}
-                }}, 100);
-            }}
-            """
-        )
+        async with self:
+            yield rx.call_script(
+                f"""
+                if (typeof render_price_chart === 'function') {{
+                    render_price_chart({self.chart_options}, {self.chart_data});
+                }} else {{
+                    console.warn('render_price_chart not yet loaded, scheduling retry...');
+                    setTimeout(() => {{
+                        if (typeof render_price_chart === 'function') {{
+                            render_price_chart({self.chart_options}, {self.chart_data});
+                        }}
+                    }}, 100);
+                }}
+                """
+            )
 
     @rx.event
     def set_interval(self, _range):

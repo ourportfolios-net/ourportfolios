@@ -56,7 +56,7 @@ class TickerBoardState(rx.State):
         """Set sort order (ASC/DESC)."""
         self.selected_sort_order = order
 
-    @rx.var
+    @rx.var(auto_deps=False)
     async def get_all_tickers(self) -> List[Dict[str, Any]]:
         """Get all tickers matching current filters and search."""
         query: List[str] = [

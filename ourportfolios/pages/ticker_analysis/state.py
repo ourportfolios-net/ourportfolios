@@ -1,10 +1,12 @@
 """State management for the ticker landing page."""
 
+import asyncio
 import pandas as pd
 import reflex as rx
 from typing import Any, List, Dict, Optional
 
 from ...state.framework_state import GlobalFrameworkState
+from ...components.price_chart import PriceChartState
 from ...utils.database.fetch_data import fetch_company_data, fetch_price_data_async
 from ...preprocessing.financial_statements import get_transformed_dataframes
 from ...utils.session_manager import (
@@ -17,6 +19,14 @@ from ...utils.session_manager import (
 class State(SessionIsolatedStateMixin, rx.State):
     switch_value: str = "year"
     company_control: str = "shares"
+
+    @rx.var
+    def current_ticker(self) -> str:
+        """Get ticker from route parameter."""
+        try:
+            return self.router.url.params.get("ticker", "")
+        except AttributeError:
+            return ""
 
     @rx.event
     def set_company_control(self, value: str | List[str]):
@@ -59,101 +69,116 @@ class State(SessionIsolatedStateMixin, rx.State):
     # Flag to track if the page is mounted - start as True for initial load
     _is_mounted: bool = True
 
-    # Track the last framework ID to detect changes
+    _data_loaded: bool = False
     _last_framework_id: Optional[int] = None
 
-    @rx.event
-    async def on_mount(self):
-        """Called when page is mounted."""
-        print("🔵 TICKER_ANALYSIS: on_mount called")
-        try:
-            await super().on_mount()  # Initialize session
-            print(f"🔵 TICKER_ANALYSIS: session created, _session_id = {self._session_id}")
-        except Exception as e:
-            print(f"❌ TICKER_ANALYSIS: Error in super().on_mount(): {e}")
-            import traceback
-            traceback.print_exc()
-            return
-        
-        self._is_mounted = True
+    def on_mount(self):
+        """Initialize session and trigger background data loading."""
+        super().on_mount()
+        return State.auto_load_data
 
-        # Trigger data loading AFTER session is created
-        print("🔵 TICKER_ANALYSIS: Starting data loading")
-        await self.load_company_data()
-        await self.load_transformed_dataframes()
-        await self.load_financial_ratios()
-        print("🔵 TICKER_ANALYSIS: Data loading complete")
-
-    @rx.event
-    async def on_unmount(self):
-        """Called when page is unmounted - cleanup async operations."""
+    def on_unmount(self):
+        """Clean up state when page is unmounted."""
         self._is_mounted = False
-        # Clear loaded data to stop any pending operations
+        super().on_unmount()
+
         self.overview_df = pd.DataFrame()
         self.profile_df = pd.DataFrame()
         self.shareholders_df = pd.DataFrame()
         self.events_df = pd.DataFrame()
         self.news_df = pd.DataFrame()
         self.officers_df = pd.DataFrame()
+        self.price_data = pd.DataFrame()
         self.transformed_dataframes = {}
         self.financial_df = pd.DataFrame()
+        self._data_loaded = False
         self._last_framework_id = None
-        await super().on_unmount()  # Cancel session
+
+    @rx.event(background=True)
+    @session_isolated
+    async def auto_load_data(self):
+        """Load page data in the background after mount.
+
+        Automatically exits if the user navigates away during loading.
+        """
+        async with self:
+            if self._data_loaded:
+                return
+
+            if not self.is_mounted():
+                return
+
+        await self.load_company_data()
+
+        async with self:
+            if not self.is_mounted():
+                return
+
+        await self.load_transformed_dataframes()
+
+        async with self:
+            if not self.is_mounted():
+                return
+
+        yield PriceChartState.load_state
+
+        async with self:
+            self._data_loaded = True
 
     @rx.event
     @session_isolated
     async def toggle_switch(self, value: bool):
-        self.switch_value = "year" if value else "quarter"
-        self.transformed_dataframes = {}
-        self.available_metrics_by_category = {}
-        self.selected_metrics = {}
-        await self.load_transformed_dataframes()
+        async with self:
+            self.switch_value = "year" if value else "quarter"
+            self.transformed_dataframes = {}
+            self.available_metrics_by_category = {}
+            self.selected_metrics = {}
+            await self.load_transformed_dataframes()
 
     @rx.event
     @session_isolated
     async def load_company_data(self):
         """Load company metadata and price data from database."""
-        ticker = self.ticker
+        async with self:
+            ticker = self.current_ticker
 
-        # Check if still mounted before fetching data
         if not self.is_mounted():
             return
 
         try:
-            # Fetch company metadata (sync for now, but fast query)
-            company_data = fetch_company_data(ticker)
+            await asyncio.sleep(0)
 
-            # Check again after operation
             if not self.is_mounted():
                 return
 
-            self.overview_df = company_data.get("overview", pd.DataFrame())
-            self.shareholders_df = company_data.get("shareholders", pd.DataFrame())
-            self.events_df = company_data.get("events", pd.DataFrame())
-            self.news_df = company_data.get("news", pd.DataFrame())
-            self.profile_df = company_data.get("profile", pd.DataFrame())
-            self.officers_df = company_data.get("officers", pd.DataFrame())
+            company_data = fetch_company_data(ticker)
 
-            # Fetch current price board data from database (async)
-            # Note: Historical price data is fetched separately by PriceChartState from vnstock API
-            self.price_data = await fetch_price_data_async(ticker)
+            if not self.is_mounted():
+                return
+
+            price_data = await fetch_price_data_async(ticker)
+
+            async with self:
+                self.overview_df = company_data.get("overview", pd.DataFrame())
+                self.shareholders_df = company_data.get("shareholders", pd.DataFrame())
+                self.events_df = company_data.get("events", pd.DataFrame())
+                self.news_df = company_data.get("news", pd.DataFrame())
+                self.profile_df = company_data.get("profile", pd.DataFrame())
+                self.officers_df = company_data.get("officers", pd.DataFrame())
+                self.price_data = price_data
 
         except SessionCancelledError:
-            # User navigated away, silently exit
             return
         except Exception as e:
-            print(f"Error loading company data: {e}")
-            import traceback
-
-            traceback.print_exc()
-            # Set empty dataframes to allow page to continue loading
-            self.overview_df = pd.DataFrame()
-            self.shareholders_df = pd.DataFrame()
-            self.events_df = pd.DataFrame()
-            self.news_df = pd.DataFrame()
-            self.profile_df = pd.DataFrame()
-            self.officers_df = pd.DataFrame()
-            self.price_data = pd.DataFrame()
+            print(f"Error loading company data for {ticker}: {e}")
+            async with self:
+                self.overview_df = pd.DataFrame()
+                self.shareholders_df = pd.DataFrame()
+                self.events_df = pd.DataFrame()
+                self.news_df = pd.DataFrame()
+                self.profile_df = pd.DataFrame()
+                self.officers_df = pd.DataFrame()
+                self.price_data = pd.DataFrame()
 
     @rx.var(cache=True)
     def overview(self) -> dict:
@@ -209,7 +234,10 @@ class State(SessionIsolatedStateMixin, rx.State):
     @rx.event
     @session_isolated
     async def load_transformed_dataframes(self):
-        ticker = self.ticker
+        ticker = self.current_ticker
+
+        # CRITICAL: Add await point so task cancellation can take effect
+        await asyncio.sleep(0)
 
         # Check if still mounted before loading
         if not self.is_mounted():
@@ -227,45 +255,52 @@ class State(SessionIsolatedStateMixin, rx.State):
                     return
 
                 # Check if API call returned an error
-                if "error" in result:
-                    print(f"API error loading financial data: {result['error']}")
-                    # Set empty state but continue - UI will show empty cards gracefully
-                    self.transformed_dataframes = result
+                async with self:
+                    if "error" in result:
+                        print(f"API error loading financial data: {result['error']}")
+                        # Set empty state but continue - UI will show empty cards gracefully
+                        self.transformed_dataframes = result
+                        self.income_statement = []
+                        self.balance_sheet = []
+                        self.cash_flow = []
+                        self.available_metrics_by_category = {}
+                        self.selected_metrics = {}
+                        return
+                    else:
+                        self.transformed_dataframes = result
+                        self.income_statement = result["transformed_income_statement"]
+                        self.balance_sheet = result["transformed_balance_sheet"]
+                        self.cash_flow = result["transformed_cash_flow"]
+            except Exception as e:
+                print(f"Error loading transformed dataframes: {e}")
+                # Set empty data to allow page to continue loading
+                async with self:
+                    self.transformed_dataframes = {
+                        "transformed_income_statement": [],
+                        "transformed_balance_sheet": [],
+                        "transformed_cash_flow": [],
+                        "categorized_ratios": {},
+                    }
                     self.income_statement = []
                     self.balance_sheet = []
                     self.cash_flow = []
                     self.available_metrics_by_category = {}
                     self.selected_metrics = {}
-                    return
-                else:
-                    self.transformed_dataframes = result
-                    self.income_statement = result["transformed_income_statement"]
-                    self.balance_sheet = result["transformed_balance_sheet"]
-                    self.cash_flow = result["transformed_cash_flow"]
-            except Exception as e:
-                print(f"Error loading transformed dataframes: {e}")
-                # Set empty data to allow page to continue loading
-                self.transformed_dataframes = {
-                    "transformed_income_statement": [],
-                    "transformed_balance_sheet": [],
-                    "transformed_cash_flow": [],
-                    "categorized_ratios": {},
-                }
-                self.income_statement = []
-                self.balance_sheet = []
-                self.cash_flow = []
-                self.available_metrics_by_category = {}
-                self.selected_metrics = {}
                 return
         else:
             result = self.transformed_dataframes
 
-        # Get current framework state
-        global_state = await self.get_state(GlobalFrameworkState)
-        current_framework_id = global_state.selected_framework_id
+        # Get current framework state and update state within context manager
+        async with self:
+            global_state = await self.get_state(GlobalFrameworkState)
+            current_framework_id = global_state.selected_framework_id
 
-        # Update tracked framework ID
-        self._last_framework_id = current_framework_id
+            # Update tracked framework ID
+            self._last_framework_id = current_framework_id
+
+            # Cache framework properties that we'll need later
+            has_selected_framework = global_state.has_selected_framework
+            framework_metrics = global_state.framework_metrics
 
         categorized_ratios = result.get("categorized_ratios", {})
         all_available_metrics = {}
@@ -278,70 +313,72 @@ class State(SessionIsolatedStateMixin, rx.State):
                 ]
                 all_available_metrics[category] = metrics
 
-        if global_state.has_selected_framework and global_state.framework_metrics:
-            self.available_metrics_by_category = {}
-            self.selected_metrics = {}
+        async with self:
+            if has_selected_framework and framework_metrics:
+                self.available_metrics_by_category = {}
+                self.selected_metrics = {}
 
-            # Include ALL categories from the framework, even if they don't have data yet
-            for (
-                category,
-                framework_metric_names,
-            ) in global_state.framework_metrics.items():
-                # Check if category has data in the database
-                if category in all_available_metrics:
-                    # Category has data - use the metrics from database
-                    self.available_metrics_by_category[category] = (
-                        all_available_metrics[category]
-                    )
+                # Include ALL categories from the framework, even if they don't have data yet
+                for (
+                    category,
+                    framework_metric_names,
+                ) in framework_metrics.items():
+                    # Check if category has data in the database
+                    if category in all_available_metrics:
+                        # Category has data - use the metrics from database
+                        self.available_metrics_by_category[category] = (
+                            all_available_metrics[category]
+                        )
 
-                    if (
-                        isinstance(framework_metric_names, list)
-                        and len(framework_metric_names) > 0
-                    ):
-                        first_metric = framework_metric_names[0]
-                        if first_metric in all_available_metrics[category]:
-                            self.selected_metrics[category] = first_metric
+                        if (
+                            isinstance(framework_metric_names, list)
+                            and len(framework_metric_names) > 0
+                        ):
+                            first_metric = framework_metric_names[0]
+                            if first_metric in all_available_metrics[category]:
+                                self.selected_metrics[category] = first_metric
+                            else:
+                                self.selected_metrics[category] = all_available_metrics[
+                                    category
+                                ][0]
                         else:
                             self.selected_metrics[category] = all_available_metrics[
                                 category
                             ][0]
                     else:
-                        self.selected_metrics[category] = all_available_metrics[
-                            category
-                        ][0]
-                else:
-                    # Category is in framework but has no data yet - still include it
-                    # Use the framework's metric list as available metrics
-                    if (
-                        isinstance(framework_metric_names, list)
-                        and len(framework_metric_names) > 0
-                    ):
-                        self.available_metrics_by_category[category] = (
-                            framework_metric_names
-                        )
-                        self.selected_metrics[category] = framework_metric_names[0]
-                    else:
-                        # No metrics defined in framework for this category
-                        self.available_metrics_by_category[category] = []
+                        # Category is in framework but has no data yet - still include it
+                        # Use the framework's metric list as available metrics
+                        if (
+                            isinstance(framework_metric_names, list)
+                            and len(framework_metric_names) > 0
+                        ):
+                            self.available_metrics_by_category[category] = (
+                                framework_metric_names
+                            )
+                            self.selected_metrics[category] = framework_metric_names[0]
+                        else:
+                            # No metrics defined in framework for this category
+                            self.available_metrics_by_category[category] = []
 
-            # DO NOT add categories that aren't in the framework
-        else:
-            self.available_metrics_by_category = all_available_metrics
-            self.selected_metrics = {}
+                # DO NOT add categories that aren't in the framework
+            else:
+                self.available_metrics_by_category = all_available_metrics
+                self.selected_metrics = {}
 
-            for category, metrics in all_available_metrics.items():
-                if metrics and len(metrics) > 0:
-                    self.selected_metrics[category] = metrics[0]
+                for category, metrics in all_available_metrics.items():
+                    if metrics and len(metrics) > 0:
+                        self.selected_metrics[category] = metrics[0]
 
     @rx.event
     @session_isolated
     async def reload_for_framework_change(self):
         """Force reload when framework changes - call this explicitly when needed"""
-        self.transformed_dataframes = {}
-        self.available_metrics_by_category = {}
-        self.selected_metrics = {}
-        self._last_framework_id = None
-        await self.load_transformed_dataframes()
+        async with self:
+            self.transformed_dataframes = {}
+            self.available_metrics_by_category = {}
+            self.selected_metrics = {}
+            self._last_framework_id = None
+            await self.load_transformed_dataframes()
 
     @rx.event
     def set_metric_for_category(self, category: str, metric: str):

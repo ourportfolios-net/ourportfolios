@@ -17,7 +17,8 @@ def price_chart_card():
                     id="price_chart",
                     width="100%",
                     height="100%",
-                    on_mount=PriceChartState.load_state,
+                    # Don't use on_mount - it blocks page load
+                    # Instead, trigger from ticker_analysis state
                 ),
                 width="100%",
                 height="350px",

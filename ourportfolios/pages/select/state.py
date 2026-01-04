@@ -10,7 +10,6 @@ from ...utils.database.database import get_company_session
 from ...utils.session_manager import (
     SessionIsolatedStateMixin,
     session_isolated,
-    SessionCancelledError,
 )
 from sqlalchemy import text
 
@@ -23,15 +22,52 @@ class State(SessionIsolatedStateMixin, rx.State):
     # Search bar
     search_query = ""
 
-    @rx.event
-    async def on_mount(self):
-        """Initialize session when page is mounted."""
+    _data_loaded: bool = False
+
+    def on_mount(self):
+        """Initialize session and trigger background data loading."""
+        old_session = getattr(self, "_session_id", None)
         super().on_mount()
 
-    @rx.event
-    async def on_unmount(self):
-        """Cleanup when page is unmounted."""
-        await super().on_unmount()
+        new_session = getattr(self, "_session_id", None)
+        if old_session != new_session:
+            self._data_loaded = False
+
+        return State.auto_load_data
+
+    def on_unmount(self):
+        """Clean up when page is unmounted."""
+        super().on_unmount()
+
+    @rx.event(background=True)
+    @session_isolated
+    async def auto_load_data(self):
+        """Load page data in the background after mount.
+
+        Automatically exits if the user navigates away during loading.
+        """
+        async with self:
+            if self._data_loaded:
+                return
+
+            if not self.is_mounted():
+                return
+
+            await self.get_all_industries()
+
+            if not self.is_mounted():
+                return
+
+            await self.get_all_exchanges()
+
+            if not self.is_mounted():
+                return
+
+            self.get_fundamentals_default_value()
+            self.get_technicals_default_value()
+            self.search_query = ""
+
+            self._data_loaded = True
 
     @rx.event
     def set_control(self, value: str | List[str]):
@@ -120,8 +156,11 @@ class State(SessionIsolatedStateMixin, rx.State):
 
     # Set all metrics/options to their default setting
     @rx.event
+    @session_isolated
     async def get_all_industries(self):
-        """Get all industries from database. Called via rx.run_in_thread."""
+        """Load all available industries from database."""
+        await asyncio.sleep(0)
+
         try:
             async with get_company_session() as session:
                 result = await session.execute(
@@ -131,13 +170,15 @@ class State(SessionIsolatedStateMixin, rx.State):
                 self.industry_filter: Dict[str, bool] = {
                     item: False for item in industries
                 }
-        except Exception as e:
-            print(f"Database error: {e}")
+        except Exception:
             self.industry_filter: Dict[str, bool] = {}
 
     @rx.event
+    @session_isolated
     async def get_all_exchanges(self):
-        """Get all exchanges from database. Called via rx.run_in_thread."""
+        """Load all available exchanges from database."""
+        await asyncio.sleep(0)
+
         try:
             async with get_company_session() as session:
                 result = await session.execute(
@@ -147,8 +188,7 @@ class State(SessionIsolatedStateMixin, rx.State):
                 self.exchange_filter: Dict[str, bool] = {
                     item: False for item in exchanges
                 }
-        except Exception as e:
-            print(f"Database error: {e}")
+        except Exception:
             self.exchange_filter: Dict[str, bool] = {}
 
     @rx.event

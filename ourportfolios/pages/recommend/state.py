@@ -9,7 +9,6 @@ from ...utils.database.database import get_company_session
 from ...utils.session_manager import (
     SessionIsolatedStateMixin,
     session_isolated,
-    SessionCancelledError,
 )
 
 
@@ -203,75 +202,103 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
         if not value:
             self.close_add_metric_dialog()
 
-    @rx.event
-    async def on_load(self):
-        super().on_mount()  # Initialize session
-        await self.load_scopes()
-        if self.scopes:
-            await self.change_scope(self.scopes[0]["value"])
+    def on_mount(self):
+        """Initialize session when page is mounted - SYNCHRONOUS for instant load."""
+        super().on_mount()  # Initialize session synchronously
+        return FrameworkState.auto_load_frameworks
+
+    def on_unmount(self):
+        """Cleanup when page is unmounted - SYNCHRONOUS for instant navigation."""
+        super().on_unmount()
+
+    @rx.event(background=True)
+    @session_isolated
+    async def auto_load_frameworks(self):
+        """Auto-trigger framework loading after page mounts (non-blocking)."""
+        async with self:
+            if not self.is_mounted():
+                return
+
+            await self.load_scopes()
+
+            if not self.is_mounted():
+                return
+
+            if self.scopes:
+                await self.change_scope(self.scopes[0]["value"])
 
     @rx.event
     @session_isolated
     async def load_scopes(self):
-        self.loading_scopes = True
+        async with self:
+            self.loading_scopes = True
+
         try:
-            self.scopes = [
-                {"value": "fundamental", "title": "Fundamental"},
-                {"value": "technical", "title": "Technical"},
-            ]
+            async with self:
+                self.scopes = [
+                    {"value": "fundamental", "title": "Fundamental"},
+                    {"value": "technical", "title": "Technical"},
+                ]
 
-            if self.scopes and not self.active_scope:
-                self.active_scope = self.scopes[0]["value"]
+                if self.scopes and not self.active_scope:
+                    self.active_scope = self.scopes[0]["value"]
 
-        except Exception as e:
-            print(f"Error loading scopes: {e}")
-            self.scopes = [
-                {"value": "fundamental", "title": "Fundamental"},
-                {"value": "technical", "title": "Technical"},
-            ]
+        except Exception:
+            async with self:
+                self.scopes = [
+                    {"value": "fundamental", "title": "Fundamental"},
+                    {"value": "technical", "title": "Technical"},
+                ]
         finally:
-            self.loading_scopes = False
+            async with self:
+                self.loading_scopes = False
 
-    @rx.event
     @rx.event
     @session_isolated
     async def change_scope(self, scope: str):
-        self.active_scope = scope
+        async with self:
+            self.active_scope = scope
         await self.load_frameworks()
 
     @rx.event
     @session_isolated
     async def load_frameworks(self):
-        self.loading_frameworks = True
+        async with self:
+            self.loading_frameworks = True
+
         try:
             async with get_company_session() as session:
-                query = text("""
-                    SELECT 
-                        f.*,
-                        COALESCE(
-                            json_agg(
-                                json_build_object(
-                                    'name', m.metrics,
-                                    'type', m.category,
-                                    'order', m.display_order
-                                ) ORDER BY m.display_order
-                            ) FILTER (WHERE m.id IS NOT NULL),
-                            '[]'::json
-                        ) as metrics
-                    FROM frameworks.frameworks_df f
-                    LEFT JOIN frameworks.framework_metrics_df m ON f.id = m.framework_id
-                    WHERE f.scope = :scope
-                    GROUP BY f.id
-                    ORDER BY f.title
-                """)
+                async with self:
+                    query = text("""
+                        SELECT 
+                            f.*,
+                            COALESCE(
+                                json_agg(
+                                    json_build_object(
+                                        'name', m.metrics,
+                                        'type', m.category,
+                                        'order', m.display_order
+                                    ) ORDER BY m.display_order
+                                ) FILTER (WHERE m.id IS NOT NULL),
+                                '[]'::json
+                            ) as metrics
+                        FROM frameworks.frameworks_df f
+                        LEFT JOIN frameworks.framework_metrics_df m ON f.id = m.framework_id
+                        WHERE f.scope = :scope
+                        GROUP BY f.id
+                        ORDER BY f.title
+                    """)
                 result = await session.execute(query, {"scope": self.active_scope})
                 frameworks = result.mappings().all()
+
+            async with self:
                 self.frameworks = [dict(row) for row in frameworks]
-        except Exception as e:
-            print(f"Error loading frameworks: {e}")
-            self.frameworks = []
+        except Exception:
+            async with self:
+                self.frameworks = []
         finally:
-            self.loading_frameworks = False
+            async with self:
+                self.loading_frameworks = False
 
     @rx.event
     def show_framework_dialog(self, framework: Dict):
@@ -364,15 +391,14 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
 
             self.close_add_dialog()
             await self.load_frameworks()
-        except Exception as e:
-            print(f"Error adding framework: {e}")
+        except Exception:
+            pass
 
     @rx.event
     @session_isolated
     async def select_and_navigate_framework(self):
         """Select the current framework and navigate to ticker selection."""
         if not self.selected_framework:
-            print("Error: No framework selected")
             return
 
         framework_id = None
@@ -382,9 +408,6 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
                 break
 
         if framework_id is None:
-            print(
-                f"Error: Could not find id in framework: {self.selected_framework.keys()}"
-            )
             return
 
         self.close_dialog()

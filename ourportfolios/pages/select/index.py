@@ -157,36 +157,32 @@ def card_with_scrollable_area():
 
 @rx.page(
     route="/select",
-    on_load=[
-        State.on_mount,
-        State.get_all_industries,
-        State.get_all_exchanges,
-        State.get_fundamentals_default_value,
-        State.get_technicals_default_value,
-        State.set_search_query(""),
-    ],
+    on_load=State.on_mount,
 )
 def index():
-    return rx.vstack(
-        navbar(),
-        page_selection(),
-        rx.hstack(
-            rx.vstack(
-                rx.text("asdjfkhsdjf"),
-                industry_roller(),
-                # Filters
-                ticker_filter(),
-                # Tickers info
-                ticker_board(),
-                spacing="1",
-                width="62em",
+    return rx.box(
+        rx.vstack(
+            navbar(),
+            page_selection(),
+            rx.hstack(
+                rx.vstack(
+                    rx.text("asdjfkhsdjf"),
+                    industry_roller(),
+                    # Filters
+                    ticker_filter(),
+                    # Tickers info
+                    ticker_board(),
+                    spacing="1",
+                    width="62em",
+                ),
+                card_with_scrollable_area(),
+                width="100%",
+                justify="center",
+                spacing="6",
+                padding="2em",
+                padding_top="5em",
             ),
-            card_with_scrollable_area(),
-            width="100%",
-            justify="center",
-            spacing="6",
-            padding="2em",
-            padding_top="5em",
+            drawer_button(),
         ),
-        drawer_button(),
+        on_unmount=State.on_unmount,
     )
