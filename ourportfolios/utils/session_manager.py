@@ -15,7 +15,6 @@ class SessionCancelledError(Exception):
     """Raised when an operation is cancelled due to session termination."""
 
 
-
 class SessionManager:
     """Manages page session lifecycles to prevent cross-page data contamination."""
 
@@ -174,21 +173,40 @@ def session_isolated(func: Callable) -> Callable:
     """
     import inspect
 
+    async def _wait_for_session_id(state: rx.State, func_name: str) -> str | None:
+        """Helper to wait for session_id to be available.
+
+        Args:
+            state: The state instance
+            func_name: Name of the function for logging
+
+        Returns:
+            session_id if available, None otherwise
+        """
+        session_id = getattr(state, "_session_id", None)
+
+        if not session_id or session_id == "":
+            for attempt in range(6):
+                await asyncio.sleep(0.05)
+                session_id = getattr(state, "_session_id", None)
+                if session_id and session_id != "":
+                    return session_id
+
+            print(
+                f"Warning: session_id not available for {func_name}, skipping execution"
+            )
+            return None
+
+        return session_id
+
     # Check if the original function is a generator function
     if inspect.isasyncgenfunction(func):
 
         @wraps(func)
         async def wrapper(self: rx.State, *args, **kwargs):
-            session_id = getattr(self, "_session_id", None)
-
-            if not session_id or session_id == "":
-                for _ in range(20):
-                    await asyncio.sleep(0.1)
-                    session_id = getattr(self, "_session_id", None)
-                    if session_id and session_id != "":
-                        break
-                else:
-                    return
+            session_id = await _wait_for_session_id(self, func.__name__)
+            if not session_id:
+                return
 
             manager = get_session_manager()
 
@@ -210,16 +228,9 @@ def session_isolated(func: Callable) -> Callable:
 
         @wraps(func)
         async def wrapper(self: rx.State, *args, **kwargs):
-            session_id = getattr(self, "_session_id", None)
-
-            if not session_id or session_id == "":
-                for _ in range(20):
-                    await asyncio.sleep(0.1)
-                    session_id = getattr(self, "_session_id", None)
-                    if session_id and session_id != "":
-                        break
-                else:
-                    return
+            session_id = await _wait_for_session_id(self, func.__name__)
+            if not session_id:
+                return
 
             manager = get_session_manager()
 
