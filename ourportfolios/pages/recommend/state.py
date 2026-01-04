@@ -1,7 +1,6 @@
 """State management for framework recommendation page."""
 
 import reflex as rx
-from typing import List, Dict
 from sqlalchemy import text
 
 from ...state import GlobalFrameworkState
@@ -14,11 +13,11 @@ from ...utils.session_manager import (
 
 class FrameworkState(SessionIsolatedStateMixin, rx.State):
     active_scope: str = "fundamental"
-    scopes: List[Dict] = []
-    frameworks: List[Dict] = []
+    scopes: list[dict] = []
+    frameworks: list[dict] = []
     loading_scopes: bool = False
     loading_frameworks: bool = False
-    selected_framework: Dict = {}
+    selected_framework: dict = {}
     show_dialog: bool = False
     show_add_dialog: bool = False
 
@@ -33,10 +32,10 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
     form_source_url: str = ""
 
     # Metrics management
-    form_metrics: List[Dict] = []
+    form_metrics: list[dict] = []
 
     # Available metrics by category
-    available_categories: List[str] = [
+    available_categories: list[str] = [
         "Per Share Value",
         "Growth Rate",
         "Profitability",
@@ -45,20 +44,20 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
         "Efficiency",
     ]
 
-    per_share_metrics: List[str] = [
+    per_share_metrics: list[str] = [
         "Earnings",
         "Book Value",
         "Free Cash Flow",
         "Dividend",
         "Revenues",
     ]
-    growth_rate_metrics: List[str] = [
+    growth_rate_metrics: list[str] = [
         "Revenues YoY",
         "Earnings YoY",
         "Free Cash Flow YoY",
         "Book Value YoY",
     ]
-    profitability_metrics: List[str] = [
+    profitability_metrics: list[str] = [
         "ROE",
         "ROIC",
         "Net Margin",
@@ -66,15 +65,15 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
         "Operating Margin",
         "EBITDA Margin",
     ]
-    valuation_metrics: List[str] = ["P/E", "P/B", "P/S", "EV/EBITDA"]
-    leverage_liquidity_metrics: List[str] = [
+    valuation_metrics: list[str] = ["P/E", "P/B", "P/S", "EV/EBITDA"]
+    leverage_liquidity_metrics: list[str] = [
         "Debt/Equity",
         "Current Ratio",
         "Quick Ratio",
         "Interest Coverage",
         "Cash Ratio",
     ]
-    efficiency_metrics: List[str] = ["ROA", "Asset Turnover", "Dividend Payout %"]
+    efficiency_metrics: list[str] = ["ROA", "Asset Turnover", "Dividend Payout %"]
 
     show_add_metric_dialog: bool = False
     new_metric_name: str = ""
@@ -301,7 +300,7 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
                 self.loading_frameworks = False
 
     @rx.event
-    def show_framework_dialog(self, framework: Dict):
+    def show_framework_dialog(self, framework: dict):
         self.selected_framework = framework
         self.show_dialog = True
 

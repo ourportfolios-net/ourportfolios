@@ -3,8 +3,6 @@
 import reflex as rx
 import asyncio
 
-from typing import List, Dict, Set
-
 from ...state import TickerBoardState
 from ...utils.database.database import get_company_session
 from ...utils.session_manager import (
@@ -17,7 +15,7 @@ from sqlalchemy import text
 class State(SessionIsolatedStateMixin, rx.State):
     control: str = "home"
     show_arrow: bool = True
-    data: List[Dict] = []
+    data: list[dict] = []
 
     # Search bar
     search_query = ""
@@ -70,14 +68,14 @@ class State(SessionIsolatedStateMixin, rx.State):
             self._data_loaded = True
 
     @rx.event
-    def set_control(self, value: str | List[str]):
+    def set_control(self, value: str | list[str]):
         if isinstance(value, list):
             self.control = value[0] if value else "home"
         else:
             self.control = value
 
     # Metrics
-    fundamentals_default_value: Dict[str, List[float]] = {
+    fundamentals_default_value: dict[str, list[float]] = {
         "pe": [0.00, 100.00],
         "pb": [0.00, 10.00],
         "roe": [0.00, 100.00],
@@ -91,7 +89,7 @@ class State(SessionIsolatedStateMixin, rx.State):
         "ev_ebitda": [0.00, 200.00],
         "dividend_yield": [0.00, 100.00],
     }
-    technicals_default_value: Dict[str, List[float]] = {
+    technicals_default_value: dict[str, list[float]] = {
         "rsi14": [0.00, 100.00],
         "alpha": [0.00, 5.00],
         "beta": [0.00, 5.00],
@@ -101,8 +99,8 @@ class State(SessionIsolatedStateMixin, rx.State):
     selected_sort_order: str = "ASC"
     selected_sort_option: str = "A-Z"
 
-    sort_orders: List[str] = ["ASC", "DESC"]
-    sort_options: Dict[str, str] = {
+    sort_orders: list[str] = ["ASC", "DESC"]
+    sort_options: dict[str, str] = {
         "A-Z": "symbol",
         "Market Cap": "market_cap",
         "% Change": "pct_price_change",
@@ -110,15 +108,15 @@ class State(SessionIsolatedStateMixin, rx.State):
     }
 
     # Filters
-    selected_exchange: Set[str] = set()
-    selected_industry: Set[str] = set()
-    selected_technical_metric: Set[str] = set()
-    selected_fundamental_metric: Set[str] = set()
+    selected_exchange: set[str] = set()
+    selected_industry: set[str] = set()
+    selected_technical_metric: set[str] = set()
+    selected_fundamental_metric: set[str] = set()
 
-    exchange_filter: Dict[str, bool] = {}
-    industry_filter: Dict[str, bool] = {}
-    technicals_current_value: Dict[str, List[float]] = {}
-    fundamentals_current_value: Dict[str, List[float]] = {}
+    exchange_filter: dict[str, bool] = {}
+    industry_filter: dict[str, bool] = {}
+    technicals_current_value: dict[str, list[float]] = {}
+    fundamentals_current_value: dict[str, list[float]] = {}
 
     def update_arrow(self, scroll_position: int, max_scroll: int):
         self.show_arrow = scroll_position < max_scroll - 10
@@ -154,7 +152,7 @@ class State(SessionIsolatedStateMixin, rx.State):
                 }
             )
 
-    # Set all metrics/options to their default setting
+    # set all metrics/options to their default setting
     @rx.event
     @session_isolated
     async def get_all_industries(self):
@@ -167,11 +165,11 @@ class State(SessionIsolatedStateMixin, rx.State):
                     text("SELECT DISTINCT industry FROM tickers.overview_df")
                 )
                 industries = [row[0] for row in result.all()]
-                self.industry_filter: Dict[str, bool] = {
+                self.industry_filter: dict[str, bool] = {
                     item: False for item in industries
                 }
         except Exception:
-            self.industry_filter: Dict[str, bool] = {}
+            self.industry_filter: dict[str, bool] = {}
 
     @rx.event
     @session_isolated
@@ -185,21 +183,21 @@ class State(SessionIsolatedStateMixin, rx.State):
                     text("SELECT DISTINCT exchange FROM tickers.overview_df")
                 )
                 exchanges = [row[0] for row in result.all()]
-                self.exchange_filter: Dict[str, bool] = {
+                self.exchange_filter: dict[str, bool] = {
                     item: False for item in exchanges
                 }
         except Exception:
-            self.exchange_filter: Dict[str, bool] = {}
+            self.exchange_filter: dict[str, bool] = {}
 
     @rx.event
     def get_fundamentals_default_value(self):
-        self.fundamentals_current_value: Dict[str, List[float]] = dict.fromkeys(
+        self.fundamentals_current_value: dict[str, list[float]] = dict.fromkeys(
             self.fundamentals_default_value, [0.00, 0.00]
         )
 
     @rx.event
     def get_technicals_default_value(self):
-        self.technicals_current_value: Dict[str, List[float]] = dict.fromkeys(
+        self.technicals_current_value: dict[str, list[float]] = dict.fromkeys(
             self.technicals_default_value, [0.00, 0.00]
         )
 
@@ -265,7 +263,7 @@ class State(SessionIsolatedStateMixin, rx.State):
                 self.selected_industry.discard(industry)
 
     @rx.event(background=True)
-    async def set_fundamental_metric(self, metric: str, value: List[float]):
+    async def set_fundamental_metric(self, metric: str, value: list[float]):
         async with self:
             self.fundamentals_current_value[metric] = value
 
@@ -281,7 +279,7 @@ class State(SessionIsolatedStateMixin, rx.State):
                 self.selected_fundamental_metric.discard(metric)
 
     @rx.event(background=True)
-    async def set_technical_metric(self, metric: str, value: List[float]):
+    async def set_technical_metric(self, metric: str, value: list[float]):
         async with self:
             self.technicals_current_value[metric] = value
 

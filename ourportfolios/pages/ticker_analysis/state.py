@@ -3,7 +3,7 @@
 import asyncio
 import pandas as pd
 import reflex as rx
-from typing import Any, List, Dict, Optional, TYPE_CHECKING
+from typing import Any, Optional, TYPE_CHECKING
 
 from ...state.framework_state import GlobalFrameworkState
 from ...components.price_chart import PriceChartState
@@ -24,7 +24,7 @@ class State(SessionIsolatedStateMixin, rx.State):
     company_control: str = "shares"
 
     @rx.event
-    def set_company_control(self, value: str | List[str]):
+    def set_company_control(self, value: str | list[str]):
         if isinstance(value, list):
             self.company_control = value[0] if value else "shares"
         else:
@@ -46,11 +46,11 @@ class State(SessionIsolatedStateMixin, rx.State):
     financial_df: pd.DataFrame = pd.DataFrame()
 
     transformed_dataframes: dict = {}
-    available_metrics_by_category: Dict[str, List[str]] = {}
-    selected_metrics: Dict[str, str] = {}
+    available_metrics_by_category: dict[str, list[str]] = {}
+    selected_metrics: dict[str, str] = {}
 
     selected_metric: str = "P/E"
-    available_metrics: List[str] = [
+    available_metrics: list[str] = [
         "P/E",
         "P/B",
         "P/S",
@@ -358,7 +358,7 @@ class State(SessionIsolatedStateMixin, rx.State):
         self.selected_metrics[category] = metric
 
     @rx.var(cache=True)
-    def get_chart_data_for_category(self) -> Dict[str, List[Dict[str, Any]]]:
+    def get_chart_data_for_category(self) -> dict[str, list[dict[str, Any]]]:
         chart_data = {}
         categorized_ratios = self.transformed_dataframes.get("categorized_ratios", {})
 
@@ -401,12 +401,12 @@ class State(SessionIsolatedStateMixin, rx.State):
 
         return chart_data
 
-    def get_chart_data(self, category: str) -> List[Dict[str, Any]]:
+    def get_chart_data(self, category: str) -> list[dict[str, Any]]:
         """Get chart data for a specific category"""
         return self.get_chart_data_for_category.get(category, [])
 
     @rx.var
-    def get_categories_list(self) -> List[str]:
+    def get_categories_list(self) -> list[str]:
         """Get list of available categories"""
         return list(self.available_metrics_by_category.keys())
 

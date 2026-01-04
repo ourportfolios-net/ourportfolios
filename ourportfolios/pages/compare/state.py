@@ -3,7 +3,7 @@
 import reflex as rx
 import pandas as pd
 from sqlalchemy import text
-from typing import List, Dict, Any, Optional
+from typing import Any, Optional
 from collections import defaultdict
 import asyncio
 
@@ -31,18 +31,18 @@ class StockComparisonState(SessionIsolatedStateMixin, rx.State):
     """State for comparing multiple stocks side by side."""
 
     # Core data
-    stocks: List[Dict[str, Any]] = []
-    compare_list: List[str] = []
-    selected_metrics: List[str] = []
+    stocks: list[dict[str, Any]] = []
+    compare_list: list[str] = []
+    selected_metrics: list[str] = []
 
     # All available metrics from database (unfiltered)
-    all_metrics: Dict[str, List[str]] = {}  # category -> [metric_names]
+    all_metrics: dict[str, list[str]] = {}  # category -> [metric_names]
 
     # Framework-filtered metrics (if framework is active)
-    framework_metrics: Dict[str, List[str]] = {}  # category -> [metric_names]
+    framework_metrics: dict[str, list[str]] = {}  # category -> [metric_names]
 
     # Historical data
-    historical_data: Dict[str, List[Dict[str, Any]]] = {}
+    historical_data: dict[str, list[dict[str, Any]]] = {}
 
     # View configuration
     view_mode: str = "table"  # "table" or "graph"
@@ -54,7 +54,7 @@ class StockComparisonState(SessionIsolatedStateMixin, rx.State):
     is_loading_historical: bool = False
     has_initialized: bool = False
 
-    _data_cache: Dict[str, Dict[str, Any]] = {}
+    _data_cache: dict[str, dict[str, Any]] = {}
 
     @rx.var(cache=True)
     def compare_list_length(self) -> int:
@@ -67,19 +67,19 @@ class StockComparisonState(SessionIsolatedStateMixin, rx.State):
         return len(self.selected_metrics)
 
     @rx.var(cache=True)
-    def get_metric_data(self) -> Dict[str, List[Dict[str, Any]]]:
+    def get_metric_data(self) -> dict[str, list[dict[str, Any]]]:
         """Get historical data for all metrics."""
         return self.historical_data
 
     @rx.var
-    def available_metrics_by_category(self) -> Dict[str, List[str]]:
+    def available_metrics_by_category(self) -> dict[str, list[str]]:
         """Get available metrics organized by category, filtered by framework if active."""
         if self.framework_metrics:
             return self.framework_metrics
         return self.all_metrics
 
     @rx.var
-    def all_available_metrics(self) -> List[str]:
+    def all_available_metrics(self) -> list[str]:
         """Flat list of all available metrics."""
         all_metrics = []
         for metrics in self.available_metrics_by_category.values():
@@ -87,7 +87,7 @@ class StockComparisonState(SessionIsolatedStateMixin, rx.State):
         return all_metrics
 
     @rx.var
-    def metric_labels(self) -> Dict[str, str]:
+    def metric_labels(self) -> dict[str, str]:
         """Get human-readable labels for metrics (clean up display names)."""
         labels = {}
         for metric in self.all_available_metrics:
@@ -98,7 +98,7 @@ class StockComparisonState(SessionIsolatedStateMixin, rx.State):
         return labels
 
     @rx.var
-    def category_selection_state(self) -> Dict[str, bool]:
+    def category_selection_state(self) -> dict[str, bool]:
         """Get selection state for each category."""
         state = {}
         for category, metrics in self.available_metrics_by_category.items():
@@ -109,7 +109,7 @@ class StockComparisonState(SessionIsolatedStateMixin, rx.State):
         return state
 
     @rx.var
-    def metric_selection_state(self) -> Dict[str, bool]:
+    def metric_selection_state(self) -> dict[str, bool]:
         """Get selection state for each metric."""
         return {
             metric: metric in self.selected_metrics
@@ -117,7 +117,7 @@ class StockComparisonState(SessionIsolatedStateMixin, rx.State):
         }
 
     @rx.var
-    def formatted_stocks(self) -> List[Dict[str, Any]]:
+    def formatted_stocks(self) -> list[dict[str, Any]]:
         """Pre-format all stock values for display using latest period data."""
         formatted = []
         latest_values_by_ticker = self._get_latest_values_by_ticker()
@@ -154,7 +154,7 @@ class StockComparisonState(SessionIsolatedStateMixin, rx.State):
         return formatted
 
     @rx.var
-    def grouped_stocks(self) -> Dict[str, List[Dict[str, Any]]]:
+    def grouped_stocks(self) -> dict[str, list[dict[str, Any]]]:
         """Group formatted stocks by industry."""
         groups = defaultdict(list)
         for stock in self.formatted_stocks:
@@ -163,7 +163,7 @@ class StockComparisonState(SessionIsolatedStateMixin, rx.State):
         return dict(groups)
 
     @rx.var
-    def industry_best_performers(self) -> Dict[str, Dict[str, str]]:
+    def industry_best_performers(self) -> dict[str, dict[str, str]]:
         """Calculate best performer for each metric within each industry."""
         industry_best = {}
         latest_values = self._get_latest_values_by_ticker()
@@ -201,7 +201,7 @@ class StockComparisonState(SessionIsolatedStateMixin, rx.State):
         return industry_best
 
     @rx.var
-    def industry_metric_data_map(self) -> Dict[str, Dict[str, List[Dict[str, Any]]]]:
+    def industry_metric_data_map(self) -> dict[str, dict[str, list[dict[str, Any]]]]:
         """Get nested dictionary: industry -> metric -> data for inline graphs."""
         result = {}
 
@@ -222,7 +222,7 @@ class StockComparisonState(SessionIsolatedStateMixin, rx.State):
 
         return result
 
-    def _get_latest_values_by_ticker(self) -> Dict[str, Dict[str, Any]]:
+    def _get_latest_values_by_ticker(self) -> dict[str, dict[str, Any]]:
         """Get latest period values for each ticker and metric."""
         latest_values = defaultdict(dict)
 
@@ -275,7 +275,7 @@ class StockComparisonState(SessionIsolatedStateMixin, rx.State):
         except Exception:
             return False
 
-    def _extract_all_metrics(self, data: Dict[str, Any]) -> None:
+    def _extract_all_metrics(self, data: dict[str, Any]) -> None:
         """Extract all metrics from API data and store in state."""
         if "categorized_ratios" not in data:
             return
@@ -297,7 +297,7 @@ class StockComparisonState(SessionIsolatedStateMixin, rx.State):
 
         self.all_metrics = new_metrics
 
-    async def _extract_all_metrics_async(self, data: Dict[str, Any]) -> None:
+    async def _extract_all_metrics_async(self, data: dict[str, Any]) -> None:
         """Extract all metrics from API data and update state in async context."""
         if "categorized_ratios" not in data:
             return
@@ -473,8 +473,8 @@ class StockComparisonState(SessionIsolatedStateMixin, rx.State):
 
     @staticmethod
     def _extract_historical_data_static(
-        ticker_data: Dict[str, Optional[Dict[str, Any]]], time_period: str
-    ) -> Dict[str, List[Dict[str, Any]]]:
+        ticker_data: dict[str, Optional[dict[str, Any]]], time_period: str
+    ) -> dict[str, list[dict[str, Any]]]:
         """Extract historical data from ticker data for all metrics (static version)."""
         max_periods = 8 if time_period == "quarter" else 4
 
@@ -541,14 +541,14 @@ class StockComparisonState(SessionIsolatedStateMixin, rx.State):
         return result
 
     def _extract_historical_data(
-        self, ticker_data: Dict[str, Optional[Dict[str, Any]]]
-    ) -> Dict[str, List[Dict[str, Any]]]:
+        self, ticker_data: dict[str, Optional[dict[str, Any]]]
+    ) -> dict[str, list[dict[str, Any]]]:
         """Extract historical data from ticker data for all metrics."""
         return self._extract_historical_data_static(ticker_data, self.time_period)
 
     def _extract_historical_data_old(
-        self, ticker_data: Dict[str, Optional[Dict[str, Any]]]
-    ) -> Dict[str, List[Dict[str, Any]]]:
+        self, ticker_data: dict[str, Optional[dict[str, Any]]]
+    ) -> dict[str, list[dict[str, Any]]]:
         """Extract historical data from ticker data for all metrics (old implementation)."""
         max_periods = 8 if self.time_period == "quarter" else 4
 

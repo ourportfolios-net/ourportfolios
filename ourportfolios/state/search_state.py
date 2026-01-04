@@ -6,7 +6,7 @@ import asyncio
 import pandas as pd
 import itertools
 from sqlalchemy import text
-from typing import List, Dict, Any
+from typing import Any
 from ..utils.database.database import get_company_session
 
 
@@ -17,8 +17,8 @@ class SearchBarState(rx.State):
     comparison_search_query: str = ""
     display_suggestion: bool = False
     empty_state_display_suggestion: bool = False
-    outstanding_tickers: Dict[str, Any] = {}
-    ticker_list: List[Dict[str, Any]] = {}
+    outstanding_tickers: dict[str, Any] = {}
+    ticker_list: list[dict[str, Any]] = {}
 
     @rx.event
     def set_query(self, text: str = ""):
@@ -43,7 +43,7 @@ class SearchBarState(rx.State):
         self.empty_state_display_suggestion = state
 
     @rx.var
-    async def get_suggest_ticker(self) -> List[Dict[str, Any]]:
+    async def get_suggest_ticker(self) -> list[dict[str, Any]]:
         """Get ticker suggestions based on search query (navbar search)."""
         if not self.display_suggestion:
             return []
@@ -58,7 +58,7 @@ class SearchBarState(rx.State):
 
         # Try permutations if no match
         if result.empty:
-            combos: List[tuple] = list(
+            combos: list[tuple] = list(
                 itertools.permutations(list(self.search_query), len(self.search_query))
             )
             all_combination = {
@@ -85,7 +85,7 @@ class SearchBarState(rx.State):
         return result.to_dict("records")
 
     @rx.var
-    async def get_comparison_suggest_ticker(self) -> List[Dict[str, Any]]:
+    async def get_comparison_suggest_ticker(self) -> list[dict[str, Any]]:
         """Get ticker suggestions based on comparison search query."""
         if not self.empty_state_display_suggestion:
             return []
@@ -100,7 +100,7 @@ class SearchBarState(rx.State):
 
         # Try permutations if no match
         if result.empty:
-            combos: List[tuple] = list(
+            combos: list[tuple] = list(
                 itertools.permutations(
                     list(self.comparison_search_query),
                     len(self.comparison_search_query),
@@ -164,7 +164,7 @@ class SearchBarState(rx.State):
             async with self:
                 result = await self.fetch_ticker(match_conditions="all")
                 self.ticker_list = result.to_dict("records")
-                self.outstanding_tickers: Dict[str, Any] = {
+                self.outstanding_tickers: dict[str, Any] = {
                     item["symbol"]: 1 for item in self.ticker_list[:3]
                 }
             await asyncio.sleep(60)  # Default interval of 60 seconds

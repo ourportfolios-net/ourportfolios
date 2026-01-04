@@ -1,7 +1,7 @@
 """Ticker board state for filtering and displaying ticker lists."""
 
 import reflex as rx
-from typing import List, Dict, Any, Set
+from typing import Any
 from sqlalchemy import TextClause, text
 from ..utils.database.database import get_company_session
 
@@ -12,17 +12,17 @@ class TickerBoardState(rx.State):
     search_query: str = ""
 
     # Filters
-    selected_exchange: Set[str] = set()
-    selected_industry: Set[str] = set()
-    selected_technical_metric: Dict[str, List[float]] = {}
-    selected_fundamental_metric: Dict[str, List[float]] = {}
+    selected_exchange: set[str] = set()
+    selected_industry: set[str] = set()
+    selected_technical_metric: dict[str, list[float]] = {}
+    selected_fundamental_metric: dict[str, list[float]] = {}
 
     # Sorts
     selected_sort_order: str = "ASC"
     selected_sort_option: str = "symbol"
 
     @rx.event
-    def apply_filters(self, filters: Dict[str, Any]):
+    def apply_filters(self, filters: dict[str, Any]):
         """Apply multiple filters at once."""
         if "exchange" in filters.keys():
             self.selected_exchange = filters["exchange"]
@@ -48,18 +48,18 @@ class TickerBoardState(rx.State):
 
     @rx.event
     def set_sort_option(self, option: str):
-        """Set column to sort by."""
+        """set column to sort by."""
         self.selected_sort_option = option
 
     @rx.event
     def set_sort_order(self, order: str):
-        """Set sort order (ASC/DESC)."""
+        """set sort order (ASC/DESC)."""
         self.selected_sort_order = order
 
     @rx.var(auto_deps=False)
-    async def get_all_tickers(self) -> List[Dict[str, Any]]:
+    async def get_all_tickers(self) -> list[dict[str, Any]]:
         """Get all tickers matching current filters and search."""
-        query: List[str] = [
+        query: list[str] = [
             f"""SELECT 
                 pb.symbol, pb.current_price, pb.accumulated_volume, pb.pct_price_change, pd.company_name, od.market_cap
                 FROM tickers.price_df AS pb 

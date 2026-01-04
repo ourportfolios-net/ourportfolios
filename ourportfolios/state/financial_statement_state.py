@@ -34,7 +34,7 @@ class FinancialStatementState(rx.State):
         if not data:
             return
         output = io.StringIO()
-        writer = csv.DictWriter(output, fieldnames=list(data[0].keys()))
+        writer = csv.dictWriter(output, fieldnames=list(data[0].keys()))
         writer.writeheader()
         for row in data:
             writer.writerow(row)

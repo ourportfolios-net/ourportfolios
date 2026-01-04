@@ -3,7 +3,7 @@
 import asyncio
 import pandas as pd
 from datetime import datetime, timedelta
-from typing import Dict, Any
+from typing import Any
 
 from ourportfolios.utils.database.fetch_data import (
     fetch_income_statement_async,
@@ -26,7 +26,7 @@ def calculate_yoy_growth(series):
 
 async def get_transformed_dataframes(
     ticker_symbol: str, period: str = "year"
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Fetch pre-computed financial ratios from database.
 
     This function fetches ratios that have already been computed and stored
@@ -37,7 +37,7 @@ async def get_transformed_dataframes(
         period: 'year' or 'quarter'
 
     Returns:
-        Dictionary containing categorized ratios ready for display
+        dictionary containing categorized ratios ready for display
     """
     cache_key = f"{ticker_symbol}_{period}"
     if cache_key in _cache:
@@ -116,7 +116,7 @@ def _categorize_ratios(
     income_df: pd.DataFrame = None,
     balance_df: pd.DataFrame = None,
     cashflow_df: pd.DataFrame = None,
-) -> Dict[str, list]:
+) -> dict[str, list]:
     """Categorize ratios from database into display categories.
 
     Args:
@@ -127,7 +127,7 @@ def _categorize_ratios(
         cashflow_df: Cash flow DataFrame (optional)
 
     Returns:
-        Dictionary of categorized ratios ready for display
+        dictionary of categorized ratios ready for display
     """
     categorized_ratios = {
         "Per Share Value": [],
@@ -295,7 +295,7 @@ def _compute_growth_rates(ratios_df: pd.DataFrame, period: str) -> list:
         period: 'year' or 'quarter'
 
     Returns:
-        List of dictionaries with computed growth rates
+        list of dictionaries with computed growth rates
     """
     if ratios_df.empty:
         return []
@@ -358,7 +358,7 @@ def _compute_ratios_from_statements(
     balance_df: pd.DataFrame,
     cash_flow_df: pd.DataFrame,
     period: str,
-) -> Dict[str, list]:
+) -> dict[str, list]:
     """DEPRECATED: Compute comprehensive financial ratios from raw statement data.
 
     This function is no longer used in production. Ratios are pre-computed

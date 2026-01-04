@@ -2,7 +2,7 @@
 
 import reflex as rx
 import pandas as pd
-from typing import List, Dict, Any, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 from datetime import date
 from dateutil.relativedelta import relativedelta
 import json
@@ -20,10 +20,10 @@ class PriceChartState(rx.State):
     df: pd.DataFrame = pd.DataFrame()
     selected_interval: str = "1D"
     selected_chart: str = "Candlestick"
-    selected_ma_period: Dict[str, bool] = {}
+    selected_ma_period: dict[str, bool] = {}
     rsi_line: bool = False
 
-    ma_period: Dict[str, Any] = {
+    ma_period: dict[str, Any] = {
         "5": "#D19DFF",  # purple 11
         "10": "#B661FFC2",  # purple 9
         "20": "#AEFEEDF5",  # mint 10
@@ -32,13 +32,13 @@ class PriceChartState(rx.State):
         "200": "#3094FEB9",  # blue 8
     }
 
-    df_by_interval: Dict[str, Any] = {
+    df_by_interval: dict[str, Any] = {
         "1D": pd.DataFrame(),
         "1W": pd.DataFrame(),
         "1M": pd.DataFrame(),
     }
     # Date range for each interval
-    interval_range: Dict[str, Any] = {
+    interval_range: dict[str, Any] = {
         "1D": date.today() - relativedelta(years=5),
         "1W": date.today(),
         "1M": date.today(),
@@ -122,7 +122,7 @@ class PriceChartState(rx.State):
         yield from self.render_price_chart()
 
     @rx.var
-    def ohlc_data(self) -> List[Dict[str, Any]]:
+    def ohlc_data(self) -> list[dict[str, Any]]:
         """Return a list of {time, open, high, low, close}"""
         if self.df.empty:
             return []
@@ -135,7 +135,7 @@ class PriceChartState(rx.State):
         return df2.to_dict("records")
 
     @rx.var
-    def price_data(self) -> List[Dict[str, Any]]:
+    def price_data(self) -> list[dict[str, Any]]:
         """Return a list of {time, value } from 'close'"""
         if (self.df.empty) or (not {"time", "close"}.issubset(self.df.columns)):
             return []
@@ -145,7 +145,7 @@ class PriceChartState(rx.State):
         return df2.dropna(how="any", axis=0).to_dict("records")
 
     @rx.var
-    def ma_data(self) -> Dict[str, List[Dict[str, Any]]]:
+    def ma_data(self) -> dict[str, list[dict[str, Any]]]:
         """If ma_period > 0, compute MA"""
         if self.df.empty:
             return {}
@@ -162,7 +162,7 @@ class PriceChartState(rx.State):
         return ma_data
 
     @rx.var
-    def rsi_data(self) -> List[Dict[str, Any]]:
+    def rsi_data(self) -> list[dict[str, Any]]:
         """If rsi_period > 0, compute RSI"""
         if self.df.empty or not self.rsi_line:
             return []
@@ -184,7 +184,7 @@ class PriceChartState(rx.State):
         # RSI line
         rsi_line_data = self.rsi_data
 
-        data: Dict[str, Any] = {
+        data: dict[str, Any] = {
             "type": self.selected_chart,
             "price_data": price_data,
             "ma_line_data": ma_line_data,
@@ -197,7 +197,7 @@ class PriceChartState(rx.State):
     @rx.var
     def chart_options(self) -> str:
         """Return chart configurations"""
-        options: Dict[str, Any] = {}
+        options: dict[str, Any] = {}
         # Chart layout
         options["chart_layout"] = {
             "layout": {
