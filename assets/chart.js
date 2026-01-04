@@ -10,10 +10,10 @@ function render_price_chart(chart_options, chart_data) {
   container.innerHTML = "";
 
   // Chart layout settings
-  chart_layout = chart_options.chart_layout; // Dict[str, Any]
-  series_configs = chart_options.series_configs; // Dict[str, Any]
-  rsi_configs = chart_options.rsi_configs ?? null; // Dict[str, Any]
-  ma_line_configs = chart_options.ma_line_configs ?? null; // Dict[Dict[str, Any]]
+  chart_layout = chart_options.chart_layout; // dict[str, Any]
+  series_configs = chart_options.series_configs; // dict[str, Any]
+  rsi_configs = chart_options.rsi_configs ?? null; // dict[str, Any]
+  ma_line_configs = chart_options.ma_line_configs ?? null; // dict[dict[str, Any]]
 
   // Chart data
   chart_type = chart_data.type;

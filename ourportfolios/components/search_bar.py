@@ -1,7 +1,7 @@
 """Search bar UI component with ticker suggestions."""
 
 import reflex as rx
-from typing import Dict, Any
+from typing import Any
 from .graph import pct_change_badge
 from ..state import SearchBarState
 
@@ -57,7 +57,7 @@ def search_bar():
     )
 
 
-def suggestion_card(value: Dict[str, Any]) -> rx.Component:
+def suggestion_card(value: dict[str, Any]) -> rx.Component:
     ticker = value["symbol"].to(str)
     industry = value["industry"].to(str)
     pct_price_change: float = value["pct_price_change"].to(float)

@@ -1,6 +1,8 @@
+"""Price chart component State"""
+
 import reflex as rx
 import pandas as pd
-from typing import List, Dict, Any
+from typing import Any, TYPE_CHECKING
 from datetime import date
 from dateutil.relativedelta import relativedelta
 import json
@@ -11,6 +13,8 @@ from ..utils.database.fetch_data import load_historical_data
 
 # Price chart State
 class PriceChartState(rx.State):
+    if TYPE_CHECKING:
+        ticker: str
     # Flag to track if chart.js has loaded
     chart_script_loaded: bool = False
     # Loading state
@@ -20,10 +24,10 @@ class PriceChartState(rx.State):
     df: pd.DataFrame = pd.DataFrame()
     selected_interval: str = "1D"
     selected_chart: str = "Candlestick"
-    selected_ma_period: Dict[str, bool] = {}
+    selected_ma_period: dict[str, bool] = {}
     rsi_line: bool = False
 
-    ma_period: Dict[str, Any] = {
+    ma_period: dict[str, Any] = {
         "5": "#D19DFF",  # purple 11
         "10": "#B661FFC2",  # purple 9
         "20": "#AEFEEDF5",  # mint 10
@@ -32,13 +36,13 @@ class PriceChartState(rx.State):
         "200": "#3094FEB9",  # blue 8
     }
 
-    df_by_interval: Dict[str, Any] = {
+    df_by_interval: dict[str, Any] = {
         "1D": pd.DataFrame(),
         "1W": pd.DataFrame(),
         "1M": pd.DataFrame(),
     }
     # Date range for each interval
-    interval_range: Dict[str, Any] = {
+    interval_range: dict[str, Any] = {
         "1D": date.today() - relativedelta(years=5),
         "1W": date.today(),
         "1M": date.today(),
@@ -46,47 +50,26 @@ class PriceChartState(rx.State):
 
     rsi_period: int = 14
 
-    @rx.event
-    def trigger_load(self):
-        """Trigger loading if needed - called by on_mount."""
-        # Get ticker from URL route parameter (last segment of path)
-        ticker = self.router.url.path.split("/")[-1]
-
-        # Skip if invalid ticker
-        if not ticker or ticker == "select" or ticker == "[ticker]":
-            self.is_loading = False
-            return
-
-        # Check if we need to reload
-        needs_reload = ticker != self._last_ticker or self.df.empty
-
-        if needs_reload:
-            print(f"[PriceChartState] Loading price chart for: {ticker}")
-            self.is_loading = True
-            self._last_ticker = ticker
-            return PriceChartState.load_state
-        else:
-            # Data already loaded for this ticker
-            print(f"[PriceChartState] Price chart already loaded for: {ticker}")
-            self.is_loading = False
-
     @rx.event(background=True)
-    async def load_state(self):
-        """Initialize chart with default settings - runs in background"""
+    async def load_state(self, ticker: str):
+        """Initialize chart with default settings - called from ticker_analysis state"""
+        # Check if we already loaded for this ticker
         async with self:
-            # Get ticker from URL route parameter (last segment of path)
-            ticker: str = self.router.url.path.split("/")[-1]
+            if ticker == self._last_ticker and not self.df.empty:
+                print(f"[PriceChartState] Price chart already loaded for: {ticker}")
+                self.is_loading = False
+                yield PriceChartState.render_price_chart
+                return
+            
+            self._last_ticker = ticker
+            self.is_loading = True
             print(f"[PriceChartState] Starting background load for: {ticker}")
 
         try:
-            # Fetch data for each interval. Time ranges are {
-            #     1D: 3 years
-            #     1W: 5 years (default)
-            #     1M: all (default)
-            # }
+            # Fetch data for each interval outside the state context
             # NOTE: Historical price data is fetched from vnstock API, not database
             # TODO: Store historical prices in database for better performance
-            df_by_interval = {
+            df_by_interval_temp = {
                 i_range: load_historical_data(
                     symbol=ticker,
                     start=(self.interval_range[i_range]).strftime("%Y-%m-%d"),
@@ -97,41 +80,40 @@ class PriceChartState(rx.State):
             }
 
             async with self:
-                self.df_by_interval = df_by_interval
+                self.df_by_interval = df_by_interval_temp
                 # Default range
-                self.df = self.df_by_interval[self.selected_interval]
+                self.df: pd.DataFrame = self.df_by_interval[self.selected_interval]
                 # Loads MA options
-                self.selected_ma_period = {
-                    item: False for item in self.ma_period.keys()
-                }
-                print(f"[PriceChartState] Price chart data loaded ✓")
+                self.selected_ma_period = {item: False for item in self.ma_period.keys()}
                 self.is_loading = False
-                
-                # Trigger chart render after data is loaded
-                yield PriceChartState.render_price_chart
+                print(f"[PriceChartState] Price chart data loaded ✓")
+
+            # Initialize chart
+            yield PriceChartState.render_price_chart
 
         except Exception as e:
             print(f"[PriceChartState] Error loading price chart: {e}")
             async with self:
                 self.is_loading = False
 
-    @rx.event
-    def render_price_chart(self):
+    @rx.event(background=True)
+    async def render_price_chart(self):
         # Only render if script is loaded
-        yield rx.call_script(
-            f"""
-            if (typeof render_price_chart === 'function') {{
-                render_price_chart({self.chart_options}, {self.chart_data});
-            }} else {{
-                console.warn('render_price_chart not yet loaded, scheduling retry...');
-                setTimeout(() => {{
-                    if (typeof render_price_chart === 'function') {{
-                        render_price_chart({self.chart_options}, {self.chart_data});
-                    }}
-                }}, 100);
-            }}
-            """
-        )
+        async with self:
+            yield rx.call_script(
+                f"""
+                if (typeof render_price_chart === 'function') {{
+                    render_price_chart({self.chart_options}, {self.chart_data});
+                }} else {{
+                    console.warn('render_price_chart not yet loaded, scheduling retry...');
+                    setTimeout(() => {{
+                        if (typeof render_price_chart === 'function') {{
+                            render_price_chart({self.chart_options}, {self.chart_data});
+                        }}
+                    }}, 100);
+                }}
+                """
+            )
 
     @rx.event
     def set_interval(self, _range):
@@ -162,7 +144,7 @@ class PriceChartState(rx.State):
         yield from self.render_price_chart()
 
     @rx.var
-    def ohlc_data(self) -> List[Dict[str, Any]]:
+    def ohlc_data(self) -> list[dict[str, Any]]:
         """Return a list of {time, open, high, low, close}"""
         if self.df.empty:
             return []
@@ -175,7 +157,7 @@ class PriceChartState(rx.State):
         return df2.to_dict("records")
 
     @rx.var
-    def price_data(self) -> List[Dict[str, Any]]:
+    def price_data(self) -> list[dict[str, Any]]:
         """Return a list of {time, value } from 'close'"""
         if (self.df.empty) or (not {"time", "close"}.issubset(self.df.columns)):
             return []
@@ -185,7 +167,7 @@ class PriceChartState(rx.State):
         return df2.dropna(how="any", axis=0).to_dict("records")
 
     @rx.var
-    def ma_data(self) -> Dict[str, List[Dict[str, Any]]]:
+    def ma_data(self) -> dict[str, list[dict[str, Any]]]:
         """If ma_period > 0, compute MA"""
         if self.df.empty:
             return {}
@@ -202,7 +184,7 @@ class PriceChartState(rx.State):
         return ma_data
 
     @rx.var
-    def rsi_data(self) -> List[Dict[str, Any]]:
+    def rsi_data(self) -> list[dict[str, Any]]:
         """If rsi_period > 0, compute RSI"""
         if self.df.empty or not self.rsi_line:
             return []
@@ -224,7 +206,7 @@ class PriceChartState(rx.State):
         # RSI line
         rsi_line_data = self.rsi_data
 
-        data: Dict[str, Any] = {
+        data: dict[str, Any] = {
             "type": self.selected_chart,
             "price_data": price_data,
             "ma_line_data": ma_line_data,
@@ -237,7 +219,7 @@ class PriceChartState(rx.State):
     @rx.var
     def chart_options(self) -> str:
         """Return chart configurations"""
-        options: Dict[str, Any] = {}
+        options: dict[str, Any] = {}
         # Chart layout
         options["chart_layout"] = {
             "layout": {

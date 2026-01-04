@@ -1,20 +1,23 @@
 """State management for framework recommendation page."""
 
 import reflex as rx
-from typing import List, Dict, Any, cast
 from sqlalchemy import text
 
 from ...state import GlobalFrameworkState
 from ...utils.database.database import get_company_session
+from ...utils.session_manager import (
+    SessionIsolatedStateMixin,
+    session_isolated,
+)
 
 
-class FrameworkState(rx.State):
+class FrameworkState(SessionIsolatedStateMixin, rx.State):
     active_scope: str = "fundamental"
-    scopes: List[Dict] = []
-    frameworks: List[Dict] = []
+    scopes: list[dict] = []
+    frameworks: list[dict] = []
     loading_scopes: bool = False
     loading_frameworks: bool = False
-    selected_framework: Dict = {}
+    selected_framework: dict = {}
     show_dialog: bool = False
     show_add_dialog: bool = False
 
@@ -29,10 +32,10 @@ class FrameworkState(rx.State):
     form_source_url: str = ""
 
     # Metrics management
-    form_metrics: List[Dict] = []
+    form_metrics: list[dict] = []
 
     # Available metrics by category
-    available_categories: List[str] = [
+    available_categories: list[str] = [
         "Per Share Value",
         "Growth Rate",
         "Profitability",
@@ -41,20 +44,20 @@ class FrameworkState(rx.State):
         "Efficiency",
     ]
 
-    per_share_metrics: List[str] = [
+    per_share_metrics: list[str] = [
         "Earnings",
         "Book Value",
         "Free Cash Flow",
         "Dividend",
         "Revenues",
     ]
-    growth_rate_metrics: List[str] = [
+    growth_rate_metrics: list[str] = [
         "Revenues YoY",
         "Earnings YoY",
         "Free Cash Flow YoY",
         "Book Value YoY",
     ]
-    profitability_metrics: List[str] = [
+    profitability_metrics: list[str] = [
         "ROE",
         "ROIC",
         "Net Margin",
@@ -62,15 +65,15 @@ class FrameworkState(rx.State):
         "Operating Margin",
         "EBITDA Margin",
     ]
-    valuation_metrics: List[str] = ["P/E", "P/B", "P/S", "EV/EBITDA"]
-    leverage_liquidity_metrics: List[str] = [
+    valuation_metrics: list[str] = ["P/E", "P/B", "P/S", "EV/EBITDA"]
+    leverage_liquidity_metrics: list[str] = [
         "Debt/Equity",
         "Current Ratio",
         "Quick Ratio",
         "Interest Coverage",
         "Cash Ratio",
     ]
-    efficiency_metrics: List[str] = ["ROA", "Asset Turnover", "Dividend Payout %"]
+    efficiency_metrics: list[str] = ["ROA", "Asset Turnover", "Dividend Payout %"]
 
     show_add_metric_dialog: bool = False
     new_metric_name: str = ""
@@ -198,71 +201,106 @@ class FrameworkState(rx.State):
         if not value:
             self.close_add_metric_dialog()
 
-    @rx.event
-    async def on_load(self):
-        await self.load_scopes()
-        if self.scopes:
-            await self.change_scope(self.scopes[0]["value"])
+    def on_mount(self):
+        """Initialize session when page is mounted - SYNCHRONOUS for instant load."""
+        super().on_mount()  # Initialize session synchronously
+        return FrameworkState.auto_load_frameworks
 
+    def on_unmount(self):
+        """Cleanup when page is unmounted - SYNCHRONOUS for instant navigation."""
+        super().on_unmount()
+
+    @rx.event(background=True)
+    @session_isolated
+    async def auto_load_frameworks(self):
+        """Auto-trigger framework loading after page mounts (non-blocking)."""
+        async with self:
+            if not self.is_mounted():
+                return
+
+            await self.load_scopes()
+
+            if not self.is_mounted():
+                return
+
+            if self.scopes:
+                await self.change_scope(self.scopes[0]["value"])
+
+    @rx.event
+    @session_isolated
     async def load_scopes(self):
-        self.loading_scopes = True
+        async with self:
+            self.loading_scopes = True
+
         try:
-            self.scopes = [
-                {"value": "fundamental", "title": "Fundamental"},
-                {"value": "technical", "title": "Technical"},
-            ]
+            async with self:
+                self.scopes = [
+                    {"value": "fundamental", "title": "Fundamental"},
+                    {"value": "technical", "title": "Technical"},
+                ]
 
-            if self.scopes and not self.active_scope:
-                self.active_scope = self.scopes[0]["value"]
+                if self.scopes and not self.active_scope:
+                    self.active_scope = self.scopes[0]["value"]
 
-        except Exception as e:
-            print(f"Error loading scopes: {e}")
-            self.scopes = [
-                {"value": "fundamental", "title": "Fundamental"},
-                {"value": "technical", "title": "Technical"},
-            ]
+        except Exception:
+            async with self:
+                self.scopes = [
+                    {"value": "fundamental", "title": "Fundamental"},
+                    {"value": "technical", "title": "Technical"},
+                ]
         finally:
-            self.loading_scopes = False
+            async with self:
+                self.loading_scopes = False
 
     @rx.event
+    @session_isolated
     async def change_scope(self, scope: str):
-        self.active_scope = scope
+        async with self:
+            self.active_scope = scope
         await self.load_frameworks()
 
+    @rx.event
+    @session_isolated
     async def load_frameworks(self):
-        self.loading_frameworks = True
+        async with self:
+            self.loading_frameworks = True
+
         try:
             async with get_company_session() as session:
-                query = text("""
-                    SELECT 
-                        f.*,
-                        COALESCE(
-                            json_agg(
-                                json_build_object(
-                                    'name', m.metrics,
-                                    'type', m.category,
-                                    'order', m.display_order
-                                ) ORDER BY m.display_order
-                            ) FILTER (WHERE m.id IS NOT NULL),
-                            '[]'::json
-                        ) as metrics
-                    FROM frameworks.frameworks_df f
-                    LEFT JOIN frameworks.framework_metrics_df m ON f.id = m.framework_id
-                    WHERE f.scope = :scope
-                    GROUP BY f.id
-                    ORDER BY f.title
-                """)
+                async with self:
+                    query = text("""
+                        SELECT 
+                            f.*,
+                            COALESCE(
+                                json_agg(
+                                    json_build_object(
+                                        'name', m.metrics,
+                                        'type', m.category,
+                                        'order', m.display_order
+                                    ) ORDER BY m.display_order
+                                ) FILTER (WHERE m.id IS NOT NULL),
+                                '[]'::json
+                            ) as metrics
+                        FROM frameworks.frameworks_df f
+                        LEFT JOIN frameworks.framework_metrics_df m ON f.id = m.framework_id
+                        WHERE f.scope = :scope
+                        GROUP BY f.id
+                        ORDER BY f.title
+                    """)
                 result = await session.execute(query, {"scope": self.active_scope})
                 frameworks = result.mappings().all()
+
+            async with self:
                 self.frameworks = [dict(row) for row in frameworks]
-        except Exception as e:
-            print(f"Error loading frameworks: {e}")
-            self.frameworks = []
+        except Exception:
+            async with self:
+                self.frameworks = []
         finally:
-            self.loading_frameworks = False
+            async with self:
+                self.loading_frameworks = False
 
     @rx.event
-    def show_framework_dialog(self, framework: Dict):
+    def show_framework_dialog(self, framework: dict):
         self.selected_framework = framework
         self.show_dialog = True
 
@@ -299,6 +337,7 @@ class FrameworkState(rx.State):
             self.close_add_dialog()
 
     @rx.event
+    @session_isolated
     async def submit_framework(self):
         if not self.form_title or not self.form_author:
             return
@@ -352,13 +391,14 @@ class FrameworkState(rx.State):
             self.close_add_dialog()
             await self.load_frameworks()
         except Exception as e:
-            print(f"Error adding framework: {e}")
+            print(f"Error: {e}")
+            pass
 
     @rx.event
+    @session_isolated
     async def select_and_navigate_framework(self):
         """Select the current framework and navigate to ticker selection."""
         if not self.selected_framework:
-            print("Error: No framework selected")
             return
 
         framework_id = None
@@ -368,9 +408,6 @@ class FrameworkState(rx.State):
                 break
 
         if framework_id is None:
-            print(
-                f"Error: Could not find id in framework: {self.selected_framework.keys()}"
-            )
             return
 
         self.close_dialog()

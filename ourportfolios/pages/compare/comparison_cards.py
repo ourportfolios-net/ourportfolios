@@ -1,13 +1,13 @@
 """Comparison cards and controls components."""
 
 import reflex as rx
-from typing import Dict, Any
+from typing import Any
 
 from ...state import StockComparisonState
 
 
 def stock_metric_cell(
-    stock: Dict[str, Any], metric_key: str, industry: str
+    stock: dict[str, Any], metric_key: str, industry: str
 ) -> rx.Component:
     """Create a single metric cell with value and graph for one stock (horizontal layout)"""
     return rx.hstack(
@@ -88,7 +88,7 @@ def stock_metric_cell(
     )
 
 
-def stock_column_card(stock: Dict[str, Any], industry: str) -> rx.Component:
+def stock_column_card(stock: dict[str, Any], industry: str) -> rx.Component:
     """Create a column with separate header card and metrics card for each stock"""
     ticker = stock.get("symbol", "")
 

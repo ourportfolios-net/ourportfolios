@@ -40,8 +40,9 @@ def price_chart_card():
                 rx.box(
                     id="price_chart",
                     width="100%",
-                    height="350px",
-                    on_mount=PriceChartState.load_state,
+                    height="100%",
+                    # Don't use on_mount - it blocks page load
+                    # Instead, trigger from ticker_analysis state
                 ),
                 width="100%",
                 height="350px",

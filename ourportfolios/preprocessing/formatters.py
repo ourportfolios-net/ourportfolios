@@ -1,6 +1,6 @@
 """Utility functions for formatting numbers and values for display."""
 
-from typing import Any, Union
+from typing import Union
 import pandas as pd
 
 

@@ -1,33 +1,87 @@
 """State management for the select page."""
 
 import reflex as rx
-import pandas as pd
 import asyncio
-
-from typing import List, Dict, Set
+from typing import Any
 
 from ...state import TickerBoardState
 from ...utils.database.database import get_company_session
+from ...utils.session_manager import (
+    SessionIsolatedStateMixin,
+    session_isolated,
+)
 from sqlalchemy import text
 
 
-class State(rx.State):
+class State(SessionIsolatedStateMixin, rx.State):
     control: str = "home"
     show_arrow: bool = True
-    data: List[Dict] = []
+    data: list[dict] = []
 
     # Search bar
     search_query = ""
+    display_suggestions: bool = False
+    ticker_suggestions_list: list[dict[str, Any]] = []
+
+    _data_loaded: bool = False
+
+    def on_mount(self):
+        """Initialize session and trigger background data loading."""
+        old_session = getattr(self, "_session_id", None)
+        super().on_mount()
+
+        new_session = getattr(self, "_session_id", None)
+        if old_session != new_session:
+            self._data_loaded = False
+
+        return State.auto_load_data
+
+    def on_unmount(self):
+        """Clean up when page is unmounted."""
+        super().on_unmount()
+
+    @rx.event(background=True)
+    @session_isolated
+    async def auto_load_data(self):
+        """Load page data in the background after mount.
+
+        Automatically exits if the user navigates away during loading.
+        """
+        async with self:
+            if self._data_loaded:
+                return
+
+            if not self.is_mounted():
+                return
+
+            await self.get_all_industries()
+
+            if not self.is_mounted():
+                return
+
+            await self.get_all_exchanges()
+
+            if not self.is_mounted():
+                return
+
+            self.get_fundamentals_default_value()
+            self.get_technicals_default_value()
+            self.search_query = ""
+
+            ticker_board_state = await self.get_state(TickerBoardState)
+            await ticker_board_state.load_all_tickers_cache()
+
+            self._data_loaded = True
 
     @rx.event
-    def set_control(self, value: str | List[str]):
+    def set_control(self, value: str | list[str]):
         if isinstance(value, list):
             self.control = value[0] if value else "home"
         else:
             self.control = value
 
     # Metrics
-    fundamentals_default_value: Dict[str, List[float]] = {
+    fundamentals_default_value: dict[str, list[float]] = {
         "pe": [0.00, 100.00],
         "pb": [0.00, 10.00],
         "roe": [0.00, 100.00],
@@ -41,7 +95,7 @@ class State(rx.State):
         "ev_ebitda": [0.00, 200.00],
         "dividend_yield": [0.00, 100.00],
     }
-    technicals_default_value: Dict[str, List[float]] = {
+    technicals_default_value: dict[str, list[float]] = {
         "rsi14": [0.00, 100.00],
         "alpha": [0.00, 5.00],
         "beta": [0.00, 5.00],
@@ -51,8 +105,8 @@ class State(rx.State):
     selected_sort_order: str = "ASC"
     selected_sort_option: str = "A-Z"
 
-    sort_orders: List[str] = ["ASC", "DESC"]
-    sort_options: Dict[str, str] = {
+    sort_orders: list[str] = ["ASC", "DESC"]
+    sort_options: dict[str, str] = {
         "A-Z": "symbol",
         "Market Cap": "market_cap",
         "% Change": "pct_price_change",
@@ -60,15 +114,15 @@ class State(rx.State):
     }
 
     # Filters
-    selected_exchange: Set[str] = set()
-    selected_industry: Set[str] = set()
-    selected_technical_metric: Set[str] = set()
-    selected_fundamental_metric: Set[str] = set()
+    selected_exchange: set[str] = set()
+    selected_industry: set[str] = set()
+    selected_technical_metric: set[str] = set()
+    selected_fundamental_metric: set[str] = set()
 
-    exchange_filter: Dict[str, bool] = {}
-    industry_filter: Dict[str, bool] = {}
-    technicals_current_value: Dict[str, List[float]] = {}
-    fundamentals_current_value: Dict[str, List[float]] = {}
+    exchange_filter: dict[str, bool] = {}
+    industry_filter: dict[str, bool] = {}
+    technicals_current_value: dict[str, list[float]] = {}
+    fundamentals_current_value: dict[str, list[float]] = {}
 
     def update_arrow(self, scroll_position: int, max_scroll: int):
         self.show_arrow = scroll_position < max_scroll - 10
@@ -85,6 +139,7 @@ class State(rx.State):
         return False
 
     @rx.event(background=True)
+    @session_isolated
     async def apply_filters(self):
         async with self:
             ticker_board_state = await self.get_state(TickerBoardState)
@@ -105,58 +160,71 @@ class State(rx.State):
 
     # Set all metrics/options to their default setting
     @rx.event
+    @session_isolated
     async def get_all_industries(self):
+        """Load all available industries from database."""
         try:
             async with get_company_session() as session:
                 result = await session.execute(
                     text("SELECT DISTINCT industry FROM tickers.overview_df")
                 )
                 industries = [row[0] for row in result.all()]
-                self.industry_filter: Dict[str, bool] = {
+                self.industry_filter: dict[str, bool] = {
                     item: False for item in industries
                 }
         except Exception as e:
-            print(f"Database error: {e}")
-            self.industry_filter: Dict[str, bool] = {}
+            print(
+                f"SELECT PAGE ERROR: Failed to load industries: {type(e).__name__}: {e}"
+            )
+            self.industry_filter: dict[str, bool] = {}
 
     @rx.event
+    @session_isolated
     async def get_all_exchanges(self):
+        """Load all available exchanges from database."""
         try:
             async with get_company_session() as session:
                 result = await session.execute(
                     text("SELECT DISTINCT exchange FROM tickers.overview_df")
                 )
                 exchanges = [row[0] for row in result.all()]
-                self.exchange_filter: Dict[str, bool] = {
+                self.exchange_filter: dict[str, bool] = {
                     item: False for item in exchanges
                 }
         except Exception as e:
-            print(f"Database error: {e}")
-            self.exchange_filter: Dict[str, bool] = {}
+            print(
+                f"SELECT PAGE ERROR: Failed to load exchanges: {type(e).__name__}: {e}"
+            )
+            self.exchange_filter: dict[str, bool] = {}
 
     @rx.event
     def get_fundamentals_default_value(self):
-        self.fundamentals_current_value: Dict[str, List[float]] = dict.fromkeys(
+        self.fundamentals_current_value: dict[str, list[float]] = dict.fromkeys(
             self.fundamentals_default_value, [0.00, 0.00]
         )
 
     @rx.event
     def get_technicals_default_value(self):
-        self.technicals_current_value: Dict[str, List[float]] = dict.fromkeys(
+        self.technicals_current_value: dict[str, list[float]] = dict.fromkeys(
             self.technicals_default_value, [0.00, 0.00]
         )
 
-    # Search bar
-    @rx.event(background=True)
-    async def set_search_query(self, value: str):
-        async with self:
-            self.search_query = value
+    # Search bar with suggestions
+    @rx.event
+    def show_suggestions(self):
+        """Show suggestion dropdown."""
+        self.display_suggestions = True
 
-        yield
+    @rx.event
+    def hide_suggestions(self):
+        """Hide suggestion dropdown with a delay."""
+        self.display_suggestions = False
 
-        async with self:
-            ticker_board_state = await self.get_state(TickerBoardState)
-            ticker_board_state.set_search_query(self.search_query)
+    @rx.event
+    def set_search_query(self, value: str):
+        """Set search query with instant update."""
+        self.search_query = value
+        return TickerBoardState.set_search_query(value)
 
     # Filter event handlers
 
@@ -208,7 +276,7 @@ class State(rx.State):
                 self.selected_industry.discard(industry)
 
     @rx.event(background=True)
-    async def set_fundamental_metric(self, metric: str, value: List[float]):
+    async def set_fundamental_metric(self, metric: str, value: list[float]):
         async with self:
             self.fundamentals_current_value[metric] = value
 
@@ -224,7 +292,7 @@ class State(rx.State):
                 self.selected_fundamental_metric.discard(metric)
 
     @rx.event(background=True)
-    async def set_technical_metric(self, metric: str, value: List[float]):
+    async def set_technical_metric(self, metric: str, value: list[float]):
         async with self:
             self.technicals_current_value[metric] = value
 

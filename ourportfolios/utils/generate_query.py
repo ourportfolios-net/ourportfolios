@@ -1,7 +1,6 @@
 import pandas as pd
 import itertools
-import asyncio
-from typing import Any, List, Tuple
+from typing import Any, Tuple
 from .database.database import get_company_session
 from sqlalchemy import text
 
@@ -30,7 +29,7 @@ async def get_suggest_ticker(
 
     # In-case of mistype or no ticker returned, calculate all possible combination of provided search_query with fixed length
     if result.empty:
-        combos: List[Tuple] = list(
+        combos: list[Tuple] = list(
             itertools.permutations(list(search_query), len(search_query))
         )
         match_params = {

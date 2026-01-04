@@ -120,25 +120,28 @@ def frameworks_content():
     )
 
 
-@rx.page(route="/recommend", on_load=FrameworkState.on_load)
+@rx.page(route="/recommend", on_load=[FrameworkState.on_mount])
 def index() -> rx.Component:
-    return rx.fragment(
-        loading_screen(),
-        navbar(),
-        page_selection(),
-        rx.center(
-            rx.box(
-                rx.hstack(
-                    categories_sidebar(),
-                    frameworks_content(),
-                    spacing="3",
-                    width="100%",
+    return rx.box(
+        rx.fragment(
+            loading_screen(),
+            navbar(),
+            page_selection(),
+            rx.center(
+                rx.box(
+                    rx.hstack(
+                        categories_sidebar(),
+                        frameworks_content(),
+                        spacing="3",
+                        width="100%",
+                    ),
+                    width="86vw",
                 ),
-                width="86vw",
+                width="100%",
+                padding="2rem",
+                padding_top="5rem",
+                position="relative",
             ),
-            width="100%",
-            padding="2rem",
-            padding_top="5rem",
-            position="relative",
         ),
+        on_unmount=FrameworkState.on_unmount,
     )

@@ -14,7 +14,7 @@ from .company_info import company_generic_info_card
 
 @rx.page(
     route="/analyze/[ticker]",
-    on_load=State.initialize_page_data,
+    on_load=State.on_mount,
 )
 def index():
     return rx.box(
