@@ -2,6 +2,7 @@
 
 import reflex as rx
 import asyncio
+from typing import Any
 
 from ...state import TickerBoardState
 from ...utils.database.database import get_company_session
@@ -19,6 +20,8 @@ class State(SessionIsolatedStateMixin, rx.State):
 
     # Search bar
     search_query = ""
+    display_suggestions: bool = False
+    ticker_suggestions_list: list[dict[str, Any]] = []
 
     _data_loaded: bool = False
 
@@ -201,17 +204,22 @@ class State(SessionIsolatedStateMixin, rx.State):
             self.technicals_default_value, [0.00, 0.00]
         )
 
-    # Search bar
-    @rx.event(background=True)
-    async def set_search_query(self, value: str):
-        async with self:
-            self.search_query = value
+    # Search bar with suggestions
+    @rx.event
+    def show_suggestions(self):
+        """Show suggestion dropdown."""
+        self.display_suggestions = True
 
-        yield
+    @rx.event
+    def hide_suggestions(self):
+        """Hide suggestion dropdown with a delay."""
+        self.display_suggestions = False
 
-        async with self:
-            ticker_board_state = await self.get_state(TickerBoardState)
-            ticker_board_state.set_search_query(self.search_query)
+    @rx.event
+    def set_search_query(self, value: str):
+        """Set search query and update ticker board filter immediately."""
+        self.search_query = value
+        return TickerBoardState.set_search_query(value)
 
     # Filter event handlers
 

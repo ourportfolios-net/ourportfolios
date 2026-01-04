@@ -56,7 +56,7 @@ class TickerBoardState(rx.State):
         """set sort order (ASC/DESC)."""
         self.selected_sort_order = order
 
-    @rx.var(auto_deps=False)
+    @rx.var
     async def get_all_tickers(self) -> list[dict[str, Any]]:
         """Get all tickers matching current filters and search."""
         query: list[str] = [
@@ -71,12 +71,9 @@ class TickerBoardState(rx.State):
         ]
 
         if self.search_query != "":
-            from ..utils.generate_query import get_suggest_ticker
-
-            match_query, params = await get_suggest_ticker(
-                search_query=self.search_query.upper(), return_type="query"
-            )
-            query.append(match_query)
+            # Fast simple search - just prefix match
+            query.append("pb.symbol LIKE :pattern")
+            params = {"pattern": f"{self.search_query.upper()}%"}
         else:
             query.append("1=1")
             params = None
