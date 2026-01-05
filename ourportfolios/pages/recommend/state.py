@@ -218,27 +218,35 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
             if not self.is_mounted():
                 return
 
-            await self.load_scopes()
+        # Load scopes without nesting async with self
+        await self.load_scopes()
 
+        async with self:
             if not self.is_mounted():
                 return
 
             if self.scopes:
-                await self.change_scope(self.scopes[0]["value"])
+                first_scope = self.scopes[0]["value"]
+
+        # Change scope without nesting
+        await self.change_scope(first_scope)
 
     @rx.event
     @session_isolated
     async def load_scopes(self):
+        """Load available scopes - NO nested async with self blocks"""
         async with self:
             self.loading_scopes = True
 
         try:
-            async with self:
-                self.scopes = [
-                    {"value": "fundamental", "title": "Fundamental"},
-                    {"value": "technical", "title": "Technical"},
-                ]
+            # Set scopes directly
+            scopes_data = [
+                {"value": "fundamental", "title": "Fundamental"},
+                {"value": "technical", "title": "Technical"},
+            ]
 
+            async with self:
+                self.scopes = scopes_data
                 if self.scopes and not self.active_scope:
                     self.active_scope = self.scopes[0]["value"]
 
@@ -255,39 +263,43 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
     @rx.event
     @session_isolated
     async def change_scope(self, scope: str):
+        """Change active scope and load frameworks"""
         async with self:
             self.active_scope = scope
+
+        # Load frameworks without nesting
         await self.load_frameworks()
 
     @rx.event
     @session_isolated
     async def load_frameworks(self):
+        """Load frameworks for current scope - NO nested async with self blocks"""
         async with self:
             self.loading_frameworks = True
+            active_scope = self.active_scope
 
         try:
             async with get_company_session() as session:
-                async with self:
-                    query = text("""
-                        SELECT 
-                            f.*,
-                            COALESCE(
-                                json_agg(
-                                    json_build_object(
-                                        'name', m.metrics,
-                                        'type', m.category,
-                                        'order', m.display_order
-                                    ) ORDER BY m.display_order
-                                ) FILTER (WHERE m.id IS NOT NULL),
-                                '[]'::json
-                            ) as metrics
-                        FROM frameworks.frameworks_df f
-                        LEFT JOIN frameworks.framework_metrics_df m ON f.id = m.framework_id
-                        WHERE f.scope = :scope
-                        GROUP BY f.id
-                        ORDER BY f.title
-                    """)
-                result = await session.execute(query, {"scope": self.active_scope})
+                query = text("""
+                    SELECT 
+                        f.*,
+                        COALESCE(
+                            json_agg(
+                                json_build_object(
+                                    'name', m.metrics,
+                                    'type', m.category,
+                                    'order', m.display_order
+                                ) ORDER BY m.display_order
+                            ) FILTER (WHERE m.id IS NOT NULL),
+                            '[]'::json
+                        ) as metrics
+                    FROM frameworks.frameworks_df f
+                    LEFT JOIN frameworks.framework_metrics_df m ON f.id = m.framework_id
+                    WHERE f.scope = :scope
+                    GROUP BY f.id
+                    ORDER BY f.title
+                """)
+                result = await session.execute(query, {"scope": active_scope})
                 frameworks = result.mappings().all()
 
             async with self:
@@ -339,8 +351,21 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
     @rx.event
     @session_isolated
     async def submit_framework(self):
-        if not self.form_title or not self.form_author:
-            return
+        """Submit new framework to database"""
+        async with self:
+            if not self.form_title or not self.form_author:
+                return
+
+            # Capture form data
+            title = self.form_title
+            description = self.form_description
+            author = self.form_author
+            complexity = self.form_complexity
+            scope = self.form_scope
+            industry = self.form_industry
+            source_name = self.form_source_name if self.form_source_name else None
+            source_url = self.form_source_url if self.form_source_url else None
+            metrics = list(self.form_metrics)
 
         try:
             async with get_company_session() as session:
@@ -354,30 +379,26 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
                 result = await session.execute(
                     framework_query,
                     {
-                        "title": self.form_title,
-                        "description": self.form_description,
-                        "author": self.form_author,
-                        "complexity": self.form_complexity,
-                        "scope": self.form_scope,
-                        "industry": self.form_industry,
-                        "source_name": self.form_source_name
-                        if self.form_source_name
-                        else None,
-                        "source_url": self.form_source_url
-                        if self.form_source_url
-                        else None,
+                        "title": title,
+                        "description": description,
+                        "author": author,
+                        "complexity": complexity,
+                        "scope": scope,
+                        "industry": industry,
+                        "source_name": source_name,
+                        "source_url": source_url,
                     },
                 )
                 framework_row = result.first()
                 framework_id = framework_row[0] if framework_row else None
 
-                if framework_id and self.form_metrics:
+                if framework_id and metrics:
                     metrics_query = text("""
                         INSERT INTO frameworks.framework_metrics_df 
                         (framework_id, category, metrics, display_order)
                         VALUES (:framework_id, :category, ARRAY[:metric_name], :order)
                     """)
-                    for metric in self.form_metrics:
+                    for metric in metrics:
                         await session.execute(
                             metrics_query,
                             {
@@ -388,8 +409,12 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
                             },
                         )
 
-            self.close_add_dialog()
+            async with self:
+                self.show_add_dialog = False
+
+            # Load frameworks without nesting
             await self.load_frameworks()
+
         except Exception as e:
             print(f"Error: {e}")
             pass
@@ -398,20 +423,22 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
     @session_isolated
     async def select_and_navigate_framework(self):
         """Select the current framework and navigate to ticker selection."""
-        if not self.selected_framework:
-            return
+        async with self:
+            if not self.selected_framework:
+                return
 
-        framework_id = None
-        for key in ["id", "framework_id", "pk"]:
-            if key in self.selected_framework:
-                framework_id = self.selected_framework[key]
-                break
+            framework_id = None
+            for key in ["id", "framework_id", "pk"]:
+                if key in self.selected_framework:
+                    framework_id = self.selected_framework[key]
+                    break
 
-        if framework_id is None:
-            return
+            if framework_id is None:
+                return
 
-        self.close_dialog()
+            self.show_dialog = False
 
+        # Get global state and select framework
         global_state = await self.get_state(GlobalFrameworkState)
         await global_state.select_framework(framework_id)
 

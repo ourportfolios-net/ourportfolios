@@ -1,4 +1,4 @@
-"""Performance and metrics cards for the ticker landing page - FIXED."""
+"""Performance and metrics cards for the ticker landing page."""
 
 import reflex as rx
 
