@@ -3,16 +3,40 @@
 import reflex as rx
 
 from ...components.price_chart import PriceChartState
+from .state import State
 
 
 def price_chart_card():
+    """Price chart with skeleton while loading."""
     return rx.card(
         rx.vstack(
+            rx.script(
+                src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js",
+            ),
+            rx.script(src="/chart.js"),
             rx.box(
-                rx.script(
-                    src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js",
+                # Skeleton overlay - shown while loading OR when no price data
+                rx.cond(
+                    State.is_loading_company
+                    | (
+                        State.price_data.length() <= 1
+                    ),  # Show if loading or insufficient data
+                    rx.box(
+                        rx.skeleton(
+                            height="350px",
+                            width="calc(100% - 60px)",  # Leave space for price scale
+                            border_radius="8px",
+                        ),
+                        position="absolute",
+                        width="100%",
+                        height="350px",
+                        z_index="1",
+                        pointer_events="none",
+                        top="0",
+                        left="0",
+                    ),
                 ),
-                rx.script(src="/chart.js"),
+                # Actual chart container
                 rx.box(
                     id="price_chart",
                     width="100%",
@@ -22,7 +46,9 @@ def price_chart_card():
                 ),
                 width="100%",
                 height="350px",
+                max_height="350px",
                 overflow="hidden",
+                position="relative",
             ),
             rx.hstack(
                 rx.hstack(

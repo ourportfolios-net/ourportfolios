@@ -1,10 +1,9 @@
-"""Ticker landing page - detailed view of a specific ticker."""
+"""Ticker landing page."""
 
 import reflex as rx
 
 from ...components.navbar import navbar
 from ...components.drawer import drawer_button
-from ...components.loading import loading_screen
 
 from .state import State
 from .info_cards import name_card, general_info_card, company_profile_card
@@ -15,12 +14,11 @@ from .company_info import company_generic_info_card
 
 @rx.page(
     route="/analyze/[ticker]",
-    on_load=[State.on_mount],  # Keep for compatibility but session created earlier
+    on_load=State.on_mount,
 )
 def index():
     return rx.box(
         rx.fragment(
-            loading_screen(),
             navbar(),
             rx.box(
                 rx.link(
@@ -66,6 +64,7 @@ def index():
                         width="100%",
                         justify="between",
                         align="start",
+                        key=State.render_key,
                     ),
                     width="86vw",
                     style={"minHeight": "80vh"},
@@ -77,5 +76,4 @@ def index():
             ),
             drawer_button(),
         ),
-        on_unmount=State.on_unmount,
     )

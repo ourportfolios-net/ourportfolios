@@ -17,6 +17,10 @@ class PriceChartState(rx.State):
         ticker: str
     # Flag to track if chart.js has loaded
     chart_script_loaded: bool = False
+    # Loading state
+    is_loading: bool = True
+    _last_ticker: str = ""
+
     df: pd.DataFrame = pd.DataFrame()
     selected_interval: str = "1D"
     selected_chart: str = "Candlestick"
@@ -48,31 +52,48 @@ class PriceChartState(rx.State):
 
     @rx.event(background=True)
     async def load_state(self, ticker: str):
-        """Initialize chart with default settings"""
-        # Fetch data for each interval outside the state context
-        # NOTE: Historical price data is fetched from vnstock API, not database
-        # TODO: Store historical prices in database for better performance
-        df_by_interval_temp = {
-            i_range: load_historical_data(
-                symbol=ticker,
-                start=(self.interval_range[i_range]).strftime("%Y-%m-%d"),
-                end=(date.today() + relativedelta(days=1)).strftime("%Y-%m-%d"),
-                interval=i_range,
-            )
-            for i_range in self.df_by_interval.keys()
-        }
-
+        """Initialize chart with default settings - called from ticker_analysis state"""
+        # Check if we already loaded for this ticker
         async with self:
-            self.df_by_interval = df_by_interval_temp
+            if ticker == self._last_ticker and not self.df.empty:
+                self.is_loading = False
+                yield PriceChartState.render_price_chart
+                return
 
-            # Default range
-            self.df: pd.DataFrame = self.df_by_interval[self.selected_interval]
+            self._last_ticker = ticker
+            self.is_loading = True
 
-            # Loads MA options
-            self.selected_ma_period = {item: False for item in self.ma_period.keys()}
+        try:
+            # Fetch data for each interval outside the state context
+            # NOTE: Historical price data is fetched from vnstock API, not database
+            # TODO: Store historical prices in database for better performance
+            df_by_interval_temp = {
+                i_range: load_historical_data(
+                    symbol=ticker,
+                    start=(self.interval_range[i_range]).strftime("%Y-%m-%d"),
+                    end=(date.today() + relativedelta(days=1)).strftime("%Y-%m-%d"),
+                    interval=i_range,
+                )
+                for i_range in self.df_by_interval.keys()
+            }
 
-        # Initialize chart
-        yield PriceChartState.render_price_chart
+            async with self:
+                self.df_by_interval = df_by_interval_temp
+                # Default range
+                self.df: pd.DataFrame = self.df_by_interval[self.selected_interval]
+                # Loads MA options
+                self.selected_ma_period = {
+                    item: False for item in self.ma_period.keys()
+                }
+                self.is_loading = False
+
+            # Initialize chart
+            yield PriceChartState.render_price_chart
+
+        except Exception as e:
+            print(f"[PriceChartState] Error loading price chart: {e}")
+            async with self:
+                self.is_loading = False
 
     @rx.event(background=True)
     async def render_price_chart(self):
