@@ -2,6 +2,31 @@
 
 <!-- version list -->
 
+## v0.6.0 (2026-01-05)
+
+### Bug Fixes
+
+- Add fallbacks
+  ([`e2f041b`](https://github.com/ourportfolios-net/ourportfolios/commit/e2f041b60a9cdbe9335c93019b9c3de66cf58241))
+
+### Chores
+
+- Add fallback
+  ([`cd23683`](https://github.com/ourportfolios-net/ourportfolios/commit/cd23683f41e54ea8ccc4993f5d2f7314d15815ab))
+
+- Adjust docstring
+  ([`9e5efb1`](https://github.com/ourportfolios-net/ourportfolios/commit/9e5efb1b0fb386752915171806beda36bb4c94ff))
+
+- Remove caching
+  ([`966eeae`](https://github.com/ourportfolios-net/ourportfolios/commit/966eeae76e3a7e6dd9732ca4a6a992a222a1b3f5))
+
+- Remove unused bool
+  ([`876ccc2`](https://github.com/ourportfolios-net/ourportfolios/commit/876ccc22bc7135b9719363fb7b181d20073bd75e))
+
+- **ruff**: Add loggings to except blocks
+  ([`5902481`](https://github.com/ourportfolios-net/ourportfolios/commit/5902481b32b9d5bb52dc3f76ba78a9939f3d758c))
+
+
 ## v0.5.0 (2025-11-03)
 
 ### Chores
