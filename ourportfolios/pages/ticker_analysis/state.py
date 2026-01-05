@@ -55,7 +55,6 @@ class State(SessionIsolatedStateMixin, rx.State):
     # Actual loading flags (set by async operations)
     _is_loading_company: bool = True
     _is_loading_financial: bool = True
-    _is_loading_price: bool = True
 
     error_company: str = ""
     error_financial: str = ""
@@ -124,13 +123,6 @@ class State(SessionIsolatedStateMixin, rx.State):
             return True
         return self._is_loading_financial
 
-    @rx.var
-    def is_loading_price(self) -> bool:
-        """Show skeleton if ticker changed OR actually loading."""
-        if self.ticker != self._data_ticker:
-            return True
-        return self._is_loading_price
-
     def on_mount(self):
         """Initialize session and trigger background data loading."""
         super().on_mount()
@@ -159,7 +151,6 @@ class State(SessionIsolatedStateMixin, rx.State):
         # Reset loading states
         self._is_loading_company = True
         self._is_loading_financial = True
-        self._is_loading_price = True
         self.error_company = ""
         self.error_financial = ""
 
@@ -177,7 +168,6 @@ class State(SessionIsolatedStateMixin, rx.State):
             if not self.ticker:
                 self._is_loading_company = False
                 self._is_loading_financial = False
-                self._is_loading_price = False
                 return
 
             ticker = self.ticker
@@ -217,7 +207,6 @@ class State(SessionIsolatedStateMixin, rx.State):
                 # Set internal loading states to True
                 self._is_loading_company = True
                 self._is_loading_financial = True
-                self._is_loading_price = True
             else:
                 # Data already loaded for this ticker, just return
                 return
@@ -267,7 +256,6 @@ class State(SessionIsolatedStateMixin, rx.State):
         if not ticker:
             async with self:
                 self._is_loading_company = False
-                self._is_loading_price = False
             return
 
         if not self.is_mounted():
@@ -298,7 +286,6 @@ class State(SessionIsolatedStateMixin, rx.State):
                 # Update data ticker when company data is loaded
                 self._data_ticker = ticker
                 self._is_loading_company = False
-                self._is_loading_price = False
                 self.error_company = ""
 
         except SessionCancelledError:
@@ -314,7 +301,6 @@ class State(SessionIsolatedStateMixin, rx.State):
                 self.price_data = pd.DataFrame()
                 self._data_ticker = ticker  # Still update to prevent infinite skeleton
                 self._is_loading_company = False
-                self._is_loading_price = False
                 self.error_company = str(e)
 
     @rx.var
