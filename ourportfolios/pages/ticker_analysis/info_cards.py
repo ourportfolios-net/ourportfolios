@@ -95,19 +95,21 @@ def name_card():
             card_wrapper(
                 rx.vstack(
                     rx.hstack(
-                        rx.heading(overview["symbol"], size="9"),
+                        rx.heading(overview.get("symbol", ""), size="9"),
                         rx.button(
                             rx.icon("plus", size=16),
                             size="2",
                             variant="soft",
-                            on_click=lambda: CartState.add_item(overview["symbol"]),
+                            on_click=lambda: CartState.add_item(
+                                overview.get("symbol", "")
+                            ),
                         ),
                         justify="center",
                         align="center",
                     ),
                     rx.hstack(
-                        rx.badge(f"{overview['exchange']}", variant="surface"),
-                        rx.badge(f"{overview['industry']}"),
+                        rx.badge(f"{overview.get('exchange', '')}", variant="surface"),
+                        rx.badge(f"{overview.get('industry', '')}"),
                     ),
                 ),
                 style={"width": "100%", "padding": "1em"},
