@@ -45,20 +45,26 @@ def preview_table(data, idx, show_skeleton=False):
                 "maximize",
                 on_click=lambda: FinancialStatementState.expand(idx),
                 style={
-                    "cursor": "pointer",
+                    "cursor": rx.cond(show_skeleton, "not-allowed", "pointer"),
                     "userSelect": "none",
-                    "color": rx.color("accent", 10),
-                    "_hover": {"color": rx.color("accent", 7)},
+                    "color": rx.cond(
+                        show_skeleton, rx.color("gray", 6), rx.color("accent", 10)
+                    ),
+                    "opacity": rx.cond(show_skeleton, "0.5", "1"),
+                    "pointerEvents": rx.cond(show_skeleton, "none", "auto"),
                 },
             ),
             rx.icon(
                 "download",
                 on_click=lambda: FinancialStatementState.download_table_csv(data, idx),
                 style={
-                    "cursor": "pointer",
+                    "cursor": rx.cond(show_skeleton, "not-allowed", "pointer"),
                     "userSelect": "none",
-                    "color": rx.color("accent", 10),
-                    "_hover": {"color": rx.color("accent", 7)},
+                    "color": rx.cond(
+                        show_skeleton, rx.color("gray", 6), rx.color("accent", 10)
+                    ),
+                    "opacity": rx.cond(show_skeleton, "0.5", "1"),
+                    "pointerEvents": rx.cond(show_skeleton, "none", "auto"),
                 },
             ),
             spacing="2",
