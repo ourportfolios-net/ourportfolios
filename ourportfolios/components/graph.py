@@ -18,16 +18,6 @@ def mini_price_graph(label, data, diff, size=(80, 40)):
         ),
         rx.hstack(
             rx.text(label, size="1", font_size="0.75rem"),
-            rx.badge(
-                rx.flex(
-                    rx.icon(tag="arrow_up", size=10),
-                    rx.text(f"{diff:.2f}%", font_size="0.6rem"),
-                    spacing="1",
-                ),
-                color_scheme="grass",
-                size="1",
-                style={"padding": "0.1em 0.3em"},
-            ),
             pct_change_badge(diff=diff),
         ),
         spacing="1",

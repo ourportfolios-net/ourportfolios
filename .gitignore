@@ -1,6 +1,7 @@
 *.py[cod]
 .states
 *.db
+*.ipynb
 .web
 .env
 assets/external/

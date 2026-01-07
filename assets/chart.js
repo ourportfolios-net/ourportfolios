@@ -1,12 +1,19 @@
 function render_price_chart(chart_options, chart_data) {
   container = document.getElementById("price_chart");
+
+  // Defensive check - element might not be ready yet
+  if (!container) {
+    console.warn("price_chart element not found, skipping render");
+    return;
+  }
+
   container.innerHTML = "";
 
   // Chart layout settings
-  chart_layout = chart_options.chart_layout; // Dict[str, Any]
-  series_configs = chart_options.series_configs; // Dict[str, Any]
-  rsi_configs = chart_options.rsi_configs ?? null; // Dict[str, Any]
-  ma_line_configs = chart_options.ma_line_configs ?? null; // Dict[Dict[str, Any]]
+  chart_layout = chart_options.chart_layout; // dict[str, Any]
+  series_configs = chart_options.series_configs; // dict[str, Any]
+  rsi_configs = chart_options.rsi_configs ?? null; // dict[str, Any]
+  ma_line_configs = chart_options.ma_line_configs ?? null; // dict[dict[str, Any]]
 
   // Chart data
   chart_type = chart_data.type;
@@ -81,5 +88,4 @@ function render_price_chart(chart_options, chart_data) {
     });
     rsiSeries.setData(rsi_line_data);
   }
-
 }
