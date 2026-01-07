@@ -6,6 +6,7 @@ from ...components.navbar import navbar
 from ...components.cards import portfolio_card
 from ...components.graph import mini_price_graph
 from ...components.loading import loading_screen
+from ...components.plasma import plasma
 from ...utils.session_manager import SessionIsolatedStateMixin
 
 cards = [
@@ -32,7 +33,25 @@ class State(SessionIsolatedStateMixin, rx.State):
 @rx.page(route="/", on_load=[State.on_mount])
 def index() -> rx.Component:
     return rx.box(
-        rx.fragment(
+        # Plasma background layer - scrolls with content
+        rx.box(
+            plasma(
+                color="#ECD9FA",
+                speed=1,
+                direction="forward",
+                scale=2,
+                opacity=0.15,
+                mouse_interactive=True,  # TODO: Make this work
+            ),
+            position="absolute",
+            top="0",
+            left="0",
+            width="100%",
+            height="100%",
+            z_index="0",
+        ),
+        # Content layer
+        rx.box(
             loading_screen(),
             navbar(
                 rx.foreach(
@@ -79,6 +98,11 @@ def index() -> rx.Component:
                 align="center",
                 width="100%",
             ),
+            position="relative",
+            z_index="1",
+            min_height="100vh",
+            on_unmount=State.on_unmount,
         ),
-        on_unmount=State.on_unmount,
+        position="relative",
+        min_height="100vh",
     )
