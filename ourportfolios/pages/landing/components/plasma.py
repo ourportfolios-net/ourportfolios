@@ -8,11 +8,6 @@ from typing import Literal
 import os
 
 
-# Get the path to the Plasma.jsx file next to this Python file
-_CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-_PLASMA_JSX = os.path.join(_CURRENT_DIR, "plasma.jsx")
-
-
 class Plasma(rx.Component):
     """A WebGL plasma effect background component.
 
@@ -22,8 +17,8 @@ class Plasma(rx.Component):
     The component is based on the plasma implementation from reactbits.dev.
     """
 
-    # Use rx.asset to copy the JSX file and reference it
-    library = f"$/public/{os.path.splitext(os.path.basename(rx.asset(_PLASMA_JSX, shared=True)))[0]}"
+    # Reference the JSX file from the assets directory
+    library = "$/public/plasma"
 
     tag = "Plasma"
     is_default = True

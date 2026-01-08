@@ -2,11 +2,8 @@
 
 import reflex as rx
 
-from ...components.navbar import navbar
-from ...components.cards import portfolio_card
-from ...components.graph import mini_price_graph
-from ...components.plasma import plasma
-from ...components.shiny_text import shiny_text
+from ..landing.components.plasma import plasma
+from ..landing.components.shiny_text import shiny_text
 from ...utils.session_manager import SessionIsolatedStateMixin
 
 cards = [
