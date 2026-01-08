@@ -5,7 +5,6 @@ import reflex as rx
 from ...components.navbar import navbar
 from ...components.cards import portfolio_card
 from ...components.graph import mini_price_graph
-from ...components.loading import loading_screen
 from ...components.plasma import plasma
 from ...utils.session_manager import SessionIsolatedStateMixin
 

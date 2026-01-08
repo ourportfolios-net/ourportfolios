@@ -4,7 +4,6 @@ import reflex as rx
 
 from ourportfolios.components.navbar import navbar
 from ourportfolios.components.drawer import drawer_button
-from ourportfolios.components.loading import loading_screen
 from .state import StockComparisonState
 
 from ourportfolios.pages.compare.comparison_table import comparison_section
@@ -18,7 +17,6 @@ def index() -> rx.Component:
     """Main page component."""
     return rx.box(
         rx.fragment(
-            loading_screen(),
             navbar(),
             rx.box(
                 rx.link(

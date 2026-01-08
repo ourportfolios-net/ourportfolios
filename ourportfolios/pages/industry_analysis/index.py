@@ -4,7 +4,6 @@ import reflex as rx
 
 from ...components.navbar import navbar
 from ...components.drawer import drawer_button
-from ...components.loading import loading_screen
 from ...utils.session_manager import SessionIsolatedStateMixin
 
 
@@ -24,7 +23,6 @@ class State(SessionIsolatedStateMixin, rx.State):
 def index():
     return rx.box(
         rx.fragment(
-            loading_screen(),
             navbar(),
             rx.box(
                 rx.link(
