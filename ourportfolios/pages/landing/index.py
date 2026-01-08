@@ -6,6 +6,7 @@ from ...components.navbar import navbar
 from ...components.cards import portfolio_card
 from ...components.graph import mini_price_graph
 from ...components.plasma import plasma
+from ...components.shiny_text import shiny_text
 from ...utils.session_manager import SessionIsolatedStateMixin
 
 cards = [
@@ -39,69 +40,53 @@ def index() -> rx.Component:
                 speed=1,
                 direction="forward",
                 scale=2,
-                opacity=0.15,
-                mouse_interactive=True,  # TODO: Make this work
+                opacity=0.1,
+                mouse_interactive=True,
             ),
             position="absolute",
             top="0",
             left="0",
             width="100%",
             height="100%",
-            z_index="0",
+            z_index="-1",
+            pointer_events="auto",  # Ensure background can receive events
         ),
-        # Content layer
-        rx.box(
-            loading_screen(),
-            navbar(
-                rx.foreach(
-                    State.data,
-                    lambda data: mini_price_graph(
-                        label=data["label"],
-                        data=data["data"],
-                        diff=data["percent_diff"],
+        rx.vstack(
+            rx.center(
+                rx.vstack(
+                    shiny_text(
+                        text="ourportfolios",
+                        speed=1,
+                        color="#c0c0c0",
+                        shine_color="#ffffff",
+                        spread=80,
+                        direction="left",
+                        yoyo=False,
+                        font_size="5rem",
+                        font_weight="heavy",
+                        delay=8,
                     ),
-                ),
-            ),
-            rx.vstack(
-                rx.center(
-                    rx.vstack(
-                        rx.heading(
-                            "OurPortfolios", size="9", font_size="5rem", weight="medium"
-                        ),
-                        rx.text("Build your portfolios. We'll build ours", size="4"),
-                        spacing="5",
-                        align="center",
-                    ),
-                    height="calc(100vh - 64px)",
-                    width="100%",
-                    justify="center",
+                    rx.text("Build your portfolios. We'll build ours", size="4"),
+                    spacing="1",
                     align="center",
+                    pointer_events="auto",
                 ),
-                rx.center(
-                    rx.box(
-                        *[
-                            portfolio_card(card, idx, len(cards))
-                            for idx, card in enumerate(cards)
-                        ],
-                        width="100vw",
-                        height="60vh",
-                        min_height="40vh",
-                        position="relative",
-                        overflow="visible",
-                        padding_x="7vw",
-                    ),
-                    width="100%",
-                    height="50vh",
-                ),
-                spacing="0",
-                align="center",
+                height="calc(100vh - 64px)",
                 width="100%",
+                justify="center",
+                align="center",
+                pointer_events="none",
             ),
+            spacing="0",
+            align="center",
+            width="100%",
             position="relative",
-            z_index="1",
-            min_height="100vh",
-            on_unmount=State.on_unmount,
+            z_index="10",
+            pointer_events="none",
         ),
-        position="relative",
+        on_unmount=State.on_unmount,
+        position="relative",  # Add this
+        pointer_events="none",  # Add this to root box
+        width="100%",
         min_height="100vh",
     )
