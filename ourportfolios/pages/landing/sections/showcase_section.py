@@ -15,8 +15,8 @@ def showcase_section() -> rx.Component:
                         shiny_text(
                             text="Card stacks have never looked so good",
                             speed=3,
-                            color="#ffffff",
-                            shine_color="#ffffff",
+                            color="rgba(255, 255, 255, 0.75)",
+                            shine_color="rgba(255, 255, 255, 1)",
                             spread=120,
                             direction="left",
                             yoyo=False,
@@ -378,7 +378,7 @@ def showcase_section() -> rx.Component:
                 overflow="hidden",
             ),
             width="100%",
-            padding_y="10rem",
-            margin_top="6rem",
+            padding_y="2rem",
+            margin_top="2rem",
         ),
     )

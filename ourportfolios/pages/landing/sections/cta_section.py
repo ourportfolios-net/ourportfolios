@@ -19,13 +19,14 @@ def cta_section() -> rx.Component:
                         line_height="1.2",
                         margin_bottom="2rem",
                         text_align="center",
+                        color="rgba(255, 255, 255, 0.8)",
                     ),
                     rx.hstack(
                         rx.button(
                             "Start for free",
                             size="3",
-                            background="white",
-                            color="black",
+                            background="rgba(255, 255, 255, 0.85)",
+                            color="rgba(0, 0, 0, 0.85)",
                             border_radius="0.75rem",
                             font_weight="700",
                             padding_x="2.5rem",
