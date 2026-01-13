@@ -20,6 +20,16 @@ def search_bar():
                 on_mount=SearchBarState.set_display_suggestions(False),
                 on_focus=SearchBarState.set_display_suggestions(True),
                 width="100%",
+                background="rgba(255, 255, 255, 0.05)",
+                border=f"1px solid {rx.color('gray', 6)}",
+                border_radius=12,
+                _focus={
+                    "background": "rgba(255, 255, 255, 0.08)",
+                    "border_color": rx.color("purple", 8),
+                },
+                _hover={
+                    "background": "rgba(255, 255, 255, 0.07)",
+                },
             ),
             rx.cond(
                 SearchBarState.display_suggestion,
@@ -40,10 +50,12 @@ def search_bar():
                         max_height=250,
                         overflow_y="auto",
                         z_index="100",
-                        background_color=rx.color("gray", 2),
+                        background="rgba(17, 17, 19, 0.95)",
+                        backdrop_filter="blur(16px)",
                         position="absolute",
                         top="calc(100% + 5px)",
-                        border_radius=4,
+                        border_radius=16,
+                        border=f"1px solid {rx.color('gray', 6)}",
                         direction="column",
                     ),
                     as_child=True,
@@ -51,7 +63,8 @@ def search_bar():
                 rx.fragment(),
             ),
             position="relative",
-            width="20vw",
+            width="32vw",
+            max_width="600px",
             on_mount=SearchBarState.load_state,
         ),
     )
@@ -102,5 +115,8 @@ def suggestion_card(value: dict[str, Any]) -> rx.Component:
         width="100%",
         padding="10px",
         cursor="pointer",
-        _hover={"background_color": rx.color("gray", 3)},
+        _hover={
+            "background_color": "rgba(255, 255, 255, 0.03)",
+            "backdrop_filter": "blur(8px)",
+        },
     )

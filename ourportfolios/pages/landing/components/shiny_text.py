@@ -87,6 +87,14 @@ def shiny_text(
         )
         ```
     """
+    # Ensure colors are strings: Reflex `rx.color(...)` returns a Color
+    # object which stringifies to a CSS variable (e.g. "var(--gray-12)").
+    # The ShinyText prop expects a plain string, so coerce non-strings.
+    if not isinstance(color, str):
+        color = str(color)
+    if not isinstance(shine_color, str):
+        shine_color = str(shine_color)
+
     return ShinyText.create(
         text=text,
         disabled=disabled,

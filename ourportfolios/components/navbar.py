@@ -1,60 +1,34 @@
+"""Navigation bar component."""
+
 import reflex as rx
 from .search_bar import search_bar
 
 
-def navbar(*children) -> rx.Component:
+def navbar() -> rx.Component:
+    """Fixed navigation bar with logo and search bar."""
     return rx.box(
         rx.hstack(
-            rx.hstack(
-                rx.box(
-                    rx.heading("OurPortfolios", size="5", weight="medium"),
-                    rx.link(
-                        "",
-                        href="/",
-                        style={
-                            "position": "absolute",
-                            "top": 0,
-                            "left": 0,
-                            "right": 0,
-                            "bottom": 0,
-                            "width": "100%",
-                            "height": "100%",
-                            "zIndex": 1,
-                            "textDecoration": "none",
-                            "color": "inherit",
-                            "background": "transparent",
-                            "pointerEvents": "auto",
-                            "_hover": {
-                                "textDecoration": "none",
-                                "color": "inherit",
-                                "background": "transparent",
-                            },
-                        },
-                    ),
-                    position="relative",
-                ),
-                *children,
-                align_items="center",
-                spacing="7",
+            # Logo
+            rx.text(
+                "ourportfolios",
+                size="4",
+                weight="bold",
             ),
-            rx.hstack(
-                rx.color_mode.button(),
-                search_bar(),
-                rx.button(
-                    "Sign Up",
-                    size="2",
-                    variant="outline",
-                ),
-                rx.button("Log In", size="2"),
-                spacing="4",
-                justify="end",
-                align_items="center",
-            ),
-            justify="between",
-            align_items="center",
-            height="4.1em",
+            rx.spacer(),
+            # Search bar
+            search_bar(),
+            rx.spacer(),
+            align="center",
+            width="100%",
+            max_width="80rem",
+            px="4",
         ),
-        bg=rx.color("accent", 3),
-        padding="0.4em 1em",
+        position="fixed",
+        top="0",
         width="100%",
+        z_index="50",
+        py="4",
+        background="rgba(17, 17, 19, 0.7)",
+        backdrop_filter="blur(32px)",
+        border_bottom=f"1px solid {rx.color('gray', 4)}",
     )

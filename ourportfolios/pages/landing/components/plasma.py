@@ -18,7 +18,7 @@ class Plasma(rx.Component):
     """
 
     # Reference the JSX file from the assets directory
-    library = "$/public/plasma"
+    library = "$/public/Plasma"
 
     tag = "Plasma"
     is_default = True
