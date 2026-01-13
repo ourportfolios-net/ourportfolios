@@ -9,27 +9,66 @@ import React, {
 } from "react";
 import gsap from "gsap";
 
-export const Card = forwardRef(({ customClass, ...rest }, ref) => (
-  <div
-    ref={ref}
-    {...rest}
-    className={`card ${customClass ?? ""} ${rest.className ?? ""}`.trim()}
-    style={{
+export const Card = forwardRef(
+  (
+    { customClass, children, style: userStyle = {}, className, ...rest },
+    ref
+  ) => {
+    const baseStyle = {
       position: "absolute",
-      boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.4)",
       transformStyle: "preserve-3d",
       backfaceVisibility: "hidden",
       borderRadius: "1.5rem",
-      overflow: "hidden",
-      ...rest.style,
-    }}
-  />
-));
+      overflow: "visible",
+      boxShadow:
+        "0 40px 80px -24px rgba(0,0,0,0.6), 0 20px 40px -20px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.03)",
+      ...userStyle,
+    };
+
+    return (
+      <div
+        ref={ref}
+        {...rest}
+        className={`card ${customClass ?? ""} ${className ?? ""}`.trim()}
+        style={baseStyle}
+      >
+        {/* glass overlay that blurs backdrop and gives soft translucent surface */}
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: "rgba(22,22,28,0.8)",
+            backdropFilter: "blur(18px)",
+            WebkitBackdropFilter: "blur(18px)",
+            borderRadius: "1.5rem",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.02)",
+            pointerEvents: "none",
+            zIndex: 1,
+          }}
+        />
+
+        {/* content container above the glass layer */}
+        <div
+          style={{
+            position: "relative",
+            zIndex: 2,
+            width: "100%",
+            height: "100%",
+            opacity: 0.95,
+          }}
+        >
+          {children}
+        </div>
+      </div>
+    );
+  }
+);
 Card.displayName = "Card";
 
 const makeSlot = (i, distX, distY, total) => ({
   x: i * distX,
-  y: -i * distY,
+  y: (total - 1) * distY - i * distY,
   z: -i * 50,
   zIndex: total - i,
 });

@@ -1,41 +1,28 @@
-"""Landing page - redesigned with bento grid and showcase sections.
-
-Inspired by the ourportfolios HTML design with:
-- Hero section with plasma background and shiny text
-- Large showcase card/demo section with CardSwap component
-- Magic bento grid with feature cards
-- CTA section
-- Footer
-"""
+"""Landing page with bento grid, showcase cards, and scroll animations."""
 
 import reflex as rx
-from typing import Literal
 
 from .components.plasma import plasma
 from .components.shiny_text import shiny_text
-from .components.magic_bento import magic_bento, magic_bento_card
+from .components.magic_bento import magic_bento_card
+from .components.scroll_reveal import scroll_reveal
+from .components.card_swap import card_swap, card
 from ...utils.session_manager import SessionIsolatedStateMixin
 from ...components.search_bar import search_bar
-
-# Import the CardSwap component
-from .components.card_swap import card_swap, card
 
 
 class LandingState(SessionIsolatedStateMixin, rx.State):
     """State for landing page."""
 
     def on_mount(self):
-        """Initialize session when page is mounted."""
         super().on_mount()
 
     def on_unmount(self):
-        """Cleanup when page is unmounted."""
         super().on_unmount()
 
 
 def badge_button(text: str, **props) -> rx.Component:
     """Create a badge-style button with pulsing dot indicator."""
-    # Extract padding if provided in props, otherwise use defaults
     padding_x = props.pop("padding_x", "1rem")
     padding_y = props.pop("padding_y", "0.375rem")
 
@@ -59,7 +46,7 @@ def badge_button(text: str, **props) -> rx.Component:
         ),
         padding_x=padding_x,
         padding_y=padding_y,
-        border_radius="9999px",
+        border_radius="0.75rem",
         background="rgba(255, 255, 255, 0.03)",
         backdrop_filter="blur(24px)",
         border="1px solid rgba(255, 255, 255, 0.05)",
@@ -73,17 +60,15 @@ def badge_button(text: str, **props) -> rx.Component:
 
 
 def nav_bar() -> rx.Component:
-    """Navigation bar component with logo and search bar."""
+    """Navigation bar with logo and search."""
     return rx.box(
         rx.hstack(
-            # Logo
             rx.text(
                 "ourportfolios",
                 font_size="1.25rem",
                 font_weight="600",
                 letter_spacing="-0.02em",
             ),
-            # Search bar
             search_bar(),
             align="center",
             justify="between",
@@ -102,9 +87,8 @@ def nav_bar() -> rx.Component:
 
 
 def hero_section() -> rx.Component:
-    """Hero section with plasma background and main headline."""
+    """Hero section with plasma background."""
     return rx.box(
-        # Plasma background
         rx.box(
             plasma(
                 color="#7C3AED",
@@ -120,8 +104,11 @@ def hero_section() -> rx.Component:
             width="100%",
             height="100%",
             z_index="0",
+            style={
+                "maskImage": "radial-gradient(ellipse 80% 70% at 50% 40%, black 30%, transparent 100%)",
+                "WebkitMaskImage": "radial-gradient(ellipse 80% 70% at 50% 40%, black 30%, transparent 100%)",
+            },
         ),
-        # Ambient glow
         rx.box(
             position="absolute",
             width="1000px",
@@ -132,15 +119,13 @@ def hero_section() -> rx.Component:
             top="-16rem",
             left="-16rem",
         ),
-        # Content
         rx.center(
             rx.vstack(
-                # Main headline with shiny text (badge removed)
                 rx.box(
                     shiny_text(
                         text="yourportfolio starts here!",
                         speed=3,
-                        color="#ffffff",
+                        color="#8a8a8a",
                         shine_color="#ffffff",
                         spread=120,
                         direction="left",
@@ -155,7 +140,6 @@ def hero_section() -> rx.Component:
                     max_width="56rem",
                     text_align="center",
                 ),
-                # Subtitle
                 rx.text(
                     "Build wealth with precision while we build the future of investment tech.",
                     font_size=["1rem", "1.125rem", "1.25rem"],
@@ -166,7 +150,6 @@ def hero_section() -> rx.Component:
                     font_weight="300",
                     line_height="1.5",
                 ),
-                # CTA buttons
                 rx.hstack(
                     rx.button(
                         rx.hstack(
@@ -178,7 +161,7 @@ def hero_section() -> rx.Component:
                         size="3",
                         background="white",
                         color="black",
-                        border_radius="9999px",
+                        border_radius="0.75rem",
                         font_weight="600",
                         padding_x="2rem",
                         padding_y="0.875rem",
@@ -211,652 +194,646 @@ def hero_section() -> rx.Component:
 
 
 def showcase_section() -> rx.Component:
-    """Large showcase card section with CardSwap component demonstrating the product."""
-
-    return rx.center(
-        rx.box(
-            # Two-column layout: Text on left, CardSwap on right
-            rx.hstack(
-                # LEFT SIDE - Text content with shiny text
-                rx.vstack(
-                    shiny_text(
-                        text="Card stacks have never looked so good",
-                        speed=3,
-                        color="#ffffff",
-                        shine_color="#ffffff",
-                        spread=120,
-                        direction="left",
-                        yoyo=False,
-                        delay=0,
-                        font_size=["2rem", "2.5rem", "3rem"],
-                        font_weight="600",
-                        line_height="1.2",
-                        letter_spacing="-0.02em",
+    """Showcase section with CardSwap demo."""
+    return scroll_reveal(
+        rx.center(
+            rx.box(
+                rx.hstack(
+                    rx.vstack(
+                        shiny_text(
+                            text="Card stacks have never looked so good",
+                            speed=3,
+                            color="#ffffff",
+                            shine_color="#ffffff",
+                            spread=120,
+                            direction="left",
+                            yoyo=False,
+                            delay=0,
+                            font_size=["2rem", "2.5rem", "3rem"],
+                            font_weight="600",
+                            line_height="1.2",
+                            letter_spacing="-0.02em",
+                        ),
+                        rx.text(
+                            "Just look at it go!",
+                            font_size=["1rem", "1.125rem"],
+                            color="rgba(255, 255, 255, 0.4)",
+                            margin_top="2rem",
+                            font_weight="300",
+                            line_height="1.5",
+                        ),
+                        align="start",
+                        spacing="0",
+                        flex="1",
+                        max_width="30rem",
+                        min_width="22rem",
                     ),
-                    rx.text(
-                        "Just look at it go!",
-                        font_size=["1rem", "1.125rem"],
-                        color="rgba(255, 255, 255, 0.4)",
-                        margin_top="2rem",
-                        font_weight="300",
-                        line_height="1.5",
-                    ),
-                    align="start",
-                    spacing="0",
-                    flex="1",
-                    max_width="30rem",
-                    min_width="22rem",
-                ),
-                # RIGHT SIDE - CardSwap with proper positioning wrapper
-                rx.box(
                     rx.box(
-                        card_swap(
-                            # Card 1 - Customizable (bottom of stack)
-                            card(
-                                rx.box(
-                                    rx.hstack(
-                                        rx.icon(
-                                            "file_sliders",
-                                            size=20,
-                                            color="rgba(255, 255, 255, 0.5)",
-                                        ),
-                                        rx.heading(
-                                            "Customizable",
-                                            size="4",
-                                            font_weight="500",
-                                            letter_spacing="0.05em",
-                                            text_transform="uppercase",
-                                        ),
-                                        spacing="3",
-                                        align="center",
-                                        padding="1.5rem",
-                                    ),
-                                    rx.box(
-                                        rx.center(
-                                            rx.vstack(
-                                                rx.heading(
-                                                    "Fully Customizable",
-                                                    size="5",
-                                                    font_weight="600",
-                                                    letter_spacing="-0.02em",
-                                                    margin_bottom="0.75rem",
-                                                ),
-                                                rx.text(
-                                                    "Tailor every aspect to match your workflow.",
-                                                    font_size="0.875rem",
-                                                    color="rgba(255, 255, 255, 0.6)",
-                                                    line_height="1.6",
-                                                    text_align="center",
-                                                ),
-                                                align="center",
-                                                spacing="0",
-                                            ),
-                                            width="100%",
-                                            height="100%",
-                                        ),
-                                        padding="2rem",
-                                    ),
-                                    width="100%",
-                                    height="100%",
-                                    background="rgba(22, 22, 28, 0.97)",
-                                    backdrop_filter="blur(24px)",
-                                    border="1px solid rgba(255, 255, 255, 0.08)",
-                                    border_radius="1.5rem",
-                                    display="flex",
-                                    flex_direction="column",
-                                ),
-                            ),
-                            # Card 2 - Smooth (middle of stack)
-                            card(
-                                rx.box(
-                                    rx.hstack(
-                                        rx.box(
-                                            width="1.25rem",
-                                            height="1.25rem",
-                                            border_radius="9999px",
-                                            background="rgba(255, 255, 255, 0.5)",
-                                        ),
-                                        rx.heading(
-                                            "Smooth",
-                                            size="4",
-                                            font_weight="500",
-                                            letter_spacing="0.05em",
-                                            text_transform="uppercase",
-                                        ),
-                                        spacing="3",
-                                        align="center",
-                                        padding="1.5rem",
-                                    ),
+                        rx.box(
+                            card_swap(
+                                card(
                                     rx.box(
                                         rx.hstack(
-                                            # Left column - larger cards
-                                            rx.vstack(
-                                                # Large feature card
-                                                rx.box(
-                                                    rx.box(
-                                                        rx.text(
-                                                            "01",
-                                                            font_size="2rem",
-                                                            font_weight="900",
-                                                            color="rgba(255, 255, 255, 0.1)",
-                                                            margin_bottom="0.5rem",
-                                                        ),
-                                                        rx.text(
-                                                            "Fluid Interface",
-                                                            font_size="0.875rem",
-                                                            font_weight="500",
-                                                            letter_spacing="-0.02em",
-                                                        ),
-                                                    ),
-                                                    height="7rem",
-                                                    background="rgba(255, 255, 255, 0.02)",
-                                                    border="1px solid rgba(255, 255, 255, 0.06)",
-                                                    border_radius="0.875rem",
-                                                    padding="1.25rem",
-                                                ),
-                                                # Two smaller cards
-                                                rx.hstack(
-                                                    rx.box(
-                                                        rx.center(
-                                                            rx.box(
-                                                                rx.box(
-                                                                    width="66.67%",
-                                                                    height="100%",
-                                                                    background="#7C3AED",
-                                                                    border_radius="9999px",
-                                                                    box_shadow="0 0 6px rgba(124, 58, 237, 0.5)",
-                                                                ),
-                                                                width="2rem",
-                                                                height="0.175rem",
-                                                                background="rgba(255, 255, 255, 0.1)",
-                                                                border_radius="9999px",
-                                                                position="relative",
-                                                            ),
-                                                            height="100%",
-                                                        ),
-                                                        flex="1",
-                                                        height="4rem",
-                                                        background="rgba(255, 255, 255, 0.02)",
-                                                        border="1px solid rgba(255, 255, 255, 0.05)",
-                                                        border_radius="0.875rem",
-                                                    ),
-                                                    rx.box(
-                                                        flex="1",
-                                                        height="4rem",
-                                                        background="rgba(255, 255, 255, 0.02)",
-                                                        border="1px solid rgba(255, 255, 255, 0.05)",
-                                                        border_radius="0.875rem",
-                                                    ),
-                                                    spacing="3",
-                                                    width="100%",
-                                                ),
-                                                spacing="3",
-                                                flex="1",
+                                            rx.icon(
+                                                "file_sliders",
+                                                size=20,
+                                                color="rgba(255, 255, 255, 0.5)",
                                             ),
-                                            # Right column - info card
-                                            rx.vstack(
-                                                rx.vstack(
-                                                    rx.box(
-                                                        height="0.25rem",
-                                                        width="50%",
-                                                        background="rgba(255, 255, 255, 0.1)",
-                                                        border_radius="9999px",
-                                                    ),
-                                                    rx.box(
-                                                        height="0.25rem",
-                                                        width="75%",
-                                                        background="rgba(255, 255, 255, 0.05)",
-                                                        border_radius="9999px",
-                                                    ),
-                                                    rx.box(
-                                                        height="0.25rem",
-                                                        width="66.67%",
-                                                        background="rgba(255, 255, 255, 0.05)",
-                                                        border_radius="9999px",
-                                                    ),
-                                                    spacing="3",
-                                                ),
-                                                rx.spacer(),
-                                                rx.center(
-                                                    rx.icon(
-                                                        "coins",
-                                                        size=28,
-                                                        color="rgba(255, 255, 255, 0.1)",
-                                                    ),
-                                                    width="100%",
-                                                    aspect_ratio="1",
-                                                    border_radius="0.625rem",
-                                                    background="linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, transparent 100%)",
-                                                    border="1px solid rgba(255, 255, 255, 0.05)",
-                                                ),
-                                                spacing="3",
-                                                flex="1",
-                                                background="rgba(255, 255, 255, 0.02)",
-                                                border="1px solid rgba(255, 255, 255, 0.05)",
-                                                border_radius="0.875rem",
-                                                padding="1.25rem",
-                                                max_width="10rem",
+                                            rx.heading(
+                                                "Customizable",
+                                                size="4",
+                                                font_weight="500",
+                                                letter_spacing="0.05em",
+                                                text_transform="uppercase",
                                             ),
                                             spacing="3",
-                                            align="stretch",
-                                            width="100%",
-                                            height="100%",
+                                            align="center",
+                                            padding="1.5rem",
                                         ),
-                                        padding="1.25rem",
-                                    ),
-                                    width="100%",
-                                    height="100%",
-                                    background="rgba(22, 22, 28, 0.97)",
-                                    backdrop_filter="blur(24px)",
-                                    border="1px solid rgba(255, 255, 255, 0.08)",
-                                    border_radius="1.5rem",
-                                    display="flex",
-                                    flex_direction="column",
-                                ),
-                            ),
-                            # Card 3 - Reliable (top of stack initially)
-                            card(
-                                rx.box(
-                                    rx.hstack(
-                                        rx.text(
-                                            "</> ",
-                                            font_size="1rem",
-                                            color="rgba(255, 255, 255, 0.5)",
-                                        ),
-                                        rx.heading(
-                                            "Reliable",
-                                            size="4",
-                                            font_weight="500",
-                                            letter_spacing="0.05em",
-                                            text_transform="uppercase",
-                                        ),
-                                        spacing="3",
-                                        align="center",
-                                        padding="1.5rem",
-                                    ),
-                                    rx.box(
-                                        rx.center(
-                                            rx.vstack(
-                                                rx.heading(
-                                                    "Reliable Performance",
-                                                    size="5",
-                                                    font_weight="600",
-                                                    letter_spacing="-0.02em",
-                                                    margin_bottom="0.75rem",
-                                                ),
-                                                rx.text(
-                                                    "99.9% uptime with enterprise-grade infrastructure.",
-                                                    font_size="0.8rem",
-                                                    color="rgba(255, 255, 255, 0.6)",
-                                                    line_height="1.6",
-                                                    text_align="center",
-                                                    margin_bottom="1.5rem",
-                                                ),
-                                                rx.hstack(
-                                                    rx.vstack(
-                                                        rx.text(
-                                                            "99.9%",
-                                                            font_size="1.75rem",
-                                                            font_weight="700",
-                                                            color="#7C3AED",
-                                                        ),
-                                                        rx.text(
-                                                            "Uptime",
-                                                            font_size="0.7rem",
-                                                            color="rgba(255, 255, 255, 0.4)",
-                                                        ),
-                                                        spacing="1",
-                                                        align="center",
+                                        rx.box(
+                                            rx.center(
+                                                rx.vstack(
+                                                    rx.heading(
+                                                        "Fully Customizable",
+                                                        size="5",
+                                                        font_weight="600",
+                                                        letter_spacing="-0.02em",
+                                                        margin_bottom="0.75rem",
                                                     ),
-                                                    rx.vstack(
-                                                        rx.text(
-                                                            "<50ms",
-                                                            font_size="1.75rem",
-                                                            font_weight="700",
-                                                            color="#7C3AED",
-                                                        ),
-                                                        rx.text(
-                                                            "Latency",
-                                                            font_size="0.7rem",
-                                                            color="rgba(255, 255, 255, 0.4)",
-                                                        ),
-                                                        spacing="1",
-                                                        align="center",
+                                                    rx.text(
+                                                        "Tailor every aspect to match your workflow.",
+                                                        font_size="0.875rem",
+                                                        color="rgba(255, 255, 255, 0.6)",
+                                                        line_height="1.6",
+                                                        text_align="center",
                                                     ),
-                                                    rx.vstack(
-                                                        rx.text(
-                                                            "24/7",
-                                                            font_size="1.75rem",
-                                                            font_weight="700",
-                                                            color="#7C3AED",
-                                                        ),
-                                                        rx.text(
-                                                            "Support",
-                                                            font_size="0.7rem",
-                                                            color="rgba(255, 255, 255, 0.4)",
-                                                        ),
-                                                        spacing="1",
-                                                        align="center",
-                                                    ),
-                                                    spacing="5",
+                                                    align="center",
+                                                    spacing="0",
                                                 ),
-                                                align="center",
-                                                spacing="0",
+                                                width="100%",
+                                                height="100%",
                                             ),
-                                            width="100%",
-                                            height="100%",
+                                            padding="2rem",
                                         ),
-                                        padding="1.75rem",
+                                        width="100%",
+                                        height="100%",
+                                        background="transparent",
+                                        backdrop_filter="blur(20px)",
+                                        border="1px solid rgba(255, 255, 255, 0.08)",
+                                        border_radius="1.5rem",
+                                        display="flex",
+                                        flex_direction="column",
                                     ),
-                                    width="100%",
-                                    height="100%",
-                                    background="rgba(22, 22, 28, 0.97)",
-                                    backdrop_filter="blur(24px)",
-                                    border="1px solid rgba(255, 255, 255, 0.08)",
-                                    border_radius="1.5rem",
-                                    display="flex",
-                                    flex_direction="column",
                                 ),
+                                card(
+                                    rx.box(
+                                        rx.hstack(
+                                            rx.box(
+                                                width="1.25rem",
+                                                height="1.25rem",
+                                                border_radius="9999px",
+                                                background="rgba(255, 255, 255, 0.5)",
+                                            ),
+                                            rx.heading(
+                                                "Smooth",
+                                                size="4",
+                                                font_weight="500",
+                                                letter_spacing="0.05em",
+                                                text_transform="uppercase",
+                                            ),
+                                            spacing="3",
+                                            align="center",
+                                            padding="1.5rem",
+                                        ),
+                                        rx.box(
+                                            rx.hstack(
+                                                rx.vstack(
+                                                    rx.box(
+                                                        rx.box(
+                                                            rx.text(
+                                                                "01",
+                                                                font_size="2rem",
+                                                                font_weight="900",
+                                                                color="rgba(255, 255, 255, 0.1)",
+                                                                margin_bottom="0.5rem",
+                                                            ),
+                                                            rx.text(
+                                                                "Fluid Interface",
+                                                                font_size="0.875rem",
+                                                                font_weight="500",
+                                                                letter_spacing="-0.02em",
+                                                            ),
+                                                        ),
+                                                        height="7rem",
+                                                        background="rgba(255, 255, 255, 0.02)",
+                                                        border="1px solid rgba(255, 255, 255, 0.06)",
+                                                        border_radius="0.875rem",
+                                                        padding="1.25rem",
+                                                    ),
+                                                    rx.hstack(
+                                                        rx.box(
+                                                            rx.center(
+                                                                rx.box(
+                                                                    rx.box(
+                                                                        width="66.67%",
+                                                                        height="100%",
+                                                                        background="#7C3AED",
+                                                                        border_radius="9999px",
+                                                                        box_shadow="0 0 6px rgba(124, 58, 237, 0.5)",
+                                                                    ),
+                                                                    width="2rem",
+                                                                    height="0.175rem",
+                                                                    background="rgba(255, 255, 255, 0.1)",
+                                                                    border_radius="9999px",
+                                                                    position="relative",
+                                                                ),
+                                                                height="100%",
+                                                            ),
+                                                            flex="1",
+                                                            height="4rem",
+                                                            background="rgba(255, 255, 255, 0.02)",
+                                                            border="1px solid rgba(255, 255, 255, 0.05)",
+                                                            border_radius="0.875rem",
+                                                        ),
+                                                        rx.box(
+                                                            flex="1",
+                                                            height="4rem",
+                                                            background="rgba(255, 255, 255, 0.02)",
+                                                            border="1px solid rgba(255, 255, 255, 0.05)",
+                                                            border_radius="0.875rem",
+                                                        ),
+                                                        spacing="3",
+                                                        width="100%",
+                                                    ),
+                                                    spacing="3",
+                                                    flex="1",
+                                                ),
+                                                rx.vstack(
+                                                    rx.vstack(
+                                                        rx.box(
+                                                            height="0.25rem",
+                                                            width="50%",
+                                                            background="rgba(255, 255, 255, 0.1)",
+                                                            border_radius="9999px",
+                                                        ),
+                                                        rx.box(
+                                                            height="0.25rem",
+                                                            width="75%",
+                                                            background="rgba(255, 255, 255, 0.05)",
+                                                            border_radius="9999px",
+                                                        ),
+                                                        rx.box(
+                                                            height="0.25rem",
+                                                            width="66.67%",
+                                                            background="rgba(255, 255, 255, 0.05)",
+                                                            border_radius="9999px",
+                                                        ),
+                                                        spacing="3",
+                                                    ),
+                                                    rx.spacer(),
+                                                    rx.center(
+                                                        rx.icon(
+                                                            "coins",
+                                                            size=28,
+                                                            color="rgba(255, 255, 255, 0.1)",
+                                                        ),
+                                                        width="100%",
+                                                        aspect_ratio="1",
+                                                        border_radius="0.625rem",
+                                                        background="linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, transparent 100%)",
+                                                        border="1px solid rgba(255, 255, 255, 0.05)",
+                                                    ),
+                                                    spacing="3",
+                                                    flex="1",
+                                                    background="rgba(255, 255, 255, 0.02)",
+                                                    border="1px solid rgba(255, 255, 255, 0.05)",
+                                                    border_radius="0.875rem",
+                                                    padding="1.25rem",
+                                                    max_width="10rem",
+                                                ),
+                                                spacing="3",
+                                                align="stretch",
+                                                width="100%",
+                                                height="100%",
+                                            ),
+                                            padding="1.25rem",
+                                        ),
+                                        width="100%",
+                                        height="100%",
+                                        background="transparent",
+                                        backdrop_filter="blur(20px)",
+                                        border="1px solid rgba(255, 255, 255, 0.08)",
+                                        border_radius="1.5rem",
+                                        display="flex",
+                                        flex_direction="column",
+                                    ),
+                                ),
+                                card(
+                                    rx.box(
+                                        rx.hstack(
+                                            rx.text(
+                                                "</> ",
+                                                font_size="1rem",
+                                                color="rgba(255, 255, 255, 0.5)",
+                                            ),
+                                            rx.heading(
+                                                "Reliable",
+                                                size="4",
+                                                font_weight="500",
+                                                letter_spacing="0.05em",
+                                                text_transform="uppercase",
+                                            ),
+                                            spacing="3",
+                                            align="center",
+                                            padding="1.5rem",
+                                        ),
+                                        rx.box(
+                                            rx.center(
+                                                rx.vstack(
+                                                    rx.heading(
+                                                        "Reliable Performance",
+                                                        size="5",
+                                                        font_weight="600",
+                                                        letter_spacing="-0.02em",
+                                                        margin_bottom="0.75rem",
+                                                    ),
+                                                    rx.text(
+                                                        "99.9% uptime with enterprise-grade infrastructure.",
+                                                        font_size="0.8rem",
+                                                        color="rgba(255, 255, 255, 0.6)",
+                                                        line_height="1.6",
+                                                        text_align="center",
+                                                        margin_bottom="1.5rem",
+                                                    ),
+                                                    rx.hstack(
+                                                        rx.vstack(
+                                                            rx.text(
+                                                                "99.9%",
+                                                                font_size="1.75rem",
+                                                                font_weight="700",
+                                                                color="#7C3AED",
+                                                            ),
+                                                            rx.text(
+                                                                "Uptime",
+                                                                font_size="0.7rem",
+                                                                color="rgba(255, 255, 255, 0.4)",
+                                                            ),
+                                                            spacing="1",
+                                                            align="center",
+                                                        ),
+                                                        rx.vstack(
+                                                            rx.text(
+                                                                "<50ms",
+                                                                font_size="1.75rem",
+                                                                font_weight="700",
+                                                                color="#7C3AED",
+                                                            ),
+                                                            rx.text(
+                                                                "Latency",
+                                                                font_size="0.7rem",
+                                                                color="rgba(255, 255, 255, 0.4)",
+                                                            ),
+                                                            spacing="1",
+                                                            align="center",
+                                                        ),
+                                                        rx.vstack(
+                                                            rx.text(
+                                                                "24/7",
+                                                                font_size="1.75rem",
+                                                                font_weight="700",
+                                                                color="#7C3AED",
+                                                            ),
+                                                            rx.text(
+                                                                "Support",
+                                                                font_size="0.7rem",
+                                                                color="rgba(255, 255, 255, 0.4)",
+                                                            ),
+                                                            spacing="1",
+                                                            align="center",
+                                                        ),
+                                                        spacing="5",
+                                                    ),
+                                                    align="center",
+                                                    spacing="0",
+                                                ),
+                                                width="100%",
+                                                height="100%",
+                                            ),
+                                            padding="1.75rem",
+                                        ),
+                                        width="100%",
+                                        height="100%",
+                                        background="transparent",
+                                        backdrop_filter="blur(20px)",
+                                        border="1px solid rgba(255, 255, 255, 0.08)",
+                                        border_radius="1.5rem",
+                                        display="flex",
+                                        flex_direction="column",
+                                    ),
+                                ),
+                                width=550,
+                                height=400,
+                                card_distance=40,
+                                vertical_distance=45,
+                                delay=4000,
+                                pause_on_hover=True,
+                                skew_amount=0,
+                                easing="elastic",
                             ),
-                            # CardSwap configuration - clean stacked look
-                            width=550,
-                            height=400,
-                            card_distance=40,
-                            vertical_distance=45,
-                            delay=4000,
-                            pause_on_hover=True,
-                            skew_amount=0,
-                            easing="elastic",
+                            style={"transformStyle": "preserve-3d"},
                         ),
-                        # Wrapper for card stack - no perspective, flat 2D look
-                        style={
-                            "transformStyle": "preserve-3d",
-                        },
+                        width=["100%", "100%", "650px"],
+                        max_width="650px",
+                        min_height="600px",
+                        display="flex",
+                        justify_content="center",
+                        align_items="flex-start",
+                        padding_top="2rem",
+                        margin_left=["0", "0", "3rem"],
                     ),
-                    # Outer wrapper to position cards
-                    min_width="650px",
-                    min_height="500px",
-                    display="flex",
-                    justify_content="center",
-                    align_items="center",
-                    margin_left="3rem",
+                    spacing="0",
+                    align="center",
+                    width="100%",
+                    max_width="1400px",
+                    padding_x=["1.5rem", "2rem", "4rem"],
+                    justify="center",
+                    gap=["4rem", "5rem", "6rem"],
+                    flex_direction=["column", "column", "row"],
                 ),
-                spacing="0",
-                align="start",
                 width="100%",
-                max_width="1400px",
-                padding_x="4rem",
-                justify="center",
-                gap="6rem",
+                display="flex",
+                justify_content="center",
+                overflow="hidden",
             ),
             width="100%",
-            display="flex",
-            justify_content="center",
+            padding_y="10rem",
+            margin_top="6rem",
         ),
-        width="100%",
-        padding_y="4rem",
     )
 
 
 def bento_section() -> rx.Component:
-    """Magic bento grid section with feature cards."""
+    """Bento grid section with feature cards."""
     return rx.center(
         rx.vstack(
-            # Section header
-            rx.vstack(
-                rx.heading(
-                    "The Magic Bento",
-                    size="8",
-                    font_weight="600",
-                    letter_spacing="-0.02em",
-                    margin_bottom="1.5rem",
+            scroll_reveal(
+                rx.vstack(
+                    rx.heading(
+                        "The Magic Bento",
+                        size="8",
+                        font_weight="600",
+                        letter_spacing="-0.02em",
+                        margin_bottom="1.5rem",
+                    ),
+                    rx.text(
+                        "Simple, focused tools designed for the modern investor and developer.",
+                        font_size="1.125rem",
+                        color="rgba(255, 255, 255, 0.4)",
+                        font_weight="300",
+                        line_height="1.5",
+                    ),
+                    align="center",
+                    max_width="32rem",
+                    margin_bottom="4rem",
                 ),
-                rx.text(
-                    "Simple, focused tools designed for the modern investor and developer.",
-                    font_size="1.125rem",
-                    color="rgba(255, 255, 255, 0.4)",
-                    font_weight="300",
-                    line_height="1.5",
-                ),
-                align="center",
-                max_width="32rem",
-                margin_bottom="4rem",
             ),
-            # Bento grid using CSS Grid for better responsiveness
-            rx.box(
-                # Analytics card
-                magic_bento_card(
-                    rx.vstack(
-                        rx.box(
-                            rx.center(
-                                rx.icon(
-                                    "bar-chart-3",
-                                    size=24,
-                                    color="rgba(255, 255, 255, 0.5)",
-                                ),
-                                width="3rem",
-                                height="3rem",
-                                border_radius="1rem",
-                                background="rgba(255, 255, 255, 0.05)",
-                            ),
-                            margin_bottom="1.5rem",
-                        ),
-                        rx.spacer(),
+            scroll_reveal(
+                rx.box(
+                    magic_bento_card(
                         rx.vstack(
+                            rx.box(
+                                rx.center(
+                                    rx.icon(
+                                        "bar-chart-3",
+                                        size=24,
+                                        color="rgba(255, 255, 255, 0.5)",
+                                    ),
+                                    width="3rem",
+                                    height="3rem",
+                                    border_radius="1rem",
+                                    background="rgba(255, 255, 255, 0.05)",
+                                ),
+                                margin_bottom="1.5rem",
+                            ),
+                            rx.spacer(),
+                            rx.vstack(
+                                rx.heading(
+                                    "Analytics",
+                                    size="5",
+                                    font_weight="600",
+                                    margin_bottom="0.5rem",
+                                ),
+                                rx.text(
+                                    "Insights with pixel precision.",
+                                    font_size="0.875rem",
+                                    color="rgba(255, 255, 255, 0.3)",
+                                    line_height="1.5",
+                                ),
+                                spacing="0",
+                            ),
+                            spacing="0",
+                            justify="between",
+                            height="100%",
+                        ),
+                        padding="2.5rem",
+                        min_height="18.75rem",
+                        grid_column=["1 / -1", "1 / -1", "1 / 3"],
+                    ),
+                    magic_bento_card(
+                        rx.vstack(
+                            rx.box(
+                                rx.center(
+                                    rx.icon(
+                                        "layout-dashboard",
+                                        size=24,
+                                        color="rgba(255, 255, 255, 0.5)",
+                                    ),
+                                    width="3rem",
+                                    height="3rem",
+                                    border_radius="1rem",
+                                    background="rgba(255, 255, 255, 0.05)",
+                                ),
+                                margin_bottom="1.5rem",
+                            ),
+                            rx.spacer(),
+                            rx.vstack(
+                                rx.heading(
+                                    "Overview",
+                                    size="5",
+                                    font_weight="600",
+                                    margin_bottom="0.5rem",
+                                ),
+                                rx.text(
+                                    "Central data console.",
+                                    font_size="0.875rem",
+                                    color="rgba(255, 255, 255, 0.3)",
+                                    line_height="1.5",
+                                ),
+                                spacing="0",
+                            ),
+                            spacing="0",
+                            justify="between",
+                            height="100%",
+                        ),
+                        padding="2.5rem",
+                        min_height="18.75rem",
+                        grid_column=["1 / -1", "1 / -1", "3 / 5"],
+                    ),
+                    magic_bento_card(
+                        rx.vstack(
+                            rx.box(
+                                rx.center(
+                                    rx.icon(
+                                        "zap", size=24, color="rgba(255, 255, 255, 0.5)"
+                                    ),
+                                    width="3rem",
+                                    height="3rem",
+                                    border_radius="1rem",
+                                    background="rgba(255, 255, 255, 0.05)",
+                                ),
+                                margin_bottom="1.5rem",
+                            ),
+                            rx.spacer(),
+                            rx.vstack(
+                                rx.heading(
+                                    "Automation",
+                                    size="5",
+                                    font_weight="600",
+                                    margin_bottom="0.5rem",
+                                ),
+                                rx.text(
+                                    "Streamline every workflow.",
+                                    font_size="0.875rem",
+                                    color="rgba(255, 255, 255, 0.3)",
+                                    line_height="1.5",
+                                ),
+                                spacing="0",
+                            ),
+                            spacing="0",
+                            justify="between",
+                            height="100%",
+                        ),
+                        padding="2.5rem",
+                        min_height="18.75rem",
+                        grid_column=["1 / -1", "1 / -1", "5 / 7"],
+                    ),
+                    magic_bento_card(
+                        rx.vstack(
+                            rx.box(
+                                rx.center(
+                                    rx.icon(
+                                        "users",
+                                        size=24,
+                                        color="rgba(255, 255, 255, 0.5)",
+                                    ),
+                                    width="3rem",
+                                    height="3rem",
+                                    border_radius="1rem",
+                                    background="rgba(255, 255, 255, 0.05)",
+                                ),
+                                margin_bottom="2rem",
+                            ),
                             rx.heading(
-                                "Analytics",
-                                size="5",
+                                "Collaboration",
+                                size="6",
                                 font_weight="600",
-                                margin_bottom="0.5rem",
+                                margin_bottom="1rem",
                             ),
                             rx.text(
-                                "Insights with pixel precision.",
-                                font_size="0.875rem",
+                                "Seamless teamwork across global borders with real-time syncing.",
+                                font_size="1rem",
                                 color="rgba(255, 255, 255, 0.3)",
+                                max_width="17.5rem",
                                 line_height="1.5",
                             ),
                             spacing="0",
+                            align="start",
                         ),
-                        spacing="0",
-                        justify="between",
-                        height="100%",
+                        padding="3rem",
+                        min_height="25rem",
+                        grid_column=["1 / -1", "1 / -1", "1 / 5"],
+                        position="relative",
+                        overflow="hidden",
                     ),
-                    padding="2.5rem",
-                    min_height="18.75rem",
-                    grid_column=["1 / -1", "1 / -1", "1 / 3"],
-                ),
-                # Overview card
-                magic_bento_card(
-                    rx.vstack(
-                        rx.box(
-                            rx.center(
-                                rx.icon(
-                                    "layout-dashboard",
-                                    size=24,
-                                    color="rgba(255, 255, 255, 0.5)",
-                                ),
-                                width="3rem",
-                                height="3rem",
-                                border_radius="1rem",
-                                background="rgba(255, 255, 255, 0.05)",
-                            ),
-                            margin_bottom="1.5rem",
-                        ),
-                        rx.spacer(),
+                    magic_bento_card(
                         rx.vstack(
-                            rx.heading(
-                                "Overview",
-                                size="5",
-                                font_weight="600",
-                                margin_bottom="0.5rem",
+                            rx.hstack(
+                                rx.center(
+                                    rx.icon(
+                                        "shield",
+                                        size=20,
+                                        color="rgba(255, 255, 255, 0.5)",
+                                    ),
+                                    width="2.5rem",
+                                    height="2.5rem",
+                                    border_radius="0.75rem",
+                                    background="rgba(255, 255, 255, 0.05)",
+                                ),
+                                rx.heading(
+                                    "Security",
+                                    size="4",
+                                    font_weight="600",
+                                ),
+                                spacing="4",
+                                align="center",
                             ),
+                            rx.spacer(),
                             rx.text(
-                                "Central data console.",
-                                font_size="0.875rem",
+                                "Enterprise encryption.",
+                                font_size="0.75rem",
                                 color="rgba(255, 255, 255, 0.3)",
-                                line_height="1.5",
                             ),
                             spacing="0",
+                            justify="between",
+                            height="100%",
                         ),
-                        spacing="0",
-                        justify="between",
-                        height="100%",
+                        padding="2.5rem",
+                        min_height="11.75rem",
+                        grid_column=["1 / -1", "1 / -1", "5 / 7"],
                     ),
-                    padding="2.5rem",
-                    min_height="18.75rem",
-                    grid_column=["1 / -1", "1 / -1", "3 / 5"],
-                ),
-                # Automation card
-                magic_bento_card(
-                    rx.vstack(
-                        rx.box(
-                            rx.center(
-                                rx.icon(
-                                    "zap", size=24, color="rgba(255, 255, 255, 0.5)"
-                                ),
-                                width="3rem",
-                                height="3rem",
-                                border_radius="1rem",
-                                background="rgba(255, 255, 255, 0.05)",
-                            ),
-                            margin_bottom="1.5rem",
-                        ),
-                        rx.spacer(),
+                    magic_bento_card(
                         rx.vstack(
-                            rx.heading(
-                                "Automation",
-                                size="5",
-                                font_weight="600",
-                                margin_bottom="0.5rem",
+                            rx.hstack(
+                                rx.center(
+                                    rx.icon(
+                                        "plug",
+                                        size=20,
+                                        color="rgba(255, 255, 255, 0.5)",
+                                    ),
+                                    width="2.5rem",
+                                    height="2.5rem",
+                                    border_radius="0.75rem",
+                                    background="rgba(255, 255, 255, 0.05)",
+                                ),
+                                rx.heading(
+                                    "Connect",
+                                    size="4",
+                                    font_weight="600",
+                                ),
+                                spacing="4",
+                                align="center",
                             ),
+                            rx.spacer(),
                             rx.text(
-                                "Streamline every workflow.",
-                                font_size="0.875rem",
+                                "Universal API access.",
+                                font_size="0.75rem",
                                 color="rgba(255, 255, 255, 0.3)",
-                                line_height="1.5",
                             ),
                             spacing="0",
+                            justify="between",
+                            height="100%",
                         ),
-                        spacing="0",
-                        justify="between",
-                        height="100%",
+                        padding="2.5rem",
+                        min_height="11.75rem",
+                        grid_column=["1 / -1", "1 / -1", "5 / 7"],
                     ),
-                    padding="2.5rem",
-                    min_height="18.75rem",
-                    grid_column=["1 / -1", "1 / -1", "5 / 7"],
+                    display="grid",
+                    grid_template_columns=["1fr", "1fr", "repeat(6, 1fr)"],
+                    gap="1.5rem",
+                    width="100%",
+                    max_width="80rem",
                 ),
-                # Collaboration card - large
-                magic_bento_card(
-                    rx.vstack(
-                        rx.box(
-                            rx.center(
-                                rx.icon(
-                                    "users", size=24, color="rgba(255, 255, 255, 0.5)"
-                                ),
-                                width="3rem",
-                                height="3rem",
-                                border_radius="1rem",
-                                background="rgba(255, 255, 255, 0.05)",
-                            ),
-                            margin_bottom="2rem",
-                        ),
-                        rx.heading(
-                            "Collaboration",
-                            size="6",
-                            font_weight="600",
-                            margin_bottom="1rem",
-                        ),
-                        rx.text(
-                            "Seamless teamwork across global borders with real-time syncing.",
-                            font_size="1rem",
-                            color="rgba(255, 255, 255, 0.3)",
-                            max_width="17.5rem",
-                            line_height="1.5",
-                        ),
-                        spacing="0",
-                        align="start",
-                    ),
-                    padding="3rem",
-                    min_height="25rem",
-                    grid_column=["1 / -1", "1 / -1", "1 / 5"],
-                    position="relative",
-                    overflow="hidden",
-                ),
-                # Security card
-                magic_bento_card(
-                    rx.vstack(
-                        rx.hstack(
-                            rx.center(
-                                rx.icon(
-                                    "shield", size=20, color="rgba(255, 255, 255, 0.5)"
-                                ),
-                                width="2.5rem",
-                                height="2.5rem",
-                                border_radius="0.75rem",
-                                background="rgba(255, 255, 255, 0.05)",
-                            ),
-                            rx.heading(
-                                "Security",
-                                size="4",
-                                font_weight="600",
-                            ),
-                            spacing="4",
-                            align="center",
-                        ),
-                        rx.spacer(),
-                        rx.text(
-                            "Enterprise encryption.",
-                            font_size="0.75rem",
-                            color="rgba(255, 255, 255, 0.3)",
-                        ),
-                        spacing="0",
-                        justify="between",
-                        height="100%",
-                    ),
-                    padding="2.5rem",
-                    min_height="11.75rem",
-                    grid_column=["1 / -1", "1 / -1", "5 / 7"],
-                ),
-                # Connect card
-                magic_bento_card(
-                    rx.vstack(
-                        rx.hstack(
-                            rx.center(
-                                rx.icon(
-                                    "plug", size=20, color="rgba(255, 255, 255, 0.5)"
-                                ),
-                                width="2.5rem",
-                                height="2.5rem",
-                                border_radius="0.75rem",
-                                background="rgba(255, 255, 255, 0.05)",
-                            ),
-                            rx.heading(
-                                "Connect",
-                                size="4",
-                                font_weight="600",
-                            ),
-                            spacing="4",
-                            align="center",
-                        ),
-                        rx.spacer(),
-                        rx.text(
-                            "Universal API access.",
-                            font_size="0.75rem",
-                            color="rgba(255, 255, 255, 0.3)",
-                        ),
-                        spacing="0",
-                        justify="between",
-                        height="100%",
-                    ),
-                    padding="2.5rem",
-                    min_height="11.75rem",
-                    grid_column=["1 / -1", "1 / -1", "5 / 7"],
-                ),
-                display="grid",
-                grid_template_columns=["1fr", "1fr", "repeat(6, 1fr)"],
-                gap="1.5rem",
-                width="100%",
-                max_width="80rem",
+                delay=0.1,
             ),
             align="center",
             width="100%",
@@ -869,155 +846,158 @@ def bento_section() -> rx.Component:
 
 def cta_section() -> rx.Component:
     """Call-to-action section."""
-    return rx.center(
-        rx.box(
-            rx.vstack(
-                rx.heading(
-                    "Ready to build the future?",
-                    size="8",
-                    font_weight="600",
-                    letter_spacing="-0.02em",
-                    line_height="1.2",
-                    margin_bottom="2rem",
-                    text_align="center",
-                ),
-                rx.hstack(
-                    rx.button(
-                        "Start for free",
-                        size="3",
-                        background="white",
-                        color="black",
-                        border_radius="9999px",
-                        font_weight="700",
-                        padding_x="2.5rem",
-                        padding_y="1rem",
-                        _hover={"transform": "scale(1.05)"},
-                        transition="all 0.2s",
+    return scroll_reveal(
+        rx.center(
+            rx.box(
+                rx.vstack(
+                    rx.heading(
+                        "Ready to build the future?",
+                        size="8",
+                        font_weight="600",
+                        letter_spacing="-0.02em",
+                        line_height="1.2",
+                        margin_bottom="2rem",
+                        text_align="center",
                     ),
-                    badge_button(
-                        "Talk to Sales",
-                        size="3",
-                        padding_x="2.5rem",
-                        padding_y="1rem",
-                        font_weight="700",
+                    rx.hstack(
+                        rx.button(
+                            "Start for free",
+                            size="3",
+                            background="white",
+                            color="black",
+                            border_radius="0.75rem",
+                            font_weight="700",
+                            padding_x="2.5rem",
+                            padding_y="1rem",
+                            _hover={"transform": "scale(1.05)"},
+                            transition="all 0.2s",
+                        ),
+                        badge_button(
+                            "Talk to Sales",
+                            size="3",
+                            padding_x="2.5rem",
+                            padding_y="1rem",
+                            font_weight="700",
+                        ),
+                        spacing="4",
+                        flex_direction=["column", "row"],
                     ),
-                    spacing="4",
-                    flex_direction=["column", "row"],
+                    align="center",
+                    spacing="0",
+                    z_index="10",
+                    position="relative",
                 ),
-                align="center",
-                spacing="0",
-                z_index="10",
+                max_width="80rem",
+                width="100%",
+                padding="4rem",
+                background="rgba(255, 255, 255, 0.03)",
+                backdrop_filter="blur(24px)",
+                border="1px solid rgba(255, 255, 255, 0.05)",
+                border_radius="3rem",
                 position="relative",
+                overflow="hidden",
+                _before={
+                    "content": '""',
+                    "position": "absolute",
+                    "inset": "0",
+                    "background": "linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, transparent 100%)",
+                    "opacity": "0.3",
+                    "z_index": "0",
+                },
             ),
-            max_width="80rem",
             width="100%",
-            padding="4rem",
-            background="rgba(255, 255, 255, 0.03)",
-            backdrop_filter="blur(24px)",
-            border="1px solid rgba(255, 255, 255, 0.05)",
-            border_radius="3rem",
-            position="relative",
-            overflow="hidden",
-            _before={
-                "content": '""',
-                "position": "absolute",
-                "inset": "0",
-                "background": "linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, transparent 100%)",
-                "opacity": "0.3",
-                "z_index": "0",
-            },
+            padding_x="2rem",
+            padding_y="8rem",
         ),
-        width="100%",
-        padding_x="2rem",
-        padding_y="8rem",
     )
 
 
 def footer() -> rx.Component:
     """Footer component."""
-    return rx.box(
-        rx.hstack(
-            rx.vstack(
-                rx.text(
-                    "ourportfolios",
-                    font_size="1.25rem",
-                    font_weight="600",
-                    letter_spacing="-0.02em",
-                ),
-                rx.text(
-                    "© 2024 ourportfolios. Built for precision.",
-                    font_size="0.625rem",
-                    letter_spacing="0.15em",
-                    text_transform="uppercase",
-                    color="rgba(255, 255, 255, 0.2)",
-                ),
-                spacing="4",
-                align="start",
-            ),
-            rx.spacer(),
+    return scroll_reveal(
+        rx.box(
             rx.hstack(
-                rx.link(
-                    "Privacy",
-                    href="#",
-                    font_size="0.625rem",
-                    letter_spacing="0.15em",
-                    text_transform="uppercase",
-                    color="rgba(255, 255, 255, 0.4)",
-                    _hover={"color": "white"},
-                    transition="color 0.2s",
+                rx.vstack(
+                    rx.text(
+                        "ourportfolios",
+                        font_size="1.25rem",
+                        font_weight="600",
+                        letter_spacing="-0.02em",
+                    ),
+                    rx.text(
+                        "© 2024 ourportfolios. Built for precision.",
+                        font_size="0.625rem",
+                        letter_spacing="0.15em",
+                        text_transform="uppercase",
+                        color="rgba(255, 255, 255, 0.2)",
+                    ),
+                    spacing="4",
+                    align="start",
                 ),
-                rx.link(
-                    "Terms",
-                    href="#",
-                    font_size="0.625rem",
-                    letter_spacing="0.15em",
-                    text_transform="uppercase",
-                    color="rgba(255, 255, 255, 0.4)",
-                    _hover={"color": "white"},
-                    transition="color 0.2s",
+                rx.spacer(),
+                rx.hstack(
+                    rx.link(
+                        "Privacy",
+                        href="#",
+                        font_size="0.625rem",
+                        letter_spacing="0.15em",
+                        text_transform="uppercase",
+                        color="rgba(255, 255, 255, 0.4)",
+                        _hover={"color": "white"},
+                        transition="color 0.2s",
+                    ),
+                    rx.link(
+                        "Terms",
+                        href="#",
+                        font_size="0.625rem",
+                        letter_spacing="0.15em",
+                        text_transform="uppercase",
+                        color="rgba(255, 255, 255, 0.4)",
+                        _hover={"color": "white"},
+                        transition="color 0.2s",
+                    ),
+                    rx.link(
+                        "Twitter",
+                        href="#",
+                        font_size="0.625rem",
+                        letter_spacing="0.15em",
+                        text_transform="uppercase",
+                        color="rgba(255, 255, 255, 0.4)",
+                        _hover={"color": "white"},
+                        transition="color 0.2s",
+                    ),
+                    rx.link(
+                        "GitHub",
+                        href="#",
+                        font_size="0.625rem",
+                        letter_spacing="0.15em",
+                        text_transform="uppercase",
+                        color="rgba(255, 255, 255, 0.4)",
+                        _hover={"color": "white"},
+                        transition="color 0.2s",
+                    ),
+                    spacing="7",
+                    wrap="wrap",
                 ),
-                rx.link(
-                    "Twitter",
-                    href="#",
-                    font_size="0.625rem",
-                    letter_spacing="0.15em",
-                    text_transform="uppercase",
-                    color="rgba(255, 255, 255, 0.4)",
-                    _hover={"color": "white"},
-                    transition="color 0.2s",
-                ),
-                rx.link(
-                    "GitHub",
-                    href="#",
-                    font_size="0.625rem",
-                    letter_spacing="0.15em",
-                    text_transform="uppercase",
-                    color="rgba(255, 255, 255, 0.4)",
-                    _hover={"color": "white"},
-                    transition="color 0.2s",
-                ),
-                spacing="7",
-                wrap="wrap",
+                justify="between",
+                align="start",
+                flex_direction=["column", "row"],
+                gap="4rem",
+                width="100%",
+                max_width="80rem",
+                margin="0 auto",
+                padding_x="2.5rem",
             ),
-            justify="between",
-            align="start",
-            flex_direction=["column", "row"],
-            gap="4rem",
-            width="100%",
-            max_width="80rem",
-            margin="0 auto",
+            border_top="1px solid rgba(255, 255, 255, 0.05)",
+            padding_y="5rem",
             padding_x="2.5rem",
         ),
-        border_top="1px solid rgba(255, 255, 255, 0.05)",
-        padding_y="5rem",
-        padding_x="2.5rem",
     )
 
 
 @rx.page(route="/", on_load=LandingState.on_mount)
 def index() -> rx.Component:
     """Main landing page."""
-    # HMR fix
     return rx.box(
         nav_bar(),
         hero_section(),
