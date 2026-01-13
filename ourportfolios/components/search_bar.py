@@ -63,8 +63,7 @@ def search_bar():
                 rx.fragment(),
             ),
             position="relative",
-            width="32vw",
-            max_width="600px",
+            width="18rem",
             on_mount=SearchBarState.load_state,
         ),
     )

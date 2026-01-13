@@ -14,5 +14,5 @@ app = rx.App(
     stylesheets=[
         "https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap"
     ],
-    theme=rx.theme(accent_color="gray"),
+    theme=rx.theme(accent_color="violet"),
 )

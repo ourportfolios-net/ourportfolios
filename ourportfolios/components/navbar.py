@@ -5,30 +5,30 @@ from .search_bar import search_bar
 
 
 def navbar() -> rx.Component:
-    """Fixed navigation bar with logo and search bar."""
-    return rx.box(
+    """Navigation bar with logo and search."""
+    bar = rx.box(
         rx.hstack(
-            # Logo
             rx.text(
                 "ourportfolios",
-                size="4",
-                weight="bold",
+                font_size="1.25rem",
+                font_weight="600",
+                letter_spacing="-0.02em",
             ),
-            rx.spacer(),
-            # Search bar
             search_bar(),
-            rx.spacer(),
             align="center",
+            justify="between",
             width="100%",
-            max_width="80rem",
-            px="4",
+            padding_x="2rem",
         ),
         position="fixed",
         top="0",
         width="100%",
         z_index="50",
-        py="4",
-        background="rgba(17, 17, 19, 0.7)",
+        padding_y="1rem",
+        background="rgba(10, 10, 10, 0.4)",
         backdrop_filter="blur(32px)",
-        border_bottom=f"1px solid {rx.color('gray', 4)}",
+        border_bottom="1px solid rgba(255, 255, 255, 0.05)",
     )
+
+    spacer = rx.box(height="4rem", width="100%")
+    return rx.vstack(bar, spacer)
