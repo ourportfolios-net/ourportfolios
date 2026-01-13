@@ -5,7 +5,6 @@ A WebGL-powered plasma effect background component based on reactbits.dev implem
 
 import reflex as rx
 from typing import Literal
-import os
 
 
 class Plasma(rx.Component):

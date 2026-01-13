@@ -6,7 +6,6 @@ Based on reactbits.dev implementation using Framer Motion.
 
 import reflex as rx
 from typing import Literal
-import os
 
 
 class ShinyText(rx.Component):

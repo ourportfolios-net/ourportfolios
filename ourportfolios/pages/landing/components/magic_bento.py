@@ -5,7 +5,6 @@ Inspired by reactbits.dev magic-bento component.
 """
 
 import reflex as rx
-from typing import Any
 
 
 class MagicBentoCard(rx.Component):
