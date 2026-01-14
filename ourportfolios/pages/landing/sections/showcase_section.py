@@ -378,7 +378,7 @@ def showcase_section() -> rx.Component:
                 overflow="hidden",
             ),
             width="100%",
-            padding_y="2rem",
-            margin_top="2rem",
+            padding_y="1rem",
+            margin_top="1rem",
         ),
     )

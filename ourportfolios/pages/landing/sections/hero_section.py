@@ -14,7 +14,7 @@ def hero_section() -> rx.Component:
                 speed=0.8,
                 direction="forward",
                 scale=2,
-                opacity=0.15,
+                opacity=0.18,
                 mouse_interactive=True,
             ),
             position="absolute",
@@ -44,7 +44,7 @@ def hero_section() -> rx.Component:
                     shiny_text(
                         text="yourportfolio starts here!",
                         speed=1.5,
-                        color="rgba(255, 255, 255, 0.75)",
+                        color="rgba(255, 255, 255, 0.7)",
                         shine_color="rgba(255, 255, 255, 1)",
                         spread=120,
                         direction="left",
