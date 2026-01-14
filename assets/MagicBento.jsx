@@ -49,7 +49,7 @@ const MagicBentoCard = ({
         border: "1px solid rgba(255, 255, 255, 0.03)",
         boxShadow:
           "0 40px 80px -24px rgba(0,0,0,0.6), 0 20px 40px -20px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.03)",
-        transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+        transition: "all 0s cubic-bezier(0.4, 0, 0.2, 1)",
         transformStyle: "preserve-3d",
         backfaceVisibility: "hidden",
         ...tiltStyle,
