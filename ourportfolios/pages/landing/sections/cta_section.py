@@ -1,4 +1,4 @@
-"""Call-to-action section component."""
+"""Call-to-action section."""
 
 import reflex as rx
 

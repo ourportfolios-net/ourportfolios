@@ -1,4 +1,4 @@
-"""Footer component."""
+"""Footer section."""
 
 import reflex as rx
 

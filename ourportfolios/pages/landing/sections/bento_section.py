@@ -9,10 +9,8 @@ def bento_section() -> rx.Component:
     """Bento grid section with feature cards."""
     return rx.center(
         rx.hstack(
-            # Bento grid on the left
             scroll_reveal(
                 rx.box(
-                    # Overview card - top left square
                     magic_bento_card(
                         rx.vstack(
                             rx.box(
@@ -54,7 +52,6 @@ def bento_section() -> rx.Component:
                         grid_column=["1 / -1", "1 / -1", "1 / 2"],
                         grid_row="1 / 2",
                     ),
-                    # Automation card - top middle square
                     magic_bento_card(
                         rx.vstack(
                             rx.box(
@@ -94,7 +91,6 @@ def bento_section() -> rx.Component:
                         grid_column=["1 / -1", "1 / -1", "2 / 3"],
                         grid_row="1 / 2",
                     ),
-                    # Analytics card - tall rectangle spanning 2 columns and 2 rows
                     magic_bento_card(
                         rx.vstack(
                             rx.box(
@@ -135,7 +131,6 @@ def bento_section() -> rx.Component:
                         grid_column=["1 / -1", "1 / -1", "1 / 3"],
                         grid_row="2 / 4",
                     ),
-                    # Collaboration card - tall vertical rectangle spanning 2 rows
                     magic_bento_card(
                         rx.vstack(
                             rx.box(
@@ -176,7 +171,6 @@ def bento_section() -> rx.Component:
                         grid_column=["1 / -1", "1 / -1", "3 / 4"],
                         grid_row="1 / 3",
                     ),
-                    # Security card - square at bottom right
                     magic_bento_card(
                         rx.vstack(
                             rx.box(

@@ -1,17 +1,10 @@
-"""CardSwap component for Reflex.
-
-An auto-rotating card stack with GSAP animations from react-bits.
-Cards drop down and cycle through with smooth elastic animations.
-"""
+"""CardSwap auto-rotating card stack."""
 
 import reflex as rx
 
 
 class CardSwapComponent(rx.Component):
-    """CardSwap container with GSAP animations.
-
-    Cards automatically cycle with a drop-down animation effect.
-    """
+    """CardSwap container with GSAP animations."""
 
     library = "$/public/CardSwap"
     tag = "CardSwap"
@@ -31,7 +24,7 @@ class CardSwapComponent(rx.Component):
 
 
 class CardComponent(rx.Component):
-    """Individual card in the CardSwap stack."""
+    """Card in the CardSwap stack."""
 
     library = "$/public/CardSwap"
     tag = "Card"

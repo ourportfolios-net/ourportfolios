@@ -60,7 +60,6 @@ const MagicBentoCard = ({
       onMouseLeave={handleMouseLeave}
       whileHover={{ y: -4 }}
     >
-      {/* Glass overlay with glassmorphism effect */}
       <div
         aria-hidden
         style={{
@@ -76,7 +75,6 @@ const MagicBentoCard = ({
         }}
       />
 
-      {/* Subtle border glow on hover */}
       {isHovered && (
         <motion.div
           style={{
@@ -99,7 +97,6 @@ const MagicBentoCard = ({
         />
       )}
 
-      {/* Content */}
       <div
         style={{
           position: "relative",

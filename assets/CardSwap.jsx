@@ -32,7 +32,6 @@ export const Card = forwardRef(
         className={`card ${customClass ?? ""} ${className ?? ""}`.trim()}
         style={baseStyle}
       >
-        {/* glass overlay that blurs backdrop and gives soft translucent surface */}
         <div
           aria-hidden
           style={{
@@ -48,7 +47,6 @@ export const Card = forwardRef(
           }}
         />
 
-        {/* content container above the glass layer */}
         <div
           style={{
             position: "relative",

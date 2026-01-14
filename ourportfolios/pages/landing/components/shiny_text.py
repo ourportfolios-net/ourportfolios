@@ -1,21 +1,11 @@
-"""ShinyText component for Reflex.
-
-An animated text component with a moving gradient shine effect.
-Based on reactbits.dev implementation using Framer Motion.
-"""
+"""ShinyText animated gradient shine text."""
 
 import reflex as rx
 from typing import Literal
 
 
 class ShinyText(rx.Component):
-    """An animated text component with a moving gradient shine effect.
-
-    This component creates text with an animated shine effect using Framer Motion.
-    It requires the 'motion' npm package (Framer Motion).
-
-    The component is based on the shiny text implementation from reactbits.dev.
-    """
+    """Animated shine text component."""
 
     # Reference the JSX file from the assets directory
     library = "$/public/ShinyText"
@@ -52,43 +42,8 @@ def shiny_text(
     delay: float = 0.0,
     **props,
 ) -> rx.Component:
-    """Create an animated text with moving gradient shine effect.
-
-    Args:
-        text: The text content to display with shine effect (required)
-        disabled: Disable the animation (default: False)
-        speed: Animation speed in seconds (default: 2.0)
-        color: Base text color (default: "#b5b5b5")
-        shine_color: Color of the shine highlight (default: "#ffffff")
-        spread: Gradient spread angle in degrees (default: 120)
-        yoyo: Enable back-and-forth animation (default: False)
-        pause_on_hover: Pause animation on mouse hover (default: False)
-        direction: Animation direction - "left" or "right" (default: "left")
-        delay: Delay before animation loop in seconds (default: 0.0)
-        **props: Additional props including style props (font_size, font_weight, etc.)
-
-    Returns:
-        The ShinyText component configured with the specified parameters.
-
-    Example:
-        ```python
-        # Basic usage
-        shiny_text("Hello World")
-
-        # Customized
-        shiny_text(
-            "OurPortfolios",
-            speed=3,
-            color="#ffffff",
-            shine_color="#60a5fa",
-            spread=100,
-            direction="right",
-        )
-        ```
-    """
-    # Ensure colors are strings: Reflex `rx.color(...)` returns a Color
-    # object which stringifies to a CSS variable (e.g. "var(--gray-12)").
-    # The ShinyText prop expects a plain string, so coerce non-strings.
+    """Create an animated text with gradient shine effect."""
+    # Coerce color values to plain strings for the component
     if not isinstance(color, str):
         color = str(color)
     if not isinstance(shine_color, str):

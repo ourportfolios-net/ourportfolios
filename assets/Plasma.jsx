@@ -199,9 +199,7 @@ export const Plasma = ({
       }
       try {
         containerEl?.removeChild(canvas);
-      } catch {
-        // Canvas already removed
-      }
+      } catch {}
     };
   }, [color, speed, direction, scale, opacity, mouseInteractive]);
 

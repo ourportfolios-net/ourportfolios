@@ -1,4 +1,4 @@
-"""Showcase section component with CardSwap demo."""
+"""Showcase section with CardSwap demo."""
 
 import reflex as rx
 

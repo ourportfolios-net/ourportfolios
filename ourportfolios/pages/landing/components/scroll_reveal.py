@@ -1,10 +1,10 @@
-"""ScrollReveal component - blur-to-sharp scroll animation."""
+"""ScrollReveal blur-to-sharp animation."""
 
 import reflex as rx
 
 
 class ScrollRevealComponent(rx.Component):
-    """Scroll reveal with blur-to-sharp animation on scroll."""
+    """Scroll reveal animation component."""
 
     library = "$/public/ScrollReveal"
     tag = "ScrollReveal"

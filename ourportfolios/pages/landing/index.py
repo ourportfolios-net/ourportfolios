@@ -1,4 +1,4 @@
-"""Landing page with bento grid, showcase cards, and scroll animations."""
+"""Landing page layout and sections."""
 
 import reflex as rx
 
@@ -14,7 +14,7 @@ from ...components.navbar import navbar
 
 
 class LandingState(SessionIsolatedStateMixin, rx.State):
-    """State for landing page."""
+    """Landing page state."""
 
     def on_mount(self):
         super().on_mount()
@@ -25,7 +25,7 @@ class LandingState(SessionIsolatedStateMixin, rx.State):
 
 @rx.page(route="/", on_load=LandingState.on_mount)
 def index() -> rx.Component:
-    """Main landing page."""
+    """Render the landing page."""
     return rx.box(
         navbar(),
         hero_section(),
