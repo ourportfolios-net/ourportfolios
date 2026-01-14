@@ -13,6 +13,7 @@ def navbar() -> rx.Component:
                 font_size="1.25rem",
                 font_weight="600",
                 letter_spacing="-0.02em",
+                user_select="none",
             ),
             search_bar(),
             align="center",
