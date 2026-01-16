@@ -60,7 +60,7 @@ def hero_section() -> rx.Component:
                     text_align="center",
                 ),
                 rx.text(
-                    "Build wealth with precision while we build the future of investment tech.",
+                    "Build your portfolios. We'll build ours.",
                     font_size=["1rem", "1.125rem", "1.25rem"],
                     color="rgba(255, 255, 255, 0.4)",
                     margin_bottom="3rem",
