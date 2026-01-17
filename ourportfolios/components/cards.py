@@ -8,6 +8,40 @@ cards = [
 ]
 
 
+def glass_card(*children, **props) -> rx.Component:
+    """Create a glassmorphism card with rounded corners.
+
+    A reusable card component with:
+    - Glass morphism effect (blur + transparency)
+    - Rounded corners
+    - Subtle border
+    - Dark background with blur
+
+    Args:
+        *children: Child components to render inside the card
+        **props: Additional props to pass to the box component
+
+    Returns:
+        rx.Component: A glassmorphism card
+    """
+    # Extract custom props or set defaults
+    padding = props.pop("padding", "1.5rem")
+    border_radius = props.pop("border_radius", "24px")
+    background = props.pop("background", "rgba(20, 20, 20, 0.4)")
+    border = props.pop("border", "1px solid rgba(255, 255, 255, 0.08)")
+    backdrop_filter = props.pop("backdrop_filter", "blur(12px)")
+
+    return rx.box(
+        *children,
+        padding=padding,
+        border_radius=border_radius,
+        background=background,
+        backdrop_filter=backdrop_filter,
+        border=border,
+        **props,
+    )
+
+
 def portfolio_card(card, idx, total):
     def get_card_position_size(idx, total):
         spread_x = 65  # percent of parent width; lower for more overlap
