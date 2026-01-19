@@ -2,24 +2,24 @@
 
 import reflex as rx
 
-from ...components.cards import card_wrapper
+from ...components.cards import glass_card
 from ...components.drawer import CartState
 from .state import State
 
 
 def name_card_skeleton():
     """Skeleton for the name card"""
-    return rx.card(
+    return glass_card(
         rx.vstack(
             rx.hstack(
-                rx.skeleton(height="3rem", width="8rem"),
-                rx.skeleton(height="2rem", width="2rem", border_radius="6px"),
+                rx.skeleton(height="3rem", width="8rem", border_radius="14px"),
+                rx.skeleton(height="2rem", width="2rem", border_radius="14px"),
                 justify="center",
                 align="center",
             ),
             rx.hstack(
-                rx.skeleton(height="1.5rem", width="4rem", border_radius="12px"),
-                rx.skeleton(height="1.5rem", width="6rem", border_radius="12px"),
+                rx.skeleton(height="1.5rem", width="4rem", border_radius="14px"),
+                rx.skeleton(height="1.5rem", width="6rem", border_radius="14px"),
                 spacing="2",
             ),
             spacing="3",
@@ -31,7 +31,7 @@ def name_card_skeleton():
 
 def error_card(message: str):
     """Generic error card"""
-    return rx.card(
+    return glass_card(
         rx.vstack(
             rx.icon("triangle-alert", size=32, color="tomato"),
             rx.text(
@@ -55,26 +55,26 @@ def error_card(message: str):
 
 def general_info_card_skeleton():
     """Simplified skeleton for the general info card"""
-    return rx.card(
-        rx.skeleton(height="10rem", width="100%"),
+    return glass_card(
+        rx.skeleton(height="10rem", width="100%", border_radius="14px"),
         style={"width": "100%", "padding": "1em"},
     )
 
 
 def company_profile_skeleton():
     """Skeleton for the company profile card"""
-    return rx.card(
+    return glass_card(
         rx.vstack(
             rx.hstack(
-                rx.skeleton(height="2rem", width="8rem", border_radius="6px"),
-                rx.skeleton(height="2rem", width="6rem", border_radius="6px"),
-                rx.skeleton(height="2rem", width="7rem", border_radius="6px"),
-                rx.skeleton(height="2rem", width="5rem", border_radius="6px"),
-                rx.skeleton(height="2rem", width="9rem", border_radius="6px"),
-                rx.skeleton(height="2rem", width="7rem", border_radius="6px"),
+                rx.skeleton(height="2rem", width="8rem", border_radius="14px"),
+                rx.skeleton(height="2rem", width="6rem", border_radius="14px"),
+                rx.skeleton(height="2rem", width="7rem", border_radius="14px"),
+                rx.skeleton(height="2rem", width="5rem", border_radius="14px"),
+                rx.skeleton(height="2rem", width="9rem", border_radius="14px"),
+                rx.skeleton(height="2rem", width="7rem", border_radius="14px"),
                 spacing="2",
             ),
-            rx.skeleton(height="12em", width="100%"),
+            rx.skeleton(height="12em", width="100%", border_radius="14px"),
             spacing="3",
             width="100%",
         ),
@@ -92,7 +92,7 @@ def name_card():
         rx.cond(
             State.error_company != "",
             error_card(State.error_company),
-            card_wrapper(
+            glass_card(
                 rx.vstack(
                     rx.hstack(
                         rx.heading(overview.get("symbol", ""), size="9"),
@@ -112,7 +112,8 @@ def name_card():
                         rx.badge(f"{overview.get('industry', '')}"),
                     ),
                 ),
-                style={"width": "100%", "padding": "1em"},
+                padding="1em",
+                width="100%",
             ),
         ),
     )
@@ -128,22 +129,19 @@ def general_info_card():
         rx.cond(
             State.error_company != "",
             error_card(State.error_company),
-            rx.vstack(
-                card_wrapper(
-                    rx.text(
-                        f"{overview.get('short_name', '')} (Est. {overview.get('established_year', '')})"
-                    ),
-                    rx.link(website, href=f"https://{website}", is_external=True),
-                    rx.text(f"Market cap: {overview.get('market_cap', '')} B. VND"),
-                    rx.text(f"Issue Shares: {overview.get('issue_share', '')}"),
-                    rx.text(
-                        f"Outstanding Shares: {overview.get('outstanding_share', '')}"
-                    ),
-                    rx.text(
-                        f"{overview.get('no_shareholders', '')} shareholders ({overview.get('foreign_percent', '')}% foreign)"
-                    ),
-                    style={"width": "100%", "padding": "1em"},
+            glass_card(
+                rx.text(
+                    f"{overview.get('short_name', '')} (Est. {overview.get('established_year', '')})"
                 ),
+                rx.link(website, href=f"https://{website}", is_external=True),
+                rx.text(f"Market cap: {overview.get('market_cap', '')} B. VND"),
+                rx.text(f"Issue Shares: {overview.get('issue_share', '')}"),
+                rx.text(f"Outstanding Shares: {overview.get('outstanding_share', '')}"),
+                rx.text(
+                    f"{overview.get('no_shareholders', '')} shareholders ({overview.get('foreign_percent', '')}% foreign)"
+                ),
+                padding="1em",
+                width="100%",
             ),
         ),
     )
@@ -180,7 +178,7 @@ def company_profile_card():
         rx.cond(
             State.error_company != "",
             error_card(State.error_company),
-            rx.card(
+            glass_card(
                 rx.tabs.root(
                     rx.tabs.list(
                         rx.tabs.trigger("Company Profile", value="profile"),

@@ -2,13 +2,14 @@
 
 import reflex as rx
 
+from ...components.cards import glass_card
 from ...components.price_chart import PriceChartState
 from .state import State
 
 
 def price_chart_card():
     """Price chart with skeleton while loading."""
-    return rx.card(
+    return glass_card(
         rx.vstack(
             rx.script(
                 src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js",
@@ -25,7 +26,7 @@ def price_chart_card():
                         rx.skeleton(
                             height="350px",
                             width="calc(100% - 60px)",  # Leave space for price scale
-                            border_radius="8px",
+                            border_radius="14px",
                         ),
                         position="absolute",
                         width="100%",

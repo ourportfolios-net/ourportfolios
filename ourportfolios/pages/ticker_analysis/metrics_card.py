@@ -2,13 +2,14 @@
 
 import reflex as rx
 
+from ...components.cards import glass_card
 from ...components.financial_statement import financial_statements
 from .state import State
 from .performance_cards import performance_cards, framework_indicator
 
 
 def key_metrics_card():
-    return rx.card(
+    return glass_card(
         rx.vstack(
             rx.tabs.root(
                 rx.hstack(

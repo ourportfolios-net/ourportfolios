@@ -1,14 +1,15 @@
 """Company information components - FIXED."""
 
 import reflex as rx
+from ...components.cards import glass_card
 from .state import State
 
 
 def company_info_card_skeleton():
-    return rx.card(
+    return glass_card(
         rx.vstack(
             rx.box(
-                rx.skeleton(height="2.5rem", width="12rem", border_radius="8px"),
+                rx.skeleton(height="2.5rem", width="12rem", border_radius="14px"),
                 width="100%",
                 display="flex",
                 justify_content="center",
@@ -21,20 +22,24 @@ def company_info_card_skeleton():
                 align_items="center",
                 style={"marginTop": "2.5em", "marginBottom": "2.5em"},
             ),
-            rx.card(
+            glass_card(
                 rx.vstack(
                     *[
                         rx.box(
                             rx.hstack(
-                                rx.skeleton(height="1.2rem", width="8rem"),
                                 rx.skeleton(
-                                    height="1.2rem", width="3rem", border_radius="12px"
+                                    height="1.2rem", width="8rem", border_radius="14px"
+                                ),
+                                rx.skeleton(
+                                    height="1.2rem", width="3rem", border_radius="14px"
                                 ),
                                 align="center",
                                 justify="between",
                                 width="100%",
                             ),
-                            rx.skeleton(height="1rem", width="10rem"),
+                            rx.skeleton(
+                                height="1rem", width="10rem", border_radius="14px"
+                            ),
                             width="100%",
                         )
                         for _ in range(3)
@@ -42,7 +47,7 @@ def company_info_card_skeleton():
                     spacing="4",
                     width="100%",
                 ),
-                width="100%",
+                padding="1em",
             ),
             justify="center",
             align="center",
@@ -78,7 +83,7 @@ def company_generic_info_card():
     return rx.cond(
         State.is_loading_company,
         company_info_card_skeleton(),
-        rx.card(
+        glass_card(
             rx.vstack(
                 rx.box(
                     rx.segmented_control.root(
@@ -104,7 +109,7 @@ def company_generic_info_card():
                             align_items="center",
                             style={"marginTop": "2.5em", "marginBottom": "2.5em"},
                         ),
-                        rx.card(
+                        glass_card(
                             rx.scroll_area(
                                 rx.vstack(
                                     rx.foreach(
@@ -135,6 +140,7 @@ def company_generic_info_card():
                                 style={"height": "24.3em"},
                             ),
                             width="100%",
+                            padding="1em",
                         ),
                         justify="center",
                         align="center",
@@ -146,7 +152,7 @@ def company_generic_info_card():
                             rx.vstack(
                                 rx.foreach(
                                     State.events,
-                                    lambda event: rx.card(
+                                    lambda event: glass_card(
                                         rx.hstack(
                                             rx.heading(
                                                 event["event_name"],
@@ -161,6 +167,7 @@ def company_generic_info_card():
                                             weight="regular",
                                             size="1",
                                         ),
+                                        padding="1em",
                                     ),
                                 ),
                                 spacing="3",
@@ -171,7 +178,7 @@ def company_generic_info_card():
                             rx.vstack(
                                 rx.foreach(
                                     State.news,
-                                    lambda news: rx.card(
+                                    lambda news: glass_card(
                                         rx.hstack(
                                             rx.text(
                                                 f"{news['title']} ({news['publish_date']})",
@@ -193,6 +200,7 @@ def company_generic_info_card():
                                             width="100%",
                                         ),
                                         width="100%",
+                                        padding="1em",
                                     ),
                                 ),
                             ),
