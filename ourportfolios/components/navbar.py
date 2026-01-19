@@ -8,12 +8,52 @@ def navbar() -> rx.Component:
     """Navigation bar with logo and search."""
     bar = rx.box(
         rx.hstack(
-            rx.text(
-                "ourportfolios",
-                font_size="1.25rem",
-                font_weight="600",
-                letter_spacing="-0.02em",
-                user_select="none",
+            rx.hstack(
+                rx.text(
+                    "ourportfolios",
+                    font_size="1.25rem",
+                    font_weight="600",
+                    letter_spacing="-0.02em",
+                    user_select="none",
+                ),
+                rx.link(
+                    "Home",
+                    href="/home",
+                    font_size="14px",
+                    font_weight="400",
+                    color="rgba(255, 255, 255, 0.5)",
+                    text_decoration="none",
+                    _hover={"color": "white"},
+                ),
+                rx.link(
+                    "Portfolio",
+                    href="/select",
+                    font_size="14px",
+                    font_weight="400",
+                    color="rgba(255, 255, 255, 0.5)",
+                    text_decoration="none",
+                    _hover={"color": "white"},
+                ),
+                rx.link(
+                    "Compare",
+                    href="/compare",
+                    font_size="14px",
+                    font_weight="400",
+                    color="rgba(255, 255, 255, 0.5)",
+                    text_decoration="none",
+                    _hover={"color": "white"},
+                ),
+                rx.link(
+                    "Settings",
+                    href="/home",
+                    font_size="14px",
+                    font_weight="400",
+                    color="rgba(255, 255, 255, 0.5)",
+                    text_decoration="none",
+                    _hover={"color": "white"},
+                ),
+                spacing="6",
+                align="center",
             ),
             search_bar(),
             align="center",
