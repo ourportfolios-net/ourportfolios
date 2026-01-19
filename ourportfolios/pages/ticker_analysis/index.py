@@ -76,4 +76,9 @@ def index():
             ),
             drawer_button(),
         ),
+        background="#090909",
+        color="white",
+        min_height="100vh",
+        width="100%",
+        overflow_x="hidden",
     )
