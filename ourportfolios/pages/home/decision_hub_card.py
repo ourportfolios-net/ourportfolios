@@ -58,7 +58,20 @@ def decision_hub_card(
         ),
         glass_card(
             rx.vstack(
-                rx.vstack(
+                # Header row
+                rx.hstack(
+                    rx.vstack(
+                        rx.heading(title, size="5", font_weight="700"),
+                        rx.text(
+                            description,
+                            color="rgba(255, 255, 255, 0.5)",
+                            font_size="12px",
+                            line_height="1.5",
+                        ),
+                        spacing="2",
+                        align="start",
+                        flex="1",
+                    ),
                     rx.box(
                         rx.icon(
                             icon,
@@ -73,132 +86,97 @@ def decision_hub_card(
                         display="flex",
                         align_items="center",
                         justify_content="center",
-                    ),
-                    rx.heading(
-                        title,
-                        size="5",
-                        font_weight="700",
-                    ),
-                    rx.text(
-                        description,
-                        color="rgba(255, 255, 255, 0.5)",
-                        font_size="12px",
-                        line_height="1.5",
-                    ),
-                    rx.cond(
-                        has_input,
-                        rx.box(
-                            rx.input(
-                                placeholder="Enter symbol (e.g. VNM)",
-                                value=HomeState.ticker_search,
-                                on_change=HomeState.set_ticker_search,
-                                size="3",
-                                width="100%",
-                                background="rgba(255, 255, 255, 0.05)",
-                                border="1px solid rgba(255, 255, 255, 0.1)",
-                                border_radius="12px",
-                                _focus={
-                                    "outline": "none",
-                                    "ring": "1px",
-                                    "ring_color": "var(--accent-purple)",
-                                    "border_color": "var(--accent-purple)",
-                                },
-                            ),
-                            position="relative",
-                            width="100%",
-                        ),
-                    ),
-                    rx.cond(
-                        has_comparison_chart,
-                        rx.box(
-                            rx.vstack(
-                                rx.hstack(
-                                    rx.badge(
-                                        rx.hstack(
-                                            rx.icon("trending-up", size=12),
-                                            rx.text(
-                                                "VNM",
-                                                font_size="11px",
-                                                font_weight="700",
-                                            ),
-                                            spacing="1",
-                                            align="center",
-                                        ),
-                                        color_scheme="cyan",
-                                        variant="soft",
-                                        size="2",
-                                        border_radius="12px",
-                                        padding="0.5rem 0.75rem",
-                                    ),
-                                    rx.badge(
-                                        rx.hstack(
-                                            rx.icon("trending-up", size=12),
-                                            rx.text(
-                                                "VCB",
-                                                font_size="11px",
-                                                font_weight="700",
-                                            ),
-                                            spacing="1",
-                                            align="center",
-                                        ),
-                                        color_scheme="purple",
-                                        variant="soft",
-                                        size="2",
-                                        border_radius="12px",
-                                        padding="0.5rem 0.75rem",
-                                    ),
-                                    spacing="2",
-                                    width="100%",
-                                ),
-                                rx.box(
-                                    rx.recharts.area_chart(
-                                        rx.recharts.area(
-                                            data_key="AAPL",
-                                            stroke=rx.color("cyan", 9),
-                                            fill=rx.color("cyan", 3),
-                                            stroke_width=2,
-                                            type_="monotone",
-                                        ),
-                                        rx.recharts.area(
-                                            data_key="MSFT",
-                                            stroke=rx.color("violet", 9),
-                                            fill=rx.color("violet", 3),
-                                            stroke_width=2,
-                                            type_="monotone",
-                                        ),
-                                        rx.recharts.x_axis(
-                                            data_key="period", hide=True
-                                        ),
-                                        rx.recharts.y_axis(hide=True),
-                                        data=HomeState.comparison_preview_data,
-                                        width="100%",
-                                        height=100,
-                                        margin={
-                                            "top": 5,
-                                            "right": 5,
-                                            "left": 5,
-                                            "bottom": 5,
-                                        },
-                                    ),
-                                    width="100%",
-                                    height="100px",
-                                    position="relative",
-                                ),
-                                spacing="3",
-                                align="start",
-                                width="100%",
-                            ),
-                            padding="1rem",
-                            border_radius="12px",
-                            background="rgba(255, 255, 255, 0.03)",
-                            border="1px solid rgba(255, 255, 255, 0.05)",
-                            width="100%",
-                        ),
+                        flex_shrink="0",
                     ),
                     spacing="3",
                     align="start",
-                    flex="1",
+                    width="100%",
                 ),
+                # Spacer
+                rx.box(flex="1"),
+                # Visualization
+                rx.cond(
+                    has_comparison_chart,
+                    rx.box(
+                        rx.vstack(
+                            rx.hstack(
+                                rx.badge(
+                                    rx.hstack(
+                                        rx.icon("trending-up", size=12),
+                                        rx.text(
+                                            "VNM", font_size="11px", font_weight="700"
+                                        ),
+                                        spacing="1",
+                                        align="center",
+                                    ),
+                                    color_scheme="cyan",
+                                    variant="soft",
+                                    size="2",
+                                    border_radius="12px",
+                                    padding="0.5rem 0.75rem",
+                                ),
+                                rx.badge(
+                                    rx.hstack(
+                                        rx.icon("trending-up", size=12),
+                                        rx.text(
+                                            "VCB", font_size="11px", font_weight="700"
+                                        ),
+                                        spacing="1",
+                                        align="center",
+                                    ),
+                                    color_scheme="purple",
+                                    variant="soft",
+                                    size="2",
+                                    border_radius="12px",
+                                    padding="0.5rem 0.75rem",
+                                ),
+                                spacing="2",
+                                width="100%",
+                            ),
+                            rx.box(
+                                rx.recharts.area_chart(
+                                    rx.recharts.area(
+                                        data_key="AAPL",
+                                        stroke=rx.color("cyan", 9),
+                                        fill=rx.color("cyan", 3),
+                                        stroke_width=2,
+                                        type_="monotone",
+                                    ),
+                                    rx.recharts.area(
+                                        data_key="MSFT",
+                                        stroke=rx.color("violet", 9),
+                                        fill=rx.color("violet", 3),
+                                        stroke_width=2,
+                                        type_="monotone",
+                                    ),
+                                    rx.recharts.x_axis(data_key="period", hide=True),
+                                    rx.recharts.y_axis(hide=True),
+                                    data=HomeState.comparison_preview_data,
+                                    width="100%",
+                                    height=100,
+                                    margin={
+                                        "top": 5,
+                                        "right": 5,
+                                        "left": 5,
+                                        "bottom": 5,
+                                    },
+                                ),
+                                width="100%",
+                                height="100px",
+                                position="relative",
+                            ),
+                            spacing="3",
+                            align="start",
+                            width="100%",
+                        ),
+                        padding="1rem",
+                        border_radius="12px",
+                        background="rgba(255, 255, 255, 0.03)",
+                        border="1px solid rgba(255, 255, 255, 0.05)",
+                        width="100%",
+                    ),
+                ),
+                # Button
                 rx.button(
                     button_text,
                     size="2",
@@ -212,23 +190,19 @@ def decision_hub_card(
                     _active={"transform": "scale(0.98)"},
                 ),
                 spacing="3",
-                align="start",
-                justify="between",
-                height="100%",
                 width="100%",
+                height="100%",
             ),
             padding="1rem",
             width="100%",
-            min_height="360px",
-            transition="background 0.15s ease, border-color 0.15s ease",
+            height="420px",
         ),
         height="100%",
         position="relative",
         overflow="hidden",
-        transition="all 0.3s ease",
         _hover={
             "& > :nth-child(2)": {
-                "background": "rgba(255 255, 255, 0.04)",
+                "background": "rgba(255, 255, 255, 0.04)",
                 "border_color": "rgba(255, 255, 255, 0.05)",
             }
         },

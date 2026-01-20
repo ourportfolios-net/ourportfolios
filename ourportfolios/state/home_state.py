@@ -38,6 +38,10 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
     is_portfolio_hovered: bool = False
     _animation_running: bool = False
 
+    # Portfolio percentage animation
+    _portfolio_winner_value: int = 50
+    _portfolio_loser_value: int = 50
+
     # Framework card hover state
     framework_hover_index: int = 0
     _framework_card_hovered: bool = False
@@ -59,6 +63,16 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
         {"period": "Jul", "AAPL": 195, "MSFT": 380},
         {"period": "Aug", "AAPL": 198, "MSFT": 385},
     ]
+
+    @rx.var
+    def portfolio_winner_percent(self) -> str:
+        """Get winner percentage formatted."""
+        return f"{self._portfolio_winner_value}%"
+
+    @rx.var
+    def portfolio_loser_percent(self) -> str:
+        """Get loser percentage formatted."""
+        return f"{self._portfolio_loser_value}%"
 
     @rx.event(background=True)
     async def load_vnindex_data(self):
@@ -145,6 +159,10 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
         end_value = self._target_portfolio_value
         start_change = self._base_portfolio_change
         end_change = self._target_portfolio_change
+        start_winner = 50
+        end_winner = 65
+        start_loser = 50
+        end_loser = 40
 
         for i in range(steps + 1):
             async with self:
@@ -157,9 +175,14 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
 
                 current_val = start_value + (end_value - start_value) * eased_t
                 current_chg = start_change + (end_change - start_change) * eased_t
+                # Use linear interpolation for percentages (no easing)
+                current_winner = int(start_winner + (end_winner - start_winner) * t)
+                current_loser = int(start_loser + (end_loser - start_loser) * t)
 
                 self._current_portfolio_value = current_val
                 self._current_portfolio_change = current_chg
+                self._portfolio_winner_value = current_winner
+                self._portfolio_loser_value = current_loser
                 self.portfolio_value = f"${current_val:,.2f}"
                 self.portfolio_change = f"+{current_chg:.1f}%"
 
@@ -185,8 +208,12 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
         async with self:
             start_value = self._current_portfolio_value
             start_change = self._current_portfolio_change
+            start_winner = self._portfolio_winner_value
+            start_loser = self._portfolio_loser_value
         end_value = self._base_portfolio_value
         end_change = self._base_portfolio_change
+        end_winner = 50
+        end_loser = 50
 
         for i in range(steps + 1):
             async with self:
@@ -199,9 +226,14 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
 
                 current_val = start_value + (end_value - start_value) * eased_t
                 current_chg = start_change + (end_change - start_change) * eased_t
+                # Use linear interpolation for percentages (no easing)
+                current_winner = int(start_winner + (end_winner - start_winner) * t)
+                current_loser = int(start_loser + (end_loser - start_loser) * t)
 
                 self._current_portfolio_value = current_val
                 self._current_portfolio_change = current_chg
+                self._portfolio_winner_value = current_winner
+                self._portfolio_loser_value = current_loser
                 self.portfolio_value = f"${current_val:,.2f}"
                 self.portfolio_change = f"+{current_chg:.1f}%"
 
