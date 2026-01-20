@@ -25,7 +25,7 @@ def search_bar():
                 border_radius=12,
                 _focus={
                     "background": "rgba(255, 255, 255, 0.08)",
-                    "border_color": rx.color("purple", 8),
+                    "border_color": rx.color("accent", 8),
                 },
                 _hover={
                     "background": "rgba(255, 255, 255, 0.07)",
