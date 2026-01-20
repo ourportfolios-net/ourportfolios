@@ -11,8 +11,8 @@ def vnindex_mini_chart():
             rx.recharts.area_chart(
                 rx.recharts.area(
                     data_key="normalized_close",
-                    stroke=rx.color("purple", 9),
-                    fill=rx.color("purple", 3),
+                    stroke=rx.color("accent", 9),
+                    fill=rx.color("accent", 3),
                     stroke_width=2,
                 ),
                 rx.recharts.x_axis(data_key="name", hide=True),
