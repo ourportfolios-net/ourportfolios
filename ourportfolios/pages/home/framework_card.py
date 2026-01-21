@@ -31,15 +31,9 @@ def framework_skeleton_card(icon_name: str, index: int) -> rx.Component:
                 transition="opacity 0.3s ease",
             ),
             rx.vstack(
-                skeleton_box("80%", "13px"),
-                rx.vstack(
-                    skeleton_box("95%", "8px"),
-                    skeleton_box("70%", "8px"),
-                    spacing="1",
-                    width="100%",
-                    margin_top="4px",
-                ),
-                spacing="1",
+                skeleton_box("100px", "13px"),
+                skeleton_box("100%", "24px"),
+                spacing="2",
                 align="start",
                 flex="1",
                 overflow="hidden",
