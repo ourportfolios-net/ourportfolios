@@ -218,7 +218,7 @@ def portfolio_card_with_hover():
             ),
             padding="1rem",
             width="100%",
-            height="430px",
+            height="420px",
         ),
         height="100%",
         position="relative",

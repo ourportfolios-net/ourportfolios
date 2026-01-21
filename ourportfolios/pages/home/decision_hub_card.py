@@ -94,83 +94,184 @@ def decision_hub_card(
                 ),
                 # Spacer
                 rx.box(flex="1"),
-                # Visualization
+                # Visualization - with surrounding box matching portfolio
                 rx.cond(
                     has_comparison_chart,
                     rx.box(
                         rx.vstack(
+                            # Header row with sliding columns
                             rx.hstack(
-                                rx.badge(
-                                    rx.hstack(
-                                        rx.icon("trending-up", size=12),
-                                        rx.text(
-                                            "VNM", font_size="11px", font_weight="700"
-                                        ),
-                                        spacing="1",
-                                        align="center",
+                                # Empty space above ticker
+                                rx.box(width="70px"),
+                                # Sliding column 1
+                                rx.box(
+                                    rx.box(
+                                        width="70px",
+                                        height="12px",
+                                        border_radius="4px",
+                                        background="rgba(255, 255, 255, 0.08)",
                                     ),
-                                    color_scheme="cyan",
-                                    variant="soft",
-                                    size="2",
-                                    border_radius="12px",
-                                    padding="0.5rem 0.75rem",
-                                ),
-                                rx.badge(
-                                    rx.hstack(
-                                        rx.icon("trending-up", size=12),
-                                        rx.text(
-                                            "VCB", font_size="11px", font_weight="700"
-                                        ),
-                                        spacing="1",
-                                        align="center",
+                                    width=rx.cond(
+                                        HomeState.is_comparison_hovered,
+                                        "70px",
+                                        "0px",
                                     ),
-                                    color_scheme="purple",
-                                    variant="soft",
-                                    size="2",
-                                    border_radius="12px",
-                                    padding="0.5rem 0.75rem",
+                                    opacity=rx.cond(
+                                        HomeState.is_comparison_hovered,
+                                        "1",
+                                        "0",
+                                    ),
+                                    overflow="hidden",
+                                    transition="all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
                                 ),
-                                spacing="2",
+                                # Sliding column 2
+                                rx.box(
+                                    rx.box(
+                                        width="70px",
+                                        height="12px",
+                                        border_radius="4px",
+                                        background="rgba(255, 255, 255, 0.08)",
+                                    ),
+                                    width=rx.cond(
+                                        HomeState.is_comparison_hovered,
+                                        "70px",
+                                        "0px",
+                                    ),
+                                    opacity=rx.cond(
+                                        HomeState.is_comparison_hovered,
+                                        "1",
+                                        "0",
+                                    ),
+                                    overflow="hidden",
+                                    transition="all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+                                ),
+                                spacing="3",
                                 width="100%",
+                                margin_bottom="0.5rem",
                             ),
-                            rx.box(
-                                rx.recharts.area_chart(
-                                    rx.recharts.area(
-                                        data_key="AAPL",
-                                        stroke=rx.color("cyan", 9),
-                                        fill=rx.color("cyan", 3),
-                                        stroke_width=2,
-                                        type_="monotone",
-                                    ),
-                                    rx.recharts.area(
-                                        data_key="MSFT",
-                                        stroke=rx.color("violet", 9),
-                                        fill=rx.color("violet", 3),
-                                        stroke_width=2,
-                                        type_="monotone",
-                                    ),
-                                    rx.recharts.x_axis(data_key="period", hide=True),
-                                    rx.recharts.y_axis(hide=True),
-                                    data=HomeState.comparison_preview_data,
-                                    width="100%",
-                                    height=100,
-                                    margin={
-                                        "top": 5,
-                                        "right": 5,
-                                        "left": 5,
-                                        "bottom": 5,
-                                    },
+                            # Row 1
+                            rx.hstack(
+                                # Ticker skeleton
+                                rx.box(
+                                    width="70px",
+                                    height="24px",
+                                    border_radius="6px",
+                                    background="rgba(255, 255, 255, 0.08)",
                                 ),
+                                # Sliding value 1 - blue (best performer)
+                                rx.box(
+                                    rx.box(
+                                        width="70px",
+                                        height="16px",
+                                        border_radius="4px",
+                                        background="rgba(59, 130, 246, 0.3)",
+                                    ),
+                                    width=rx.cond(
+                                        HomeState.is_comparison_hovered,
+                                        "70px",
+                                        "0px",
+                                    ),
+                                    opacity=rx.cond(
+                                        HomeState.is_comparison_hovered,
+                                        "1",
+                                        "0",
+                                    ),
+                                    overflow="hidden",
+                                    transition="all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+                                ),
+                                # Sliding value 2 - grey
+                                rx.box(
+                                    rx.box(
+                                        width="70px",
+                                        height="16px",
+                                        border_radius="4px",
+                                        background="rgba(255, 255, 255, 0.1)",
+                                    ),
+                                    width=rx.cond(
+                                        HomeState.is_comparison_hovered,
+                                        "70px",
+                                        "0px",
+                                    ),
+                                    opacity=rx.cond(
+                                        HomeState.is_comparison_hovered,
+                                        "1",
+                                        "0",
+                                    ),
+                                    overflow="hidden",
+                                    transition="all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+                                ),
+                                spacing="3",
+                                align="center",
                                 width="100%",
-                                height="100px",
-                                position="relative",
+                                padding="0.6rem",
+                                border_radius="8px",
+                                background="rgba(255, 255, 255, 0.02)",
+                                border="1px solid rgba(255, 255, 255, 0.04)",
                             ),
-                            spacing="3",
-                            align="start",
+                            # Row 2
+                            rx.hstack(
+                                # Ticker skeleton
+                                rx.box(
+                                    width="70px",
+                                    height="24px",
+                                    border_radius="6px",
+                                    background="rgba(255, 255, 255, 0.08)",
+                                ),
+                                # Sliding value 1 - grey
+                                rx.box(
+                                    rx.box(
+                                        width="70px",
+                                        height="16px",
+                                        border_radius="4px",
+                                        background="rgba(255, 255, 255, 0.1)",
+                                    ),
+                                    width=rx.cond(
+                                        HomeState.is_comparison_hovered,
+                                        "70px",
+                                        "0px",
+                                    ),
+                                    opacity=rx.cond(
+                                        HomeState.is_comparison_hovered,
+                                        "1",
+                                        "0",
+                                    ),
+                                    overflow="hidden",
+                                    transition="all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+                                ),
+                                # Sliding value 2 - blue (best performer)
+                                rx.box(
+                                    rx.box(
+                                        width="70px",
+                                        height="16px",
+                                        border_radius="4px",
+                                        background="rgba(59, 130, 246, 0.3)",
+                                    ),
+                                    width=rx.cond(
+                                        HomeState.is_comparison_hovered,
+                                        "70px",
+                                        "0px",
+                                    ),
+                                    opacity=rx.cond(
+                                        HomeState.is_comparison_hovered,
+                                        "1",
+                                        "0",
+                                    ),
+                                    overflow="hidden",
+                                    transition="all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+                                ),
+                                spacing="3",
+                                align="center",
+                                width="100%",
+                                padding="0.6rem",
+                                border_radius="8px",
+                                background="rgba(255, 255, 255, 0.02)",
+                                border="1px solid rgba(255, 255, 255, 0.04)",
+                            ),
+                            spacing="2",
                             width="100%",
                         ),
-                        padding="1rem",
-                        border_radius="12px",
+                        padding="0.75rem",
+                        border_radius="10px",
                         background="rgba(255, 255, 255, 0.03)",
                         border="1px solid rgba(255, 255, 255, 0.05)",
                         width="100%",
@@ -200,6 +301,8 @@ def decision_hub_card(
         height="100%",
         position="relative",
         overflow="hidden",
+        on_mouse_enter=HomeState.start_comparison_hover,
+        on_mouse_leave=HomeState.end_comparison_hover,
         _hover={
             "& > :nth-child(2)": {
                 "background": "rgba(255, 255, 255, 0.04)",

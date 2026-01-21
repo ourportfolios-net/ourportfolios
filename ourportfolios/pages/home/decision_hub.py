@@ -24,15 +24,19 @@ def decision_hub_section():
         rx.box(height="7rem"),
         rx.grid(
             select_framework_card(),
-            decision_hub_card(
-                title="Compare Assets",
-                description="Side-by-side performance benchmarking and correlation analysis between multiple tickers or indices.",
-                icon="git-compare",
-                color="blue",
-                button_text="Start Comparison",
-                button_variant="outline",
-                on_click=HomeState.handle_compare,
-                has_comparison_chart=True,
+            rx.box(
+                decision_hub_card(
+                    title="Compare Assets",
+                    description="Side-by-side performance benchmarking and correlation analysis between multiple tickers or indices.",
+                    icon="git-compare",
+                    color="blue",
+                    button_text="Start Comparison",
+                    button_variant="outline",
+                    on_click=HomeState.handle_compare,
+                    has_comparison_chart=True,
+                ),
+                on_mouse_enter=HomeState.start_comparison_hover,
+                on_mouse_leave=HomeState.end_comparison_hover,
             ),
             portfolio_card_with_hover(),
             columns=rx.breakpoints(initial="1", md="2", lg="3"),

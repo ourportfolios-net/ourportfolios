@@ -1,32 +1,38 @@
+"""Home page state management."""
+
 import reflex as rx
-import asyncio
 import pandas as pd
 from sqlalchemy import text
-from ..utils.session_manager import SessionIsolatedStateMixin
 from ..utils.database.database import company_sync_engine
 
 
-class HomeState(SessionIsolatedStateMixin, rx.State):
-    """Homepage state."""
+class HomeState(rx.State):
+    """State for home page interactions."""
 
-    # Ticker search input
-    ticker_search: str = ""
+    # Framework card hover
+    framework_hover_index: int = 0
+    _framework_hover_active: bool = False
 
-    # Real VNINDEX data
+    # Portfolio card hover
+    is_portfolio_hovered: bool = False
+
+    # Comparison card hover
+    is_comparison_hovered: bool = False
+
+    # Sample data for visualizations
+    comparison_preview_data: list[dict] = [
+        {"period": "Q1", "value": 12},
+        {"period": "Q2", "value": 15},
+        {"period": "Q3", "value": 13},
+        {"period": "Q4", "value": 16},
+    ]
+
+    vnindex_chart_data: list[dict] = []
     vnindex_value: str = "Loading..."
     vnindex_change: str = "..."
     vnindex_is_positive: bool = True
-    vnindex_chart_data: list[dict] = []
 
-    # Mock data for other indices
-    nasdaq_value: str = "14,972.76"
-    nasdaq_change: str = "+0.75%"
-    gold_value: str = "2,018.30"
-    gold_change: str = "-0.12%"
-    oil_value: str = "71.45"
-    oil_change: str = "+0.44%"
-
-    # Portfolio values (base and target for animation)
+    # Portfolio animation values
     _base_portfolio_value: float = 142590.22
     _target_portfolio_value: float = 148719.73
     _base_portfolio_change: float = 4.8
@@ -35,50 +41,13 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
     _current_portfolio_change: float = 4.8
     portfolio_value: str = "$142,590.22"
     portfolio_change: str = "+4.8%"
-    is_portfolio_hovered: bool = False
     _animation_running: bool = False
-
-    # Portfolio percentage animation
-    _portfolio_winner_value: int = 50
-    _portfolio_loser_value: int = 50
-
-    # Framework card hover state
-    framework_hover_index: int = 0
-    _framework_card_hovered: bool = False
-
-    # Framework stats
-    frameworks_count: str = "12"
-
-    # Comparison stats
-    active_comparisons: str = "3"
-
-    # Sample comparison data for the preview chart
-    comparison_preview_data: list[dict] = [
-        {"period": "Jan", "AAPL": 178, "MSFT": 340},
-        {"period": "Feb", "AAPL": 182, "MSFT": 345},
-        {"period": "Mar", "AAPL": 175, "MSFT": 352},
-        {"period": "Apr", "AAPL": 185, "MSFT": 358},
-        {"period": "May", "AAPL": 190, "MSFT": 365},
-        {"period": "Jun", "AAPL": 188, "MSFT": 372},
-        {"period": "Jul", "AAPL": 195, "MSFT": 380},
-        {"period": "Aug", "AAPL": 198, "MSFT": 385},
-    ]
-
-    @rx.var
-    def portfolio_winner_percent(self) -> str:
-        """Get winner percentage formatted."""
-        return f"{self._portfolio_winner_value}%"
-
-    @rx.var
-    def portfolio_loser_percent(self) -> str:
-        """Get loser percentage formatted."""
-        return f"{self._portfolio_loser_value}%"
 
     @rx.event(background=True)
     async def load_vnindex_data(self):
         """Load VNINDEX data from database."""
         try:
-            # Fetch VNINDEX data from database
+            # Fetch VNINDEX data from database - ALL historical data
             df = pd.read_sql(
                 text("SELECT * FROM market.vnindex ORDER BY time"), company_sync_engine
             )
@@ -89,7 +58,8 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
                     self.vnindex_change = "N/A"
                 return
 
-            # First row is previous close, last row is current value
+            # First row is previous close (reference point)
+            # Last row is current value
             previous_close = df.iloc[0]["close"]
             current_value = df.iloc[-1]["close"]
 
@@ -97,17 +67,19 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
             change = current_value - previous_close
             sign = "+" if change >= 0 else ""
 
-            # Prepare chart data (skip first row which is previous close)
+            # Prepare chart data - skip first row (previous close)
+            # Only chart today's intraday movement
             chart_data = []
             df_today = df.iloc[1:]  # Skip the previous close row
 
             if not df_today.empty:
-                # Normalize today's data
+                # Normalize today's data for the chart
                 close_values = df_today["close"].values
                 min_val = close_values.min()
                 max_val = close_values.max()
 
                 for idx, row in df_today.iterrows():
+                    # Normalize between 0 and 1 for chart display
                     normalized = (
                         (row["close"] - min_val) / (max_val - min_val)
                         if max_val > min_val
@@ -128,23 +100,38 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
 
         except Exception as e:
             print(f"Error loading VNINDEX data: {e}")
+            import traceback
+
+            traceback.print_exc()
             async with self:
                 self.vnindex_value = "N/A"
                 self.vnindex_change = "N/A"
 
+    def on_mount(self):
+        """Initialize state when page loads."""
+        return HomeState.load_vnindex_data
+
+    def on_unmount(self):
+        """Cleanup when page unloads."""
+        pass
+
+    @rx.event
     def start_framework_hover(self):
-        """Move spotlight to second framework when card is hovered."""
-        self._framework_card_hovered = True
+        """Start framework card hover animation."""
+        self._framework_hover_active = True
         self.framework_hover_index = 1
 
+    @rx.event
     def stop_framework_hover(self):
-        """Move spotlight back to first framework when mouse leaves."""
-        self._framework_card_hovered = False
+        """Stop framework card hover animation."""
+        self._framework_hover_active = False
         self.framework_hover_index = 0
 
     @rx.event(background=True)
     async def start_portfolio_hover(self):
-        """Start the portfolio hover animation with gradual count-up."""
+        """Start portfolio card hover with count-up animation."""
+        import asyncio
+
         async with self:
             if self._animation_running:
                 return
@@ -159,10 +146,6 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
         end_value = self._target_portfolio_value
         start_change = self._base_portfolio_change
         end_change = self._target_portfolio_change
-        start_winner = 50
-        end_winner = 65
-        start_loser = 50
-        end_loser = 40
 
         for i in range(steps + 1):
             async with self:
@@ -175,14 +158,9 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
 
                 current_val = start_value + (end_value - start_value) * eased_t
                 current_chg = start_change + (end_change - start_change) * eased_t
-                # Use linear interpolation for percentages (no easing)
-                current_winner = int(start_winner + (end_winner - start_winner) * t)
-                current_loser = int(start_loser + (end_loser - start_loser) * t)
 
                 self._current_portfolio_value = current_val
                 self._current_portfolio_change = current_chg
-                self._portfolio_winner_value = current_winner
-                self._portfolio_loser_value = current_loser
                 self.portfolio_value = f"${current_val:,.2f}"
                 self.portfolio_change = f"+{current_chg:.1f}%"
 
@@ -194,7 +172,9 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
 
     @rx.event(background=True)
     async def end_portfolio_hover(self):
-        """End the portfolio hover animation with gradual count-down."""
+        """End portfolio card hover with count-down animation."""
+        import asyncio
+
         async with self:
             if self._animation_running and not self.is_portfolio_hovered:
                 return
@@ -208,12 +188,8 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
         async with self:
             start_value = self._current_portfolio_value
             start_change = self._current_portfolio_change
-            start_winner = self._portfolio_winner_value
-            start_loser = self._portfolio_loser_value
         end_value = self._base_portfolio_value
         end_change = self._base_portfolio_change
-        end_winner = 50
-        end_loser = 50
 
         for i in range(steps + 1):
             async with self:
@@ -226,14 +202,9 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
 
                 current_val = start_value + (end_value - start_value) * eased_t
                 current_chg = start_change + (end_change - start_change) * eased_t
-                # Use linear interpolation for percentages (no easing)
-                current_winner = int(start_winner + (end_winner - start_winner) * t)
-                current_loser = int(start_loser + (end_loser - start_loser) * t)
 
                 self._current_portfolio_value = current_val
                 self._current_portfolio_change = current_chg
-                self._portfolio_winner_value = current_winner
-                self._portfolio_loser_value = current_loser
                 self.portfolio_value = f"${current_val:,.2f}"
                 self.portfolio_change = f"+{current_chg:.1f}%"
 
@@ -243,22 +214,22 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
         async with self:
             self._animation_running = False
 
-    def on_mount(self):
-        super().on_mount()
-        return HomeState.load_vnindex_data
+    @rx.event
+    def start_comparison_hover(self):
+        """Start comparison card hover."""
+        self.is_comparison_hovered = True
 
-    def on_unmount(self):
-        super().on_unmount()
+    @rx.event
+    def end_comparison_hover(self):
+        """End comparison card hover."""
+        self.is_comparison_hovered = False
 
-    def handle_analyze_ticker(self):
-        """Navigate to analyze page with the ticker."""
-        if self.ticker_search:
-            return rx.redirect(f"/analyze?ticker={self.ticker_search}")
-
+    @rx.event
     def handle_compare(self):
         """Navigate to compare page."""
-        return rx.redirect("/compare")
+        return rx.redirect("/analyze/compare")
 
+    @rx.event
     def handle_portfolio(self):
-        """Navigate to portfolio/select page."""
-        return rx.redirect("/select")
+        """Navigate to portfolio page."""
+        return rx.redirect("/portfolio")

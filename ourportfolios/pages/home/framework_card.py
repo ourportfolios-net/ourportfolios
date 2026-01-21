@@ -152,15 +152,21 @@ def select_framework_card() -> rx.Component:
                 ),
                 # Spacer
                 rx.box(flex="1"),
-                # Framework visualization
+                # Framework visualization - with surrounding box matching portfolio
                 rx.box(
                     rx.vstack(
-                        rx.box(
-                            width="140px",
-                            height="10px",
-                            border_radius="4px",
-                            background="rgba(255, 255, 255, 0.08)",
-                            margin_bottom="0.5rem",
+                        # Total value section matching portfolio
+                        rx.vstack(
+                            rx.box(
+                                width="80px",
+                                height="10px",
+                                border_radius="4px",
+                                background="rgba(255, 255, 255, 0.08)",
+                            ),
+                            spacing="2",
+                            align="start",
+                            width="100%",
+                            margin_bottom="0.75rem",
                         ),
                         rx.box(
                             rx.vstack(
@@ -229,13 +235,13 @@ def select_framework_card() -> rx.Component:
                             width="100%",
                             height=f"calc({card_height} * 2 + 8px)",
                         ),
-                        spacing="2",
+                        spacing="0",
                         align="start",
                         width="100%",
                     ),
-                    padding="1rem",
-                    border_radius="12px",
-                    background="rgba(255, 255, 255, 0.02)",
+                    padding="0.75rem",
+                    border_radius="10px",
+                    background="rgba(255, 255, 255, 0.03)",
                     border="1px solid rgba(255, 255, 255, 0.05)",
                     width="100%",
                 ),
