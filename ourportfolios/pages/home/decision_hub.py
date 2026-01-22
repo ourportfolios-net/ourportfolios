@@ -21,7 +21,7 @@ def decision_hub_section():
             align="start",
         ),
         # Spacing box to push cards down
-        rx.box(height="7rem"),
+        rx.box(height="14rem"),
         rx.grid(
             select_framework_card(),
             rx.box(

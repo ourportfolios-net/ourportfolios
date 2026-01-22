@@ -99,54 +99,12 @@ def decision_hub_card(
                     has_comparison_chart,
                     rx.box(
                         rx.vstack(
-                            # Header row with sliding columns
-                            rx.hstack(
-                                # Empty space above ticker
-                                rx.box(width="70px"),
-                                # Sliding column 1
-                                rx.box(
-                                    rx.box(
-                                        width="70px",
-                                        height="12px",
-                                        border_radius="4px",
-                                        background="rgba(255, 255, 255, 0.08)",
-                                    ),
-                                    width=rx.cond(
-                                        HomeState.is_comparison_hovered,
-                                        "70px",
-                                        "0px",
-                                    ),
-                                    opacity=rx.cond(
-                                        HomeState.is_comparison_hovered,
-                                        "1",
-                                        "0",
-                                    ),
-                                    overflow="hidden",
-                                    transition="all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
-                                ),
-                                # Sliding column 2
-                                rx.box(
-                                    rx.box(
-                                        width="70px",
-                                        height="12px",
-                                        border_radius="4px",
-                                        background="rgba(255, 255, 255, 0.08)",
-                                    ),
-                                    width=rx.cond(
-                                        HomeState.is_comparison_hovered,
-                                        "70px",
-                                        "0px",
-                                    ),
-                                    opacity=rx.cond(
-                                        HomeState.is_comparison_hovered,
-                                        "1",
-                                        "0",
-                                    ),
-                                    overflow="hidden",
-                                    transition="all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
-                                ),
-                                spacing="3",
-                                width="100%",
+                            # Skeleton in top left corner
+                            rx.box(
+                                width="80px",
+                                height="11px",
+                                border_radius="4px",
+                                background="rgba(255, 255, 255, 0.08)",
                                 margin_bottom="0.5rem",
                             ),
                             # Row 1
