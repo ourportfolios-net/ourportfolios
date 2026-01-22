@@ -2,6 +2,7 @@ import reflex as rx
 from ...state.home_state import HomeState
 from .decision_hub import decision_hub_section
 from .market_overview import market_overview_section
+from .ticker_of_day import ticker_of_the_day_card
 from ...components.navbar import navbar
 
 
@@ -12,16 +13,25 @@ def index() -> rx.Component:
         navbar(),
         rx.box(
             rx.flex(
-                rx.box(decision_hub_section(), flex="1"),
-                rx.box(market_overview_section(), width="20%"),
+                rx.box(decision_hub_section(), flex="1", padding_right="2.5rem"),
+                rx.vstack(
+                    rx.box(
+                        ticker_of_the_day_card(),
+                        width="100%",
+                        display="flex",
+                        justify_content="center",
+                    ),
+                    market_overview_section(),
+                    spacing="9",
+                    width="22%",
+                ),
                 direction=rx.breakpoints(initial="column", lg="row"),
-                gap="1.5rem",
+                gap="0",
                 width="100%",
-                max_width="1440px",
-                margin="0 auto",
+                max_width="100%",
                 align_items="flex_end",
             ),
-            padding_x=["1.5rem", "2rem", "3rem"],
+            padding_left=["1.5rem", "2rem", "3rem"],
             padding_y="2rem",
         ),
         on_unmount=HomeState.on_unmount,
