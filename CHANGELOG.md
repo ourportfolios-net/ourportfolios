@@ -2,6 +2,66 @@
 
 <!-- version list -->
 
+## v0.7.0 (2026-01-22)
+
+### Chores
+
+- Prune comments
+  ([`a08c23e`](https://github.com/ourportfolios-net/ourportfolios/commit/a08c23e38ffbf512663a6eda13b06a4507ae02bb))
+
+- Remove loading screen
+  ([`d142f24`](https://github.com/ourportfolios-net/ourportfolios/commit/d142f24c50173f203982f8652be3dae0401a5a93))
+
+- **deps**: Prune unused
+  ([`ba9c5ec`](https://github.com/ourportfolios-net/ourportfolios/commit/ba9c5ec50fba17faf64603065c4af74bdc646977))
+
+- **deps**: Remove source-psycopg2
+  ([`72e8f2e`](https://github.com/ourportfolios-net/ourportfolios/commit/72e8f2efddea885dfe6efdbda851a2b709b90538))
+
+- **deps**: Update
+  ([`96fad17`](https://github.com/ourportfolios-net/ourportfolios/commit/96fad1796697d5db477bc554d0aaff5edf765f49))
+
+### Features
+
+- Add dynamic background
+  ([`51e5aef`](https://github.com/ourportfolios-net/ourportfolios/commit/51e5aefceb588c66fa2d84ea45075db8b70797ed))
+
+- Add fade in effect
+  ([`5188188`](https://github.com/ourportfolios-net/ourportfolios/commit/51881887ccda01935c4a90f86c6cc1e2b8aa1e7a))
+
+- Addresses footer
+  ([`37c223c`](https://github.com/ourportfolios-net/ourportfolios/commit/37c223cd9e47d78f2bf918b0e52e8f32c360cfa3))
+
+- Make the sections closer
+  ([`fdfba54`](https://github.com/ourportfolios-net/ourportfolios/commit/fdfba540e2d2e91c829679bf5550781d5993dac9))
+
+- Move all sections closer
+  ([`e77f411`](https://github.com/ourportfolios-net/ourportfolios/commit/e77f4117af01909b1357e11fe8de1612feed8580))
+
+- Redesign bento
+  ([`b88295a`](https://github.com/ourportfolios-net/ourportfolios/commit/b88295a00fdcda47a5a595fb21bd365a008b6c16))
+
+- Update catchphrase
+  ([`5fc6e9c`](https://github.com/ourportfolios-net/ourportfolios/commit/5fc6e9cac851e8c4f930a8e1cf2bdae0cd263a36))
+
+- **landing**: Add all components into a page
+  ([`3beb64d`](https://github.com/ourportfolios-net/ourportfolios/commit/3beb64d4a04d7fca9be2588bece685ec770c142f))
+
+- **navbar**: Add invisible box for better page navigation
+  ([`a2719cd`](https://github.com/ourportfolios-net/ourportfolios/commit/a2719cd6032e4ac0bde374ed91cccc67869956b8))
+
+- **navbar**: Disable highlighting for logo
+  ([`72b3d99`](https://github.com/ourportfolios-net/ourportfolios/commit/72b3d99c742ea710b880a599aff784a52fa75723))
+
+### Refactoring
+
+- Reorder into new sub-directory
+  ([`3b36bc6`](https://github.com/ourportfolios-net/ourportfolios/commit/3b36bc69614c4478c6cc6e5e802d0cb3d143808e))
+
+- **landing**: Reorganize all sections into subdirectory
+  ([`bac9f81`](https://github.com/ourportfolios-net/ourportfolios/commit/bac9f810531b3da8c03e9bde70c48bd478668405))
+
+
 ## v0.6.0 (2026-01-05)
 
 ### Bug Fixes
