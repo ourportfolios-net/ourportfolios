@@ -3,7 +3,7 @@
 import reflex as rx
 import pandas as pd
 from sqlalchemy import text
-from ..utils.database.database import company_sync_engine
+from ..utils.database.database import get_company_session
 
 
 class HomeState(rx.State):
@@ -43,60 +43,69 @@ class HomeState(rx.State):
     portfolio_change: str = "+4.8%"
     _animation_running: bool = False
 
+    # Ticker of the Day state variables
+    ticker_of_day_symbol: str = ""
+    ticker_of_day_name: str = ""
+    ticker_of_day_industry: str = ""
+    ticker_of_day_price: str = ""
+    ticker_of_day_change: str = ""
+
     @rx.event(background=True)
     async def load_vnindex_data(self):
         """Load VNINDEX data from database."""
         try:
-            # Fetch VNINDEX data from database - ALL historical data
-            df = pd.read_sql(
-                text("SELECT * FROM market.vnindex ORDER BY time"), company_sync_engine
-            )
+            async with get_company_session() as session:
+                # Fetch VNINDEX data from database - ALL historical data
+                query = text("SELECT * FROM market.vnindex ORDER BY time")
+                result = await session.execute(query)
+                rows = result.mappings().all()
+                df = pd.DataFrame([dict(row) for row in rows])
 
-            if df.empty:
+                if df.empty:
+                    async with self:
+                        self.vnindex_value = "N/A"
+                        self.vnindex_change = "N/A"
+                    return
+
+                # First row is previous close (reference point)
+                # Last row is current value
+                previous_close = df.iloc[0]["close"]
+                current_value = df.iloc[-1]["close"]
+
+                # Calculate point change from previous close
+                change = current_value - previous_close
+                sign = "+" if change >= 0 else ""
+
+                # Prepare chart data - skip first row (previous close)
+                # Only chart today's intraday movement
+                chart_data = []
+                df_today = df.iloc[1:]  # Skip the previous close row
+
+                if not df_today.empty:
+                    # Normalize today's data for the chart
+                    close_values = df_today["close"].values
+                    min_val = close_values.min()
+                    max_val = close_values.max()
+
+                    for idx, row in df_today.iterrows():
+                        # Normalize between 0 and 1 for chart display
+                        normalized = (
+                            (row["close"] - min_val) / (max_val - min_val)
+                            if max_val > min_val
+                            else 0.5
+                        )
+                        chart_data.append(
+                            {
+                                "name": row["time"].strftime("%H:%M"),
+                                "normalized_close": normalized,
+                            }
+                        )
+
                 async with self:
-                    self.vnindex_value = "N/A"
-                    self.vnindex_change = "N/A"
-                return
-
-            # First row is previous close (reference point)
-            # Last row is current value
-            previous_close = df.iloc[0]["close"]
-            current_value = df.iloc[-1]["close"]
-
-            # Calculate point change from previous close
-            change = current_value - previous_close
-            sign = "+" if change >= 0 else ""
-
-            # Prepare chart data - skip first row (previous close)
-            # Only chart today's intraday movement
-            chart_data = []
-            df_today = df.iloc[1:]  # Skip the previous close row
-
-            if not df_today.empty:
-                # Normalize today's data for the chart
-                close_values = df_today["close"].values
-                min_val = close_values.min()
-                max_val = close_values.max()
-
-                for idx, row in df_today.iterrows():
-                    # Normalize between 0 and 1 for chart display
-                    normalized = (
-                        (row["close"] - min_val) / (max_val - min_val)
-                        if max_val > min_val
-                        else 0.5
-                    )
-                    chart_data.append(
-                        {
-                            "name": row["time"].strftime("%H:%M"),
-                            "normalized_close": normalized,
-                        }
-                    )
-
-            async with self:
-                self.vnindex_value = f"{current_value:,.2f}"
-                self.vnindex_change = f"{sign}{abs(change):.2f}"
-                self.vnindex_is_positive = bool(change >= 0)
-                self.vnindex_chart_data = chart_data
+                    self.vnindex_value = f"{current_value:,.2f}"
+                    self.vnindex_change = f"{sign}{abs(change):.2f}"
+                    self.vnindex_is_positive = bool(change >= 0)
+                    self.vnindex_chart_data = chart_data
 
         except Exception as e:
             print(f"Error loading VNINDEX data: {e}")
@@ -107,13 +116,85 @@ class HomeState(rx.State):
                 self.vnindex_value = "N/A"
                 self.vnindex_change = "N/A"
 
+    @rx.event(background=True)
+    async def load_ticker_of_day(self):
+        """Load the ticker of the day - highest volume AND highest % gain."""
+        try:
+            async with get_company_session() as session:
+                # Query to find ticker with highest (volume * price_change_percent)
+                # Join all three tables: price_df, overview_df, profile_df
+                query = text("""
+                    SELECT 
+                        pb.symbol,
+                        pb.pct_price_change,
+                        pb.accumulated_volume,
+                        pb.current_price,
+                        od.industry,
+                        pf.company_name,
+                        (pb.accumulated_volume * ABS(pb.pct_price_change)) AS score
+                    FROM tickers.price_df AS pb
+                    JOIN tickers.overview_df AS od ON pb.symbol = od.symbol
+                    JOIN tickers.profile_df AS pf ON pb.symbol = pf.symbol
+                    WHERE pb.pct_price_change > 0
+                    ORDER BY score DESC
+                    LIMIT 1
+                """)
+
+                result = await session.execute(query)
+                rows = result.mappings().all()
+                df = pd.DataFrame([dict(row) for row in rows])
+
+                if not df.empty:
+                    ticker_data = df.iloc[0]
+
+                    async with self:
+                        self.ticker_of_day_symbol = ticker_data["symbol"]
+                        self.ticker_of_day_name = ticker_data["company_name"]
+                        self.ticker_of_day_industry = (
+                            ticker_data["industry"]
+                            if pd.notna(ticker_data["industry"])
+                            else "N/A"
+                        )
+                        self.ticker_of_day_price = (
+                            f"{ticker_data['current_price']:,.2f}"
+                        )
+                        self.ticker_of_day_change = (
+                            f"+{ticker_data['pct_price_change']:.2f}%"
+                        )
+                else:
+                    # No data available
+                    async with self:
+                        self.ticker_of_day_symbol = "N/A"
+                        self.ticker_of_day_name = "No data available"
+                        self.ticker_of_day_industry = ""
+                        self.ticker_of_day_price = "$0.00"
+                        self.ticker_of_day_change = "+0.00%"
+
+        except Exception as e:
+            print(f"Error loading ticker of the day: {e}")
+            import traceback
+
+            traceback.print_exc()
+            async with self:
+                self.ticker_of_day_symbol = "N/A"
+                self.ticker_of_day_name = "Error loading data"
+                self.ticker_of_day_industry = ""
+                self.ticker_of_day_price = "$0.00"
+                self.ticker_of_day_change = "+0.00%"
+
     def on_mount(self):
         """Initialize state when page loads."""
-        return HomeState.load_vnindex_data
+        return [HomeState.load_vnindex_data, HomeState.load_ticker_of_day]
 
     def on_unmount(self):
         """Cleanup when page unloads."""
         pass
+
+    @rx.event
+    def navigate_to_ticker_of_day(self):
+        """Navigate to analyze page for ticker of the day."""
+        if self.ticker_of_day_symbol and self.ticker_of_day_symbol != "N/A":
+            return rx.redirect(f"/analyze/{self.ticker_of_day_symbol}")
 
     @rx.event
     def start_framework_hover(self):

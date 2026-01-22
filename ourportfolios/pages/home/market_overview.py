@@ -51,7 +51,6 @@ def market_overview_section():
     return glass_card(
         rx.vstack(
             rx.hstack(
-                rx.spacer(),
                 rx.hstack(
                     rx.vstack(
                         rx.text(
@@ -81,7 +80,7 @@ def market_overview_section():
                 align="center",
                 margin_bottom="0.5rem",
             ),
-            # Placeholder for heatmap
+            # Placeholder for heatmap - expanded size
             rx.box(
                 rx.text(
                     "Heatmap will be rendered here",
@@ -90,7 +89,7 @@ def market_overview_section():
                     font_style="italic",
                 ),
                 width="100%",
-                height="500px",
+                height="350px",
                 padding="1.5rem",
                 border="1px dashed rgba(255, 255, 255, 0.1)",
                 border_radius="12px",
@@ -130,13 +129,16 @@ def market_overview_section():
                     },
                 ),
                 display="flex",
-                justify_content="flex-end",
+                justify_content="flex_end",
                 width="100%",
             ),
             spacing="0",
             width="100%",
         ),
         padding="0.75rem",
+        padding_right="0",
         width="100%",
-        max_width="500px",
+        max_width="100%",
+        border_top_right_radius="0",
+        border_bottom_right_radius="0",
     )
