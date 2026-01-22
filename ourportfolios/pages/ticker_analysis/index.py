@@ -6,7 +6,7 @@ from ...components.navbar import navbar
 from ...components.drawer import drawer_button
 
 from .state import State
-from .info_cards import name_card, general_info_card, company_profile_card
+from .info_cards import name_card, general_info_card
 from .price_chart import price_chart_card
 from .metrics_card import key_metrics_card
 from .company_info import company_generic_info_card
@@ -52,7 +52,6 @@ def index():
                             align="stretch",
                             height="450px",
                         ),
-                        company_profile_card(),
                         rx.hstack(
                             key_metrics_card(),
                             company_generic_info_card(),

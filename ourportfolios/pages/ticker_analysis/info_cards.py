@@ -5,6 +5,7 @@ import reflex as rx
 from ...components.cards import glass_card
 from ...components.drawer import CartState
 from .state import State
+from .dialog import company_profile_dialog
 
 
 def name_card_skeleton():
@@ -129,76 +130,26 @@ def general_info_card():
         rx.cond(
             State.error_company != "",
             error_card(State.error_company),
-            glass_card(
-                rx.text(
-                    f"{overview.get('short_name', '')} (Est. {overview.get('established_year', '')})"
-                ),
-                rx.link(website, href=f"https://{website}", is_external=True),
-                rx.text(f"Market cap: {overview.get('market_cap', '')} B. VND"),
-                rx.text(f"Issue Shares: {overview.get('issue_share', '')}"),
-                rx.text(f"Outstanding Shares: {overview.get('outstanding_share', '')}"),
-                rx.text(
-                    f"{overview.get('no_shareholders', '')} shareholders ({overview.get('foreign_percent', '')}% foreign)"
-                ),
-                padding="1em",
-                width="100%",
-            ),
-        ),
-    )
-
-
-def company_profile_card():
-    profile_data = State.profile
-    PROFILE_CONTENT_HEIGHT = "12em"
-
-    def create_profile_tab_content(content_key: str, tab_value: str):
-        return rx.tabs.content(
-            rx.scroll_area(
-                rx.text(
-                    profile_data.get(content_key, ""),
-                    size="3",
-                    weight="regular",
-                    style={
-                        "whiteSpace": "pre-wrap",
-                        "wordWrap": "break-word",
-                        "textAlign": "justify",
-                        "lineHeight": "1.6",
-                    },
-                ),
-                height=PROFILE_CONTENT_HEIGHT,
-                padding="0.5em",
-            ),
-            value=tab_value,
-            padding_top="0.8em",
-        )
-
-    return rx.cond(
-        State.is_loading_company,
-        company_profile_skeleton(),
-        rx.cond(
-            State.error_company != "",
-            error_card(State.error_company),
-            glass_card(
-                rx.tabs.root(
-                    rx.tabs.list(
-                        rx.tabs.trigger("Company Profile", value="profile"),
-                        rx.tabs.trigger("History", value="history"),
-                        rx.tabs.trigger("Promises", value="promises"),
-                        rx.tabs.trigger("Risks", value="risks"),
-                        rx.tabs.trigger("Developments", value="developments"),
-                        rx.tabs.trigger("Strategies", value="strategies"),
-                        variant="surface",
+            rx.vstack(
+                glass_card(
+                    rx.text(
+                        f"{overview.get('short_name', '')} (Est. {overview.get('established_year', '')})"
                     ),
-                    create_profile_tab_content("company_profile", "profile"),
-                    create_profile_tab_content("history_dev", "history"),
-                    create_profile_tab_content("company_promise", "promises"),
-                    create_profile_tab_content("business_risk", "risks"),
-                    create_profile_tab_content("key_developments", "developments"),
-                    create_profile_tab_content("business_strategies", "strategies"),
-                    default_value="profile",
+                    rx.link(website, href=f"https://{website}", is_external=True),
+                    rx.text(f"Market cap: {overview.get('market_cap', '')} B. VND"),
+                    rx.text(f"Issue Shares: {overview.get('issue_share', '')}"),
+                    rx.text(
+                        f"Outstanding Shares: {overview.get('outstanding_share', '')}"
+                    ),
+                    rx.text(
+                        f"{overview.get('no_shareholders', '')} shareholders ({overview.get('foreign_percent', '')}% foreign)"
+                    ),
+                    padding="1em",
+                    width="100%",
                 ),
+                company_profile_dialog(),
+                spacing="3",
                 width="100%",
-                padding="1em",
             ),
         ),
     )
