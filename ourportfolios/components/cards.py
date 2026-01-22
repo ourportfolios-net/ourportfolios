@@ -25,7 +25,7 @@ def glass_card(*children, **props) -> rx.Component:
         rx.Component: A glassmorphism card
     """
     # Extract custom props or set defaults
-    padding = props.pop("padding", "1.5rem")
+    padding = props.pop("padding", "1rem")
     border_radius = props.pop("border_radius", "14px")
     background = props.pop("background", "rgba(40, 40, 40, 0.5)")
     border = props.pop("border", "1px solid rgba(255, 255, 255, 0.08)")
