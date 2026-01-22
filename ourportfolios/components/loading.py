@@ -5,7 +5,6 @@ def loading_screen():
     """Loading screen that appears while page is not hydrated."""
     return rx.cond(
         rx.State.is_hydrated,
-        rx.fragment(),
         rx.box(
             rx.box(
                 rx.spinner(

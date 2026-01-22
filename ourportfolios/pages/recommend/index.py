@@ -4,7 +4,6 @@ import reflex as rx
 
 from ...components.navbar import navbar
 from ...components.page_roller import card_roller, card_link
-from ...components.loading import loading_screen
 
 from .state import FrameworkState
 from .framework_cards import categories_sidebar, framework_card
@@ -124,7 +123,6 @@ def frameworks_content():
 def index() -> rx.Component:
     return rx.box(
         rx.fragment(
-            loading_screen(),
             navbar(),
             page_selection(),
             rx.center(

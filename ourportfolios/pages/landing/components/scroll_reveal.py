@@ -1,0 +1,44 @@
+"""ScrollReveal blur-to-sharp animation."""
+
+import reflex as rx
+
+
+class ScrollRevealComponent(rx.Component):
+    """Scroll reveal animation component."""
+
+    library = "$/public/ScrollReveal"
+    tag = "ScrollReveal"
+    lib_dependencies: list[str] = ["motion@11.15.0"]
+
+    blur_amount: rx.Var[int] = 10
+    initial_opacity: rx.Var[float] = 0.4
+    initial_scale: rx.Var[float] = 0.98
+    duration: rx.Var[float] = 0.4
+    delay: rx.Var[float] = 0
+    threshold: rx.Var[float] = 0.1
+    trigger_once: rx.Var[bool] = True
+
+
+def scroll_reveal(
+    *children,
+    blur_amount: int = 10,
+    initial_opacity: float = 0.4,
+    initial_scale: float = 0.98,
+    duration: float = 0.4,
+    delay: float = 0,
+    threshold: float = 0.1,
+    trigger_once: bool = True,
+    **props,
+) -> rx.Component:
+    """Animate children from blurry to sharp on scroll into view."""
+    return ScrollRevealComponent.create(
+        *children,
+        blur_amount=blur_amount,
+        initial_opacity=initial_opacity,
+        initial_scale=initial_scale,
+        duration=duration,
+        delay=delay,
+        threshold=threshold,
+        trigger_once=trigger_once,
+        **props,
+    )

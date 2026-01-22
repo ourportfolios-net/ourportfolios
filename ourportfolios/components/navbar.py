@@ -1,60 +1,35 @@
+"""Navigation bar component."""
+
 import reflex as rx
 from .search_bar import search_bar
 
 
-def navbar(*children) -> rx.Component:
-    return rx.box(
+def navbar() -> rx.Component:
+    """Navigation bar with logo and search."""
+    bar = rx.box(
         rx.hstack(
-            rx.hstack(
-                rx.box(
-                    rx.heading("OurPortfolios", size="5", weight="medium"),
-                    rx.link(
-                        "",
-                        href="/",
-                        style={
-                            "position": "absolute",
-                            "top": 0,
-                            "left": 0,
-                            "right": 0,
-                            "bottom": 0,
-                            "width": "100%",
-                            "height": "100%",
-                            "zIndex": 1,
-                            "textDecoration": "none",
-                            "color": "inherit",
-                            "background": "transparent",
-                            "pointerEvents": "auto",
-                            "_hover": {
-                                "textDecoration": "none",
-                                "color": "inherit",
-                                "background": "transparent",
-                            },
-                        },
-                    ),
-                    position="relative",
-                ),
-                *children,
-                align_items="center",
-                spacing="7",
+            rx.text(
+                "ourportfolios",
+                font_size="1.25rem",
+                font_weight="600",
+                letter_spacing="-0.02em",
+                user_select="none",
             ),
-            rx.hstack(
-                rx.color_mode.button(),
-                search_bar(),
-                rx.button(
-                    "Sign Up",
-                    size="2",
-                    variant="outline",
-                ),
-                rx.button("Log In", size="2"),
-                spacing="4",
-                justify="end",
-                align_items="center",
-            ),
+            search_bar(),
+            align="center",
             justify="between",
-            align_items="center",
-            height="4.1em",
+            width="100%",
+            padding_x="2rem",
         ),
-        bg=rx.color("accent", 3),
-        padding="0.4em 1em",
+        position="fixed",
+        top="0",
         width="100%",
+        z_index="50",
+        padding_y="1rem",
+        background="rgba(10, 10, 10, 0.4)",
+        backdrop_filter="blur(32px)",
+        border_bottom="1px solid rgba(255, 255, 255, 0.05)",
     )
+
+    spacer = rx.box(height="4rem", width="100%")
+    return rx.vstack(bar, spacer)
