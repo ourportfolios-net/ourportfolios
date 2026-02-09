@@ -13,7 +13,7 @@ def showcase_section() -> rx.Component:
                 rx.hstack(
                     rx.vstack(
                         shiny_text(
-                            text="Card stacks have never looked so good",
+                            text="Investing simplified.",
                             speed=3,
                             color="rgba(255, 255, 255, 0.75)",
                             shine_color="rgba(255, 255, 255, 1)",
@@ -27,7 +27,7 @@ def showcase_section() -> rx.Component:
                             letter_spacing="-0.02em",
                         ),
                         rx.text(
-                            "Just look at it go!",
+                            "Focus on what actually matters.",
                             font_size=["1rem", "1.125rem"],
                             color="rgba(255, 255, 255, 0.4)",
                             margin_top="2rem",
