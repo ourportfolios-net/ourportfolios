@@ -1,8 +1,49 @@
-"""Showcase section with CardSwap demo."""
+"""Showcase section with CardSwap demo - Investment App Flow."""
 
 import reflex as rx
 
 from ..components import shiny_text, scroll_reveal, card_swap, card
+
+
+def _skeleton(
+    width: str = "4rem",
+    height: str = "0.75rem",
+    opacity: float = 0.12,
+    **kwargs,
+) -> rx.Component:
+    """Static skeleton placeholder (rounded rectangle)."""
+    return rx.box(
+        width=width,
+        height=height,
+        background=f"rgba(255, 255, 255, {opacity})",
+        border_radius="0.25rem",
+        flex_shrink="0",
+        **kwargs,
+    )
+
+
+# Static data for the performance line charts (trending up)
+_PERF_DATA_1 = [
+    {"d": 1, "v": 20},
+    {"d": 2, "v": 24},
+    {"d": 3, "v": 22},
+    {"d": 4, "v": 28},
+    {"d": 5, "v": 32},
+    {"d": 6, "v": 30},
+    {"d": 7, "v": 36},
+    {"d": 8, "v": 42},
+]
+
+_PERF_DATA_2 = [
+    {"d": 1, "v": 15},
+    {"d": 2, "v": 18},
+    {"d": 3, "v": 16},
+    {"d": 4, "v": 22},
+    {"d": 5, "v": 20},
+    {"d": 6, "v": 26},
+    {"d": 7, "v": 30},
+    {"d": 8, "v": 35},
+]
 
 
 def showcase_section() -> rx.Component:
@@ -43,16 +84,18 @@ def showcase_section() -> rx.Component:
                     rx.box(
                         rx.box(
                             card_swap(
+                                # Card 1: Framework Selection
                                 card(
                                     rx.box(
                                         rx.hstack(
-                                            rx.icon(
-                                                "file_sliders",
-                                                size=20,
-                                                color="rgba(255, 255, 255, 0.5)",
+                                            rx.text(
+                                                "01",
+                                                font_size="0.875rem",
+                                                font_weight="600",
+                                                color="rgba(255, 255, 255, 0.3)",
                                             ),
                                             rx.heading(
-                                                "Customizable",
+                                                "Select a Framework",
                                                 size="4",
                                                 font_weight="500",
                                                 letter_spacing="0.05em",
@@ -65,22 +108,102 @@ def showcase_section() -> rx.Component:
                                         rx.box(
                                             rx.center(
                                                 rx.vstack(
-                                                    rx.heading(
-                                                        "Fully Customizable",
-                                                        size="5",
-                                                        font_weight="600",
-                                                        letter_spacing="-0.02em",
-                                                        margin_bottom="0.75rem",
-                                                    ),
-                                                    rx.text(
-                                                        "Tailor every aspect to match your workflow.",
-                                                        font_size="0.875rem",
-                                                        color="rgba(255, 255, 255, 0.6)",
-                                                        line_height="1.6",
-                                                        text_align="center",
+                                                    rx.vstack(
+                                                        # Selected framework row
+                                                        rx.box(
+                                                            rx.hstack(
+                                                                rx.box(
+                                                                    width="1rem",
+                                                                    height="0.5rem",
+                                                                    border_radius="0.125rem",
+                                                                    background="#7C3AED",
+                                                                    box_shadow="0 0 8px rgba(124, 58, 237, 0.6)",
+                                                                ),
+                                                                _skeleton(
+                                                                    width="7rem",
+                                                                    height="1rem",
+                                                                    opacity=0.25,
+                                                                ),
+                                                                spacing="3",
+                                                                align="center",
+                                                            ),
+                                                            width="100%",
+                                                            padding="1rem 1.25rem",
+                                                            background="rgba(124, 58, 237, 0.1)",
+                                                            border="1px solid rgba(124, 58, 237, 0.3)",
+                                                            border_radius="0.75rem",
+                                                        ),
+                                                        # Unselected framework rows
+                                                        rx.box(
+                                                            rx.hstack(
+                                                                rx.box(
+                                                                    width="1rem",
+                                                                    height="0.5rem",
+                                                                    border_radius="0.125rem",
+                                                                    background="rgba(255, 255, 255, 0.15)",
+                                                                ),
+                                                                _skeleton(
+                                                                    width="6rem",
+                                                                    height="1rem",
+                                                                ),
+                                                                spacing="3",
+                                                                align="center",
+                                                            ),
+                                                            width="100%",
+                                                            padding="1rem 1.25rem",
+                                                            background="rgba(255, 255, 255, 0.02)",
+                                                            border="1px solid rgba(255, 255, 255, 0.08)",
+                                                            border_radius="0.75rem",
+                                                        ),
+                                                        rx.box(
+                                                            rx.hstack(
+                                                                rx.box(
+                                                                    width="1rem",
+                                                                    height="0.5rem",
+                                                                    border_radius="0.125rem",
+                                                                    background="rgba(255, 255, 255, 0.15)",
+                                                                ),
+                                                                _skeleton(
+                                                                    width="8rem",
+                                                                    height="1rem",
+                                                                ),
+                                                                spacing="3",
+                                                                align="center",
+                                                            ),
+                                                            width="100%",
+                                                            padding="1rem 1.25rem",
+                                                            background="rgba(255, 255, 255, 0.02)",
+                                                            border="1px solid rgba(255, 255, 255, 0.08)",
+                                                            border_radius="0.75rem",
+                                                        ),
+                                                        rx.box(
+                                                            rx.hstack(
+                                                                rx.box(
+                                                                    width="1rem",
+                                                                    height="0.5rem",
+                                                                    border_radius="0.125rem",
+                                                                    background="rgba(255, 255, 255, 0.15)",
+                                                                ),
+                                                                _skeleton(
+                                                                    width="5.5rem",
+                                                                    height="1rem",
+                                                                ),
+                                                                spacing="3",
+                                                                align="center",
+                                                            ),
+                                                            width="100%",
+                                                            padding="1rem 1.25rem",
+                                                            background="rgba(255, 255, 255, 0.02)",
+                                                            border="1px solid rgba(255, 255, 255, 0.08)",
+                                                            border_radius="0.75rem",
+                                                        ),
+                                                        spacing="2",
+                                                        width="100%",
                                                     ),
                                                     align="center",
                                                     spacing="0",
+                                                    width="100%",
+                                                    max_width="22rem",
                                                 ),
                                                 width="100%",
                                                 height="100%",
@@ -97,17 +220,18 @@ def showcase_section() -> rx.Component:
                                         flex_direction="column",
                                     ),
                                 ),
+                                # Card 2: Ticker Analysis
                                 card(
                                     rx.box(
                                         rx.hstack(
-                                            rx.box(
-                                                width="1.25rem",
-                                                height="1.25rem",
-                                                border_radius="9999px",
-                                                background="rgba(255, 255, 255, 0.5)",
+                                            rx.text(
+                                                "02",
+                                                font_size="0.875rem",
+                                                font_weight="600",
+                                                color="rgba(255, 255, 255, 0.3)",
                                             ),
                                             rx.heading(
-                                                "Smooth",
+                                                "Analyze",
                                                 size="4",
                                                 font_weight="500",
                                                 letter_spacing="0.05em",
@@ -118,117 +242,197 @@ def showcase_section() -> rx.Component:
                                             padding="1.5rem",
                                         ),
                                         rx.box(
-                                            rx.hstack(
-                                                rx.vstack(
-                                                    rx.box(
-                                                        rx.box(
-                                                            rx.text(
-                                                                "01",
-                                                                font_size="2rem",
-                                                                font_weight="900",
-                                                                color="rgba(255, 255, 255, 0.1)",
-                                                                margin_bottom="0.5rem",
-                                                            ),
-                                                            rx.text(
-                                                                "Fluid Interface",
-                                                                font_size="0.875rem",
-                                                                font_weight="500",
-                                                                letter_spacing="-0.02em",
-                                                            ),
-                                                        ),
-                                                        height="7rem",
-                                                        background="rgba(255, 255, 255, 0.02)",
-                                                        border="1px solid rgba(255, 255, 255, 0.06)",
-                                                        border_radius="0.875rem",
-                                                        padding="1.25rem",
-                                                    ),
-                                                    rx.hstack(
-                                                        rx.box(
-                                                            rx.center(
-                                                                rx.box(
-                                                                    rx.box(
-                                                                        width="66.67%",
-                                                                        height="100%",
-                                                                        background="#7C3AED",
-                                                                        border_radius="9999px",
-                                                                        box_shadow="0 0 6px rgba(124, 58, 237, 0.5)",
-                                                                    ),
-                                                                    width="2rem",
-                                                                    height="0.175rem",
-                                                                    background="rgba(255, 255, 255, 0.1)",
-                                                                    border_radius="9999px",
-                                                                    position="relative",
-                                                                ),
-                                                                height="100%",
-                                                            ),
-                                                            flex="1",
-                                                            height="4rem",
-                                                            background="rgba(255, 255, 255, 0.02)",
-                                                            border="1px solid rgba(255, 255, 255, 0.05)",
-                                                            border_radius="0.875rem",
-                                                        ),
-                                                        rx.box(
-                                                            flex="1",
-                                                            height="4rem",
-                                                            background="rgba(255, 255, 255, 0.02)",
-                                                            border="1px solid rgba(255, 255, 255, 0.05)",
-                                                            border_radius="0.875rem",
-                                                        ),
-                                                        spacing="3",
-                                                        width="100%",
-                                                    ),
-                                                    spacing="3",
-                                                    flex="1",
-                                                ),
-                                                rx.vstack(
+                                            rx.vstack(
+                                                # Ticker header
+                                                rx.hstack(
                                                     rx.vstack(
-                                                        rx.box(
-                                                            height="0.25rem",
-                                                            width="50%",
-                                                            background="rgba(255, 255, 255, 0.1)",
-                                                            border_radius="9999px",
+                                                        _skeleton(
+                                                            width="3.5rem",
+                                                            height="1.25rem",
+                                                            opacity=0.18,
                                                         ),
-                                                        rx.box(
-                                                            height="0.25rem",
-                                                            width="75%",
-                                                            background="rgba(255, 255, 255, 0.05)",
-                                                            border_radius="9999px",
+                                                        _skeleton(
+                                                            width="5rem",
+                                                            height="0.75rem",
+                                                            opacity=0.08,
                                                         ),
-                                                        rx.box(
-                                                            height="0.25rem",
-                                                            width="66.67%",
-                                                            background="rgba(255, 255, 255, 0.05)",
-                                                            border_radius="9999px",
-                                                        ),
-                                                        spacing="3",
+                                                        spacing="1",
+                                                        align="start",
                                                     ),
-                                                    rx.spacer(),
-                                                    rx.center(
-                                                        rx.icon(
-                                                            "coins",
-                                                            size=28,
-                                                            color="rgba(255, 255, 255, 0.1)",
+                                                    rx.vstack(
+                                                        _skeleton(
+                                                            width="4.5rem",
+                                                            height="1.25rem",
+                                                            opacity=0.18,
                                                         ),
-                                                        width="100%",
-                                                        aspect_ratio="1",
+                                                        _skeleton(
+                                                            width="2.5rem",
+                                                            height="0.75rem",
+                                                            opacity=0.15,
+                                                        ),
+                                                        spacing="1",
+                                                        align="end",
+                                                    ),
+                                                    justify="between",
+                                                    width="100%",
+                                                ),
+                                                # Key metrics grid
+                                                rx.hstack(
+                                                    rx.box(
+                                                        rx.vstack(
+                                                            _skeleton(
+                                                                width="2rem",
+                                                                height="0.7rem",
+                                                                opacity=0.1,
+                                                            ),
+                                                            _skeleton(
+                                                                width="3rem",
+                                                                height="1.1rem",
+                                                                opacity=0.18,
+                                                            ),
+                                                            spacing="2",
+                                                            align="start",
+                                                        ),
+                                                        flex="1",
+                                                        padding="0.875rem",
+                                                        background="rgba(255, 255, 255, 0.02)",
+                                                        border="1px solid rgba(255, 255, 255, 0.08)",
                                                         border_radius="0.625rem",
-                                                        background="linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, transparent 100%)",
-                                                        border="1px solid rgba(255, 255, 255, 0.05)",
                                                     ),
-                                                    spacing="3",
-                                                    flex="1",
-                                                    background="rgba(255, 255, 255, 0.02)",
-                                                    border="1px solid rgba(255, 255, 255, 0.05)",
-                                                    border_radius="0.875rem",
-                                                    padding="1.25rem",
-                                                    max_width="10rem",
+                                                    rx.box(
+                                                        rx.vstack(
+                                                            _skeleton(
+                                                                width="2.5rem",
+                                                                height="0.7rem",
+                                                                opacity=0.1,
+                                                            ),
+                                                            _skeleton(
+                                                                width="3rem",
+                                                                height="1.1rem",
+                                                                opacity=0.18,
+                                                            ),
+                                                            spacing="2",
+                                                            align="start",
+                                                        ),
+                                                        flex="1",
+                                                        padding="0.875rem",
+                                                        background="rgba(255, 255, 255, 0.02)",
+                                                        border="1px solid rgba(255, 255, 255, 0.08)",
+                                                        border_radius="0.625rem",
+                                                    ),
+                                                    rx.box(
+                                                        rx.vstack(
+                                                            _skeleton(
+                                                                width="1.75rem",
+                                                                height="0.7rem",
+                                                                opacity=0.1,
+                                                            ),
+                                                            _skeleton(
+                                                                width="3rem",
+                                                                height="1.1rem",
+                                                                opacity=0.18,
+                                                            ),
+                                                            spacing="2",
+                                                            align="start",
+                                                        ),
+                                                        flex="1",
+                                                        padding="0.875rem",
+                                                        background="rgba(255, 255, 255, 0.02)",
+                                                        border="1px solid rgba(255, 255, 255, 0.08)",
+                                                        border_radius="0.625rem",
+                                                    ),
+                                                    spacing="2",
+                                                    width="100%",
+                                                ),
+                                                # Performance line charts (2 side-by-side)
+                                                rx.hstack(
+                                                    rx.box(
+                                                        rx.vstack(
+                                                            rx.text(
+                                                                "Performance",
+                                                                font_size="0.65rem",
+                                                                color="rgba(255, 255, 255, 0.5)",
+                                                            ),
+                                                            rx.recharts.line_chart(
+                                                                rx.recharts.line(
+                                                                    data_key="v",
+                                                                    stroke="#7C3AED",
+                                                                    type_="monotone",
+                                                                    dot=False,
+                                                                    stroke_width=2.5,
+                                                                ),
+                                                                rx.recharts.x_axis(
+                                                                    data_key="d",
+                                                                    hide=True,
+                                                                ),
+                                                                rx.recharts.y_axis(
+                                                                    hide=True
+                                                                ),
+                                                                data=_PERF_DATA_1,
+                                                                margin={
+                                                                    "top": 4,
+                                                                    "right": 4,
+                                                                    "bottom": 0,
+                                                                    "left": 4,
+                                                                },
+                                                                width="100%",
+                                                                height=56,
+                                                            ),
+                                                            spacing="1",
+                                                        ),
+                                                        flex="1",
+                                                        padding="0.75rem",
+                                                        background="rgba(255, 255, 255, 0.02)",
+                                                        border="1px solid rgba(255, 255, 255, 0.08)",
+                                                        border_radius="0.75rem",
+                                                    ),
+                                                    rx.box(
+                                                        rx.vstack(
+                                                            rx.text(
+                                                                "Growth",
+                                                                font_size="0.65rem",
+                                                                color="rgba(255, 255, 255, 0.5)",
+                                                            ),
+                                                            rx.recharts.line_chart(
+                                                                rx.recharts.line(
+                                                                    data_key="v",
+                                                                    stroke="rgba(255, 255, 255, 0.35)",
+                                                                    type_="monotone",
+                                                                    dot=False,
+                                                                    stroke_width=2.5,
+                                                                ),
+                                                                rx.recharts.x_axis(
+                                                                    data_key="d",
+                                                                    hide=True,
+                                                                ),
+                                                                rx.recharts.y_axis(
+                                                                    hide=True
+                                                                ),
+                                                                data=_PERF_DATA_2,
+                                                                margin={
+                                                                    "top": 4,
+                                                                    "right": 4,
+                                                                    "bottom": 0,
+                                                                    "left": 4,
+                                                                },
+                                                                width="100%",
+                                                                height=56,
+                                                            ),
+                                                            spacing="1",
+                                                        ),
+                                                        flex="1",
+                                                        padding="0.75rem",
+                                                        background="rgba(255, 255, 255, 0.02)",
+                                                        border="1px solid rgba(255, 255, 255, 0.08)",
+                                                        border_radius="0.75rem",
+                                                    ),
+                                                    spacing="2",
+                                                    width="100%",
                                                 ),
                                                 spacing="3",
-                                                align="stretch",
                                                 width="100%",
-                                                height="100%",
                                             ),
-                                            padding="1.25rem",
+                                            padding="1.5rem",
                                         ),
                                         width="100%",
                                         height="100%",
@@ -240,16 +444,18 @@ def showcase_section() -> rx.Component:
                                         flex_direction="column",
                                     ),
                                 ),
+                                # Card 3: Portfolio Rebalancing
                                 card(
                                     rx.box(
                                         rx.hstack(
                                             rx.text(
-                                                "</> ",
-                                                font_size="1rem",
-                                                color="rgba(255, 255, 255, 0.5)",
+                                                "03",
+                                                font_size="0.875rem",
+                                                font_weight="600",
+                                                color="rgba(255, 255, 255, 0.3)",
                                             ),
                                             rx.heading(
-                                                "Reliable",
+                                                "Rebalance",
                                                 size="4",
                                                 font_weight="500",
                                                 letter_spacing="0.05em",
@@ -260,78 +466,168 @@ def showcase_section() -> rx.Component:
                                             padding="1.5rem",
                                         ),
                                         rx.box(
-                                            rx.center(
-                                                rx.vstack(
-                                                    rx.heading(
-                                                        "Reliable Performance",
-                                                        size="5",
-                                                        font_weight="600",
-                                                        letter_spacing="-0.02em",
-                                                        margin_bottom="0.75rem",
-                                                    ),
-                                                    rx.text(
-                                                        "99.9% uptime with enterprise-grade infrastructure.",
-                                                        font_size="0.8rem",
-                                                        color="rgba(255, 255, 255, 0.6)",
-                                                        line_height="1.6",
-                                                        text_align="center",
-                                                        margin_bottom="1.5rem",
-                                                    ),
-                                                    rx.hstack(
-                                                        rx.vstack(
+                                            rx.vstack(
+                                                # Portfolio allocation
+                                                rx.box(
+                                                    rx.vstack(
+                                                        rx.hstack(
                                                             rx.text(
-                                                                "99.9%",
-                                                                font_size="1.75rem",
-                                                                font_weight="700",
-                                                                color="#7C3AED",
+                                                                "Current Portfolio",
+                                                                font_size="0.75rem",
+                                                                color="rgba(255, 255, 255, 0.5)",
                                                             ),
-                                                            rx.text(
-                                                                "Uptime",
-                                                                font_size="0.7rem",
-                                                                color="rgba(255, 255, 255, 0.4)",
+                                                            _skeleton(
+                                                                width="4.5rem",
+                                                                height="1rem",
+                                                                opacity=0.18,
                                                             ),
-                                                            spacing="1",
-                                                            align="center",
+                                                            spacing="2",
+                                                            justify="between",
+                                                            width="100%",
                                                         ),
-                                                        rx.vstack(
-                                                            rx.text(
-                                                                "<50ms",
-                                                                font_size="1.75rem",
-                                                                font_weight="700",
-                                                                color="#7C3AED",
+                                                        # Progress bars
+                                                        rx.box(
+                                                            rx.hstack(
+                                                                rx.box(
+                                                                    width="45%",
+                                                                    height="100%",
+                                                                    background="rgba(255, 255, 255, 0.3)",
+                                                                    border_radius="0.15rem 0 0 0.15rem",
+                                                                ),
+                                                                rx.box(
+                                                                    width="30%",
+                                                                    height="100%",
+                                                                    background="rgba(255, 255, 255, 0.2)",
+                                                                ),
+                                                                rx.box(
+                                                                    width="25%",
+                                                                    height="100%",
+                                                                    background="rgba(255, 255, 255, 0.15)",
+                                                                    border_radius="0 0.15rem 0.15rem 0",
+                                                                ),
+                                                                spacing="0",
+                                                                width="100%",
+                                                                height="100%",
                                                             ),
-                                                            rx.text(
-                                                                "Latency",
-                                                                font_size="0.7rem",
-                                                                color="rgba(255, 255, 255, 0.4)",
-                                                            ),
-                                                            spacing="1",
-                                                            align="center",
+                                                            width="100%",
+                                                            height="0.75rem",
+                                                            background="rgba(255, 255, 255, 0.05)",
+                                                            border_radius="0.15rem",
+                                                            overflow="hidden",
                                                         ),
-                                                        rx.vstack(
-                                                            rx.text(
-                                                                "24/7",
-                                                                font_size="1.75rem",
-                                                                font_weight="700",
-                                                                color="#7C3AED",
-                                                            ),
-                                                            rx.text(
-                                                                "Support",
-                                                                font_size="0.7rem",
-                                                                color="rgba(255, 255, 255, 0.4)",
-                                                            ),
-                                                            spacing="1",
-                                                            align="center",
-                                                        ),
-                                                        spacing="5",
+                                                        spacing="2",
                                                     ),
-                                                    align="center",
-                                                    spacing="0",
+                                                    width="100%",
+                                                    padding="1rem",
+                                                    background="rgba(255, 255, 255, 0.02)",
+                                                    border="1px solid rgba(255, 255, 255, 0.08)",
+                                                    border_radius="0.75rem",
                                                 ),
+                                                # Rebalance suggestions
+                                                rx.box(
+                                                    rx.vstack(
+                                                        rx.text(
+                                                            "Recommended",
+                                                            font_size="0.75rem",
+                                                            color="rgba(255, 255, 255, 0.5)",
+                                                            margin_bottom="0.5rem",
+                                                        ),
+                                                        rx.hstack(
+                                                            rx.box(
+                                                                rx.text(
+                                                                    "↑",
+                                                                    font_size="1rem",
+                                                                    color="rgba(255, 255, 255, 0.6)",
+                                                                ),
+                                                                width="1.5rem",
+                                                                height="1.5rem",
+                                                                background="rgba(255, 255, 255, 0.08)",
+                                                                border_radius="0.375rem",
+                                                                display="flex",
+                                                                align_items="center",
+                                                                justify_content="center",
+                                                            ),
+                                                            rx.vstack(
+                                                                _skeleton(
+                                                                    width="5rem",
+                                                                    height="0.85rem",
+                                                                    opacity=0.15,
+                                                                ),
+                                                                _skeleton(
+                                                                    width="2rem",
+                                                                    height="0.7rem",
+                                                                    opacity=0.2,
+                                                                ),
+                                                                spacing="1",
+                                                                align="start",
+                                                            ),
+                                                            spacing="2",
+                                                            align="center",
+                                                            width="100%",
+                                                        ),
+                                                        rx.hstack(
+                                                            rx.box(
+                                                                rx.text(
+                                                                    "↓",
+                                                                    font_size="1rem",
+                                                                    color="rgba(255, 255, 255, 0.4)",
+                                                                ),
+                                                                width="1.5rem",
+                                                                height="1.5rem",
+                                                                background="rgba(255, 255, 255, 0.05)",
+                                                                border_radius="0.375rem",
+                                                                display="flex",
+                                                                align_items="center",
+                                                                justify_content="center",
+                                                            ),
+                                                            rx.vstack(
+                                                                _skeleton(
+                                                                    width="6rem",
+                                                                    height="0.85rem",
+                                                                    opacity=0.12,
+                                                                ),
+                                                                _skeleton(
+                                                                    width="1.5rem",
+                                                                    height="0.7rem",
+                                                                    opacity=0.1,
+                                                                ),
+                                                                spacing="1",
+                                                                align="start",
+                                                            ),
+                                                            spacing="2",
+                                                            align="center",
+                                                            width="100%",
+                                                        ),
+                                                        spacing="2",
+                                                    ),
+                                                    width="100%",
+                                                    padding="1rem",
+                                                    background="rgba(255, 255, 255, 0.02)",
+                                                    border="1px solid rgba(255, 255, 255, 0.08)",
+                                                    border_radius="0.75rem",
+                                                ),
+                                                # Daily update badge
+                                                rx.hstack(
+                                                    rx.box(
+                                                        width="0.75rem",
+                                                        height="0.5rem",
+                                                        background="#7C3AED",
+                                                        border_radius="0.1rem",
+                                                        box_shadow="0 0 6px rgba(124, 58, 237, 0.8)",
+                                                    ),
+                                                    _skeleton(
+                                                        width="6rem",
+                                                        height="0.75rem",
+                                                        opacity=0.1,
+                                                    ),
+                                                    spacing="2",
+                                                    align="center",
+                                                    justify="center",
+                                                ),
+                                                spacing="3",
                                                 width="100%",
-                                                height="100%",
                                             ),
-                                            padding="1.75rem",
+                                            padding="1.5rem",
                                         ),
                                         width="100%",
                                         height="100%",
