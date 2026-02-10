@@ -166,11 +166,11 @@ const TransparencyCard = ({ className = "", style = {} }) => {
         resetTilt();
       }}
     >
-      {/* Background overlay – fades on hover */}
+      {/* Background overlay – partially transparent by default, fades more on hover */}
       <motion.div
         style={bgOverlay}
         animate={{
-          opacity: isHovered ? 0.12 : 1,
+          opacity: isHovered ? 0.12 : 0.55,
         }}
         transition={{ duration: 0.55, ease: [0.25, 0.4, 0.4, 1] }}
       />
@@ -244,8 +244,10 @@ const TransparencyCard = ({ className = "", style = {} }) => {
             marginBottom: "0.75rem",
           }}
           animate={{
-            opacity: isHovered ? 0.95 : 0,
-            color: "rgba(255, 255, 255, 0.85)",
+            opacity: isHovered ? 0.95 : 0.55,
+            color: isHovered
+              ? "rgba(255, 255, 255, 0.85)"
+              : "rgba(255, 255, 255, 0.5)",
           }}
           transition={{ duration: 0.55, ease: [0.25, 0.4, 0.4, 1] }}
         >
@@ -318,8 +320,8 @@ const FocusedCard = ({ className = "", style = {} }) => {
             <motion.span
               style={{ color: "rgba(255,255,255,0.25)" }}
               animate={{
-                filter: isHovered ? "blur(2.5px)" : "blur(0px)",
-                opacity: isHovered ? 0.15 : 0.65,
+                filter: isHovered ? "blur(2.5px)" : "blur(1px)",
+                opacity: isHovered ? 0.15 : 0.35,
               }}
               transition={{ duration: 0.45 }}
             >
@@ -327,7 +329,7 @@ const FocusedCard = ({ className = "", style = {} }) => {
               screening · Benchmark comparison ·{" "}
             </motion.span>
 
-            {/* KEY PHRASE – same color at rest, glows on hover */}
+            {/* KEY PHRASE – visible by default, glows brighter on hover */}
             <motion.span
               style={{
                 fontWeight: 500,
@@ -339,10 +341,10 @@ const FocusedCard = ({ className = "", style = {} }) => {
               animate={{
                 color: isHovered
                   ? "rgba(255, 255, 255, 0.95)"
-                  : "rgba(255, 255, 255, 0.25)",
+                  : "rgba(255, 255, 255, 0.65)",
                 textShadow: isHovered
                   ? "0 0 20px rgba(255, 255, 255, 0.4), 0 0 40px rgba(255, 255, 255, 0.15)"
-                  : "none",
+                  : "0 0 10px rgba(255, 255, 255, 0.1)",
               }}
               transition={{ duration: 0.35, delay: isHovered ? 0.08 : 0 }}
             >
@@ -353,8 +355,8 @@ const FocusedCard = ({ className = "", style = {} }) => {
             <motion.span
               style={{ color: "rgba(255,255,255,0.25)" }}
               animate={{
-                filter: isHovered ? "blur(2.5px)" : "blur(0px)",
-                opacity: isHovered ? 0.15 : 0.65,
+                filter: isHovered ? "blur(2.5px)" : "blur(1px)",
+                opacity: isHovered ? 0.15 : 0.35,
               }}
               transition={{ duration: 0.45 }}
             >
@@ -397,7 +399,7 @@ const ConcisenessCard = ({ className = "", style = {} }) => {
       <div style={bgOverlay} />
       <CursorBorderGlow mousePos={mousePos} isHovered={isHovered} />
 
-      {/* Mini scrollbar track */}
+      {/* Mini scrollbar track – partially scrolled by default */}
       <div
         style={{
           position: "absolute",
@@ -419,10 +421,10 @@ const ConcisenessCard = ({ className = "", style = {} }) => {
             borderRadius: "1.5px",
           }}
           animate={{
-            y: isHovered ? "233%" : 0,
+            y: isHovered ? "233%" : "100%",
             background: isHovered
               ? "rgba(124, 58, 237, 0.4)"
-              : "rgba(255, 255, 255, 0.15)",
+              : "rgba(255, 255, 255, 0.2)",
           }}
           transition={{ duration: 0.55, ease: [0.25, 0.4, 0.4, 1] }}
         />
@@ -451,28 +453,28 @@ const ConcisenessCard = ({ className = "", style = {} }) => {
         {/* Flexible spacer */}
         <div style={{ flex: 1 }} />
 
-        {/* Bottom: heading + text that slides */}
+        {/* Bottom: heading with subtext, scrolls up on hover */}
         <motion.div
-          animate={{ y: isHovered ? -8 : 24 }}
+          animate={{ y: isHovered ? -8 : 0 }}
           transition={{ duration: 0.55, ease: [0.25, 0.4, 0.4, 1] }}
         >
-          <h3 style={{ ...headingStyle, marginBottom: "0.5rem" }}>
-            Conciseness
-          </h3>
           <motion.p
-            style={subtextStyle}
+            style={{
+              ...subtextStyle,
+              textAlign: "right",
+              marginBottom: "0.75rem",
+            }}
             animate={{
-              opacity: isHovered ? 1 : 0,
-              y: isHovered ? 0 : 8,
+              opacity: isHovered ? 0.95 : 0.55,
+              color: isHovered
+                ? "rgba(255, 255, 255, 0.85)"
+                : "rgba(255, 255, 255, 0.5)",
             }}
-            transition={{
-              duration: 0.35,
-              delay: isHovered ? 0.2 : 0,
-              ease: "easeOut",
-            }}
+            transition={{ duration: 0.55, ease: [0.25, 0.4, 0.4, 1] }}
           >
-            All within a single scroll.
+            Everything within a single scroll.
           </motion.p>
+          <h3 style={headingStyle}>Conciseness</h3>
         </motion.div>
       </div>
     </motion.div>
@@ -509,7 +511,7 @@ const VerifyItem = ({ label, hoverLabel, delay, isHovered }) => (
         flexShrink: 0,
       }}
     >
-      {/* Default circle */}
+      {/* Default circle – hidden by default (checkmarks shown instead) */}
       <motion.div
         style={{
           position: "absolute",
@@ -518,13 +520,13 @@ const VerifyItem = ({ label, hoverLabel, delay, isHovered }) => (
           border: "1.5px solid rgba(255, 255, 255, 0.12)",
         }}
         animate={{
-          opacity: isHovered ? 0 : 1,
-          scale: isHovered ? 0.5 : 1,
+          opacity: 0,
+          scale: 0.5,
         }}
-        transition={{ duration: 0.2, delay: isHovered ? delay : 0 }}
+        transition={{ duration: 0.2 }}
       />
 
-      {/* Checkmark SVG */}
+      {/* Checkmark SVG – visible by default, brightens on hover */}
       <motion.svg
         width="16"
         height="16"
@@ -538,21 +540,21 @@ const VerifyItem = ({ label, hoverLabel, delay, isHovered }) => (
         <motion.path
           d="M5 12l5 5L20 7"
           stroke="#4ade80"
-          initial={{ pathLength: 0, opacity: 0 }}
+          initial={{ pathLength: 1, opacity: 0.5 }}
           animate={{
-            pathLength: isHovered ? 1 : 0,
-            opacity: isHovered ? 1 : 0,
+            pathLength: 1,
+            opacity: isHovered ? 1 : 0.5,
           }}
           transition={{
             duration: 0.35,
-            delay: isHovered ? delay + 0.1 : 0,
+            delay: isHovered ? delay * 0.5 : 0,
             ease: "easeOut",
           }}
         />
       </motion.svg>
     </div>
 
-    {/* Label */}
+    {/* Label – visible by default, brightens on hover */}
     <div style={{ position: "relative", display: "inline-flex" }}>
       <motion.span
         style={{
@@ -562,7 +564,7 @@ const VerifyItem = ({ label, hoverLabel, delay, isHovered }) => (
         animate={{
           color: isHovered
             ? "rgba(255, 255, 255, 0.7)"
-            : "rgba(255, 255, 255, 0.2)",
+            : "rgba(255, 255, 255, 0.4)",
           opacity: hoverLabel && isHovered ? 0 : 1,
         }}
         transition={{ duration: 0.3, delay: isHovered ? delay : 0 }}
@@ -581,7 +583,7 @@ const VerifyItem = ({ label, hoverLabel, delay, isHovered }) => (
           animate={{
             color: isHovered
               ? "rgba(255, 255, 255, 0.7)"
-              : "rgba(255, 255, 255, 0.2)",
+              : "rgba(255, 255, 255, 0.4)",
             opacity: isHovered ? 1 : 0,
           }}
           transition={{ duration: 0.3, delay: isHovered ? delay : 0 }}
@@ -682,8 +684,10 @@ const ConceptBadge = ({ text, top, left, delay, isHovered }) => (
       position: "absolute",
       top,
       left,
-      background: "rgba(124, 58, 237, 0.1)",
-      border: "1px solid rgba(124, 58, 237, 0.18)",
+      background: isHovered
+        ? "rgba(124, 58, 237, 0.15)"
+        : "rgba(124, 58, 237, 0.06)",
+      border: `1px solid ${isHovered ? "rgba(124, 58, 237, 0.25)" : "rgba(124, 58, 237, 0.1)"}`,
       borderRadius: "0.5rem",
       padding: "0.2rem 0.65rem",
       fontSize: "0.68rem",
@@ -694,13 +698,13 @@ const ConceptBadge = ({ text, top, left, delay, isHovered }) => (
       pointerEvents: "none",
     }}
     animate={{
-      opacity: isHovered ? 1 : 0,
-      y: isHovered ? 0 : 8,
-      scale: isHovered ? 1 : 0.9,
+      opacity: isHovered ? 1 : 0.5,
+      y: 0,
+      scale: isHovered ? 1.05 : 1,
     }}
     transition={{
       duration: 0.35,
-      delay: isHovered ? delay : 0,
+      delay: isHovered ? delay * 0.5 : 0,
       ease: "easeOut",
     }}
   >
@@ -754,7 +758,7 @@ const InstructivenessCard = ({ className = "", style = {} }) => {
           pointerEvents: "none",
           zIndex: 0,
         }}
-        animate={{ opacity: isHovered ? 1 : 0, scale: isHovered ? 1.2 : 0.8 }}
+        animate={{ opacity: isHovered ? 1 : 0.4, scale: isHovered ? 1.2 : 1 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
       />
 
@@ -781,8 +785,8 @@ const InstructivenessCard = ({ className = "", style = {} }) => {
             style={{ ...subtextStyle, marginBottom: "0.25rem" }}
             animate={{
               color: isHovered
-                ? "rgba(255, 255, 255, 0.55)"
-                : "rgba(255, 255, 255, 0.3)",
+                ? "rgba(255, 255, 255, 0.65)"
+                : "rgba(255, 255, 255, 0.4)",
             }}
             transition={{ duration: 0.4, delay: isHovered ? 0.15 : 0 }}
           >
