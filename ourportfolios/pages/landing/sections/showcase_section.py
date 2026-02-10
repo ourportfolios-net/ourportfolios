@@ -87,23 +87,34 @@ def showcase_section() -> rx.Component:
                                 # Card 1: Framework Selection
                                 card(
                                     rx.box(
-                                        rx.hstack(
+                                        rx.vstack(
+                                            rx.hstack(
+                                                rx.text(
+                                                    "01",
+                                                    font_size="0.875rem",
+                                                    font_weight="600",
+                                                    color="rgba(255, 255, 255, 0.3)",
+                                                ),
+                                                rx.heading(
+                                                    "Select a Framework",
+                                                    size="4",
+                                                    font_weight="500",
+                                                    letter_spacing="0.05em",
+                                                    text_transform="uppercase",
+                                                ),
+                                                spacing="3",
+                                                align="center",
+                                            ),
                                             rx.text(
-                                                "01",
+                                                "Choose your investment strategy",
                                                 font_size="0.875rem",
-                                                font_weight="600",
-                                                color="rgba(255, 255, 255, 0.3)",
+                                                color="rgba(255, 255, 255, 0.5)",
+                                                font_weight="300",
                                             ),
-                                            rx.heading(
-                                                "Select a Framework",
-                                                size="4",
-                                                font_weight="500",
-                                                letter_spacing="0.05em",
-                                                text_transform="uppercase",
-                                            ),
-                                            spacing="3",
-                                            align="center",
+                                            spacing="1",
+                                            align="start",
                                             padding="1.5rem",
+                                            width="100%",
                                         ),
                                         rx.box(
                                             rx.center(
@@ -223,23 +234,34 @@ def showcase_section() -> rx.Component:
                                 # Card 2: Ticker Analysis
                                 card(
                                     rx.box(
-                                        rx.hstack(
+                                        rx.vstack(
+                                            rx.hstack(
+                                                rx.text(
+                                                    "02",
+                                                    font_size="0.875rem",
+                                                    font_weight="600",
+                                                    color="rgba(255, 255, 255, 0.3)",
+                                                ),
+                                                rx.heading(
+                                                    "Analyze",
+                                                    size="4",
+                                                    font_weight="500",
+                                                    letter_spacing="0.05em",
+                                                    text_transform="uppercase",
+                                                ),
+                                                spacing="3",
+                                                align="center",
+                                            ),
                                             rx.text(
-                                                "02",
+                                                "Review key metrics and performance",
                                                 font_size="0.875rem",
-                                                font_weight="600",
-                                                color="rgba(255, 255, 255, 0.3)",
+                                                color="rgba(255, 255, 255, 0.5)",
+                                                font_weight="300",
                                             ),
-                                            rx.heading(
-                                                "Analyze",
-                                                size="4",
-                                                font_weight="500",
-                                                letter_spacing="0.05em",
-                                                text_transform="uppercase",
-                                            ),
-                                            spacing="3",
-                                            align="center",
+                                            spacing="1",
+                                            align="start",
                                             padding="1.5rem",
+                                            width="100%",
                                         ),
                                         rx.box(
                                             rx.vstack(
@@ -447,23 +469,34 @@ def showcase_section() -> rx.Component:
                                 # Card 3: Portfolio Rebalancing
                                 card(
                                     rx.box(
-                                        rx.hstack(
+                                        rx.vstack(
+                                            rx.hstack(
+                                                rx.text(
+                                                    "03",
+                                                    font_size="0.875rem",
+                                                    font_weight="600",
+                                                    color="rgba(255, 255, 255, 0.3)",
+                                                ),
+                                                rx.heading(
+                                                    "Rebalance",
+                                                    size="4",
+                                                    font_weight="500",
+                                                    letter_spacing="0.05em",
+                                                    text_transform="uppercase",
+                                                ),
+                                                spacing="3",
+                                                align="center",
+                                            ),
                                             rx.text(
-                                                "03",
+                                                "Optimize your portfolio allocation",
                                                 font_size="0.875rem",
-                                                font_weight="600",
-                                                color="rgba(255, 255, 255, 0.3)",
+                                                color="rgba(255, 255, 255, 0.5)",
+                                                font_weight="300",
                                             ),
-                                            rx.heading(
-                                                "Rebalance",
-                                                size="4",
-                                                font_weight="500",
-                                                letter_spacing="0.05em",
-                                                text_transform="uppercase",
-                                            ),
-                                            spacing="3",
-                                            align="center",
+                                            spacing="1",
+                                            align="start",
                                             padding="1.5rem",
+                                            width="100%",
                                         ),
                                         rx.box(
                                             rx.vstack(
