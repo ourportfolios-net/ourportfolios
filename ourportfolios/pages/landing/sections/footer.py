@@ -31,7 +31,7 @@ def footer() -> rx.Component:
                         text_transform="uppercase",
                         color="rgba(255, 255, 255, 0.4)",
                         _hover={"color": "white"},
-                        transition="color 0.2s",
+                        transition="color 0.1s",
                         is_external=True,
                     ),
                     spacing="7",
