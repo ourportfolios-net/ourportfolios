@@ -51,7 +51,7 @@ def hero_section() -> rx.Component:
                         yoyo=False,
                         delay=3,
                         font_size=["2.5rem", "3rem", "3.5rem", "4rem"],
-                        font_weight="450",
+                        font_weight="550",
                         line_height="1.1",
                         letter_spacing="-0.02em",
                     ),

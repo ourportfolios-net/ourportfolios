@@ -24,6 +24,7 @@ def navbar() -> rx.Component:
                     color="rgba(255, 255, 255, 0.5)",
                     text_decoration="none",
                     _hover={"color": "white"},
+                    transition="color 0.2s",
                 ),
                 rx.link(
                     "Portfolio",
@@ -33,6 +34,7 @@ def navbar() -> rx.Component:
                     color="rgba(255, 255, 255, 0.5)",
                     text_decoration="none",
                     _hover={"color": "white"},
+                    transition="color 0.2s",
                 ),
                 rx.link(
                     "Compare",
@@ -42,6 +44,7 @@ def navbar() -> rx.Component:
                     color="rgba(255, 255, 255, 0.5)",
                     text_decoration="none",
                     _hover={"color": "white"},
+                    transition="color 0.2s",
                 ),
                 rx.link(
                     "Settings",
@@ -51,6 +54,7 @@ def navbar() -> rx.Component:
                     color="rgba(255, 255, 255, 0.5)",
                     text_decoration="none",
                     _hover={"color": "white"},
+                    transition="color 0.2s",
                 ),
                 spacing="6",
                 align="center",
