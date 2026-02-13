@@ -2,6 +2,17 @@
 
 <!-- version list -->
 
+## v0.8.0 (2026-02-13)
+
+### Features
+
+- **bento**: Center section
+  ([`e24d0f9`](https://github.com/ourportfolios-net/ourportfolios/commit/e24d0f9531bfd8229bb4162c9ce31399edc4cd41))
+
+- **search-bar**: Redesign to retain consistency of other dropdowns
+  ([`80045e5`](https://github.com/ourportfolios-net/ourportfolios/commit/80045e56ec159e4b3d198f9a05be7eeb8650e8e4))
+
+
 ## v0.7.0 (2026-01-22)
 
 ### Chores
