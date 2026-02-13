@@ -136,4 +136,9 @@ def index() -> rx.Component:
             spacing="0",
         ),
         on_unmount=State.on_unmount,
+        background="#090909",
+        color="white",
+        min_height="100vh",
+        width="100%",
+        overflow_x="hidden",
     )

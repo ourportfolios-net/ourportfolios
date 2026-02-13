@@ -142,4 +142,9 @@ def index() -> rx.Component:
             ),
         ),
         on_unmount=FrameworkState.on_unmount,
+        background="#090909",
+        color="white",
+        min_height="100vh",
+        width="100%",
+        overflow_x="hidden",
     )

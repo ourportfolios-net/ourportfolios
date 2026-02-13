@@ -2,211 +2,44 @@
 
 import reflex as rx
 
-from ..components import scroll_reveal, magic_bento_card, shiny_text
+from ..components import scroll_reveal, shiny_text
+from ..components.bento_cards import (
+    transparency_card,
+    focused_card,
+    conciseness_card,
+    reliability_card,
+    instructiveness_card,
+)
 
 
 def bento_section() -> rx.Component:
-    """Bento grid section with feature cards."""
+    """Bento grid section with interactive feature cards."""
     return rx.center(
         rx.hstack(
             scroll_reveal(
                 rx.box(
-                    magic_bento_card(
-                        rx.vstack(
-                            rx.box(
-                                rx.center(
-                                    rx.icon(
-                                        "layout-dashboard",
-                                        size=22,
-                                        color="rgba(255, 255, 255, 0.5)",
-                                    ),
-                                    width="2.75rem",
-                                    height="2.75rem",
-                                    border_radius="0.875rem",
-                                    background="rgba(255, 255, 255, 0.05)",
-                                ),
-                            ),
-                            rx.spacer(),
-                            rx.vstack(
-                                rx.heading(
-                                    "Overview",
-                                    size="4",
-                                    font_weight="600",
-                                    margin_bottom="0.25rem",
-                                ),
-                                rx.text(
-                                    "Central data console.",
-                                    font_size="0.8rem",
-                                    color="rgba(255, 255, 255, 0.3)",
-                                    line_height="1.4",
-                                ),
-                                spacing="0",
-                            ),
-                            spacing="0",
-                            justify="between",
-                            height="100%",
-                        ),
-                        padding="2rem",
+                    instructiveness_card(
+                        grid_column=["1 / -1", "1 / -1", "1 / 3"],
+                        grid_row="2 / 4",
+                    ),
+                    transparency_card(
+                        width="14rem",
+                        grid_column=["1 / -1", "1 / -1", "3 / 4"],
+                        grid_row="1 / 3",
+                    ),
+                    reliability_card(
                         width="14rem",
                         height="14rem",
                         grid_column=["1 / -1", "1 / -1", "1 / 2"],
                         grid_row="1 / 2",
                     ),
-                    magic_bento_card(
-                        rx.vstack(
-                            rx.box(
-                                rx.center(
-                                    rx.icon(
-                                        "zap", size=22, color="rgba(255, 255, 255, 0.5)"
-                                    ),
-                                    width="2.75rem",
-                                    height="2.75rem",
-                                    border_radius="0.875rem",
-                                    background="rgba(255, 255, 255, 0.05)",
-                                ),
-                            ),
-                            rx.spacer(),
-                            rx.vstack(
-                                rx.heading(
-                                    "Automation",
-                                    size="4",
-                                    font_weight="600",
-                                    margin_bottom="0.25rem",
-                                ),
-                                rx.text(
-                                    "Streamline every workflow.",
-                                    font_size="0.8rem",
-                                    color="rgba(255, 255, 255, 0.3)",
-                                    line_height="1.4",
-                                ),
-                                spacing="0",
-                            ),
-                            spacing="0",
-                            justify="between",
-                            height="100%",
-                        ),
-                        padding="2rem",
+                    conciseness_card(
                         width="14rem",
                         height="14rem",
                         grid_column=["1 / -1", "1 / -1", "2 / 3"],
                         grid_row="1 / 2",
                     ),
-                    magic_bento_card(
-                        rx.vstack(
-                            rx.box(
-                                rx.center(
-                                    rx.icon(
-                                        "bar-chart-3",
-                                        size=22,
-                                        color="rgba(255, 255, 255, 0.5)",
-                                    ),
-                                    width="2.75rem",
-                                    height="2.75rem",
-                                    border_radius="0.875rem",
-                                    background="rgba(255, 255, 255, 0.05)",
-                                ),
-                            ),
-                            rx.spacer(),
-                            rx.vstack(
-                                rx.heading(
-                                    "Analytics",
-                                    size="4",
-                                    font_weight="600",
-                                    margin_bottom="0.25rem",
-                                ),
-                                rx.text(
-                                    "Insights with pixel precision.",
-                                    font_size="0.8rem",
-                                    color="rgba(255, 255, 255, 0.3)",
-                                    line_height="1.4",
-                                ),
-                                spacing="0",
-                                align="start",
-                            ),
-                            spacing="0",
-                            justify="between",
-                            height="100%",
-                        ),
-                        padding="2rem",
-                        grid_column=["1 / -1", "1 / -1", "1 / 3"],
-                        grid_row="2 / 4",
-                    ),
-                    magic_bento_card(
-                        rx.vstack(
-                            rx.box(
-                                rx.center(
-                                    rx.icon(
-                                        "users",
-                                        size=22,
-                                        color="rgba(255, 255, 255, 0.5)",
-                                    ),
-                                    width="2.75rem",
-                                    height="2.75rem",
-                                    border_radius="0.875rem",
-                                    background="rgba(255, 255, 255, 0.05)",
-                                ),
-                            ),
-                            rx.spacer(),
-                            rx.vstack(
-                                rx.heading(
-                                    "Collaboration",
-                                    size="4",
-                                    font_weight="600",
-                                    margin_bottom="0.5rem",
-                                ),
-                                rx.text(
-                                    "Seamless teamwork across global borders.",
-                                    font_size="0.8rem",
-                                    color="rgba(255, 255, 255, 0.3)",
-                                    line_height="1.4",
-                                ),
-                                spacing="0",
-                            ),
-                            spacing="0",
-                            align="start",
-                            height="100%",
-                        ),
-                        padding="2rem",
-                        width="14rem",
-                        grid_column=["1 / -1", "1 / -1", "3 / 4"],
-                        grid_row="1 / 3",
-                    ),
-                    magic_bento_card(
-                        rx.vstack(
-                            rx.box(
-                                rx.center(
-                                    rx.icon(
-                                        "shield",
-                                        size=22,
-                                        color="rgba(255, 255, 255, 0.5)",
-                                    ),
-                                    width="2.75rem",
-                                    height="2.75rem",
-                                    border_radius="0.875rem",
-                                    background="rgba(255, 255, 255, 0.05)",
-                                ),
-                            ),
-                            rx.spacer(),
-                            rx.vstack(
-                                rx.heading(
-                                    "Security",
-                                    size="4",
-                                    font_weight="600",
-                                    margin_bottom="0.25rem",
-                                ),
-                                rx.text(
-                                    "Enterprise encryption.",
-                                    font_size="0.8rem",
-                                    color="rgba(255, 255, 255, 0.3)",
-                                    line_height="1.4",
-                                ),
-                                spacing="0",
-                            ),
-                            spacing="0",
-                            justify="between",
-                            height="100%",
-                        ),
-                        padding="2rem",
+                    focused_card(
                         width="14rem",
                         height="14rem",
                         grid_column=["1 / -1", "1 / -1", "3 / 4"],
@@ -228,7 +61,7 @@ def bento_section() -> rx.Component:
             scroll_reveal(
                 rx.vstack(
                     shiny_text(
-                        text="The Magic Bento",
+                        text="ourleverage",
                         speed=3,
                         color="rgba(255, 255, 255, 0.75)",
                         shine_color="rgba(255, 255, 255, 1)",
@@ -240,18 +73,18 @@ def bento_section() -> rx.Component:
                         font_weight="600",
                         line_height="1.2",
                         letter_spacing="-0.02em",
-                        text_align="right",
+                        text_align=["center", "center", "right"],
                     ),
                     rx.text(
-                        "Tools for the modern investor.",
+                        "Experience our core values.",
                         font_size="1.125rem",
                         color="rgba(255, 255, 255, 0.4)",
                         font_weight="300",
                         line_height="1.5",
-                        text_align="right",
-                        margin_top="2rem",
+                        text_align=["center", "center", "right"],
+                        margin_top="0.5rem",
                     ),
-                    align="end",
+                    align="center",
                     max_width="28rem",
                     min_width="28rem",
                 ),
@@ -260,8 +93,8 @@ def bento_section() -> rx.Component:
             align="center",
             justify="center",
             gap="3rem",
-            width="fit-content",
-            margin_left="2.5rem",
+            width=["100%", "100%", "fit-content"],
+            margin_left="0",
             padding_x="2.5rem",
             flex_direction=["column", "column", "row"],
         ),
@@ -269,5 +102,5 @@ def bento_section() -> rx.Component:
         padding_y="4rem",
         padding_x="2rem",
         display="flex",
-        justify_content="flex-start",
+        justify_content="center",
     )

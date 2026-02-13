@@ -2,7 +2,7 @@
 
 import reflex as rx
 from ..state import FinancialStatementState
-from .dialog import common_dialog
+from .common_dialog import common_dialog
 
 titles = ["Income\nStatement", "Balance\nSheet", "Cash\nFlow"]
 

@@ -12,7 +12,7 @@ def cta_section() -> rx.Component:
             rx.box(
                 rx.vstack(
                     rx.heading(
-                        "Ready to build the future?",
+                        "Ready to build ourportfolios?",
                         size="8",
                         font_weight="600",
                         letter_spacing="-0.02em",

@@ -3,7 +3,7 @@
 import reflex as rx
 
 from .state import FrameworkState
-from ...components.dialog import common_dialog
+from ...components.common_dialog import common_dialog
 
 
 def metric_item(metric: dict, index: int):
@@ -112,7 +112,7 @@ def add_metric_selector():
         spacing="4",
         width="100%",
     )
-    
+
     return common_dialog(
         content=content,
         is_open=FrameworkState.show_add_metric_dialog,
@@ -308,7 +308,7 @@ def add_framework_dialog():
         height="100%",
         justify="between",
     )
-    
+
     return common_dialog(
         content=content,
         is_open=FrameworkState.show_add_dialog,

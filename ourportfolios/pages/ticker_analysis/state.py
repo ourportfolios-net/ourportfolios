@@ -1,30 +1,4 @@
-"""State management for ticker analysis page.
-
-INSTANT SKELETON FIX - NO DATA FLASH:
-======================================
-
-The key insight: We need SYNCHRONOUS checks in the render cycle to detect
-ticker mismatches and force skeletons IMMEDIATELY, before any async operations.
-
-SOLUTION:
----------
-1. Track which ticker the current data belongs to: `_data_ticker`
-2. Create computed vars (rx.var) that check: current ticker == _data_ticker?
-3. If mismatch, these vars return True to show skeletons INSTANTLY
-4. This happens synchronously during render, preventing any flash
-
-FLOW:
------
-1. User clicks ticker "XYZ" (was on "ABC")
-2. Router updates: ticker = "XYZ"
-3. RENDER CYCLE STARTS
-4. Computed vars see: ticker="XYZ" != _data_ticker="ABC"
-5. should_show_skeleton_company returns True INSTANTLY
-6. Skeleton renders (no old data shown!)
-7. on_mount() fires, auto_load_data() starts
-8. Data loads, _data_ticker updated to "XYZ"
-9. Next render shows real data
-"""
+"""State management for ticker analysis page."""
 
 import asyncio
 import pandas as pd
@@ -53,6 +27,7 @@ class State(SessionIsolatedStateMixin, rx.State):
     _data_ticker: str = ""
 
     # Actual loading flags (set by async operations)
+    profile_dialog_open: bool = False
     _is_loading_company: bool = True
     _is_loading_financial: bool = True
     _is_loading_price: bool = True

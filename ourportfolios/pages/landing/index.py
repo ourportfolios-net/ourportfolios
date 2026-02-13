@@ -37,7 +37,7 @@ def index() -> rx.Component:
         cta_section(),
         footer(),
         on_unmount=LandingState.on_unmount,
-        background="#050505",
+        background="#090909",
         color="white",
         min_height="100vh",
         width="100%",

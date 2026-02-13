@@ -2,30 +2,31 @@
 
 import reflex as rx
 
+from ...components.cards import glass_card
 from ...state.framework_state import GlobalFrameworkState
 from .state import State
 
 
 def performance_card_skeleton():
     """Skeleton for a single performance chart card"""
-    return rx.card(
+    return glass_card(
         rx.vstack(
             rx.hstack(
-                rx.skeleton(height="1.5rem", width="8rem"),
+                rx.skeleton(height="1.5rem", width="8rem", border_radius="14px"),
                 rx.spacer(),
-                rx.skeleton(height="2rem", width="10rem", border_radius="6px"),
+                rx.skeleton(height="2rem", width="10rem", border_radius="14px"),
                 align="center",
                 justify="between",
                 width="100%",
             ),
-            rx.skeleton(height="250px", width="100%"),
+            rx.skeleton(height="250px", width="100%", border_radius="14px"),
             spacing="2",
             align="stretch",
             height="100%",
         ),
         width="100%",
         height="100%",
-        style={"padding": "0.75em"},
+        padding="0.75em",
     )
 
 
@@ -36,7 +37,7 @@ def create_dynamic_chart(category: str):
     return rx.cond(
         has_no_chart_data,
         performance_card_skeleton(),
-        rx.card(
+        glass_card(
             rx.vstack(
                 rx.hstack(
                     rx.heading(category, size="4", weight="medium"),
@@ -50,6 +51,7 @@ def create_dynamic_chart(category: str):
                                 category, value
                             ),
                             size="1",
+                            style={"border_radius": "14px"},
                         ),
                         rx.text("No metrics", size="1", color="gray"),
                     ),
@@ -92,7 +94,7 @@ def create_dynamic_chart(category: str):
             ),
             width="100%",
             height="100%",
-            style={"padding": "0.75em"},
+            padding="0.75em",
         ),
     )
 
@@ -153,6 +155,7 @@ def performance_cards():
             grid_template_columns="repeat(3, 1fr)",
             gap="1rem",
             width="100%",
+            style={"min_width": "0"},
         ),
         # Show actual content when loaded
         rx.vstack(
@@ -202,6 +205,7 @@ def performance_cards():
                 width="100%",
                 max_height="70vh",
                 overflow="visible",
+                style={"min_width": "0"},
             ),
             spacing="3",
             width="100%",
