@@ -18,9 +18,7 @@ def _nav_link(label: str, href: str) -> rx.Component:
     )
 
 
-def _dropdown_item(
-    icon: str, label: str, description: str, href: str
-) -> rx.Component:
+def _dropdown_item(icon: str, label: str, description: str, href: str) -> rx.Component:
     """A single item inside a hover dropdown panel."""
     return rx.link(
         rx.hstack(
@@ -85,7 +83,7 @@ def _nav_dropdown(label: str, content: rx.Component) -> rx.Component:
             content,
             side="bottom",
             align="start",
-            side_offset=24,
+            side_offset=32,
             overflow="visible",
             background="rgba(17, 17, 19, 0.95)",
             backdrop_filter="blur(24px)",
@@ -100,7 +98,6 @@ def _nav_dropdown(label: str, content: rx.Component) -> rx.Component:
 
 
 def _analyze_dropdown() -> rx.Component:
-    """Dropdown content for the Analyze nav item."""
     return rx.vstack(
         _dropdown_item(
             icon="line-chart",
@@ -120,37 +117,16 @@ def _analyze_dropdown() -> rx.Component:
             description="Side-by-side ticker comparison",
             href="/analyze/compare",
         ),
-        rx.separator(
-            color_scheme="gray",
-            opacity="0.3",
-            margin_y="4px",
-        ),
-        rx.vstack(
-            rx.text(
-                "Tickers",
-                font_size="12px",
-                font_weight="500",
-                color="rgba(255, 255, 255, 0.35)",
-                text_transform="uppercase",
-                letter_spacing="0.05em",
-                padding_x="12px",
-            ),
-            search_bar(),
-            spacing="2",
-            width="100%",
-            padding_bottom="4px",
-        ),
         spacing="1",
         width="280px",
     )
 
 
 def _about_dropdown() -> rx.Component:
-    """Dropdown content for the About nav item."""
     return rx.vstack(
         _dropdown_item(
             icon="users",
-            label="Our Team",
+            label="ourteam",
             description="Meet the people behind ourportfolios",
             href="/about/team",
         ),
@@ -177,13 +153,14 @@ def navbar() -> rx.Component:
                     letter_spacing="-0.02em",
                     user_select="none",
                 ),
-                _nav_dropdown("Analyze", _analyze_dropdown()),
                 _nav_link("Frameworks", "/recommend"),
                 _nav_link("Portfolio", "/portfolio-management"),
+                _nav_dropdown("Analyze", _analyze_dropdown()),
                 _nav_dropdown("About", _about_dropdown()),
                 spacing="6",
                 align="center",
             ),
+            search_bar(),
             align="center",
             justify="between",
             width="100%",
