@@ -3,6 +3,7 @@ from ...state.home_state import HomeState
 from .decision_hub import decision_hub_section
 from .market_overview import market_overview_section
 from .ticker_of_day import ticker_of_the_day_card
+from .selected_framework_card import selected_framework_card
 from .cart_glance import cart_glance_panel
 from ...components.navbar import navbar
 
@@ -35,6 +36,8 @@ def index() -> rx.Component:
                     rx.vstack(
                         # Ticker of the Day card
                         ticker_of_the_day_card(),
+                        # Selected Framework card
+                        selected_framework_card(),
                         # Comparison Cart panel
                         cart_glance_panel(),
                         spacing="5",
