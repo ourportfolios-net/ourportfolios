@@ -218,25 +218,23 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
             if not self.is_mounted():
                 return
 
-        # Load scopes without nesting async with self
-        await self.load_scopes()
+            # Load scopes and frameworks within the same async context
+            await self.load_scopes()
 
-        async with self:
             if not self.is_mounted():
                 return
 
             if self.scopes:
                 first_scope = self.scopes[0]["value"]
+                self.active_scope = first_scope
 
-        # Change scope without nesting
-        await self.change_scope(first_scope)
+            # Load frameworks for the selected scope
+            await self.load_frameworks()
 
-    @rx.event
     @session_isolated
     async def load_scopes(self):
-        """Load available scopes - NO nested async with self blocks"""
-        async with self:
-            self.loading_scopes = True
+        """Load available scopes - internal method, assumes state is already mutable"""
+        self.loading_scopes = True
 
         try:
             # Set scopes directly
@@ -245,20 +243,17 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
                 {"value": "technical", "title": "Technical"},
             ]
 
-            async with self:
-                self.scopes = scopes_data
-                if self.scopes and not self.active_scope:
-                    self.active_scope = self.scopes[0]["value"]
+            self.scopes = scopes_data
+            if self.scopes and not self.active_scope:
+                self.active_scope = self.scopes[0]["value"]
 
         except Exception:
-            async with self:
-                self.scopes = [
-                    {"value": "fundamental", "title": "Fundamental"},
-                    {"value": "technical", "title": "Technical"},
-                ]
+            self.scopes = [
+                {"value": "fundamental", "title": "Fundamental"},
+                {"value": "technical", "title": "Technical"},
+            ]
         finally:
-            async with self:
-                self.loading_scopes = False
+            self.loading_scopes = False
 
     @rx.event
     @session_isolated
@@ -266,17 +261,14 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
         """Change active scope and load frameworks"""
         async with self:
             self.active_scope = scope
+            # Call load_frameworks while state is still mutable
+            await self.load_frameworks()
 
-        # Load frameworks without nesting
-        await self.load_frameworks()
-
-    @rx.event
     @session_isolated
     async def load_frameworks(self):
-        """Load frameworks for current scope - NO nested async with self blocks"""
-        async with self:
-            self.loading_frameworks = True
-            active_scope = self.active_scope
+        """Load frameworks for current scope - internal method, assumes state is already mutable"""
+        self.loading_frameworks = True
+        active_scope = self.active_scope
 
         try:
             async with get_company_session() as session:
@@ -302,14 +294,11 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
                 result = await session.execute(query, {"scope": active_scope})
                 frameworks = result.mappings().all()
 
-            async with self:
-                self.frameworks = [dict(row) for row in frameworks]
+            self.frameworks = [dict(row) for row in frameworks]
         except Exception:
-            async with self:
-                self.frameworks = []
+            self.frameworks = []
         finally:
-            async with self:
-                self.loading_frameworks = False
+            self.loading_frameworks = False
 
     @rx.event
     def show_framework_dialog(self, framework: dict):
@@ -367,57 +356,56 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
             source_url = self.form_source_url if self.form_source_url else None
             metrics = list(self.form_metrics)
 
-        try:
-            async with get_company_session() as session:
-                framework_query = text("""
-                    INSERT INTO frameworks.frameworks_df 
-                    (title, description, author, complexity, scope, industry, source_name, source_url)
-                    VALUES (:title, :description, :author, :complexity, :scope, :industry, :source_name, :source_url)
-                    RETURNING id
-                """)
-
-                result = await session.execute(
-                    framework_query,
-                    {
-                        "title": title,
-                        "description": description,
-                        "author": author,
-                        "complexity": complexity,
-                        "scope": scope,
-                        "industry": industry,
-                        "source_name": source_name,
-                        "source_url": source_url,
-                    },
-                )
-                framework_row = result.first()
-                framework_id = framework_row[0] if framework_row else None
-
-                if framework_id and metrics:
-                    metrics_query = text("""
-                        INSERT INTO frameworks.framework_metrics_df 
-                        (framework_id, category, metrics, display_order)
-                        VALUES (:framework_id, :category, ARRAY[:metric_name], :order)
+            try:
+                async with get_company_session() as session:
+                    framework_query = text("""
+                        INSERT INTO frameworks.frameworks_df 
+                        (title, description, author, complexity, scope, industry, source_name, source_url)
+                        VALUES (:title, :description, :author, :complexity, :scope, :industry, :source_name, :source_url)
+                        RETURNING id
                     """)
-                    for metric in metrics:
-                        await session.execute(
-                            metrics_query,
-                            {
-                                "framework_id": framework_id,
-                                "category": metric["category"],
-                                "metric_name": metric["name"],
-                                "order": metric["order"],
-                            },
-                        )
 
-            async with self:
+                    result = await session.execute(
+                        framework_query,
+                        {
+                            "title": title,
+                            "description": description,
+                            "author": author,
+                            "complexity": complexity,
+                            "scope": scope,
+                            "industry": industry,
+                            "source_name": source_name,
+                            "source_url": source_url,
+                        },
+                    )
+                    framework_row = result.first()
+                    framework_id = framework_row[0] if framework_row else None
+
+                    if framework_id and metrics:
+                        metrics_query = text("""
+                            INSERT INTO frameworks.framework_metrics_df 
+                            (framework_id, category, metrics, display_order)
+                            VALUES (:framework_id, :category, ARRAY[:metric_name], :order)
+                        """)
+                        for metric in metrics:
+                            await session.execute(
+                                metrics_query,
+                                {
+                                    "framework_id": framework_id,
+                                    "category": metric["category"],
+                                    "metric_name": metric["name"],
+                                    "order": metric["order"],
+                                },
+                            )
+
                 self.show_add_dialog = False
 
-            # Load frameworks without nesting
-            await self.load_frameworks()
+                # Load frameworks while state is still mutable
+                await self.load_frameworks()
 
-        except Exception as e:
-            print(f"Error: {e}")
-            pass
+            except Exception as e:
+                print(f"Error: {e}")
+                pass
 
     @rx.event
     @session_isolated
