@@ -6,13 +6,13 @@ from .state import FrameworkState
 from ...components.common_dialog import common_dialog
 
 
-def metric_item(metric: dict, index: int):
+def metric_item(metric, index: int):
     """Component for a single metric in the list"""
     return rx.card(
         rx.hstack(
             rx.vstack(
-                rx.text(metric["name"], size="3", weight="medium"),
-                rx.badge(metric["category"], size="1", variant="soft"),
+                rx.text(metric.name, size="3", weight="medium"),
+                rx.badge(metric.category, size="1", variant="soft"),
                 spacing="1",
                 align="start",
             ),
@@ -22,14 +22,14 @@ def metric_item(metric: dict, index: int):
                     rx.icon("arrow-up", size=16),
                     size="1",
                     variant="ghost",
-                    on_click=lambda: FrameworkState.move_metric_up(metric["name"]),
+                    on_click=lambda: FrameworkState.move_metric_up(metric.name),
                     disabled=index == 0,
                 ),
                 rx.icon_button(
                     rx.icon("arrow-down", size=16),
                     size="1",
                     variant="ghost",
-                    on_click=lambda: FrameworkState.move_metric_down(metric["name"]),
+                    on_click=lambda: FrameworkState.move_metric_down(metric.name),
                     disabled=index >= FrameworkState.metrics_count - 1,
                 ),
                 rx.icon_button(
@@ -37,7 +37,7 @@ def metric_item(metric: dict, index: int):
                     size="1",
                     variant="ghost",
                     color_scheme="red",
-                    on_click=lambda: FrameworkState.remove_metric(metric["name"]),
+                    on_click=lambda: FrameworkState.remove_metric(metric.name),
                 ),
                 spacing="1",
             ),

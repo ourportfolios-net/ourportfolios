@@ -6,116 +6,134 @@ from ...components.navbar import navbar
 from ...components.page_roller import card_roller, card_link
 
 from .state import FrameworkState
-from .framework_cards import categories_sidebar, framework_card
+from .framework_cards import category_filter_button, framework_card, ticker_cart_sidebar
 from .framework_dialog import framework_dialog
 from .add_framework_dialog import add_framework_dialog, add_metric_selector
 
 
-def page_selection():
-    return rx.box(
-        card_roller(
-            card_link(
-                rx.hstack(
-                    rx.icon("chevron_left", size=32),
-                    rx.vstack(
-                        rx.heading("Ourportfolios", weight="regular", size="5"),
-                        align="center",
-                        justify="center",
-                        height="100%",
-                        spacing="1",
-                    ),
-                    align="center",
-                    justify="center",
-                ),
-                href="/",
+def page_header():
+    """Command center style header with step indicator"""
+    return rx.vstack(
+        # Step indicator
+        rx.hstack(
+            rx.icon("link", size=16, color="#8B5CF6"),
+            rx.text(
+                "STEP 01",
+                size="2",
+                weight="bold",
+                color="#8B5CF6",
+                style={"letter_spacing": "0.1em"},
             ),
-            card_link(
-                rx.vstack(
-                    rx.heading("Recommend", weight="regular", size="7"),
-                    rx.text("Framework Selection", size="3"),
-                    align="center",
-                    justify="center",
-                    height="100%",
-                    spacing="1",
-                ),
-                href="/recommend",
-            ),
-            card_link(
-                rx.hstack(
-                    rx.vstack(
-                        rx.heading("Select", weight="regular", size="5"),
-                        rx.text("caijdo", size="1"),
-                        align="center",
-                        justify="center",
-                        height="100%",
-                        spacing="1",
-                    ),
-                    rx.icon("chevron_right", size=32),
-                    align="center",
-                    justify="center",
-                ),
-                href="/select",
-            ),
+            spacing="2",
+            align="center",
         ),
+        # Main heading
+        rx.heading(
+            "Choose Your Framework",
+            size="9",
+            weight="bold",
+            style={
+                "background": "linear-gradient(135deg, #FFFFFF 0%, #A78BFA 100%)",
+                "background_clip": "text",
+                "color": "transparent",
+            },
+        ),
+        # Description
+        rx.text(
+            "Select a pre-built investment strategy model to decode market noise and identify high-potential assets.",
+            size="4",
+            color="gray",
+            style={"max_width": "800px", "line_height": "1.6"},
+        ),
+        spacing="3",
+        align="start",
         width="100%",
-        display="flex",
-        justify_content="center",
-        align_items="center",
-        margin="0",
-        padding="0",
+        padding_bottom="2em",
     )
 
 
-def frameworks_content():
-    return rx.fragment(
-        rx.card(
-            rx.vstack(
-                rx.hstack(
-                    rx.text("Frameworks", size="4"),
-                    rx.spacer(),
-                    rx.button(
-                        rx.icon("plus", size=18),
-                        "Add Framework",
-                        on_click=FrameworkState.open_add_dialog,
-                        size="2",
-                        variant="soft",
+def category_filters():
+    """Horizontal category filter buttons"""
+    return rx.hstack(
+        rx.foreach(FrameworkState.categories, category_filter_button),
+        spacing="3",
+        width="100%",
+        wrap="wrap",
+        padding_y="1.5em",
+    )
+
+
+def frameworks_grid():
+    """Grid layout for framework cards"""
+    return rx.cond(
+        FrameworkState.loading_frameworks,
+        rx.center(rx.spinner(size="3", color="#8B5CF6"), height="400px"),
+        rx.cond(
+            FrameworkState.frameworks.length() > 0,
+            rx.box(
+                rx.foreach(FrameworkState.frameworks, framework_card),
+                display="grid",
+                grid_template_columns="repeat(auto-fill, minmax(320px, 1fr))",
+                gap="1.5em",
+                width="100%",
+            ),
+            rx.center(
+                rx.vstack(
+                    rx.icon("search", size=48, color="gray"),
+                    rx.text(
+                        "No frameworks found in this category", size="4", color="gray"
                     ),
-                    width="100%",
+                    spacing="3",
                     align="center",
                 ),
-                rx.cond(
-                    FrameworkState.loading_frameworks,
-                    rx.center(rx.spinner(size="3"), height="12em"),
-                    rx.cond(
-                        FrameworkState.frameworks.length() > 0,
-                        rx.vstack(
-                            rx.foreach(FrameworkState.frameworks, framework_card),
-                            spacing="3",
-                            width="100%",
-                            padding="0.5em",
-                        ),
-                        rx.center(
-                            rx.text(
-                                "No frameworks in this category yet.",
-                                color="gray",
-                                size="3",
-                            ),
-                            height="12em",
-                        ),
-                    ),
-                ),
-                spacing="2",
-                width="100%",
-                align="stretch",
+                height="400px",
             ),
-            flex=4,
-            min_width=0,
-            max_width="100%",
-            padding="0.75em",
         ),
-        framework_dialog(),
-        add_framework_dialog(),
-        add_metric_selector(),
+    )
+
+
+def main_content_area():
+    """Main content area with frameworks and cart"""
+    return rx.hstack(
+        # Left side - frameworks
+        rx.vstack(
+            page_header(),
+            category_filters(),
+            # Search and add button
+            rx.hstack(
+                rx.input(
+                    placeholder="Search strategies...",
+                    value=FrameworkState.search_query,
+                    on_change=FrameworkState.set_search_query,
+                    size="3",
+                    style={
+                        "background": "rgba(30, 30, 35, 0.6)",
+                        "border": "1px solid rgba(139, 92, 246, 0.2)",
+                        "border_radius": "0.75em",
+                        "flex": "1",
+                    },
+                ),
+                rx.button(
+                    rx.icon("plus", size=18),
+                    "Add Framework",
+                    on_click=FrameworkState.open_add_dialog,
+                    size="3",
+                    variant="soft",
+                    color_scheme="violet",
+                ),
+                spacing="3",
+                width="100%",
+            ),
+            frameworks_grid(),
+            spacing="0",
+            width="100%",
+            flex="1",
+        ),
+        # Right side - ticker cart
+        ticker_cart_sidebar(),
+        spacing="5",
+        width="100%",
+        align="start",
     )
 
 
@@ -124,27 +142,28 @@ def index() -> rx.Component:
     return rx.box(
         rx.fragment(
             navbar(),
-            page_selection(),
+            # Main container
             rx.center(
                 rx.box(
-                    rx.hstack(
-                        categories_sidebar(),
-                        frameworks_content(),
-                        spacing="3",
-                        width="100%",
-                    ),
-                    width="86vw",
+                    main_content_area(),
+                    width="90vw",
+                    max_width="1800px",
                 ),
                 width="100%",
-                padding="2rem",
-                padding_top="5rem",
-                position="relative",
+                padding="2em",
+                padding_top="6em",
             ),
+            # Dialogs
+            framework_dialog(),
+            add_framework_dialog(),
+            add_metric_selector(),
         ),
         on_unmount=FrameworkState.on_unmount,
-        background="#090909",
-        color="white",
-        min_height="100vh",
-        width="100%",
-        overflow_x="hidden",
+        style={
+            "background": "#090909",
+            "color": "white",
+            "min_height": "100vh",
+            "width": "100%",
+            "overflow_x": "hidden",
+        },
     )

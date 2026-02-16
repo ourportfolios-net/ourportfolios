@@ -2,6 +2,7 @@
 
 import reflex as rx
 from sqlalchemy import text
+from typing import Any, Optional
 
 from ...state import GlobalFrameworkState
 from ...utils.database.database import get_company_session
@@ -11,15 +12,79 @@ from ...utils.session_manager import (
 )
 
 
+# Define proper models for Reflex type safety
+class FrameworkModel(rx.Base):
+    """Model for framework data"""
+
+    id: int
+    title: str
+    description: str = ""
+    author: str = ""
+    complexity: str = "beginner-friendly"
+    scope: str = "fundamental"
+    industry: str = "general"
+    source_name: Optional[str] = None
+    source_url: Optional[str] = None
+    metrics: list[dict[str, Any]] = []
+
+
+class ScopeModel(rx.Base):
+    """Model for scope data"""
+
+    value: str
+    title: str
+
+
+class CategoryModel(rx.Base):
+    """Model for category filter"""
+
+    value: str
+    label: str
+
+
+class TickerModel(rx.Base):
+    """Model for ticker cart items"""
+
+    symbol: str
+    name: str = ""
+
+
+class MetricModel(rx.Base):
+    """Model for framework metrics"""
+
+    name: str
+    category: str
+    enabled: bool = True
+    order: int = 0
+
+
 class FrameworkState(SessionIsolatedStateMixin, rx.State):
     active_scope: str = "fundamental"
-    scopes: list[dict] = []
-    frameworks: list[dict] = []
+    active_category: str = "all"
+    scopes: list[ScopeModel] = []
+    frameworks: list[FrameworkModel] = []
     loading_scopes: bool = False
     loading_frameworks: bool = False
-    selected_framework: dict = {}
+    selected_framework: FrameworkModel = FrameworkModel(
+        id=0, title="", description="", author=""
+    )
     show_dialog: bool = False
     show_add_dialog: bool = False
+
+    # Search functionality
+    search_query: str = ""
+
+    # Ticker cart for comparison
+    ticker_cart: list[TickerModel] = []
+
+    # Category filters
+    categories: list[CategoryModel] = [
+        CategoryModel(value="all", label="All Frameworks"),
+        CategoryModel(value="conservative", label="Conservative"),
+        CategoryModel(value="growth", label="Aggressive Growth"),
+        CategoryModel(value="income", label="Passive Income"),
+        CategoryModel(value="speculative", label="Speculative"),
+    ]
 
     # Form fields
     form_title: str = ""
@@ -32,7 +97,7 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
     form_source_url: str = ""
 
     # Metrics management
-    form_metrics: list[dict] = []
+    form_metrics: list[MetricModel] = []
 
     # Available metrics by category
     available_categories: list[str] = [
@@ -83,6 +148,10 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
     def metrics_count(self) -> int:
         return len(self.form_metrics)
 
+    @rx.var
+    def ticker_cart_count(self) -> int:
+        return len(self.ticker_cart)
+
     # Form field setters
     @rx.event
     def set_form_title(self, value: str):
@@ -125,22 +194,53 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
         self.new_metric_category = value
 
     @rx.event
+    def set_active_category(self, category: str):
+        self.active_category = category
+        self._apply_filters()
+
+    @rx.event
+    def set_search_query(self, query: str):
+        self.search_query = query
+        self._apply_filters()
+
+    def _apply_filters(self):
+        """Internal method to apply filters - called by events"""
+        # This runs on the backend where we can use Python string methods
+        pass  # Filtering will be done in the component with rx.cond
+
+    @rx.event
+    def add_to_cart(self, ticker: TickerModel):
+        """Add a ticker to the comparison cart"""
+        if not any(t.symbol == ticker.symbol for t in self.ticker_cart):
+            self.ticker_cart.append(ticker)
+
+    @rx.event
+    def remove_from_cart(self, symbol: str):
+        """Remove a ticker from the comparison cart"""
+        self.ticker_cart = [t for t in self.ticker_cart if t.symbol != symbol]
+
+    @rx.event
+    def navigate_to_compare(self):
+        """Navigate to comparison page with selected tickers"""
+        return rx.redirect("/select")
+
+    @rx.event
     def add_metric_to_form(self):
         """Add a new metric to the framework's metric list"""
         if not self.new_metric_name:
             return
 
-        if any(m["name"] == self.new_metric_name for m in self.form_metrics):
+        if any(m.name == self.new_metric_name for m in self.form_metrics):
             return
 
         next_order = len(self.form_metrics)
         self.form_metrics.append(
-            {
-                "name": self.new_metric_name,
-                "category": self.new_metric_category,
-                "enabled": True,
-                "order": next_order,
-            }
+            MetricModel(
+                name=self.new_metric_name,
+                category=self.new_metric_category,
+                enabled=True,
+                order=next_order,
+            )
         )
 
         self.new_metric_name = ""
@@ -149,42 +249,42 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
     @rx.event
     def remove_metric(self, metric_name: str):
         """Remove a metric from the list"""
-        self.form_metrics = [m for m in self.form_metrics if m["name"] != metric_name]
+        self.form_metrics = [m for m in self.form_metrics if m.name != metric_name]
         for i, metric in enumerate(self.form_metrics):
-            metric["order"] = i
+            metric.order = i
 
     @rx.event
     def toggle_metric_enabled(self, metric_name: str):
         """Toggle whether a metric is enabled"""
         for metric in self.form_metrics:
-            if metric["name"] == metric_name:
-                metric["enabled"] = not metric["enabled"]
+            if metric.name == metric_name:
+                metric.enabled = not metric.enabled
                 break
 
     @rx.event
     def move_metric_up(self, metric_name: str):
         """Move a metric up in the order"""
         for i, metric in enumerate(self.form_metrics):
-            if metric["name"] == metric_name and i > 0:
+            if metric.name == metric_name and i > 0:
                 self.form_metrics[i], self.form_metrics[i - 1] = (
                     self.form_metrics[i - 1],
                     self.form_metrics[i],
                 )
-                self.form_metrics[i]["order"] = i
-                self.form_metrics[i - 1]["order"] = i - 1
+                self.form_metrics[i].order = i
+                self.form_metrics[i - 1].order = i - 1
                 break
 
     @rx.event
     def move_metric_down(self, metric_name: str):
         """Move a metric down in the order"""
         for i, metric in enumerate(self.form_metrics):
-            if metric["name"] == metric_name and i < len(self.form_metrics) - 1:
+            if metric.name == metric_name and i < len(self.form_metrics) - 1:
                 self.form_metrics[i], self.form_metrics[i + 1] = (
                     self.form_metrics[i + 1],
                     self.form_metrics[i],
                 )
-                self.form_metrics[i]["order"] = i
-                self.form_metrics[i + 1]["order"] = i + 1
+                self.form_metrics[i].order = i
+                self.form_metrics[i + 1].order = i + 1
                 break
 
     @rx.event
@@ -218,47 +318,40 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
             if not self.is_mounted():
                 return
 
-        # Load scopes without nesting async with self
-        await self.load_scopes()
+            # Load scopes and frameworks within the same async context
+            await self.load_scopes()
 
-        async with self:
             if not self.is_mounted():
                 return
 
             if self.scopes:
-                first_scope = self.scopes[0]["value"]
+                first_scope = self.scopes[0].value
+                self.active_scope = first_scope
 
-        # Change scope without nesting
-        await self.change_scope(first_scope)
+            # Load frameworks for the selected scope
+            await self.load_frameworks()
 
-    @rx.event
     @session_isolated
     async def load_scopes(self):
-        """Load available scopes - NO nested async with self blocks"""
-        async with self:
-            self.loading_scopes = True
+        """Load available scopes - internal method, assumes state is already mutable"""
+        self.loading_scopes = True
 
         try:
             # Set scopes directly
-            scopes_data = [
-                {"value": "fundamental", "title": "Fundamental"},
-                {"value": "technical", "title": "Technical"},
+            self.scopes = [
+                ScopeModel(value="fundamental", title="Fundamental"),
+                ScopeModel(value="technical", title="Technical"),
             ]
-
-            async with self:
-                self.scopes = scopes_data
-                if self.scopes and not self.active_scope:
-                    self.active_scope = self.scopes[0]["value"]
+            if self.scopes and not self.active_scope:
+                self.active_scope = self.scopes[0].value
 
         except Exception:
-            async with self:
-                self.scopes = [
-                    {"value": "fundamental", "title": "Fundamental"},
-                    {"value": "technical", "title": "Technical"},
-                ]
+            self.scopes = [
+                ScopeModel(value="fundamental", title="Fundamental"),
+                ScopeModel(value="technical", title="Technical"),
+            ]
         finally:
-            async with self:
-                self.loading_scopes = False
+            self.loading_scopes = False
 
     @rx.event
     @session_isolated
@@ -266,17 +359,14 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
         """Change active scope and load frameworks"""
         async with self:
             self.active_scope = scope
+            # Call load_frameworks while state is still mutable
+            await self.load_frameworks()
 
-        # Load frameworks without nesting
-        await self.load_frameworks()
-
-    @rx.event
     @session_isolated
     async def load_frameworks(self):
-        """Load frameworks for current scope - NO nested async with self blocks"""
-        async with self:
-            self.loading_frameworks = True
-            active_scope = self.active_scope
+        """Load frameworks for current scope - internal method, assumes state is already mutable"""
+        self.loading_frameworks = True
+        active_scope = self.active_scope
 
         try:
             async with get_company_session() as session:
@@ -302,24 +392,38 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
                 result = await session.execute(query, {"scope": active_scope})
                 frameworks = result.mappings().all()
 
-            async with self:
-                self.frameworks = [dict(row) for row in frameworks]
+            # Convert to FrameworkModel instances
+            self.frameworks = [
+                FrameworkModel(
+                    id=row["id"],
+                    title=row["title"],
+                    description=row.get("description", ""),
+                    author=row.get("author", ""),
+                    complexity=row.get("complexity", "beginner-friendly"),
+                    scope=row.get("scope", "fundamental"),
+                    industry=row.get("industry", "general"),
+                    source_name=row.get("source_name"),
+                    source_url=row.get("source_url"),
+                    metrics=row.get("metrics", []),
+                )
+                for row in frameworks
+            ]
         except Exception:
-            async with self:
-                self.frameworks = []
+            self.frameworks = []
         finally:
-            async with self:
-                self.loading_frameworks = False
+            self.loading_frameworks = False
 
     @rx.event
-    def show_framework_dialog(self, framework: dict):
+    def show_framework_dialog(self, framework: FrameworkModel):
         self.selected_framework = framework
         self.show_dialog = True
 
     @rx.event
     def close_dialog(self):
         self.show_dialog = False
-        self.selected_framework = {}
+        self.selected_framework = FrameworkModel(
+            id=0, title="", description="", author=""
+        )
 
     @rx.event
     def handle_dialog_open(self, value: bool):
@@ -367,75 +471,66 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
             source_url = self.form_source_url if self.form_source_url else None
             metrics = list(self.form_metrics)
 
-        try:
-            async with get_company_session() as session:
-                framework_query = text("""
-                    INSERT INTO frameworks.frameworks_df 
-                    (title, description, author, complexity, scope, industry, source_name, source_url)
-                    VALUES (:title, :description, :author, :complexity, :scope, :industry, :source_name, :source_url)
-                    RETURNING id
-                """)
-
-                result = await session.execute(
-                    framework_query,
-                    {
-                        "title": title,
-                        "description": description,
-                        "author": author,
-                        "complexity": complexity,
-                        "scope": scope,
-                        "industry": industry,
-                        "source_name": source_name,
-                        "source_url": source_url,
-                    },
-                )
-                framework_row = result.first()
-                framework_id = framework_row[0] if framework_row else None
-
-                if framework_id and metrics:
-                    metrics_query = text("""
-                        INSERT INTO frameworks.framework_metrics_df 
-                        (framework_id, category, metrics, display_order)
-                        VALUES (:framework_id, :category, ARRAY[:metric_name], :order)
+            try:
+                async with get_company_session() as session:
+                    framework_query = text("""
+                        INSERT INTO frameworks.frameworks_df 
+                        (title, description, author, complexity, scope, industry, source_name, source_url)
+                        VALUES (:title, :description, :author, :complexity, :scope, :industry, :source_name, :source_url)
+                        RETURNING id
                     """)
-                    for metric in metrics:
-                        await session.execute(
-                            metrics_query,
-                            {
-                                "framework_id": framework_id,
-                                "category": metric["category"],
-                                "metric_name": metric["name"],
-                                "order": metric["order"],
-                            },
-                        )
 
-            async with self:
+                    result = await session.execute(
+                        framework_query,
+                        {
+                            "title": title,
+                            "description": description,
+                            "author": author,
+                            "complexity": complexity,
+                            "scope": scope,
+                            "industry": industry,
+                            "source_name": source_name,
+                            "source_url": source_url,
+                        },
+                    )
+                    framework_row = result.first()
+                    framework_id = framework_row[0] if framework_row else None
+
+                    if framework_id and metrics:
+                        metrics_query = text("""
+                            INSERT INTO frameworks.framework_metrics_df 
+                            (framework_id, category, metrics, display_order)
+                            VALUES (:framework_id, :category, ARRAY[:metric_name], :order)
+                        """)
+                        for metric in metrics:
+                            await session.execute(
+                                metrics_query,
+                                {
+                                    "framework_id": framework_id,
+                                    "category": metric.category,
+                                    "metric_name": metric.name,
+                                    "order": metric.order,
+                                },
+                            )
+
                 self.show_add_dialog = False
 
-            # Load frameworks without nesting
-            await self.load_frameworks()
+                # Load frameworks while state is still mutable
+                await self.load_frameworks()
 
-        except Exception as e:
-            print(f"Error: {e}")
-            pass
+            except Exception as e:
+                print(f"Error: {e}")
+                pass
 
     @rx.event
     @session_isolated
     async def select_and_navigate_framework(self):
         """Select the current framework and navigate to ticker selection."""
         async with self:
-            if not self.selected_framework:
+            if not self.selected_framework or self.selected_framework.id == 0:
                 return
 
-            framework_id = None
-            for key in ["id", "framework_id", "pk"]:
-                if key in self.selected_framework:
-                    framework_id = self.selected_framework[key]
-                    break
-
-            if framework_id is None:
-                return
-
+            framework_id = self.selected_framework.id
             self.show_dialog = False
 
         # Get global state and select framework
