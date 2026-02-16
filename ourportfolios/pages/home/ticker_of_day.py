@@ -1,122 +1,111 @@
 import reflex as rx
 from ...state.home_state import HomeState
+from ...state.cart_state import CartState
 from ...components.cards import glass_card
 
 
 def ticker_of_the_day_card():
-    """Create the ticker of the day card showing the most actively traded ticker with highest gain."""
-    return rx.box(
-        rx.vstack(
-            rx.text(
-                "TICKER OF THE DAY",
-                font_size="9px",
-                letter_spacing="0.08em",
-                color="rgba(255, 255, 255, 0.35)",
-                margin_bottom="0.5rem",
-                padding_left="1rem",
-            ),
-            rx.box(
+    """Ticker of the day card for the sidebar."""
+    return glass_card(
+        rx.box(
+            # Clickable link layer covering entire card
+            rx.link(
                 rx.box(
-                    # Yellow glow effect
-                    rx.box(
-                        position="absolute",
-                        right="-2rem",
-                        top="-2rem",
-                        width="120px",
-                        height="120px",
-                        background="rgba(234, 179, 8, 0.15)",
-                        filter="blur(40px)",
-                        border_radius="9999px",
-                        transition="all 0.5s ease",
-                        z_index="0",
-                    ),
-                    glass_card(
-                        rx.vstack(
-                            # Top row - Symbol and badge
-                            rx.hstack(
-                                rx.text(
-                                    HomeState.ticker_of_day_symbol,
-                                    font_size="36px",
-                                    font_weight="700",
-                                    letter_spacing="-0.02em",
-                                ),
-                                rx.spacer(),
-                                rx.badge(
-                                    rx.flex(
-                                        rx.icon(tag="arrow_up", size=10),
-                                        rx.text(
-                                            HomeState.ticker_of_day_change,
-                                            size="1",
-                                            weight="medium",
-                                        ),
-                                        spacing="1",
-                                        align="center",
-                                    ),
-                                    color_scheme="green",
-                                    size="2",
-                                    font_weight="600",
-                                ),
-                                spacing="3",
-                                align="center",
-                                width="100%",
-                            ),
-                            # Bottom row - Company info
-                            rx.hstack(
-                                rx.text(
-                                    HomeState.ticker_of_day_name,
-                                    font_size="11px",
-                                    font_weight="500",
-                                    color="rgba(255, 255, 255, 0.75)",
-                                ),
-                                rx.text(
-                                    "•",
-                                    font_size="11px",
-                                    color="rgba(255, 255, 255, 0.25)",
-                                ),
-                                rx.text(
-                                    HomeState.ticker_of_day_industry,
-                                    font_size="11px",
-                                    font_weight="400",
-                                    color="rgba(255, 255, 255, 0.35)",
-                                ),
-                                spacing="2",
-                                align="center",
-                            ),
-                            spacing="1",
-                            align="start",
-                            width="100%",
-                        ),
-                        padding="0.875rem 1.25rem",
-                        width="100%",
-                        cursor="pointer",
-                        transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                        on_click=HomeState.navigate_to_ticker_of_day,
-                        position="relative",
-                        z_index="1",
-                        _hover={
-                            "background": "rgba(255, 255, 255, 0.06)",
-                        },
-                    ),
-                    position="relative",
-                    overflow="hidden",
+                    height="100%",
                     width="100%",
-                    transition="transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                    _hover={
-                        "transform": "translateX(8px)",
-                        "& > :first-child": {
-                            "background": "rgba(234, 179, 8, 0.22)",
-                            "filter": "blur(45px)",
-                        },
-                    },
+                    position="absolute",
+                    top="0",
+                    left="0",
+                    z_index="1",
+                ),
+                href=f"/analyze/{HomeState.ticker_of_day_symbol}",
+            ),
+            # Content layer
+            rx.hstack(
+                # Left: Label, Symbol with add-to-cart button, Company name
+                rx.vstack(
+                    rx.hstack(
+                        rx.icon(
+                            "star",
+                            size=14,
+                            color=rx.color("yellow", 9),
+                        ),
+                        rx.text(
+                            "TICKER OF THE DAY",
+                            font_size="10px",
+                            font_weight="500",
+                            letter_spacing="0.06em",
+                            color="rgba(255, 255, 255, 0.5)",
+                        ),
+                        spacing="2",
+                        align="center",
+                    ),
+                    # Symbol + add to cart button on same line
+                    rx.hstack(
+                        rx.text(
+                            HomeState.ticker_of_day_symbol,
+                            font_size="28px",
+                            font_weight="700",
+                            color="white",
+                            line_height="1",
+                        ),
+                        rx.button(
+                            rx.icon("shopping-cart", size=15),
+                            size="1",
+                            variant="outline",
+                            on_click=CartState.add_item(HomeState.ticker_of_day_symbol),
+                            position="relative",
+                            z_index="10",
+                        ),
+                        spacing="2",
+                        align="center",
+                    ),
+                    rx.text(
+                        HomeState.ticker_of_day_name,
+                        font_size="12px",
+                        font_weight="400",
+                        color="rgba(255, 255, 255, 0.5)",
+                        white_space="nowrap",
+                        overflow="hidden",
+                        text_overflow="ellipsis",
+                        max_width="200px",
+                    ),
+                    spacing="2",
+                    align="start",
+                ),
+                rx.spacer(),
+                # Right: Price above change badge
+                rx.vstack(
+                    rx.text(
+                        HomeState.ticker_of_day_price,
+                        font_size="20px",
+                        font_weight="700",
+                        color="white",
+                    ),
+                    rx.badge(
+                        HomeState.ticker_of_day_change,
+                        color_scheme="green",
+                        size="1",
+                        font_weight="600",
+                    ),
+                    spacing="1",
+                    align="end",
                 ),
                 width="100%",
-                padding_left="1rem",
-                padding_right="1rem",
-                overflow="visible",
+                align="center",
+                position="relative",
+                z_index="2",
+                pointer_events="none",
+                style={"& button": {"pointer-events": "auto"}},
             ),
-            spacing="0",
+            position="relative",
             width="100%",
         ),
-        height="100%",
-        position="relative",
+        padding="1rem",
+        width="100%",
+        cursor="pointer",
+        transition="all 0.25s ease",
+        _hover={
+            "border_color": "rgba(255, 255, 255, 0.12)",
+        },
     )

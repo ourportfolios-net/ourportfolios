@@ -472,7 +472,8 @@ const ConcisenessCard = ({ className = "", style = {} }) => {
             }}
             transition={{ duration: 0.55, ease: [0.25, 0.4, 0.4, 1] }}
           >
-            Everything within a single scroll.
+            Everything within
+            <br />a single scroll.
           </motion.p>
           <h3 style={headingStyle}>Conciseness</h3>
         </motion.div>

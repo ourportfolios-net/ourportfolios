@@ -64,3 +64,19 @@ class CartState(rx.State):
             industry = await get_industry(ticker)
             self.cart_items.append({"name": ticker, "industry": industry})
             yield rx.toast(f"{ticker} added to cart!")
+
+    @rx.var
+    def cart_count_label(self) -> str:
+        """Return a label showing the cart item count."""
+        count = len(self.cart_items)
+        if count == 0:
+            return "0 ITEMS"
+        elif count == 1:
+            return "1 ITEM"
+        else:
+            return f"{count} ITEMS"
+
+    @rx.event
+    def go_to_compare(self):
+        """Navigate to the compare page with cart items."""
+        return rx.redirect("/compare")

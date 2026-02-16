@@ -119,7 +119,7 @@ def select_framework_card() -> rx.Component:
                     rx.vstack(
                         rx.heading("Select Framework", size="5", font_weight="700"),
                         rx.text(
-                            "Choose an investment framework or screening methodology to guide your portfolio construction strategy.",
+                            "Define your strategy. Choose from Growth, Value, or Dividend focused models.",
                             color="rgba(255, 255, 255, 0.5)",
                             font_size="12px",
                             line_height="1.5",
@@ -129,7 +129,7 @@ def select_framework_card() -> rx.Component:
                         flex="1",
                     ),
                     rx.box(
-                        rx.icon("layers", size=20, color="var(--accent-purple)"),
+                        rx.icon("target", size=20, color="var(--accent-purple)"),
                         width="40px",
                         height="40px",
                         border_radius="12px",
