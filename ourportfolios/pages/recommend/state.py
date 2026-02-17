@@ -12,10 +12,7 @@ from ...utils.session_manager import (
 )
 
 
-# Define proper models for Reflex type safety
 class FrameworkModel(rx.Base):
-    """Model for framework data"""
-
     id: int
     title: str
     description: str = ""
@@ -29,29 +26,21 @@ class FrameworkModel(rx.Base):
 
 
 class ScopeModel(rx.Base):
-    """Model for scope data"""
-
     value: str
     title: str
 
 
 class CategoryModel(rx.Base):
-    """Model for category filter"""
-
     value: str
     label: str
 
 
 class TickerModel(rx.Base):
-    """Model for ticker cart items"""
-
     symbol: str
     name: str = ""
 
 
 class MetricModel(rx.Base):
-    """Model for framework metrics"""
-
     name: str
     category: str
     enabled: bool = True
@@ -62,7 +51,12 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
     active_scope: str = "fundamental"
     active_category: str = "all"
     scopes: list[ScopeModel] = []
+
+    # All frameworks from DB — never filtered
+    _all_frameworks: list[FrameworkModel] = []
+    # Displayed frameworks — filtered subset
     frameworks: list[FrameworkModel] = []
+
     loading_scopes: bool = False
     loading_frameworks: bool = False
     selected_framework: FrameworkModel = FrameworkModel(
@@ -71,13 +65,10 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
     show_dialog: bool = False
     show_add_dialog: bool = False
 
-    # Search functionality
     search_query: str = ""
 
-    # Ticker cart for comparison
     ticker_cart: list[TickerModel] = []
 
-    # Category filters
     categories: list[CategoryModel] = [
         CategoryModel(value="all", label="All Frameworks"),
         CategoryModel(value="conservative", label="Conservative"),
@@ -95,11 +86,10 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
     form_industry: str = "general"
     form_source_name: str = ""
     form_source_url: str = ""
+    form_errors: dict[str, str] = {}
 
-    # Metrics management
     form_metrics: list[MetricModel] = []
 
-    # Available metrics by category
     available_categories: list[str] = [
         "Per Share Value",
         "Growth Rate",
@@ -152,7 +142,32 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
     def ticker_cart_count(self) -> int:
         return len(self.ticker_cart)
 
-    # Form field setters
+    def _apply_filters(self):
+        """Filter _all_frameworks by search_query and active_category, store in frameworks."""
+        results = self._all_frameworks
+
+        # Search filter — match title or description
+        if self.search_query.strip():
+            q = self.search_query.strip().lower()
+            results = [
+                f for f in results if q in f.title.lower() or q in f.description.lower()
+            ]
+
+        # Category filter — map category values to complexity/scope keywords
+        category_map = {
+            "conservative": ["beginner-friendly"],
+            "growth": ["complex"],
+            "income": ["beginner-friendly"],
+            "speculative": ["complex"],
+        }
+        if self.active_category != "all" and self.active_category in category_map:
+            allowed = category_map[self.active_category]
+            results = [f for f in results if f.complexity in allowed]
+
+        self.frameworks = results
+
+    # --- Setters ---
+
     @rx.event
     def set_form_title(self, value: str):
         self.form_title = value
@@ -203,36 +218,25 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
         self.search_query = query
         self._apply_filters()
 
-    def _apply_filters(self):
-        """Internal method to apply filters - called by events"""
-        # This runs on the backend where we can use Python string methods
-        pass  # Filtering will be done in the component with rx.cond
-
     @rx.event
     def add_to_cart(self, ticker: TickerModel):
-        """Add a ticker to the comparison cart"""
         if not any(t.symbol == ticker.symbol for t in self.ticker_cart):
             self.ticker_cart.append(ticker)
 
     @rx.event
     def remove_from_cart(self, symbol: str):
-        """Remove a ticker from the comparison cart"""
         self.ticker_cart = [t for t in self.ticker_cart if t.symbol != symbol]
 
     @rx.event
     def navigate_to_compare(self):
-        """Navigate to comparison page with selected tickers"""
         return rx.redirect("/select")
 
     @rx.event
     def add_metric_to_form(self):
-        """Add a new metric to the framework's metric list"""
         if not self.new_metric_name:
             return
-
         if any(m.name == self.new_metric_name for m in self.form_metrics):
             return
-
         next_order = len(self.form_metrics)
         self.form_metrics.append(
             MetricModel(
@@ -242,20 +246,17 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
                 order=next_order,
             )
         )
-
         self.new_metric_name = ""
         self.show_add_metric_dialog = False
 
     @rx.event
     def remove_metric(self, metric_name: str):
-        """Remove a metric from the list"""
         self.form_metrics = [m for m in self.form_metrics if m.name != metric_name]
         for i, metric in enumerate(self.form_metrics):
             metric.order = i
 
     @rx.event
     def toggle_metric_enabled(self, metric_name: str):
-        """Toggle whether a metric is enabled"""
         for metric in self.form_metrics:
             if metric.name == metric_name:
                 metric.enabled = not metric.enabled
@@ -263,7 +264,6 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
 
     @rx.event
     def move_metric_up(self, metric_name: str):
-        """Move a metric up in the order"""
         for i, metric in enumerate(self.form_metrics):
             if metric.name == metric_name and i > 0:
                 self.form_metrics[i], self.form_metrics[i - 1] = (
@@ -276,7 +276,6 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
 
     @rx.event
     def move_metric_down(self, metric_name: str):
-        """Move a metric down in the order"""
         for i, metric in enumerate(self.form_metrics):
             if metric.name == metric_name and i < len(self.form_metrics) - 1:
                 self.form_metrics[i], self.form_metrics[i + 1] = (
@@ -302,49 +301,35 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
             self.close_add_metric_dialog()
 
     def on_mount(self):
-        """Initialize session when page is mounted - SYNCHRONOUS for instant load."""
-        super().on_mount()  # Initialize session synchronously
+        super().on_mount()
         return FrameworkState.auto_load_frameworks
 
     def on_unmount(self):
-        """Cleanup when page is unmounted - SYNCHRONOUS for instant navigation."""
         super().on_unmount()
 
     @rx.event(background=True)
     @session_isolated
     async def auto_load_frameworks(self):
-        """Auto-trigger framework loading after page mounts (non-blocking)."""
         async with self:
             if not self.is_mounted():
                 return
-
-            # Load scopes and frameworks within the same async context
             await self.load_scopes()
-
             if not self.is_mounted():
                 return
-
             if self.scopes:
-                first_scope = self.scopes[0].value
-                self.active_scope = first_scope
-
-            # Load frameworks for the selected scope
+                self.active_scope = self.scopes[0].value
             await self.load_frameworks()
 
     @session_isolated
     async def load_scopes(self):
-        """Load available scopes - internal method, assumes state is already mutable"""
         self.loading_scopes = True
-
         try:
-            # Set scopes directly
             self.scopes = [
                 ScopeModel(value="fundamental", title="Fundamental"),
                 ScopeModel(value="technical", title="Technical"),
             ]
             if self.scopes and not self.active_scope:
                 self.active_scope = self.scopes[0].value
-
         except Exception:
             self.scopes = [
                 ScopeModel(value="fundamental", title="Fundamental"),
@@ -356,18 +341,14 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
     @rx.event
     @session_isolated
     async def change_scope(self, scope: str):
-        """Change active scope and load frameworks"""
         async with self:
             self.active_scope = scope
-            # Call load_frameworks while state is still mutable
             await self.load_frameworks()
 
     @session_isolated
     async def load_frameworks(self):
-        """Load frameworks for current scope - internal method, assumes state is already mutable"""
         self.loading_frameworks = True
         active_scope = self.active_scope
-
         try:
             async with get_company_session() as session:
                 query = text("""
@@ -392,8 +373,7 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
                 result = await session.execute(query, {"scope": active_scope})
                 frameworks = result.mappings().all()
 
-            # Convert to FrameworkModel instances
-            self.frameworks = [
+            loaded = [
                 FrameworkModel(
                     id=row["id"],
                     title=row["title"],
@@ -408,7 +388,11 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
                 )
                 for row in frameworks
             ]
+            self._all_frameworks = loaded
+            # Apply current filters to the freshly loaded data
+            self._apply_filters()
         except Exception:
+            self._all_frameworks = []
             self.frameworks = []
         finally:
             self.loading_frameworks = False
@@ -441,6 +425,7 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
         self.form_source_name = ""
         self.form_source_url = ""
         self.form_metrics = []
+        self.form_errors = {}
         self.show_add_dialog = True
 
     @rx.event
@@ -455,12 +440,17 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
     @rx.event
     @session_isolated
     async def submit_framework(self):
-        """Submit new framework to database"""
         async with self:
-            if not self.form_title or not self.form_author:
+            errors = {}
+            if not self.form_title.strip():
+                errors["title"] = "Title is required"
+            if not self.form_author.strip():
+                errors["author"] = "Author is required"
+            if errors:
+                self.form_errors = errors
                 return
+            self.form_errors = {}
 
-            # Capture form data
             title = self.form_title
             description = self.form_description
             author = self.form_author
@@ -479,7 +469,6 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
                         VALUES (:title, :description, :author, :complexity, :scope, :industry, :source_name, :source_url)
                         RETURNING id
                     """)
-
                     result = await session.execute(
                         framework_query,
                         {
@@ -514,27 +503,19 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
                             )
 
                 self.show_add_dialog = False
-
-                # Load frameworks while state is still mutable
                 await self.load_frameworks()
-
             except Exception as e:
                 print(f"Error: {e}")
-                pass
 
     @rx.event
     @session_isolated
     async def select_and_navigate_framework(self):
-        """Select the current framework and navigate to ticker selection."""
         async with self:
             if not self.selected_framework or self.selected_framework.id == 0:
                 return
-
             framework_id = self.selected_framework.id
             self.show_dialog = False
 
-        # Get global state and select framework
         global_state = await self.get_state(GlobalFrameworkState)
         await global_state.select_framework(framework_id)
-
         return rx.redirect("/select")
