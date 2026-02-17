@@ -320,8 +320,6 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
 
             # Load scopes and frameworks within the same async context
             await self.load_scopes()
-            # Load scopes and frameworks within the same async context
-            await self.load_scopes()
 
             if not self.is_mounted():
                 return
@@ -332,13 +330,9 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
 
             # Load frameworks for the selected scope
             await self.load_frameworks()
-            # Load frameworks for the selected scope
-            await self.load_frameworks()
 
     @session_isolated
     async def load_scopes(self):
-        """Load available scopes - internal method, assumes state is already mutable"""
-        self.loading_scopes = True
         """Load available scopes - internal method, assumes state is already mutable"""
         self.loading_scopes = True
 
@@ -358,7 +352,6 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
             ]
         finally:
             self.loading_scopes = False
-            self.loading_scopes = False
 
     @rx.event
     @session_isolated
@@ -368,14 +361,9 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
             self.active_scope = scope
             # Call load_frameworks while state is still mutable
             await self.load_frameworks()
-            # Call load_frameworks while state is still mutable
-            await self.load_frameworks()
 
     @session_isolated
     async def load_frameworks(self):
-        """Load frameworks for current scope - internal method, assumes state is already mutable"""
-        self.loading_frameworks = True
-        active_scope = self.active_scope
         """Load frameworks for current scope - internal method, assumes state is already mutable"""
         self.loading_frameworks = True
         active_scope = self.active_scope
@@ -422,9 +410,7 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
             ]
         except Exception:
             self.frameworks = []
-            self.frameworks = []
         finally:
-            self.loading_frameworks = False
             self.loading_frameworks = False
 
     @rx.event
@@ -493,30 +479,7 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
                         VALUES (:title, :description, :author, :complexity, :scope, :industry, :source_name, :source_url)
                         RETURNING id
                     """)
-            try:
-                async with get_company_session() as session:
-                    framework_query = text("""
-                        INSERT INTO frameworks.frameworks_df 
-                        (title, description, author, complexity, scope, industry, source_name, source_url)
-                        VALUES (:title, :description, :author, :complexity, :scope, :industry, :source_name, :source_url)
-                        RETURNING id
-                    """)
 
-                    result = await session.execute(
-                        framework_query,
-                        {
-                            "title": title,
-                            "description": description,
-                            "author": author,
-                            "complexity": complexity,
-                            "scope": scope,
-                            "industry": industry,
-                            "source_name": source_name,
-                            "source_url": source_url,
-                        },
-                    )
-                    framework_row = result.first()
-                    framework_id = framework_row[0] if framework_row else None
                     result = await session.execute(
                         framework_query,
                         {
@@ -554,12 +517,7 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
 
                 # Load frameworks while state is still mutable
                 await self.load_frameworks()
-                # Load frameworks while state is still mutable
-                await self.load_frameworks()
 
-            except Exception as e:
-                print(f"Error: {e}")
-                pass
             except Exception as e:
                 print(f"Error: {e}")
                 pass
