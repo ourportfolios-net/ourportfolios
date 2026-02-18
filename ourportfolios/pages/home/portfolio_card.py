@@ -24,7 +24,7 @@ def portfolio_card_with_hover():
                     rx.vstack(
                         rx.heading("Manage Portfolio", size="5", font_weight="700"),
                         rx.text(
-                            "Track your personal holdings, monitor risk exposure, and rebalance based on your strategy goals.",
+                            "Track performance, view allocation and rebalance your current holdings.",
                             color="rgba(255, 255, 255, 0.5)",
                             font_size="12px",
                             line_height="1.5",
@@ -34,7 +34,7 @@ def portfolio_card_with_hover():
                         flex="1",
                     ),
                     rx.box(
-                        rx.icon("wallet", size=20, color="var(--green-9)"),
+                        rx.icon("arrow-right-left", size=20, color="var(--green-9)"),
                         width="40px",
                         height="40px",
                         border_radius="10px",

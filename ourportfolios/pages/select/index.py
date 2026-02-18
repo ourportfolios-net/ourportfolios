@@ -28,7 +28,7 @@ def page_selection():
                     align="center",
                     justify="center",
                 ),
-                href="/recommend",
+                href="/framework",
             ),
             card_link(
                 rx.vstack(

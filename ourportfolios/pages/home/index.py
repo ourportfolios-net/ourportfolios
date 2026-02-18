@@ -3,6 +3,8 @@ from ...state.home_state import HomeState
 from .decision_hub import decision_hub_section
 from .market_overview import market_overview_section
 from .ticker_of_day import ticker_of_the_day_card
+from .selected_framework_card import selected_framework_card
+from .cart_glance import cart_glance_panel
 from ...components.navbar import navbar
 
 
@@ -12,26 +14,44 @@ def index() -> rx.Component:
     return rx.box(
         navbar(),
         rx.box(
+            # Main two-column layout
             rx.flex(
-                rx.box(decision_hub_section(), flex="1", padding_right="2.5rem"),
-                rx.vstack(
-                    rx.box(
-                        ticker_of_the_day_card(),
+                # ── Left Column (73%): Market Overview + Decision Hub Cards ──
+                rx.box(
+                    rx.vstack(
+                        # Market Overview section (large)
+                        market_overview_section(),
+                        # Decision Hub Cards row
+                        rx.box(
+                            decision_hub_section(),
+                            width="100%",
+                        ),
+                        spacing="5",
                         width="100%",
-                        display="flex",
-                        justify_content="center",
                     ),
-                    market_overview_section(),
-                    spacing="9",
-                    width="22%",
+                    width=rx.breakpoints(initial="100%", lg="73%"),
+                ),
+                # ── Right Column (27%): Ticker of Day + Comparison Cart ──
+                rx.box(
+                    rx.vstack(
+                        # Ticker of the Day card
+                        ticker_of_the_day_card(),
+                        # Selected Framework card
+                        selected_framework_card(),
+                        # Comparison Cart panel
+                        cart_glance_panel(),
+                        spacing="5",
+                        width="100%",
+                    ),
+                    width=rx.breakpoints(initial="100%", lg="27%"),
+                    margin_top=rx.breakpoints(initial="1.5rem", lg="0"),
                 ),
                 direction=rx.breakpoints(initial="column", lg="row"),
-                gap="0",
+                gap=rx.breakpoints(initial="0", lg="2rem"),
                 width="100%",
-                max_width="100%",
-                align_items="flex_end",
             ),
-            padding_left=["1.5rem", "2rem", "3rem"],
+            width="85vw",
+            margin="0 auto",
             padding_y="2rem",
         ),
         on_unmount=HomeState.on_unmount,

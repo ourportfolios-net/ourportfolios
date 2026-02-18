@@ -5,7 +5,7 @@ from . import landing
 from . import analyze
 from . import ticker_analysis
 from . import compare
-from . import recommend
+from . import framework
 from . import select
 from . import industry_analysis
 
@@ -14,7 +14,7 @@ __all__ = [
     "analyze",
     "ticker_analysis",
     "compare",
-    "recommend",
+    "framework",
     "select",
     "industry_analysis",
 ]

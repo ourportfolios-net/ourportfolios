@@ -153,7 +153,7 @@ def navbar() -> rx.Component:
                     letter_spacing="-0.02em",
                     user_select="none",
                 ),
-                _nav_link("Frameworks", "/recommend"),
+                _nav_link("Frameworks", "/framework"),
                 _nav_link("Portfolio", "/portfolio-management"),
                 _nav_dropdown("Analyze", _analyze_dropdown()),
                 _nav_dropdown("About", _about_dropdown()),
