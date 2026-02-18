@@ -2,6 +2,47 @@
 
 <!-- version list -->
 
+## v0.9.0 (2026-02-18)
+
+### Bug Fixes
+
+- **state-management**: Remove unneccessary async calls
+  ([`c9c7553`](https://github.com/ourportfolios-net/ourportfolios/commit/c9c75537ed8e0e1ef90b403994b8874fd187a05d))
+
+### Chores
+
+- Add basic canvas to work with
+  ([`d1d16ab`](https://github.com/ourportfolios-net/ourportfolios/commit/d1d16ab97e08aa2d7afed4fdd12ff3b411dff888))
+
+- Resolve old merge conflicts
+  ([`96aed53`](https://github.com/ourportfolios-net/ourportfolios/commit/96aed532b6c3d5e6970723b5fac5a6f3b872710b))
+
+### Features
+
+- Add navigation tool
+  ([`065bac2`](https://github.com/ourportfolios-net/ourportfolios/commit/065bac2241a21c1d881991665d0938fa8a54a46b))
+
+- Add selected framework card
+  ([`526b912`](https://github.com/ourportfolios-net/ourportfolios/commit/526b912577707a6e19afd0b4c9690eb533bb7169))
+
+- Contour corners and rework switching system
+  ([`7788260`](https://github.com/ourportfolios-net/ourportfolios/commit/7788260d43b397a7dd31de7e61f72e6c7db37cee))
+
+- Indent text
+  ([`0a3b0be`](https://github.com/ourportfolios-net/ourportfolios/commit/0a3b0befd025e8c6c6a7e9bb10ec865ea1f1a8ab))
+
+- **homepage**: Restructure entire page for better UI/UX
+  ([`bf58c25`](https://github.com/ourportfolios-net/ourportfolios/commit/bf58c2578cac1fb409dc37dadf52bf289d32c9e4))
+
+- **ticker-of-the-day**: Add an add to cart button
+  ([`36d2dd6`](https://github.com/ourportfolios-net/ourportfolios/commit/36d2dd6787cf4530ce6aa98808f263d8fb0b8d33))
+
+### Refactoring
+
+- Rename directory to framework
+  ([`58761a8`](https://github.com/ourportfolios-net/ourportfolios/commit/58761a8326fb9d53fa7719545940686735137f3b))
+
+
 ## v0.8.0 (2026-02-13)
 
 ### Features
