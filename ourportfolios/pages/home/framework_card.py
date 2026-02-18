@@ -247,7 +247,7 @@ def select_framework_card() -> rx.Component:
                     font_weight="700",
                     border_radius="10px",
                     variant="solid",
-                    on_click=rx.redirect("/recommend"),
+                    on_click=rx.redirect("/framework"),
                     cursor="pointer",
                     transition="all 0.2s ease",
                     _active={"transform": "scale(0.98)"},

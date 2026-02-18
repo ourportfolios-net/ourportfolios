@@ -218,7 +218,7 @@ def settings_dialog() -> rx.Component:
                                     },
                                 },
                             ),
-                            href="/recommend",
+                            href="/framework",
                             underline="none",
                         ),
                         rx.link(
@@ -229,7 +229,7 @@ def settings_dialog() -> rx.Component:
                                 variant="soft",
                                 color_scheme="violet",
                             ),
-                            href="/recommend",
+                            href="/framework",
                             underline="none",
                         ),
                     ),

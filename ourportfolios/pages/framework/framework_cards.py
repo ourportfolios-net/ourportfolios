@@ -5,6 +5,91 @@ import reflex as rx
 from .state import FrameworkState
 
 
+def skeleton_card() -> rx.Component:
+    """Skeleton placeholder for a framework card while loading."""
+    return rx.box(
+        rx.vstack(
+            rx.hstack(
+                rx.skeleton(
+                    rx.box(width="31px", height="31px"),
+                    loading=True,
+                    style={"border_radius": "8px"},
+                ),
+                rx.spacer(),
+                rx.skeleton(
+                    rx.box(width="70px", height="18px"),
+                    loading=True,
+                    style={"border_radius": "6px"},
+                ),
+                width="100%",
+                align="center",
+            ),
+            rx.vstack(
+                rx.skeleton(
+                    rx.box(width="60%", height="20px"),
+                    loading=True,
+                    style={"border_radius": "6px"},
+                ),
+                rx.skeleton(
+                    rx.box(width="100%", height="14px"),
+                    loading=True,
+                    style={"border_radius": "6px"},
+                ),
+                rx.skeleton(
+                    rx.box(width="80%", height="14px"),
+                    loading=True,
+                    style={"border_radius": "6px"},
+                ),
+                rx.skeleton(
+                    rx.box(width="90%", height="14px"),
+                    loading=True,
+                    style={"border_radius": "6px"},
+                ),
+                spacing="2",
+                width="100%",
+            ),
+            rx.spacer(),
+            rx.vstack(
+                rx.box(height="1px", width="100%", background="rgba(255,255,255,0.05)"),
+                rx.hstack(
+                    rx.vstack(
+                        rx.skeleton(
+                            rx.box(width="45px", height="10px"),
+                            loading=True,
+                            style={"border_radius": "4px"},
+                        ),
+                        rx.skeleton(
+                            rx.box(width="80px", height="14px"),
+                            loading=True,
+                            style={"border_radius": "4px"},
+                        ),
+                        spacing="1",
+                        align="start",
+                    ),
+                    rx.spacer(),
+                    rx.skeleton(
+                        rx.box(width="90px", height="14px"),
+                        loading=True,
+                        style={"border_radius": "4px"},
+                    ),
+                    width="100%",
+                    align="center",
+                ),
+                spacing="3",
+                width="100%",
+            ),
+            spacing="4",
+            width="100%",
+            height="100%",
+        ),
+        background="rgba(255,255,255,0.025)",
+        border="1px solid rgba(255,255,255,0.07)",
+        border_radius="14px",
+        padding="1.5rem",
+        min_height="240px",
+    )
+
+
 def category_filter_button(category):
     """Category filter button — pill shaped, clearly interactive"""
     is_active = FrameworkState.active_category == category.value

@@ -5,7 +5,7 @@ import reflex as rx
 from ...components.navbar import navbar
 
 from .state import FrameworkState
-from .framework_cards import category_filter_button, framework_card
+from .framework_cards import category_filter_button, framework_card, skeleton_card
 from .framework_dialog import framework_dialog
 from .add_framework_dialog import add_framework_dialog, add_metric_selector
 
@@ -13,16 +13,14 @@ from .add_framework_dialog import add_framework_dialog, add_metric_selector
 def breadcrumb():
     """Breadcrumb navigation"""
     return rx.hstack(
+        rx.html(
+            "<style>.breadcrumb-home { color: rgba(255,255,255,0.35) !important; text-decoration: none !important; transition: color 0.15s ease; } .breadcrumb-home:hover { color: white !important; }</style>"
+        ),
         rx.link(
             "Home",
             href="/home",
             size="2",
-            color="rgba(255,255,255,0.35)",
-            style={
-                "text_decoration": "none",
-                "transition": "color 0.15s ease",
-                "_hover": {"color": "rgba(255,255,255,0.75)"},
-            },
+            class_name="breadcrumb-home",
         ),
         rx.icon("chevron-right", size=13, color="rgba(255,255,255,0.2)"),
         rx.text(
@@ -135,21 +133,22 @@ def toolbar():
     )
 
 
+def skeleton_grid() -> rx.Component:
+    """Grid of skeleton cards shown while loading."""
+    return rx.box(
+        *[skeleton_card() for _ in range(6)],
+        display="grid",
+        grid_template_columns="repeat(auto-fill, minmax(360px, 1fr))",
+        gap="1rem",
+        width="100%",
+    )
+
+
 def frameworks_grid():
     """Grid of framework cards"""
     return rx.cond(
         FrameworkState.loading_frameworks,
-        rx.center(
-            rx.vstack(
-                rx.spinner(size="3", color="violet"),
-                rx.text(
-                    "Loading frameworks...", size="2", color="rgba(255,255,255,0.3)"
-                ),
-                spacing="3",
-                align="center",
-            ),
-            height="400px",
-        ),
+        skeleton_grid(),
         rx.cond(
             FrameworkState.frameworks.length() > 0,
             rx.box(
@@ -159,17 +158,7 @@ def frameworks_grid():
                 gap="1rem",
                 width="100%",
             ),
-            rx.center(
-                rx.vstack(
-                    rx.icon("folder-open", size=40, color="rgba(255,255,255,0.15)"),
-                    rx.text(
-                        "No frameworks found", size="3", color="rgba(255,255,255,0.3)"
-                    ),
-                    spacing="3",
-                    align="center",
-                ),
-                height="400px",
-            ),
+            skeleton_grid(),
         ),
     )
 
@@ -186,7 +175,7 @@ def main_content():
     )
 
 
-@rx.page(route="/recommend", on_load=[FrameworkState.on_mount])
+@rx.page(route="/framework", on_load=[FrameworkState.on_mount])
 def index() -> rx.Component:
     return rx.box(
         navbar(),

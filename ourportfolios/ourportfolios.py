@@ -1,7 +1,7 @@
 import reflex as rx
 from ourportfolios.pages import (  # noqa: F401
     landing,
-    recommend,
+    framework,
     select,
     ticker_analysis,
     industry_analysis,

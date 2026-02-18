@@ -70,11 +70,11 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
     ticker_cart: list[TickerModel] = []
 
     categories: list[CategoryModel] = [
-        CategoryModel(value="all", label="All Frameworks"),
-        CategoryModel(value="conservative", label="Conservative"),
-        CategoryModel(value="growth", label="Aggressive Growth"),
-        CategoryModel(value="income", label="Passive Income"),
-        CategoryModel(value="speculative", label="Speculative"),
+        CategoryModel(value="all", label="All"),
+        CategoryModel(value="fundamental", label="Fundamentals"),
+        CategoryModel(value="technical", label="Technical"),
+        CategoryModel(value="beginner-friendly", label="Beginner-Friendly"),
+        CategoryModel(value="complex", label="Complex"),
     ]
 
     # Form fields
@@ -153,16 +153,15 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
                 f for f in results if q in f.title.lower() or q in f.description.lower()
             ]
 
-        # Category filter — map category values to complexity/scope keywords
-        category_map = {
-            "conservative": ["beginner-friendly"],
-            "growth": ["complex"],
-            "income": ["beginner-friendly"],
-            "speculative": ["complex"],
-        }
-        if self.active_category != "all" and self.active_category in category_map:
-            allowed = category_map[self.active_category]
-            results = [f for f in results if f.complexity in allowed]
+        # Category filter — scope-based or complexity-based
+        if self.active_category == "fundamental":
+            results = [f for f in results if f.scope == "fundamental"]
+        elif self.active_category == "technical":
+            results = [f for f in results if f.scope == "technical"]
+        elif self.active_category == "beginner-friendly":
+            results = [f for f in results if f.complexity == "beginner-friendly"]
+        elif self.active_category == "complex":
+            results = [f for f in results if f.complexity == "complex"]
 
         self.frameworks = results
 
@@ -351,21 +350,24 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
         active_scope = self.active_scope
         try:
             async with get_company_session() as session:
+                # Unnest the metrics array so each individual metric name
+                # becomes its own row — produces one badge per metric in the dialog.
                 query = text("""
-                    SELECT 
+                    SELECT
                         f.*,
                         COALESCE(
                             json_agg(
                                 json_build_object(
-                                    'name', m.metrics,
+                                    'name', metric_name,
                                     'type', m.category,
                                     'order', m.display_order
                                 ) ORDER BY m.display_order
-                            ) FILTER (WHERE m.id IS NOT NULL),
+                            ) FILTER (WHERE metric_name IS NOT NULL),
                             '[]'::json
                         ) as metrics
                     FROM frameworks.frameworks_df f
                     LEFT JOIN frameworks.framework_metrics_df m ON f.id = m.framework_id
+                    LEFT JOIN LATERAL unnest(m.metrics) AS metric_name ON true
                     WHERE f.scope = :scope
                     GROUP BY f.id
                     ORDER BY f.title
@@ -389,7 +391,6 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
                 for row in frameworks
             ]
             self._all_frameworks = loaded
-            # Apply current filters to the freshly loaded data
             self._apply_filters()
         except Exception:
             self._all_frameworks = []
@@ -416,7 +417,7 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
 
     @rx.event
     def open_add_dialog(self):
-        self.form_scope = self.active_scope
+        self.form_scope = self.active_scope if self.active_scope else "fundamental"
         self.form_title = ""
         self.form_description = ""
         self.form_author = ""
@@ -464,7 +465,7 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
             try:
                 async with get_company_session() as session:
                     framework_query = text("""
-                        INSERT INTO frameworks.frameworks_df 
+                        INSERT INTO frameworks.frameworks_df
                         (title, description, author, complexity, scope, industry, source_name, source_url)
                         VALUES (:title, :description, :author, :complexity, :scope, :industry, :source_name, :source_url)
                         RETURNING id
@@ -486,10 +487,13 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
                     framework_id = framework_row[0] if framework_row else None
 
                     if framework_id and metrics:
+                        # Pass metrics as a Python list — let the asyncpg driver
+                        # handle the Python list -> PostgreSQL array conversion.
+                        # ARRAY[:param] inside text() is invalid SQLAlchemy syntax.
                         metrics_query = text("""
-                            INSERT INTO frameworks.framework_metrics_df 
+                            INSERT INTO frameworks.framework_metrics_df
                             (framework_id, category, metrics, display_order)
-                            VALUES (:framework_id, :category, ARRAY[:metric_name], :order)
+                            VALUES (:framework_id, :category, :metrics_array, :order)
                         """)
                         for metric in metrics:
                             await session.execute(
@@ -497,15 +501,24 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
                                 {
                                     "framework_id": framework_id,
                                     "category": metric.category,
-                                    "metric_name": metric.name,
+                                    "metrics_array": [metric.name],
                                     "order": metric.order,
                                 },
                             )
 
                 self.show_add_dialog = False
+                self.active_scope = scope
                 await self.load_frameworks()
+                return rx.toast.success(
+                    f'Framework "{title}" added successfully.',
+                    duration=3000,
+                )
             except Exception as e:
-                print(f"Error: {e}")
+                print(f"[submit_framework] Error: {e}")
+                return rx.toast.error(
+                    f"Failed to add framework: {str(e)}",
+                    duration=5000,
+                )
 
     @rx.event
     @session_isolated
@@ -514,8 +527,15 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
             if not self.selected_framework or self.selected_framework.id == 0:
                 return
             framework_id = self.selected_framework.id
+            title = self.selected_framework.title
             self.show_dialog = False
 
         global_state = await self.get_state(GlobalFrameworkState)
         await global_state.select_framework(framework_id)
-        return rx.redirect("/select")
+        return [
+            rx.toast.success(
+                f'Framework selected: "{title}"',
+                duration=3000,
+            ),
+            rx.redirect("/home"),
+        ]
