@@ -1,8 +1,18 @@
 """State management for framework recommendation page."""
 
+import uuid
 import reflex as rx
-from sqlalchemy import text
 from typing import Any, Optional
+
+from sqlalchemy import BigInteger, ForeignKey, Integer, String, Text, select
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
+from sqlalchemy.orm import (
+    DeclarativeBase,
+    Mapped,
+    mapped_column,
+    relationship,
+    selectinload,
+)
 
 from ...state import GlobalFrameworkState
 from ...utils.database.database import get_company_session
@@ -10,6 +20,53 @@ from ...utils.session_manager import (
     SessionIsolatedStateMixin,
     session_isolated,
 )
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+class FrameworkORM(Base):
+    __tablename__ = "frameworks_df"
+    __table_args__ = {"schema": "frameworks"}
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    title: Mapped[Optional[str]] = mapped_column(Text)
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    author: Mapped[Optional[str]] = mapped_column(Text)
+    complexity: Mapped[Optional[str]] = mapped_column(Text)
+    scope: Mapped[Optional[str]] = mapped_column(Text)
+    source_name: Mapped[Optional[str]] = mapped_column(String(255))
+    source_url: Mapped[Optional[str]] = mapped_column(Text)
+    industry: Mapped[Optional[str]] = mapped_column(String(100))
+    metrics: Mapped[Optional[dict]] = mapped_column(JSONB)
+    framework_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), unique=True, default=uuid.uuid4
+    )
+
+    metric_rows: Mapped[list["FrameworkMetricsORM"]] = relationship(
+        back_populates="framework",
+        lazy="selectin",
+    )
+
+
+class FrameworkMetricsORM(Base):
+    __tablename__ = "framework_metrics_df"
+    __table_args__ = {"schema": "frameworks"}
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    category: Mapped[str] = mapped_column(String(100), nullable=False)
+    metrics: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False)
+    display_order: Mapped[Optional[int]] = mapped_column(Integer, default=0)
+    framework_uuid: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("frameworks.frameworks_df.framework_id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    framework: Mapped["FrameworkORM"] = relationship(
+        back_populates="metric_rows",
+    )
 
 
 class FrameworkModel(rx.Base):
@@ -22,6 +79,7 @@ class FrameworkModel(rx.Base):
     industry: str = "general"
     source_name: Optional[str] = None
     source_url: Optional[str] = None
+    framework_uuid: str = ""
     metrics: list[dict[str, Any]] = []
 
 
@@ -47,14 +105,36 @@ class MetricModel(rx.Base):
     order: int = 0
 
 
+def _orm_to_framework_model(row: FrameworkORM) -> FrameworkModel:
+    """Convert an ORM row (with eager-loaded metric_rows) to a FrameworkModel."""
+    metrics: list[dict[str, Any]] = []
+    for mr in sorted(row.metric_rows or [], key=lambda m: m.display_order or 0):
+        for name in mr.metrics:
+            metrics.append(
+                {"name": name, "type": mr.category, "order": mr.display_order}
+            )
+
+    return FrameworkModel(
+        id=row.id,
+        title=row.title or "",
+        description=row.description or "",
+        author=row.author or "",
+        complexity=row.complexity or "beginner-friendly",
+        scope=row.scope or "fundamental",
+        industry=row.industry or "general",
+        source_name=row.source_name,
+        source_url=row.source_url,
+        framework_uuid=str(row.framework_id) if row.framework_id else "",
+        metrics=metrics,
+    )
+
+
 class FrameworkState(SessionIsolatedStateMixin, rx.State):
     active_scope: str = "fundamental"
     active_category: str = "all"
     scopes: list[ScopeModel] = []
 
-    # All frameworks from DB — never filtered
     _all_frameworks: list[FrameworkModel] = []
-    # Displayed frameworks — filtered subset
     frameworks: list[FrameworkModel] = []
 
     loading_scopes: bool = False
@@ -89,6 +169,7 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
     form_errors: dict[str, str] = {}
 
     form_metrics: list[MetricModel] = []
+    hovered_metric_index: int = -1
 
     available_categories: list[str] = [
         "Per Share Value",
@@ -143,17 +224,14 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
         return len(self.ticker_cart)
 
     def _apply_filters(self):
-        """Filter _all_frameworks by search_query and active_category, store in frameworks."""
         results = self._all_frameworks
 
-        # Search filter — match title or description
         if self.search_query.strip():
             q = self.search_query.strip().lower()
             results = [
                 f for f in results if q in f.title.lower() or q in f.description.lower()
             ]
 
-        # Category filter — scope-based or complexity-based
         if self.active_category == "fundamental":
             results = [f for f in results if f.scope == "fundamental"]
         elif self.active_category == "technical":
@@ -164,8 +242,6 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
             results = [f for f in results if f.complexity == "complex"]
 
         self.frameworks = results
-
-    # --- Setters ---
 
     @rx.event
     def set_form_title(self, value: str):
@@ -236,13 +312,12 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
             return
         if any(m.name == self.new_metric_name for m in self.form_metrics):
             return
-        next_order = len(self.form_metrics)
         self.form_metrics.append(
             MetricModel(
                 name=self.new_metric_name,
                 category=self.new_metric_category,
                 enabled=True,
-                order=next_order,
+                order=len(self.form_metrics),
             )
         )
         self.new_metric_name = ""
@@ -299,6 +374,9 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
         if not value:
             self.close_add_metric_dialog()
 
+    def set_hovered_metric_index(self, i: int):
+        self.hovered_metric_index = i
+
     def on_mount(self):
         super().on_mount()
         return FrameworkState.auto_load_frameworks
@@ -329,11 +407,6 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
             ]
             if self.scopes and not self.active_scope:
                 self.active_scope = self.scopes[0].value
-        except Exception:
-            self.scopes = [
-                ScopeModel(value="fundamental", title="Fundamental"),
-                ScopeModel(value="technical", title="Technical"),
-            ]
         finally:
             self.loading_scopes = False
 
@@ -350,49 +423,19 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
         active_scope = self.active_scope
         try:
             async with get_company_session() as session:
-                # Unnest the metrics array so each individual metric name
-                # becomes its own row — produces one badge per metric in the dialog.
-                query = text("""
-                    SELECT
-                        f.*,
-                        COALESCE(
-                            json_agg(
-                                json_build_object(
-                                    'name', metric_name,
-                                    'type', m.category,
-                                    'order', m.display_order
-                                ) ORDER BY m.display_order
-                            ) FILTER (WHERE metric_name IS NOT NULL),
-                            '[]'::json
-                        ) as metrics
-                    FROM frameworks.frameworks_df f
-                    LEFT JOIN frameworks.framework_metrics_df m ON f.id = m.framework_id
-                    LEFT JOIN LATERAL unnest(m.metrics) AS metric_name ON true
-                    WHERE f.scope = :scope
-                    GROUP BY f.id
-                    ORDER BY f.title
-                """)
-                result = await session.execute(query, {"scope": active_scope})
-                frameworks = result.mappings().all()
-
-            loaded = [
-                FrameworkModel(
-                    id=row["id"],
-                    title=row["title"],
-                    description=row.get("description", ""),
-                    author=row.get("author", ""),
-                    complexity=row.get("complexity", "beginner-friendly"),
-                    scope=row.get("scope", "fundamental"),
-                    industry=row.get("industry", "general"),
-                    source_name=row.get("source_name"),
-                    source_url=row.get("source_url"),
-                    metrics=row.get("metrics", []),
+                stmt = (
+                    select(FrameworkORM)
+                    .options(selectinload(FrameworkORM.metric_rows))
+                    .where(FrameworkORM.scope == active_scope)
+                    .order_by(FrameworkORM.title)
                 )
-                for row in frameworks
-            ]
-            self._all_frameworks = loaded
+                result = await session.execute(stmt)
+                rows = result.scalars().all()
+
+            self._all_frameworks = [_orm_to_framework_model(r) for r in rows]
             self._apply_filters()
-        except Exception:
+        except Exception as e:
+            print(f"[load_frameworks] Error: {e}")
             self._all_frameworks = []
             self.frameworks = []
         finally:
@@ -458,66 +501,49 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
             complexity = self.form_complexity
             scope = self.form_scope
             industry = self.form_industry
-            source_name = self.form_source_name if self.form_source_name else None
-            source_url = self.form_source_url if self.form_source_url else None
+            source_name = self.form_source_name or None
+            source_url = self.form_source_url or None
             metrics = list(self.form_metrics)
 
             try:
                 async with get_company_session() as session:
-                    framework_query = text("""
-                        INSERT INTO frameworks.frameworks_df
-                        (title, description, author, complexity, scope, industry, source_name, source_url)
-                        VALUES (:title, :description, :author, :complexity, :scope, :industry, :source_name, :source_url)
-                        RETURNING id
-                    """)
-                    result = await session.execute(
-                        framework_query,
-                        {
-                            "title": title,
-                            "description": description,
-                            "author": author,
-                            "complexity": complexity,
-                            "scope": scope,
-                            "industry": industry,
-                            "source_name": source_name,
-                            "source_url": source_url,
-                        },
+                    new_uuid = uuid.uuid4()
+                    framework = FrameworkORM(
+                        title=title,
+                        description=description,
+                        author=author,
+                        complexity=complexity,
+                        scope=scope,
+                        industry=industry,
+                        source_name=source_name,
+                        source_url=source_url,
+                        framework_id=new_uuid,
                     )
-                    framework_row = result.first()
-                    framework_id = framework_row[0] if framework_row else None
+                    session.add(framework)
+                    await session.flush()  # get the generated id without committing
 
-                    if framework_id and metrics:
-                        # Pass metrics as a Python list — let the asyncpg driver
-                        # handle the Python list -> PostgreSQL array conversion.
-                        # ARRAY[:param] inside text() is invalid SQLAlchemy syntax.
-                        metrics_query = text("""
-                            INSERT INTO frameworks.framework_metrics_df
-                            (framework_id, category, metrics, display_order)
-                            VALUES (:framework_id, :category, :metrics_array, :order)
-                        """)
-                        for metric in metrics:
-                            await session.execute(
-                                metrics_query,
-                                {
-                                    "framework_id": framework_id,
-                                    "category": metric.category,
-                                    "metrics_array": [metric.name],
-                                    "order": metric.order,
-                                },
+                    for metric in metrics:
+                        session.add(
+                            FrameworkMetricsORM(
+                                framework_uuid=new_uuid,
+                                category=metric.category,
+                                metrics=[metric.name],
+                                display_order=metric.order,
                             )
+                        )
+
+                    await session.commit()
 
                 self.show_add_dialog = False
                 self.active_scope = scope
                 await self.load_frameworks()
                 return rx.toast.success(
-                    f'Framework "{title}" added successfully.',
-                    duration=3000,
+                    f'Framework "{title}" added successfully.', duration=3000
                 )
             except Exception as e:
                 print(f"[submit_framework] Error: {e}")
                 return rx.toast.error(
-                    f"Failed to add framework: {str(e)}",
-                    duration=5000,
+                    f"Failed to add framework: {str(e)}", duration=5000
                 )
 
     @rx.event
@@ -533,9 +559,6 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
         global_state = await self.get_state(GlobalFrameworkState)
         await global_state.select_framework(framework_id)
         return [
-            rx.toast.success(
-                f'Framework selected: "{title}"',
-                duration=3000,
-            ),
+            rx.toast.success(f'Framework selected: "{title}"', duration=3000),
             rx.redirect("/home"),
         ]
