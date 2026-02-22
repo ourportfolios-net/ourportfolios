@@ -14,6 +14,7 @@ dependencies = [
     "reflex>=0.8.16",
     "asyncpg>=0.31.0",
     "pytz>=2025.2",
+    "ourscheduler",
 ]
 
 [tool.semantic_release]
@@ -66,3 +67,12 @@ insecure = false
 
 [tool.ruff]
 exclude = ["**/*.ipynb"]
+
+[tool.setuptools.packages.find]
+include = ["ourportfolios*"]
+
+[tool.uv]
+package = true
+
+[tool.uv.sources]
+ourscheduler = { path = "../ourscheduler", editable = true }

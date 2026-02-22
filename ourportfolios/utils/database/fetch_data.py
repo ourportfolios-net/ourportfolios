@@ -3,14 +3,27 @@
 from datetime import date, timedelta
 import pandas as pd
 from sqlalchemy import text
-from vnstock import Vnstock
 
 from .database import (
     company_sync_engine,
     company_engine,
     price_sync_engine,
-    price_engine,
 )
+
+
+_RESAMPLE_MAP = {
+    "1D": None,
+    "1W": "W",
+    "1M": "ME",
+}
+
+_OHLCV_AGG = {
+    "open": "first",
+    "high": "max",
+    "low": "min",
+    "close": "last",
+    "volume": "sum",
+}
 
 
 def fetch_income_statement(ticker_symbol: str, period: str = "year") -> pd.DataFrame:
@@ -239,9 +252,6 @@ def fetch_company_data(symbol: str) -> dict[str, pd.DataFrame]:
 async def fetch_price_data_async(symbol: str) -> pd.DataFrame:
     """Fetch current price board data for a given ticker from database.
 
-    Note: This fetches the current price board (latest prices), NOT historical OHLC data.
-    Historical candlestick data is fetched from vnstock API via load_historical_data().
-
     Args:
         symbol: Ticker symbol
 
@@ -251,10 +261,10 @@ async def fetch_price_data_async(symbol: str) -> pd.DataFrame:
     try:
         query = text("""
             SELECT symbol, current_price, price_change, pct_price_change, accumulated_volume
-            FROM tickers.price_df 
+            FROM tickers.price_df
             WHERE symbol = :symbol
         """)
-        async with price_engine.connect() as conn:
+        async with company_engine.connect() as conn:
             result = await conn.execute(query, {"symbol": symbol})
             rows = result.fetchall()
             df = pd.DataFrame(rows, columns=result.keys())
@@ -307,27 +317,36 @@ def load_historical_data(
     symbol: str,
     start: str = date.today().strftime("%Y-%m-%d"),
     end: str = (date.today() + timedelta(days=1)).strftime("%Y-%m-%d"),
-    interval: str = "15m",
+    interval: str = "1D",
 ) -> pd.DataFrame:
-    """Load historical OHLC candlestick data from vnstock API.
-
-    Note: This fetches time-series OHLC data from the external vnstock API for charting.
-    For current price snapshot from database, use fetch_price_data_async() instead.
-
-    Args:
-        symbol: Stock ticker symbol
-        start: Start date (YYYY-MM-DD format)
-        end: End date (YYYY-MM-DD format)
-        interval: Data interval ('1m', '15m', '1h', '1d', etc.)
-
-    Returns:
-        DataFrame with columns: time, open, high, low, close, volume
-        Returns empty DataFrame if API is unavailable
-    """
+    """Load historical OHLCV data from tickers.price_history, resampled to interval."""
     try:
-        stock = Vnstock().stock(symbol=symbol, source="VCI")
-        df = stock.quote.history(start=start, end=end, interval=interval)
-        return df.drop_duplicates(keep="last")
+        query = text("""
+            SELECT date AS time, open, high, low, close, volume
+            FROM tickers.price_history
+            WHERE symbol = :symbol
+              AND date >= :start
+              AND date <  :end
+            ORDER BY date ASC
+        """)
+
+        with company_sync_engine.connect() as conn:
+            df = pd.read_sql(
+                query, conn, params={"symbol": symbol, "start": start, "end": end}
+            )
+
+        if df.empty:
+            return df
+
+        df["time"] = pd.to_datetime(df["time"])
+        df = df.set_index("time")
+
+        rule = _RESAMPLE_MAP.get(interval)
+        if rule:
+            df = df.resample(rule).agg(_OHLCV_AGG).dropna(subset=["close"])
+
+        return df.reset_index()
+
     except Exception:
         return pd.DataFrame(columns=["time", "open", "high", "low", "close", "volume"])
 
@@ -360,7 +379,7 @@ async def fetch_income_statement_async(
                 ORDER BY year DESC
             """)
 
-        async with price_engine.connect() as conn:
+        async with company_engine.connect() as conn:
             result = await conn.execute(query, {"symbol": ticker_symbol})
             rows = result.fetchall()
             df = pd.DataFrame(rows, columns=result.keys())
@@ -420,7 +439,7 @@ async def fetch_balance_sheet_async(
                 ORDER BY year DESC
             """)
 
-        async with price_engine.connect() as conn:
+        async with company_engine.connect() as conn:
             result = await conn.execute(query, {"symbol": ticker_symbol})
             rows = result.fetchall()
             df = pd.DataFrame(rows, columns=result.keys())
@@ -480,7 +499,7 @@ async def fetch_cash_flow_async(
                 ORDER BY year DESC
             """)
 
-        async with price_engine.connect() as conn:
+        async with company_engine.connect() as conn:
             result = await conn.execute(query, {"symbol": ticker_symbol})
             rows = result.fetchall()
             df = pd.DataFrame(rows, columns=result.keys())
