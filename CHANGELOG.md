@@ -2,6 +2,43 @@
 
 <!-- version list -->
 
+## v0.10.0 (2026-02-22)
+
+### Chores
+
+- Move preprocess/ back to utils/
+  ([`2ea8a08`](https://github.com/ourportfolios-net/ourportfolios/commit/2ea8a08bc94c1d62b8f07429fa3a00610fc88788))
+
+- Prune unused components
+  ([`b6d2cb7`](https://github.com/ourportfolios-net/ourportfolios/commit/b6d2cb78ff1f1cf268bb2a25ab088b9819fdfdf5))
+
+- **deps**: Update
+  ([`c2a553f`](https://github.com/ourportfolios-net/ourportfolios/commit/c2a553f0ee96736344788f9618d9a80b3c8e9b3a))
+
+- **deps**: Upgrade
+  ([`01542ee`](https://github.com/ourportfolios-net/ourportfolios/commit/01542eedd498261cd54cbe4d856e5af2cb4dd762))
+
+- **framework-state**: Move to sqlalchemy
+  ([`2581da5`](https://github.com/ourportfolios-net/ourportfolios/commit/2581da5b2bdd1ff1a44b438833e7e7c37819686e))
+
+- **ruff**: Comply with checks
+  ([`288862a`](https://github.com/ourportfolios-net/ourportfolios/commit/288862af1fcc007bcd96091401ab8c46e9dfedbb))
+
+### Features
+
+- Add all tickers past price data to the database
+  ([`ee8bbfc`](https://github.com/ourportfolios-net/ourportfolios/commit/ee8bbfc1bc5eb41a16b8a32020f80ee7ee74a649))
+
+- Add schema creation method
+  ([`41bf6f6`](https://github.com/ourportfolios-net/ourportfolios/commit/41bf6f6b87b55322ccb7fa522342b6a12b216c11))
+
+- Convert all raw sql to sqlalchemy
+  ([`87b59d1`](https://github.com/ourportfolios-net/ourportfolios/commit/87b59d1a7e764db8c9b38d875ff1e98105e490d7))
+
+- Make ourportfolios a package
+  ([`9c5676c`](https://github.com/ourportfolios-net/ourportfolios/commit/9c5676ce951453befcc93818f393cc415ccf0dcc))
+
+
 ## v0.9.0 (2026-02-18)
 
 ### Bug Fixes
