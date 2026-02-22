@@ -2,6 +2,30 @@
 
 <!-- version list -->
 
+## v0.10.1 (2026-02-22)
+
+### Bug Fixes
+
+- **imports**: Adjust new paths for preprocessing/
+  ([`cd1cd30`](https://github.com/ourportfolios-net/ourportfolios/commit/cd1cd301b48399be0da0a5122e639fde2c49256f))
+
+- **price-chart**: Move fetching inside async block
+  ([`ef05080`](https://github.com/ourportfolios-net/ourportfolios/commit/ef05080c598acb529b9bdc63d5a00cb46e4551db))
+
+### Chores
+
+- Remove deprication warning
+  ([`2b926a2`](https://github.com/ourportfolios-net/ourportfolios/commit/2b926a2560847d4dd2054b72c10b8b9688aefbe9))
+
+- **deps**: Update lockfile
+  ([`91be13c`](https://github.com/ourportfolios-net/ourportfolios/commit/91be13cc9aa184ab9914a7329a8dc5ba07530c58))
+
+### Refactoring
+
+- Factor out common stylings to styles.py
+  ([`0f95857`](https://github.com/ourportfolios-net/ourportfolios/commit/0f958573e460152691e2c0eb3b4b07ca844b350b))
+
+
 ## v0.10.0 (2026-02-22)
 
 ### Chores
