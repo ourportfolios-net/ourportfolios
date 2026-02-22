@@ -562,3 +562,7 @@ class State(SessionIsolatedStateMixin, rx.State):
         except Exception as e:
             print(f"Error: {e}")
             return []
+
+    @rx.event
+    def set_profile_dialog_open(self, value: bool):
+        self.profile_dialog_open = value
