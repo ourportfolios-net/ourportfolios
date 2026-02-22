@@ -8,8 +8,10 @@ from collections import defaultdict
 import asyncio
 
 from ourportfolios.state.cart_state import CartState
-from ourportfolios.preprocessing.financial_statements import get_transformed_dataframes
-from ourportfolios.preprocessing.formatters import (
+from ourportfolios.utils.preprocessing.financial_statements import (
+    get_transformed_dataframes,
+)
+from ourportfolios.utils.preprocessing.formatters import (
     format_large_number,
     format_percentage,
     format_ratio,
