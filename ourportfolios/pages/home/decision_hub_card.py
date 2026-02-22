@@ -1,6 +1,60 @@
 import reflex as rx
 from ...state.home_state import HomeState
 from ...components.cards import glass_card
+from ...styles import (
+    glow_orb_style,
+    icon_box_style,
+    icon_color,
+    SURFACE_CARD_STYLE,
+    DECISION_HUB_HOVER,
+    white,
+    blue,
+)
+
+
+def _sliding_box(color_bg: str, is_hovered) -> rx.Component:
+    return rx.box(
+        rx.box(width="70px", height="16px", border_radius="4px", background=color_bg),
+        width=rx.cond(is_hovered, "70px", "0px"),
+        opacity=rx.cond(is_hovered, "1", "0"),
+        overflow="hidden",
+        transition="all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+    )
+
+
+def _skel_box(w: str, h: str) -> rx.Component:
+    return rx.box(width=w, height=h, border_radius="4px", background=white(0.08))
+
+
+def _compare_row(ticker_h: str, val1_color: str, val2_color: str) -> rx.Component:
+    return rx.hstack(
+        rx.box(
+            width="70px", height="24px", border_radius="6px", background=white(0.08)
+        ),
+        _sliding_box(val1_color, HomeState.is_comparison_hovered),
+        _sliding_box(val2_color, HomeState.is_comparison_hovered),
+        spacing="3",
+        align="center",
+        width="100%",
+        padding="0.6rem",
+        border_radius="8px",
+        background=white(0.02),
+        border=f"1px solid {white(0.04)}",
+    )
+
+
+def _comparison_visualization() -> rx.Component:
+    return rx.box(
+        rx.vstack(
+            _skel_box("80px", "11px"),
+            _compare_row("", blue(0.3), white(0.1)),
+            _compare_row("", white(0.1), blue(0.3)),
+            spacing="2",
+            width="100%",
+            style={"margin_bottom": "0.5rem"},
+        ),
+        **SURFACE_CARD_STYLE,
+    )
 
 
 def decision_hub_card(
@@ -11,60 +65,19 @@ def decision_hub_card(
     button_text: str,
     button_variant: str,
     on_click,
-    has_input: bool = False,
-    has_progress: bool = False,
-    has_portfolio_value: bool = False,
-    has_framework_count: bool = False,
-    has_comparison_count: bool = False,
     has_comparison_chart: bool = False,
-    has_framework_list: bool = False,
+    **_,
 ):
-    """Create a decision hub card."""
-    blur_color = {
-        "purple": "rgba(139, 92, 246, 0.1)",
-        "blue": "rgba(59, 130, 246, 0.1)",
-        "emerald": "rgba(16, 185, 129, 0.1)",
-    }
-
-    icon_bg = {
-        "purple": "rgba(139, 92, 246, 0.2)",
-        "blue": "rgba(59, 130, 246, 0.2)",
-        "emerald": "rgba(16, 185, 129, 0.2)",
-    }
-
-    icon_border = {
-        "purple": "rgba(139, 92, 246, 0.3)",
-        "blue": "rgba(59, 130, 246, 0.3)",
-        "emerald": "rgba(16, 185, 129, 0.3)",
-    }
-
-    icon_color = {
-        "purple": "var(--accent-purple)",
-        "blue": "var(--blue-9)",
-        "emerald": "var(--green-9)",
-    }
-
     return rx.box(
-        rx.box(
-            position="absolute",
-            right="-3rem",
-            top="-3rem",
-            width="160px",
-            height="160px",
-            background=blur_color.get(color, blur_color["purple"]),
-            filter="blur(60px)",
-            border_radius="9999px",
-            transition="all 0.3s ease",
-        ),
+        rx.box(**glow_orb_style(color)),
         glass_card(
             rx.vstack(
-                # Header row
                 rx.hstack(
                     rx.vstack(
                         rx.heading(title, size="5", font_weight="700"),
                         rx.text(
                             description,
-                            color="rgba(255, 255, 255, 0.5)",
+                            color=white(0.5),
                             font_size="12px",
                             line_height="1.5",
                         ),
@@ -73,169 +86,15 @@ def decision_hub_card(
                         flex="1",
                     ),
                     rx.box(
-                        rx.icon(
-                            icon,
-                            size=20,
-                            color=icon_color.get(color, icon_color["purple"]),
-                        ),
-                        width="40px",
-                        height="40px",
-                        border_radius="10px",
-                        background=icon_bg.get(color, icon_bg["purple"]),
-                        border=f"1px solid {icon_border.get(color, icon_border['purple'])}",
-                        display="flex",
-                        align_items="center",
-                        justify_content="center",
-                        flex_shrink="0",
+                        rx.icon(icon, size=20, color=icon_color(color)),
+                        **icon_box_style(color),
                     ),
                     spacing="3",
                     align="start",
                     width="100%",
                 ),
-                # Spacer
                 rx.box(flex="1"),
-                # Visualization - with surrounding box matching portfolio
-                rx.cond(
-                    has_comparison_chart,
-                    rx.box(
-                        rx.vstack(
-                            # Skeleton in top left corner
-                            rx.box(
-                                width="80px",
-                                height="11px",
-                                border_radius="4px",
-                                background="rgba(255, 255, 255, 0.08)",
-                                margin_bottom="0.5rem",
-                            ),
-                            # Row 1
-                            rx.hstack(
-                                # Ticker skeleton
-                                rx.box(
-                                    width="70px",
-                                    height="24px",
-                                    border_radius="6px",
-                                    background="rgba(255, 255, 255, 0.08)",
-                                ),
-                                # Sliding value 1 - blue (best performer)
-                                rx.box(
-                                    rx.box(
-                                        width="70px",
-                                        height="16px",
-                                        border_radius="4px",
-                                        background="rgba(59, 130, 246, 0.3)",
-                                    ),
-                                    width=rx.cond(
-                                        HomeState.is_comparison_hovered,
-                                        "70px",
-                                        "0px",
-                                    ),
-                                    opacity=rx.cond(
-                                        HomeState.is_comparison_hovered,
-                                        "1",
-                                        "0",
-                                    ),
-                                    overflow="hidden",
-                                    transition="all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
-                                ),
-                                # Sliding value 2 - grey
-                                rx.box(
-                                    rx.box(
-                                        width="70px",
-                                        height="16px",
-                                        border_radius="4px",
-                                        background="rgba(255, 255, 255, 0.1)",
-                                    ),
-                                    width=rx.cond(
-                                        HomeState.is_comparison_hovered,
-                                        "70px",
-                                        "0px",
-                                    ),
-                                    opacity=rx.cond(
-                                        HomeState.is_comparison_hovered,
-                                        "1",
-                                        "0",
-                                    ),
-                                    overflow="hidden",
-                                    transition="all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
-                                ),
-                                spacing="3",
-                                align="center",
-                                width="100%",
-                                padding="0.6rem",
-                                border_radius="8px",
-                                background="rgba(255, 255, 255, 0.02)",
-                                border="1px solid rgba(255, 255, 255, 0.04)",
-                            ),
-                            # Row 2
-                            rx.hstack(
-                                # Ticker skeleton
-                                rx.box(
-                                    width="70px",
-                                    height="24px",
-                                    border_radius="6px",
-                                    background="rgba(255, 255, 255, 0.08)",
-                                ),
-                                # Sliding value 1 - grey
-                                rx.box(
-                                    rx.box(
-                                        width="70px",
-                                        height="16px",
-                                        border_radius="4px",
-                                        background="rgba(255, 255, 255, 0.1)",
-                                    ),
-                                    width=rx.cond(
-                                        HomeState.is_comparison_hovered,
-                                        "70px",
-                                        "0px",
-                                    ),
-                                    opacity=rx.cond(
-                                        HomeState.is_comparison_hovered,
-                                        "1",
-                                        "0",
-                                    ),
-                                    overflow="hidden",
-                                    transition="all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
-                                ),
-                                # Sliding value 2 - blue (best performer)
-                                rx.box(
-                                    rx.box(
-                                        width="70px",
-                                        height="16px",
-                                        border_radius="4px",
-                                        background="rgba(59, 130, 246, 0.3)",
-                                    ),
-                                    width=rx.cond(
-                                        HomeState.is_comparison_hovered,
-                                        "70px",
-                                        "0px",
-                                    ),
-                                    opacity=rx.cond(
-                                        HomeState.is_comparison_hovered,
-                                        "1",
-                                        "0",
-                                    ),
-                                    overflow="hidden",
-                                    transition="all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
-                                ),
-                                spacing="3",
-                                align="center",
-                                width="100%",
-                                padding="0.6rem",
-                                border_radius="8px",
-                                background="rgba(255, 255, 255, 0.02)",
-                                border="1px solid rgba(255, 255, 255, 0.04)",
-                            ),
-                            spacing="2",
-                            width="100%",
-                        ),
-                        padding="0.75rem",
-                        border_radius="10px",
-                        background="rgba(255, 255, 255, 0.03)",
-                        border="1px solid rgba(255, 255, 255, 0.05)",
-                        width="100%",
-                    ),
-                ),
-                # Button
+                rx.cond(has_comparison_chart, _comparison_visualization()),
                 rx.button(
                     button_text,
                     size="2",
@@ -261,10 +120,5 @@ def decision_hub_card(
         overflow="hidden",
         on_mouse_enter=HomeState.start_comparison_hover,
         on_mouse_leave=HomeState.end_comparison_hover,
-        _hover={
-            "& > :nth-child(2)": {
-                "background": "rgba(255, 255, 255, 0.04)",
-                "border_color": "rgba(255, 255, 255, 0.05)",
-            }
-        },
+        **DECISION_HUB_HOVER,
     )

@@ -4,10 +4,10 @@ import reflex as rx
 
 from .state import FrameworkState
 from ...components.common_dialog import common_dialog
+from ...styles import BTN_PURPLE, BTN_GHOST, white
 
 
 def metric_badge(metric):
-    """Display metric badge"""
     return rx.badge(
         metric["name"],
         variant="soft",
@@ -19,32 +19,22 @@ def metric_badge(metric):
 
 def framework_dialog():
     content = rx.vstack(
-        # Header
         rx.vstack(
             rx.heading(
-                FrameworkState.selected_framework.title,
-                size="8",
-                weight="bold",
+                FrameworkState.selected_framework.title, size="8", weight="bold"
             ),
             rx.hstack(
-                rx.text("by", size="2", color="rgba(255,255,255,0.4)"),
+                rx.text("by", size="2", color=white(0.4)),
                 rx.text(
-                    FrameworkState.selected_framework.author,
-                    size="2",
-                    weight="bold",
+                    FrameworkState.selected_framework.author, size="2", weight="bold"
                 ),
                 spacing="2",
             ),
             spacing="2",
             width="100%",
         ),
-        # Badges + View Source — all on one aligned row
         rx.hstack(
-            rx.badge(
-                FrameworkState.selected_framework.scope,
-                variant="soft",
-                size="2",
-            ),
+            rx.badge(FrameworkState.selected_framework.scope, variant="soft", size="2"),
             rx.badge(
                 FrameworkState.selected_framework.complexity,
                 color_scheme=rx.cond(
@@ -79,15 +69,14 @@ def framework_dialog():
             width="100%",
             wrap="wrap",
         ),
-        rx.divider(color="rgba(255,255,255,0.07)"),
-        # Description + Metrics
+        rx.divider(color=white(0.07)),
         rx.scroll_area(
             rx.vstack(
                 rx.text(
                     FrameworkState.selected_framework.description,
                     size="3",
                     line_height="1.8",
-                    color="rgba(255,255,255,0.7)",
+                    color=white(0.7),
                 ),
                 rx.cond(
                     FrameworkState.selected_framework.metrics.length() > 0,
@@ -114,21 +103,13 @@ def framework_dialog():
             height="100%",
             width="100%",
         ),
-        rx.divider(color="rgba(255,255,255,0.07)"),
-        # Actions
+        rx.divider(color=white(0.07)),
         rx.hstack(
             rx.button(
                 "Cancel",
                 on_click=FrameworkState.close_dialog,
                 size="3",
-                style={
-                    "background": "rgba(255,255,255,0.05)",
-                    "border": "1px solid rgba(255,255,255,0.1)",
-                    "border_radius": "10px",
-                    "color": "rgba(255,255,255,0.5)",
-                    "cursor": "pointer",
-                    "_hover": {"background": "rgba(255,255,255,0.09)"},
-                },
+                style=BTN_GHOST,
             ),
             rx.spacer(),
             rx.button(
@@ -139,15 +120,7 @@ def framework_dialog():
                 ),
                 on_click=lambda: FrameworkState.select_and_navigate_framework(),
                 size="3",
-                style={
-                    "background": "rgba(139,92,246,0.18)",
-                    "border": "1px solid rgba(139,92,246,0.45)",
-                    "border_radius": "10px",
-                    "color": "#c4b5fd",
-                    "font_weight": "600",
-                    "cursor": "pointer",
-                    "_hover": {"background": "rgba(139,92,246,0.28)"},
-                },
+                style=BTN_PURPLE,
             ),
             width="100%",
         ),

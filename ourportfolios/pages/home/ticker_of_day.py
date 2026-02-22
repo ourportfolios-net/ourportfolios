@@ -2,13 +2,12 @@ import reflex as rx
 from ...state.home_state import HomeState
 from ...state.cart_state import CartState
 from ...components.cards import glass_card
+from ...styles import white
 
 
 def ticker_of_the_day_card():
-    """Ticker of the day card for the sidebar."""
     return glass_card(
         rx.box(
-            # Clickable link layer covering entire card
             rx.link(
                 rx.box(
                     height="100%",
@@ -20,27 +19,20 @@ def ticker_of_the_day_card():
                 ),
                 href=f"/analyze/{HomeState.ticker_of_day_symbol}",
             ),
-            # Content layer
             rx.hstack(
-                # Left: Label, Symbol with add-to-cart button, Company name
                 rx.vstack(
                     rx.hstack(
-                        rx.icon(
-                            "star",
-                            size=14,
-                            color=rx.color("yellow", 9),
-                        ),
+                        rx.icon("star", size=14, color=rx.color("yellow", 9)),
                         rx.text(
                             "TICKER OF THE DAY",
                             font_size="10px",
                             font_weight="500",
                             letter_spacing="0.06em",
-                            color="rgba(255, 255, 255, 0.5)",
+                            color=white(0.5),
                         ),
                         spacing="2",
                         align="center",
                     ),
-                    # Symbol + add to cart button on same line
                     rx.hstack(
                         rx.text(
                             HomeState.ticker_of_day_symbol,
@@ -64,7 +56,7 @@ def ticker_of_the_day_card():
                         HomeState.ticker_of_day_name,
                         font_size="12px",
                         font_weight="400",
-                        color="rgba(255, 255, 255, 0.5)",
+                        color=white(0.5),
                         white_space="nowrap",
                         overflow="hidden",
                         text_overflow="ellipsis",
@@ -74,7 +66,6 @@ def ticker_of_the_day_card():
                     align="start",
                 ),
                 rx.spacer(),
-                # Right: Price above change badge
                 rx.vstack(
                     rx.text(
                         HomeState.ticker_of_day_price,
@@ -105,7 +96,5 @@ def ticker_of_the_day_card():
         width="100%",
         cursor="pointer",
         transition="all 0.25s ease",
-        _hover={
-            "border_color": "rgba(255, 255, 255, 0.12)",
-        },
+        _hover={"border_color": white(0.12)},
     )

@@ -1,38 +1,37 @@
 import reflex as rx
 from ...state.home_state import HomeState
 from ...components.cards import glass_card
+from ...styles import (
+    glow_orb_style,
+    icon_box_style,
+    DECISION_HUB_HOVER,
+    white,
+    indigo,
+)
+
+_CARD_H = "72px"
+_INDIGO_BG = indigo(0.1)
+_INDIGO_BORDER = f"1px solid {indigo(0.3)}"
 
 
-def skeleton_box(width: str, height: str = "12px") -> rx.Component:
-    """Create a static skeleton placeholder box."""
+def _skel(width: str, height: str = "12px") -> rx.Component:
     return rx.box(
-        width=width,
-        height=height,
-        border_radius="4px",
-        background="rgba(255, 255, 255, 0.08)",
+        width=width, height=height, border_radius="4px", background=white(0.08)
     )
 
 
 def framework_skeleton_card(icon_name: str, index: int) -> rx.Component:
-    """Create a skeleton framework card."""
     return rx.box(
         rx.hstack(
             rx.box(
-                rx.icon(icon_name, size=18, color="rgba(255, 255, 255, 0.3)"),
-                width="36px",
-                height="36px",
-                border_radius="12px",
-                background="rgba(255, 255, 255, 0.05)",
-                border="1px solid rgba(255, 255, 255, 0.08)",
-                display="flex",
-                align_items="center",
-                justify_content="center",
+                rx.icon(icon_name, size=18, color=white(0.3)),
+                **icon_box_style("indigo", size="36px", radius="12px"),
                 opacity=rx.cond(HomeState.framework_hover_index == index, "0", "1"),
                 transition="opacity 0.3s ease",
             ),
             rx.vstack(
-                skeleton_box("100px", "13px"),
-                skeleton_box("100%", "24px"),
+                _skel("100px", "13px"),
+                _skel("100%", "24px"),
                 spacing="2",
                 align="start",
                 flex="1",
@@ -46,27 +45,18 @@ def framework_skeleton_card(icon_name: str, index: int) -> rx.Component:
         ),
         padding="0.75rem",
         border_radius="10px",
-        background="rgba(255, 255, 255, 0.03)",
-        border="1px solid rgba(255, 255, 255, 0.05)",
+        background=white(0.03),
+        border=f"1px solid {white(0.05)}",
         width="100%",
-        height="72px",
+        height=_CARD_H,
     )
 
 
 def framework_glass_block(icon_name: str, title: str, description: str) -> rx.Component:
-    """Glass block content for framework cards."""
     return rx.hstack(
         rx.box(
             rx.icon(icon_name, size=18, color="var(--indigo-9)"),
-            width="36px",
-            height="36px",
-            border_radius="12px",
-            background="rgba(99, 102, 241, 0.15)",
-            border="1px solid rgba(99, 102, 241, 0.3)",
-            display="flex",
-            align_items="center",
-            justify_content="center",
-            flex_shrink="0",
+            **icon_box_style("indigo", size="36px", radius="12px"),
         ),
         rx.vstack(
             rx.text(
@@ -79,7 +69,7 @@ def framework_glass_block(icon_name: str, title: str, description: str) -> rx.Co
             rx.text(
                 description,
                 font_size="11px",
-                color="rgba(255, 255, 255, 0.6)",
+                color=white(0.6),
                 line_height="1.4",
                 margin_top="4px",
             ),
@@ -97,30 +87,16 @@ def framework_glass_block(icon_name: str, title: str, description: str) -> rx.Co
 
 
 def select_framework_card() -> rx.Component:
-    """Create the Select Framework card with glass spotlight effect."""
-    card_height = "72px"
-
     return rx.box(
-        rx.box(
-            position="absolute",
-            right="-3rem",
-            top="-3rem",
-            width="160px",
-            height="160px",
-            background="rgba(139, 92, 246, 0.1)",
-            filter="blur(60px)",
-            border_radius="9999px",
-            transition="all 0.3s ease",
-        ),
+        rx.box(**glow_orb_style("purple")),
         glass_card(
             rx.vstack(
-                # Header row
                 rx.hstack(
                     rx.vstack(
                         rx.heading("Select Framework", size="5", font_weight="700"),
                         rx.text(
                             "Define your strategy. Choose from Growth, Value, or Dividend focused models.",
-                            color="rgba(255, 255, 255, 0.5)",
+                            color=white(0.5),
                             font_size="12px",
                             line_height="1.5",
                         ),
@@ -130,32 +106,21 @@ def select_framework_card() -> rx.Component:
                     ),
                     rx.box(
                         rx.icon("target", size=20, color="var(--accent-purple)"),
-                        width="40px",
-                        height="40px",
-                        border_radius="12px",
-                        background="rgba(139, 92, 246, 0.2)",
-                        border="1px solid rgba(139, 92, 246, 0.3)",
-                        display="flex",
-                        align_items="center",
-                        justify_content="center",
-                        flex_shrink="0",
+                        **icon_box_style("purple", radius="12px"),
                     ),
                     spacing="3",
                     align="start",
                     width="100%",
                 ),
-                # Spacer
                 rx.box(flex="1"),
-                # Framework visualization - with surrounding box matching portfolio
                 rx.box(
                     rx.vstack(
-                        # Total value section matching portfolio
                         rx.vstack(
                             rx.box(
                                 width="80px",
                                 height="10px",
                                 border_radius="4px",
-                                background="rgba(255, 255, 255, 0.08)",
+                                background=white(0.08),
                             ),
                             spacing="2",
                             align="start",
@@ -174,72 +139,78 @@ def select_framework_card() -> rx.Component:
                                 rx.box(
                                     rx.box(
                                         framework_glass_block(
-                                            icon_name="shield",
-                                            title="Value Investing",
-                                            description="Focuses on undervalued assets with strong fundamentals.",
+                                            "shield",
+                                            "Value Investing",
+                                            "Focuses on undervalued assets with strong fundamentals.",
                                         ),
                                         position="absolute",
                                         top="0",
                                         left="0",
                                         right="0",
-                                        height=card_height,
+                                        height=_CARD_H,
                                     ),
                                     rx.box(
                                         framework_glass_block(
-                                            icon_name="zap",
-                                            title="Growth Strategy",
-                                            description="Targets high-growth companies with expanding market share.",
+                                            "zap",
+                                            "Growth Strategy",
+                                            "Targets high-growth companies with expanding market share.",
                                         ),
                                         position="absolute",
-                                        top=f"calc({card_height} + 8px)",
+                                        top=f"calc({_CARD_H} + 8px)",
                                         left="0",
                                         right="0",
-                                        height=card_height,
+                                        height=_CARD_H,
                                     ),
                                     position="absolute",
                                     top=rx.cond(
                                         HomeState.framework_hover_index == 0,
                                         "0",
-                                        f"calc(-{card_height} - 8px)",
+                                        f"calc(-{_CARD_H} - 8px)",
                                     ),
                                     left="0",
                                     right="0",
-                                    height=f"calc({card_height} * 2 + 8px)",
+                                    height=f"calc({_CARD_H} * 2 + 8px)",
                                     transition="top 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
                                 ),
                                 position="absolute",
                                 top=rx.cond(
                                     HomeState.framework_hover_index == 0,
                                     "0",
-                                    f"calc({card_height} + 8px)",
+                                    f"calc({_CARD_H} + 8px)",
                                 ),
                                 left="0",
                                 right="0",
-                                height=card_height,
-                                background="linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(99, 102, 241, 0.04) 100%)",
+                                height=_CARD_H,
+                                background=f"linear-gradient(135deg, {_INDIGO_BG} 0%, {indigo(0.04)} 100%)",
                                 backdrop_filter="blur(8px)",
                                 border_radius="10px",
-                                border="1.5px solid rgba(99, 102, 241, 0.4)",
-                                box_shadow="0 4px 20px rgba(99, 102, 241, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.1)",
+                                border=f"1.5px solid {indigo(0.4)}",
+                                box_shadow=f"0 4px 20px {indigo(0.15)}, inset 0 1px 1px {white(0.1)}",
                                 overflow="hidden",
                                 transition="top 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
                                 pointer_events="none",
                             ),
                             position="relative",
                             width="100%",
-                            height=f"calc({card_height} * 2 + 8px)",
+                            height=f"calc({_CARD_H} * 2 + 8px)",
                         ),
                         spacing="0",
                         align="start",
                         width="100%",
                     ),
-                    padding="0.75rem",
-                    border_radius="10px",
-                    background="rgba(255, 255, 255, 0.03)",
-                    border="1px solid rgba(255, 255, 255, 0.05)",
-                    width="100%",
+                    **{
+                        **{
+                            k: v
+                            for k, v in {
+                                "padding": "0.75rem",
+                                "border_radius": "10px",
+                                "width": "100%",
+                            }.items()
+                        },
+                        "background": white(0.03),
+                        "border": f"1px solid {white(0.05)}",
+                    },
                 ),
-                # Button
                 rx.button(
                     "Browse Frameworks",
                     size="2",
@@ -265,10 +236,5 @@ def select_framework_card() -> rx.Component:
         overflow="hidden",
         on_mouse_enter=HomeState.start_framework_hover,
         on_mouse_leave=HomeState.stop_framework_hover,
-        _hover={
-            "& > :nth-child(2)": {
-                "background": "rgba(255, 255, 255, 0.04)",
-                "border_color": "rgba(255, 255, 255, 0.05)",
-            }
-        },
+        **DECISION_HUB_HOVER,
     )

@@ -8,7 +8,7 @@ from typing import Any, Optional, TYPE_CHECKING
 from ...state.framework_state import GlobalFrameworkState
 from ...components.price_chart import PriceChartState
 from ...utils.database.fetch_data import fetch_company_data, fetch_price_data_async
-from ...preprocessing.financial_statements import get_transformed_dataframes
+from ...utils.preprocessing.financial_statements import get_transformed_dataframes
 from ...utils.session_manager import (
     SessionIsolatedStateMixin,
     session_isolated,
@@ -562,3 +562,7 @@ class State(SessionIsolatedStateMixin, rx.State):
         except Exception as e:
             print(f"Error: {e}")
             return []
+
+    @rx.event
+    def set_profile_dialog_open(self, value: bool):
+        self.profile_dialog_open = value

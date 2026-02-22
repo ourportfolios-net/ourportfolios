@@ -3,10 +3,22 @@
 import reflex as rx
 
 from .state import FrameworkState
+from ...styles import (
+    CARD_STYLE,
+    white,
+    purple,
+    TEXT_PURPLE,
+    TEXT_ACCENT,
+)
+
+
+def _skel(w: str, h: str) -> rx.Component:
+    return rx.skeleton(
+        rx.box(width=w, height=h), loading=True, style={"border_radius": "6px"}
+    )
 
 
 def skeleton_card() -> rx.Component:
-    """Skeleton placeholder for a framework card while loading."""
     return rx.box(
         rx.vstack(
             rx.hstack(
@@ -16,62 +28,30 @@ def skeleton_card() -> rx.Component:
                     style={"border_radius": "8px"},
                 ),
                 rx.spacer(),
-                rx.skeleton(
-                    rx.box(width="70px", height="18px"),
-                    loading=True,
-                    style={"border_radius": "6px"},
-                ),
+                _skel("70px", "18px"),
                 width="100%",
                 align="center",
             ),
             rx.vstack(
-                rx.skeleton(
-                    rx.box(width="60%", height="20px"),
-                    loading=True,
-                    style={"border_radius": "6px"},
-                ),
-                rx.skeleton(
-                    rx.box(width="100%", height="14px"),
-                    loading=True,
-                    style={"border_radius": "6px"},
-                ),
-                rx.skeleton(
-                    rx.box(width="80%", height="14px"),
-                    loading=True,
-                    style={"border_radius": "6px"},
-                ),
-                rx.skeleton(
-                    rx.box(width="90%", height="14px"),
-                    loading=True,
-                    style={"border_radius": "6px"},
-                ),
+                _skel("60%", "20px"),
+                _skel("100%", "14px"),
+                _skel("80%", "14px"),
+                _skel("90%", "14px"),
                 spacing="2",
                 width="100%",
             ),
             rx.spacer(),
             rx.vstack(
-                rx.box(height="1px", width="100%", background="rgba(255,255,255,0.05)"),
+                rx.box(height="1px", width="100%", background=white(0.05)),
                 rx.hstack(
                     rx.vstack(
-                        rx.skeleton(
-                            rx.box(width="45px", height="10px"),
-                            loading=True,
-                            style={"border_radius": "4px"},
-                        ),
-                        rx.skeleton(
-                            rx.box(width="80px", height="14px"),
-                            loading=True,
-                            style={"border_radius": "4px"},
-                        ),
+                        _skel("45px", "10px"),
+                        _skel("80px", "14px"),
                         spacing="1",
                         align="start",
                     ),
                     rx.spacer(),
-                    rx.skeleton(
-                        rx.box(width="90px", height="14px"),
-                        loading=True,
-                        style={"border_radius": "4px"},
-                    ),
+                    _skel("90px", "14px"),
                     width="100%",
                     align="center",
                 ),
@@ -82,16 +62,11 @@ def skeleton_card() -> rx.Component:
             width="100%",
             height="100%",
         ),
-        background="rgba(255,255,255,0.025)",
-        border="1px solid rgba(255,255,255,0.07)",
-        border_radius="14px",
-        padding="1.5rem",
-        min_height="240px",
+        **CARD_STYLE,
     )
 
 
 def category_filter_button(category):
-    """Category filter button — pill shaped, clearly interactive"""
     is_active = FrameworkState.active_category == category.value
 
     return rx.button(
@@ -101,10 +76,10 @@ def category_filter_button(category):
         style=rx.cond(
             is_active,
             {
-                "background": "rgba(139,92,246,0.18)",
-                "border": "1px solid rgba(139,92,246,0.5)",
+                "background": purple(0.18),
+                "border": f"1px solid {purple(0.5)}",
                 "border_radius": "999px",
-                "color": "#c4b5fd",
+                "color": TEXT_PURPLE,
                 "font_weight": "600",
                 "font_size": "13px",
                 "cursor": "pointer",
@@ -113,18 +88,18 @@ def category_filter_button(category):
             },
             {
                 "background": "transparent",
-                "border": "1px solid rgba(255,255,255,0.1)",
+                "border": f"1px solid {white(0.1)}",
                 "border_radius": "999px",
-                "color": "rgba(255,255,255,0.5)",
+                "color": white(0.5),
                 "font_weight": "500",
                 "font_size": "13px",
                 "cursor": "pointer",
                 "transition": "all 0.15s ease",
                 "padding": "0 16px",
                 "_hover": {
-                    "background": "rgba(255,255,255,0.06)",
-                    "color": "rgba(255,255,255,0.85)",
-                    "border_color": "rgba(255,255,255,0.2)",
+                    "background": white(0.06),
+                    "color": white(0.85),
+                    "border_color": white(0.2),
                 },
             },
         ),
@@ -132,15 +107,12 @@ def category_filter_button(category):
 
 
 def framework_card(framework):
-    """Framework card — clean hierarchy, minimal purple, more breathing room"""
-
     return rx.box(
         rx.vstack(
-            # Top: icon + scope badge
             rx.hstack(
                 rx.box(
-                    rx.icon("trending-up", size=15, color="rgba(255,255,255,0.5)"),
-                    background="rgba(255,255,255,0.06)",
+                    rx.icon("trending-up", size=15, color=white(0.5)),
+                    background=white(0.06),
                     border_radius="8px",
                     padding="8px",
                     display="flex",
@@ -162,7 +134,6 @@ def framework_card(framework):
                 width="100%",
                 align="center",
             ),
-            # Title + description block
             rx.vstack(
                 rx.text(
                     framework.title,
@@ -174,7 +145,7 @@ def framework_card(framework):
                 rx.text(
                     framework.description,
                     size="2",
-                    color="rgba(255,255,255,0.38)",
+                    color=white(0.38),
                     line_height="1.65",
                     style={
                         "display": "-webkit-box",
@@ -187,22 +158,21 @@ def framework_card(framework):
                 width="100%",
             ),
             rx.spacer(),
-            # Footer divider + author + CTA
             rx.vstack(
-                rx.box(height="1px", width="100%", background="rgba(255,255,255,0.05)"),
+                rx.box(height="1px", width="100%", background=white(0.05)),
                 rx.hstack(
                     rx.vstack(
                         rx.text(
                             "AUTHOR",
                             size="1",
-                            color="rgba(255,255,255,0.2)",
+                            color=white(0.2),
                             weight="bold",
                             letter_spacing="0.08em",
                         ),
                         rx.text(
                             framework.author,
                             size="2",
-                            color="rgba(255,255,255,0.6)",
+                            color=white(0.6),
                             weight="medium",
                         ),
                         spacing="1",
@@ -211,9 +181,9 @@ def framework_card(framework):
                     rx.spacer(),
                     rx.hstack(
                         rx.text(
-                            "VIEW ASSETS", size="1", weight="bold", color="#a78bfa"
+                            "VIEW ASSETS", size="1", weight="bold", color=TEXT_ACCENT
                         ),
-                        rx.icon("arrow-right", size=12, color="#a78bfa"),
+                        rx.icon("arrow-right", size=12, color=TEXT_ACCENT),
                         spacing="1",
                         align="center",
                     ),
@@ -228,17 +198,13 @@ def framework_card(framework):
             height="100%",
         ),
         on_click=lambda: FrameworkState.show_framework_dialog(framework),
-        background="rgba(255,255,255,0.025)",
-        border="1px solid rgba(255,255,255,0.07)",
-        border_radius="14px",
-        padding="1.5rem",
+        **CARD_STYLE,
         cursor="pointer",
-        min_height="240px",
         style={
             "transition": "all 0.15s ease",
             "_hover": {
-                "background": "rgba(255,255,255,0.045)",
-                "border_color": "rgba(255,255,255,0.13)",
+                "background": white(0.045),
+                "border_color": white(0.13),
                 "transform": "translateY(-1px)",
             },
         },
