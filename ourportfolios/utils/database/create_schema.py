@@ -26,7 +26,6 @@ from vnstock import Vnstock
 
 from ourscheduler.populate_db.company import load_price_df
 from ourportfolios.utils.preprocessing.event_texts import process_events_for_display
-from ourportfolios.utils.database.database import company_sync_engine
 
 SCHEMA = "tickers"
 metadata = MetaData(schema=SCHEMA)
@@ -151,13 +150,13 @@ def create_tickers_schema(engine: Engine) -> None:
     with engine.connect() as conn:
         conn.execute(sa_text(f"CREATE SCHEMA IF NOT EXISTS {SCHEMA}"))
         conn.commit()
-    print(f"[schema] ✓ Schema created")
+    print("[schema] ✓ Schema created")
 
     metadata.create_all(engine, checkfirst=True)
     table_names = ", ".join(t.name for t in metadata.sorted_tables)
     print(f"[schema] ✓ Tables: {table_names}")
-    print(f"[schema] ✓ Indexes: idx_price_history_symbol, idx_price_history_date_brin")
-    print(f"[schema] Done")
+    print("[schema] ✓ Indexes: idx_price_history_symbol, idx_price_history_date_brin")
+    print("[schema] Done")
 
 
 # TODO: Adjust to new vnstock version
