@@ -1,31 +1,58 @@
 import reflex as rx
 from ...state.home_state import HomeState
 from ...components.cards import glass_card
+from ...styles import (
+    glow_orb_style,
+    icon_box_style,
+    SURFACE_CARD_STYLE,
+    DECISION_HUB_HOVER,
+    white,
+    green,
+)
+
+
+def _perf_bar(
+    hover_width: str, hover_color: str, idle_color: str = white(0.15)
+) -> rx.Component:
+    return rx.hstack(
+        rx.box(
+            width="36px", height="14px", border_radius="4px", background=white(0.08)
+        ),
+        rx.box(
+            rx.box(
+                width=rx.cond(HomeState.is_portfolio_hovered, hover_width, "50%"),
+                height="100%",
+                background=rx.cond(
+                    HomeState.is_portfolio_hovered, hover_color, idle_color
+                ),
+                border_radius="4px",
+                transition="all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
+            ),
+            width="100%",
+            height="14px",
+            background=white(0.05),
+            border_radius="4px",
+            overflow="hidden",
+            flex="1",
+            max_width="calc(100% - 100px)",
+        ),
+        spacing="3",
+        align="center",
+        width="100%",
+    )
 
 
 def portfolio_card_with_hover():
-    """Create the portfolio card with unified performance visualization."""
     return rx.box(
-        rx.box(
-            position="absolute",
-            right="-3rem",
-            top="-3rem",
-            width="160px",
-            height="160px",
-            background="rgba(16, 185, 129, 0.1)",
-            filter="blur(60px)",
-            border_radius="9999px",
-            transition="all 0.3s ease",
-        ),
+        rx.box(**glow_orb_style("green")),
         glass_card(
             rx.vstack(
-                # Header row with title/description on left and icon on right
                 rx.hstack(
                     rx.vstack(
                         rx.heading("Manage Portfolio", size="5", font_weight="700"),
                         rx.text(
                             "Track performance, view allocation and rebalance your current holdings.",
-                            color="rgba(255, 255, 255, 0.5)",
+                            color=white(0.5),
                             font_size="12px",
                             line_height="1.5",
                         ),
@@ -35,31 +62,20 @@ def portfolio_card_with_hover():
                     ),
                     rx.box(
                         rx.icon("arrow-right-left", size=20, color="var(--green-9)"),
-                        width="40px",
-                        height="40px",
-                        border_radius="10px",
-                        background="rgba(16, 185, 129, 0.2)",
-                        border="1px solid rgba(16, 185, 129, 0.3)",
-                        display="flex",
-                        align_items="center",
-                        justify_content="center",
-                        flex_shrink="0",
+                        **icon_box_style("green"),
                     ),
                     spacing="3",
                     align="start",
                     width="100%",
                 ),
-                # Spacer to push everything below to the bottom
                 rx.box(flex="1"),
-                # Combined section with total value and performance bars
                 rx.vstack(
-                    # Total value section
                     rx.vstack(
                         rx.box(
                             width="80px",
                             height="10px",
                             border_radius="4px",
-                            background="rgba(255, 255, 255, 0.08)",
+                            background=white(0.08),
                         ),
                         rx.hstack(
                             rx.text(
@@ -85,121 +101,16 @@ def portfolio_card_with_hover():
                         width="100%",
                         margin_bottom="0.75rem",
                     ),
-                    # Performance bars
                     rx.vstack(
-                        # Bar 1 - extends to 70%
-                        rx.hstack(
-                            rx.box(
-                                width="36px",
-                                height="14px",
-                                border_radius="4px",
-                                background="rgba(255, 255, 255, 0.08)",
-                            ),
-                            rx.box(
-                                rx.box(
-                                    width=rx.cond(
-                                        HomeState.is_portfolio_hovered, "70%", "50%"
-                                    ),
-                                    height="100%",
-                                    background=rx.cond(
-                                        HomeState.is_portfolio_hovered,
-                                        "rgba(16, 185, 129, 0.5)",
-                                        "rgba(255, 255, 255, 0.15)",
-                                    ),
-                                    border_radius="4px",
-                                    transition="all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
-                                ),
-                                width="100%",
-                                height="14px",
-                                background="rgba(255, 255, 255, 0.05)",
-                                border_radius="4px",
-                                overflow="hidden",
-                                flex="1",
-                                max_width="calc(100% - 100px)",
-                            ),
-                            spacing="3",
-                            align="center",
-                            width="100%",
-                        ),
-                        # Bar 2 - shrinks to 30%, darker green
-                        rx.hstack(
-                            rx.box(
-                                width="36px",
-                                height="14px",
-                                border_radius="4px",
-                                background="rgba(255, 255, 255, 0.08)",
-                            ),
-                            rx.box(
-                                rx.box(
-                                    width=rx.cond(
-                                        HomeState.is_portfolio_hovered, "30%", "50%"
-                                    ),
-                                    height="100%",
-                                    background=rx.cond(
-                                        HomeState.is_portfolio_hovered,
-                                        "rgba(16, 185, 129, 0.35)",
-                                        "rgba(255, 255, 255, 0.15)",
-                                    ),
-                                    border_radius="4px",
-                                    transition="all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
-                                ),
-                                width="100%",
-                                height="14px",
-                                background="rgba(255, 255, 255, 0.05)",
-                                border_radius="4px",
-                                overflow="hidden",
-                                flex="1",
-                                max_width="calc(100% - 100px)",
-                            ),
-                            spacing="3",
-                            align="center",
-                            width="100%",
-                        ),
-                        # Bar 3 - shrinks to 30%, darker green
-                        rx.hstack(
-                            rx.box(
-                                width="36px",
-                                height="14px",
-                                border_radius="4px",
-                                background="rgba(255, 255, 255, 0.08)",
-                            ),
-                            rx.box(
-                                rx.box(
-                                    width=rx.cond(
-                                        HomeState.is_portfolio_hovered, "30%", "50%"
-                                    ),
-                                    height="100%",
-                                    background=rx.cond(
-                                        HomeState.is_portfolio_hovered,
-                                        "rgba(16, 185, 129, 0.35)",
-                                        "rgba(255, 255, 255, 0.15)",
-                                    ),
-                                    border_radius="4px",
-                                    transition="all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
-                                ),
-                                width="100%",
-                                height="14px",
-                                background="rgba(255, 255, 255, 0.05)",
-                                border_radius="4px",
-                                overflow="hidden",
-                                flex="1",
-                                max_width="calc(100% - 100px)",
-                            ),
-                            spacing="3",
-                            align="center",
-                            width="100%",
-                        ),
+                        _perf_bar("70%", green(0.5)),
+                        _perf_bar("30%", green(0.35)),
+                        _perf_bar("30%", green(0.35)),
                         spacing="3",
                         width="100%",
                     ),
                     spacing="0",
-                    padding="0.75rem",
-                    border_radius="10px",
-                    background="rgba(255, 255, 255, 0.03)",
-                    border="1px solid rgba(255, 255, 255, 0.05)",
-                    width="100%",
+                    **SURFACE_CARD_STYLE,
                 ),
-                # Button
                 rx.button(
                     "Open Portfolio Manager",
                     size="2",
@@ -225,10 +136,5 @@ def portfolio_card_with_hover():
         overflow="hidden",
         on_mouse_enter=HomeState.start_portfolio_hover,
         on_mouse_leave=HomeState.end_portfolio_hover,
-        _hover={
-            "& > :nth-child(2)": {
-                "background": "rgba(255, 255, 255, 0.04)",
-                "border_color": "rgba(255, 255, 255, 0.05)",
-            }
-        },
+        **DECISION_HUB_HOVER,
     )

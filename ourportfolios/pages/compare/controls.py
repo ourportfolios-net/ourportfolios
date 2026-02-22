@@ -1,4 +1,4 @@
-"""Simplified metric selector and comparison controls."""
+"""Metric selector and comparison controls."""
 
 import reflex as rx
 
@@ -8,7 +8,6 @@ from ...state.framework_state import GlobalFrameworkState
 
 
 def comparison_search_bar() -> rx.Component:
-    """Search bar for adding tickers to compare."""
     return rx.box(
         rx.vstack(
             rx.input(
@@ -58,7 +57,6 @@ def comparison_search_bar() -> rx.Component:
 
 
 def comparison_search_suggestion(ticker_value: dict) -> rx.Component:
-    """Suggestion card for the comparison search bar."""
     ticker = ticker_value["symbol"].to(str)
     industry = ticker_value["industry"].to(str)
 
@@ -96,16 +94,11 @@ def comparison_search_suggestion(ticker_value: dict) -> rx.Component:
 
 
 def metric_category_card(category: str) -> rx.Component:
-    """Render a card for a metric category with checkbox to toggle all."""
     return rx.card(
         rx.vstack(
-            # Category header with checkbox
             rx.hstack(
                 rx.text(
-                    category,
-                    size="3",
-                    weight="bold",
-                    color=rx.color("accent", 11),
+                    category, size="3", weight="bold", color=rx.color("accent", 11)
                 ),
                 rx.checkbox(
                     checked=StockComparisonState.category_selection_state[category],
@@ -117,7 +110,6 @@ def metric_category_card(category: str) -> rx.Component:
                 width="100%",
                 justify="between",
             ),
-            # Individual metrics
             rx.box(
                 rx.foreach(
                     StockComparisonState.available_metrics_by_category[category],
@@ -161,18 +153,12 @@ def metric_category_card(category: str) -> rx.Component:
 
 
 def settings_dialog() -> rx.Component:
-    """Dialog component for all settings (metrics + time period + import)."""
     return rx.dialog.root(
         rx.dialog.trigger(
-            rx.button(
-                rx.icon("settings", size=16),
-                variant="outline",
-                size="2",
-            )
+            rx.button(rx.icon("settings", size=16), variant="outline", size="2")
         ),
         rx.dialog.content(
             rx.vstack(
-                # Header
                 rx.hstack(
                     rx.heading("Settings", size="6", weight="bold"),
                     rx.spacer(),
@@ -191,7 +177,6 @@ def settings_dialog() -> rx.Component:
                     align="center",
                     spacing="3",
                 ),
-                # Framework and controls
                 rx.hstack(
                     rx.cond(
                         GlobalFrameworkState.has_selected_framework,
@@ -276,7 +261,6 @@ def settings_dialog() -> rx.Component:
                     spacing="3",
                 ),
                 rx.box(height="1.5em"),
-                # Scrollable metrics section
                 rx.scroll_area(
                     rx.vstack(
                         rx.box(
@@ -296,7 +280,6 @@ def settings_dialog() -> rx.Component:
                     scrollbars="vertical",
                     style={"height": "50vh"},
                 ),
-                # Action buttons
                 rx.hstack(
                     rx.spacer(),
                     rx.button(
@@ -324,7 +307,6 @@ def settings_dialog() -> rx.Component:
 
 
 def comparison_controls() -> rx.Component:
-    """Controls section with search bar and settings."""
     return rx.hstack(
         rx.spacer(),
         rx.hstack(

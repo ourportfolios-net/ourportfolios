@@ -4,55 +4,26 @@ import reflex as rx
 
 from .state import FrameworkState
 from ...components.common_dialog import common_dialog
-
-
-_input_style = {
-    "background": "rgba(255,255,255,0.04)",
-    "border": "1px solid rgba(255,255,255,0.09)",
-    "border_radius": "10px",
-    "color": "white",
-    "width": "100%",
-    "_placeholder": {"color": "rgba(255,255,255,0.22)"},
-    "_focus": {
-        "border_color": "rgba(139,92,246,0.45)",
-        "box_shadow": "0 0 0 3px rgba(139,92,246,0.08)",
-        "outline": "none",
-    },
-}
-
-_select_style = {
-    "background": "rgba(255,255,255,0.04)",
-    "border": "1px solid rgba(255,255,255,0.09)",
-    "border_radius": "10px",
-    "color": "white",
-    "width": "100%",
-    "cursor": "pointer",
-}
-
-_label_style = {
-    "font_size": "11px",
-    "font_weight": "600",
-    "color": "rgba(255,255,255,0.55)",
-    "letter_spacing": "0.07em",
-    "text_transform": "uppercase",
-}
-
-
-def metric_hover_css() -> rx.Component:
-    """Inject CSS for card-hover -> bridge reveal (both above and below)"""
-    return rx.html(
-        """<style>
-        .metric-group:hover .swap-bridge,
-        .metric-group:has(+ .metric-group:hover) .swap-bridge { 
-            opacity: 1 !important; 
-        }
-        </style>"""
-    )
+from ...styles import (
+    INPUT_STYLE,
+    SELECT_STYLE,
+    LABEL_STYLE,
+    BTN_PURPLE,
+    BTN_GHOST,
+    BTN_PURPLE_SM,
+    white,
+    purple,
+    TEXT_PURPLE,
+    ERROR_COLOR,
+    ERROR_BORDER,
+    ERROR_SHADOW,
+    DELETE_HOVER,
+)
 
 
 def field(label: str, control) -> rx.Component:
     return rx.vstack(
-        rx.text(label, style=_label_style),
+        rx.text(label, style=LABEL_STYLE),
         control,
         spacing="1",
         width="100%",
@@ -60,19 +31,21 @@ def field(label: str, control) -> rx.Component:
 
 
 def metric_item(metric, index: int):
-    """Metric card - trash brightens on hover, swap bridge appears on card hover"""
+    # The swap bridge is visible when hovering this row (index == hovered)
+    # OR hovering the row below it (index == hovered - 1).
+    # FrameworkState needs:
+    #   hovered_metric_index: int = -1
+    #   def set_hovered_metric_index(self, i: int): self.hovered_metric_index = i
+    bridge_visible = (FrameworkState.hovered_metric_index == index) | (
+        FrameworkState.hovered_metric_index == index + 1
+    )
+
     return rx.box(
-        # Card row
         rx.box(
             rx.hstack(
                 rx.vstack(
-                    rx.text(
-                        metric.name,
-                        size="2",
-                        weight="medium",
-                        color="rgba(255,255,255,0.85)",
-                    ),
-                    rx.text(metric.category, size="1", color="rgba(255,255,255,0.28)"),
+                    rx.text(metric.name, size="2", weight="medium", color=white(0.85)),
+                    rx.text(metric.category, size="1", color=white(0.28)),
                     spacing="0",
                     align="start",
                 ),
@@ -84,38 +57,35 @@ def metric_item(metric, index: int):
                     display="flex",
                     align_items="center",
                     style={
-                        "color": "rgba(255,255,255,0.55)",
+                        "color": white(0.55),
                         "transition": "color 0.15s ease",
-                        "_hover": {"color": "rgba(236, 93, 94, 0.85)"},
+                        "_hover": {"color": DELETE_HOVER},
                     },
                 ),
                 align="center",
                 width="100%",
             ),
             padding="0.6em 0.75em",
-            background="rgba(255,255,255,0.035)",
-            border="1px solid rgba(255,255,255,0.09)",
+            background=white(0.035),
+            border=f"1px solid {white(0.09)}",
             border_radius="0.625em",
             width="100%",
             style={
                 "transition": "border-color 0.15s ease",
                 "_hover": {
-                    "border_color": "rgba(255,255,255,0.15)",
-                    "background": "rgba(255,255,255,0.045)",
+                    "border_color": white(0.15),
+                    "background": white(0.045),
                 },
             },
         ),
-        # Swap bridge — much larger, overlaps heavily into both cards
         rx.cond(
             index < FrameworkState.metrics_count - 1,
             rx.box(
                 rx.box(
                     rx.center(
                         rx.hstack(
-                            rx.icon("arrow-up", size=10, color="rgba(255,255,255,0.7)"),
-                            rx.icon(
-                                "arrow-down", size=10, color="rgba(255,255,255,0.7)"
-                            ),
+                            rx.icon("arrow-up", size=10, color=white(0.7)),
+                            rx.icon("arrow-down", size=10, color=white(0.7)),
                             spacing="0",
                         ),
                         width="100%",
@@ -126,21 +96,20 @@ def metric_item(metric, index: int):
                     style={
                         "width": "2.8em",
                         "height": "2.2em",
-                        "background": "rgba(255,255,255,0.04)",
-                        "border": "1px solid rgba(255,255,255,0.08)",
+                        "background": white(0.04),
+                        "border": f"1px solid {white(0.08)}",
                         "border_radius": "0.5em",
                         "margin": "-0.6em auto",
-                        "opacity": "0",
-                        "transition": "all 0.15s ease",
+                        "transition": "opacity 0.15s ease",
+                        "opacity": rx.cond(bridge_visible, "1", "0"),
                         "display": "flex",
                         "align_items": "center",
                         "justify_content": "center",
                         "_hover": {
-                            "background": "rgba(255,255,255,0.08)",
-                            "border_color": "rgba(255,255,255,0.15)",
+                            "background": white(0.08),
+                            "border_color": white(0.15),
                         },
                     },
-                    class_name="swap-bridge",
                 ),
                 width="100%",
                 display="flex",
@@ -149,10 +118,8 @@ def metric_item(metric, index: int):
             rx.fragment(),
         ),
         width="100%",
-        class_name="metric-group",
-        style={
-            "_hover .swap-bridge": {"opacity": "1"},
-        },
+        on_mouse_enter=FrameworkState.set_hovered_metric_index(index),
+        on_mouse_leave=FrameworkState.set_hovered_metric_index(-1),
     )
 
 
@@ -166,7 +133,7 @@ def add_metric_selector():
                 on_change=FrameworkState.set_new_metric_category,
                 size="3",
                 width="100%",
-                style=_select_style,
+                style=SELECT_STYLE,
             ),
         ),
         field(
@@ -187,7 +154,7 @@ def add_metric_selector():
                 on_change=FrameworkState.set_new_metric_name,
                 size="3",
                 width="100%",
-                style=_select_style,
+                style=SELECT_STYLE,
             ),
         ),
         rx.hstack(
@@ -195,31 +162,14 @@ def add_metric_selector():
                 "Cancel",
                 on_click=FrameworkState.close_add_metric_dialog,
                 size="2",
-                style={
-                    "background": "rgba(255,255,255,0.05)",
-                    "border": "1px solid rgba(255,255,255,0.1)",
-                    "border_radius": "8px",
-                    "color": "rgba(255,255,255,0.5)",
-                    "cursor": "pointer",
-                    "flex": "1",
-                    "_hover": {"background": "rgba(255,255,255,0.09)"},
-                },
+                style=BTN_GHOST,
             ),
             rx.button(
                 "Add Metric",
                 on_click=FrameworkState.add_metric_to_form,
                 size="2",
                 disabled=FrameworkState.new_metric_name == "",
-                style={
-                    "background": "rgba(139,92,246,0.18)",
-                    "border": "1px solid rgba(139,92,246,0.4)",
-                    "border_radius": "8px",
-                    "color": "#c4b5fd",
-                    "font_weight": "600",
-                    "cursor": "pointer",
-                    "flex": "1",
-                    "_hover": {"background": "rgba(139,92,246,0.28)"},
-                },
+                style=BTN_PURPLE_SM,
             ),
             spacing="2",
             width="100%",
@@ -244,7 +194,7 @@ def add_metric_selector():
 def metrics_management_panel():
     return rx.vstack(
         rx.hstack(
-            rx.text("METRICS", style=_label_style),
+            rx.text("METRICS", style=LABEL_STYLE),
             rx.spacer(),
             rx.button(
                 rx.icon("plus", size=12),
@@ -252,13 +202,13 @@ def metrics_management_panel():
                 on_click=FrameworkState.open_add_metric_dialog,
                 size="1",
                 style={
-                    "background": "rgba(139,92,246,0.12)",
-                    "border": "1px solid rgba(139,92,246,0.3)",
+                    "background": purple(0.12),
+                    "border": f"1px solid {purple(0.3)}",
                     "border_radius": "6px",
-                    "color": "#c4b5fd",
+                    "color": TEXT_PURPLE,
                     "font_weight": "600",
                     "cursor": "pointer",
-                    "_hover": {"background": "rgba(139,92,246,0.22)"},
+                    "_hover": {"background": purple(0.22)},
                 },
             ),
             width="100%",
@@ -283,69 +233,53 @@ def metrics_management_panel():
     )
 
 
+def _input_with_error(placeholder, value, on_change, error_key):
+    return rx.vstack(
+        rx.input(
+            placeholder=placeholder,
+            value=value,
+            on_change=on_change,
+            size="3",
+            width="100%",
+            style=rx.cond(
+                FrameworkState.form_errors.contains(error_key),
+                {**INPUT_STYLE, "border": ERROR_BORDER, "box_shadow": ERROR_SHADOW},
+                INPUT_STYLE,
+            ),
+        ),
+        rx.cond(
+            FrameworkState.form_errors.contains(error_key),
+            rx.text(FrameworkState.form_errors[error_key], size="1", color=ERROR_COLOR),
+            rx.fragment(),
+        ),
+        spacing="1",
+        width="100%",
+    )
+
+
 def add_framework_dialog():
     content = rx.vstack(
-        metric_hover_css(),
         rx.hstack(
-            # Left: form — tight, full-width controls
             rx.vstack(
                 rx.hstack(
                     rx.vstack(
-                        rx.text("Title *", style=_label_style),
-                        rx.input(
-                            placeholder="Framework title",
-                            value=FrameworkState.form_title,
-                            on_change=FrameworkState.set_form_title,
-                            size="3",
-                            width="100%",
-                            style=rx.cond(
-                                FrameworkState.form_errors.contains("title"),
-                                {
-                                    **_input_style,
-                                    "border": "1px solid rgba(255,80,80,0.5)",
-                                    "box_shadow": "0 0 0 3px rgba(255,80,80,0.08)",
-                                },
-                                _input_style,
-                            ),
-                        ),
-                        rx.cond(
-                            FrameworkState.form_errors.contains("title"),
-                            rx.text(
-                                FrameworkState.form_errors["title"],
-                                size="1",
-                                color="rgba(255,100,100,0.8)",
-                            ),
-                            rx.fragment(),
+                        rx.text("Title *", style=LABEL_STYLE),
+                        _input_with_error(
+                            "Framework title",
+                            FrameworkState.form_title,
+                            FrameworkState.set_form_title,
+                            "title",
                         ),
                         spacing="1",
                         width="100%",
                     ),
                     rx.vstack(
-                        rx.text("Author *", style=_label_style),
-                        rx.input(
-                            placeholder="Author name",
-                            value=FrameworkState.form_author,
-                            on_change=FrameworkState.set_form_author,
-                            size="3",
-                            width="100%",
-                            style=rx.cond(
-                                FrameworkState.form_errors.contains("author"),
-                                {
-                                    **_input_style,
-                                    "border": "1px solid rgba(255,80,80,0.5)",
-                                    "box_shadow": "0 0 0 3px rgba(255,80,80,0.08)",
-                                },
-                                _input_style,
-                            ),
-                        ),
-                        rx.cond(
-                            FrameworkState.form_errors.contains("author"),
-                            rx.text(
-                                FrameworkState.form_errors["author"],
-                                size="1",
-                                color="rgba(255,100,100,0.8)",
-                            ),
-                            rx.fragment(),
+                        rx.text("Author *", style=LABEL_STYLE),
+                        _input_with_error(
+                            "Author name",
+                            FrameworkState.form_author,
+                            FrameworkState.set_form_author,
+                            "author",
                         ),
                         spacing="1",
                         width="100%",
@@ -355,40 +289,40 @@ def add_framework_dialog():
                 ),
                 rx.hstack(
                     rx.vstack(
-                        rx.text("Industry *", style=_label_style),
+                        rx.text("Industry *", style=LABEL_STYLE),
                         rx.select(
                             ["general", "bank", "financial_services"],
                             value=FrameworkState.form_industry,
                             on_change=FrameworkState.set_form_industry,
                             size="3",
                             width="100%",
-                            style=_select_style,
+                            style=SELECT_STYLE,
                         ),
                         spacing="1",
                         width="100%",
                     ),
                     rx.vstack(
-                        rx.text("Scope *", style=_label_style),
+                        rx.text("Scope *", style=LABEL_STYLE),
                         rx.select(
                             ["fundamental", "technical"],
                             value=FrameworkState.form_scope,
                             on_change=FrameworkState.set_form_scope,
                             size="3",
                             width="100%",
-                            style=_select_style,
+                            style=SELECT_STYLE,
                         ),
                         spacing="1",
                         width="100%",
                     ),
                     rx.vstack(
-                        rx.text("Complexity *", style=_label_style),
+                        rx.text("Complexity *", style=LABEL_STYLE),
                         rx.select(
                             ["beginner-friendly", "complex"],
                             value=FrameworkState.form_complexity,
                             on_change=FrameworkState.set_form_complexity,
                             size="3",
                             width="100%",
-                            style=_select_style,
+                            style=SELECT_STYLE,
                         ),
                         spacing="1",
                         width="100%",
@@ -397,7 +331,7 @@ def add_framework_dialog():
                     width="100%",
                 ),
                 rx.vstack(
-                    rx.text("Description", style=_label_style),
+                    rx.text("Description", style=LABEL_STYLE),
                     rx.text_area(
                         placeholder="Describe this framework's strategy and goals...",
                         value=FrameworkState.form_description,
@@ -405,7 +339,7 @@ def add_framework_dialog():
                         size="3",
                         width="100%",
                         style={
-                            **_input_style,
+                            **INPUT_STYLE,
                             "flex": "1",
                             "min_height": "7em",
                             "resize": "none",
@@ -420,40 +354,26 @@ def add_framework_dialog():
                 flex="2",
                 height="100%",
             ),
-            # Vertical divider
             rx.box(
                 width="1px",
-                background="rgba(255,255,255,0.06)",
+                background=white(0.06),
                 align_self="stretch",
                 flex_shrink="0",
             ),
-            # Right: metrics
-            rx.vstack(
-                metrics_management_panel(),
-                width="100%",
-                flex="1",
-            ),
+            rx.vstack(metrics_management_panel(), width="100%", flex="1"),
             spacing="5",
             width="100%",
             align="start",
             height="100%",
             flex="1",
         ),
-        # Footer — no divider line
         rx.hstack(
             rx.spacer(),
             rx.button(
                 "Cancel",
                 on_click=FrameworkState.close_add_dialog,
                 size="3",
-                style={
-                    "background": "rgba(255,255,255,0.05)",
-                    "border": "1px solid rgba(255,255,255,0.1)",
-                    "border_radius": "10px",
-                    "color": "rgba(255,255,255,0.5)",
-                    "cursor": "pointer",
-                    "_hover": {"background": "rgba(255,255,255,0.09)"},
-                },
+                style=BTN_GHOST,
             ),
             rx.button(
                 "Add Framework",
@@ -465,15 +385,7 @@ def add_framework_dialog():
                     True,
                     False,
                 ),
-                style={
-                    "background": "rgba(139,92,246,0.18)",
-                    "border": "1px solid rgba(139,92,246,0.45)",
-                    "border_radius": "10px",
-                    "color": "#c4b5fd",
-                    "font_weight": "600",
-                    "cursor": "pointer",
-                    "_hover": {"background": "rgba(139,92,246,0.28)"},
-                },
+                style=BTN_PURPLE,
             ),
             spacing="2",
             width="100%",
