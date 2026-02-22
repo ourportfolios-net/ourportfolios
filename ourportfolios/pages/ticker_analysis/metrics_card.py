@@ -2,29 +2,99 @@
 
 import reflex as rx
 
-from ...components.cards import glass_card
+from ...styles import white, purple, CARD_BORDER, TEXT_PURPLE
 from ...components.financial_statement import financial_statements
+from ...state.framework_state import GlobalFrameworkState
 from .state import State
-from .performance_cards import performance_cards, framework_indicator
+from .performance_cards import performance_cards
+
+_CARD_RADIUS = "10px"
 
 
 def key_metrics_card():
-    return glass_card(
+    return rx.box(
         rx.vstack(
             rx.tabs.root(
                 rx.hstack(
-                    framework_indicator(),
+                    # Tabs on the left
                     rx.tabs.list(
                         rx.tabs.trigger("Performance", value="performance"),
                         rx.tabs.trigger("Financial Statements", value="statement"),
                     ),
                     rx.spacer(),
+                    # Framework indicator inline with tabs
+                    rx.cond(
+                        GlobalFrameworkState.has_selected_framework,
+                        rx.link(
+                            rx.hstack(
+                                rx.icon("target", size=13),
+                                rx.text(
+                                    GlobalFrameworkState.framework_display_name,
+                                    size="2",
+                                    weight="medium",
+                                ),
+                                rx.icon("external-link", size=11),
+                                spacing="2",
+                                align="center",
+                                padding="0.35em 0.65em",
+                                style={
+                                    "backgroundColor": purple(0.1),
+                                    "border": f"1px solid {purple(0.3)}",
+                                    "borderRadius": "6px",
+                                    "color": TEXT_PURPLE,
+                                    "transition": "all 0.15s ease",
+                                    "_hover": {
+                                        "backgroundColor": purple(0.18),
+                                        "borderColor": purple(0.45),
+                                    },
+                                },
+                            ),
+                            href="/framework",
+                            underline="none",
+                        ),
+                        rx.hstack(
+                            rx.icon("target", size=13, color=white(0.35)),
+                            rx.text(
+                                "No framework selected.",
+                                size="2",
+                                color=white(0.45),
+                            ),
+                            rx.link(
+                                rx.hstack(
+                                    rx.icon("arrow-right", size=12),
+                                    rx.text("Select", size="2", weight="bold"),
+                                    spacing="1",
+                                    align="center",
+                                    padding="0.3em 0.6em",
+                                    style={
+                                        "backgroundColor": purple(0.12),
+                                        "border": f"1px solid {purple(0.35)}",
+                                        "borderRadius": "6px",
+                                        "color": TEXT_PURPLE,
+                                        "transition": "all 0.15s ease",
+                                        "_hover": {
+                                            "backgroundColor": purple(0.22),
+                                            "borderColor": purple(0.5),
+                                        },
+                                    },
+                                ),
+                                href="/framework",
+                                underline="none",
+                            ),
+                            spacing="2",
+                            align="center",
+                        ),
+                    ),
+                    # Quarterly / Yearly toggle on the far right
                     rx.hstack(
                         rx.badge(
                             "Quarterly",
                             color_scheme=rx.cond(
-                                State.switch_value == "quarter", "accent", "gray"
+                                State.switch_value == "quarter", "violet", "gray"
                             ),
+                            variant="soft",
+                            size="1",
+                            style={"border_radius": "6px"},
                         ),
                         rx.switch(
                             checked=State.switch_value == "year",
@@ -33,11 +103,15 @@ def key_metrics_card():
                         rx.badge(
                             "Yearly",
                             color_scheme=rx.cond(
-                                State.switch_value == "year", "accent", "gray"
+                                State.switch_value == "year", "violet", "gray"
                             ),
+                            variant="soft",
+                            size="1",
+                            style={"border_radius": "6px"},
                         ),
                         justify="center",
                         align="center",
+                        spacing="2",
                     ),
                     width="100%",
                     align="center",
@@ -61,10 +135,7 @@ def key_metrics_card():
                         width="100%",
                         padding_top="2em",
                         padding_left="0.5em",
-                        style={
-                            "display": "block",
-                            "textAlign": "left",
-                        },
+                        style={"display": "block", "textAlign": "left"},
                     ),
                     value="statement",
                     padding_top="1em",
@@ -76,9 +147,12 @@ def key_metrics_card():
             justify="center",
             width="100%",
         ),
-        padding="1em",
-        flex=2,
+        background=white(0.025),
+        border=CARD_BORDER,
+        border_radius=_CARD_RADIUS,
+        padding="1rem",
+        flex="2",
         width="100%",
-        min_width=0,
+        min_width="0",
         max_width="100%",
     )

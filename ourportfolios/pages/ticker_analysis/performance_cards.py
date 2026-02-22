@@ -2,42 +2,51 @@
 
 import reflex as rx
 
-from ...components.cards import glass_card
-from ...state.framework_state import GlobalFrameworkState
+from ...styles import white, CARD_BORDER
 from .state import State
+
+_CARD_RADIUS = "10px"
+
+
+def _skel(w: str, h: str) -> rx.Component:
+    return rx.skeleton(
+        rx.box(width=w, height=h),
+        loading=True,
+        style={"border_radius": "6px"},
+    )
 
 
 def performance_card_skeleton():
-    """Skeleton for a single performance chart card"""
-    return glass_card(
+    return rx.box(
         rx.vstack(
             rx.hstack(
-                rx.skeleton(height="1.5rem", width="8rem", border_radius="14px"),
+                _skel("40%", "18px"),
                 rx.spacer(),
-                rx.skeleton(height="2rem", width="10rem", border_radius="14px"),
+                _skel("30%", "26px"),
                 align="center",
-                justify="between",
                 width="100%",
             ),
-            rx.skeleton(height="250px", width="100%", border_radius="14px"),
-            spacing="2",
+            _skel("100%", "250px"),
+            spacing="3",
             align="stretch",
             height="100%",
         ),
+        background=white(0.025),
+        border=CARD_BORDER,
+        border_radius=_CARD_RADIUS,
+        padding="0.75rem",
         width="100%",
         height="100%",
-        padding="0.75em",
     )
 
 
 def create_dynamic_chart(category: str):
-    """Create a dynamic chart for a specific category"""
     has_no_chart_data = State.get_chart_data_for_category[category].length() == 0
 
     return rx.cond(
         has_no_chart_data,
         performance_card_skeleton(),
-        glass_card(
+        rx.box(
             rx.vstack(
                 rx.hstack(
                     rx.heading(category, size="4", weight="medium"),
@@ -51,9 +60,14 @@ def create_dynamic_chart(category: str):
                                 category, value
                             ),
                             size="1",
-                            style={"border_radius": "14px"},
+                            style={
+                                "border_radius": "8px",
+                                "background": white(0.04),
+                                "border": f"1px solid {white(0.09)}",
+                                "color": "white",
+                            },
                         ),
-                        rx.text("No metrics", size="1", color="gray"),
+                        rx.text("No metrics", size="1", color=white(0.3)),
                     ),
                     align="center",
                     justify="between",
@@ -75,9 +89,7 @@ def create_dynamic_chart(category: str):
                             height=60,
                             tick={"fontSize": 14},
                         ),
-                        rx.recharts.y_axis(
-                            tick={"fontSize": 14},
-                        ),
+                        rx.recharts.y_axis(tick={"fontSize": 14}),
                         rx.recharts.tooltip(),
                         data=State.get_chart_data_for_category[category],
                         width="100%",
@@ -92,56 +104,21 @@ def create_dynamic_chart(category: str):
                 align="stretch",
                 height="100%",
             ),
+            background=white(0.025),
+            border=CARD_BORDER,
+            border_radius=_CARD_RADIUS,
+            padding="0.75rem",
             width="100%",
             height="100%",
-            padding="0.75em",
         ),
-    )
-
-
-def framework_indicator():
-    """Show which framework is currently selected."""
-    return rx.cond(
-        GlobalFrameworkState.has_selected_framework,
-        rx.link(
-            rx.hstack(
-                rx.icon("target", size=16),
-                rx.text(
-                    f"Framework: {GlobalFrameworkState.framework_display_name}",
-                    size="2",
-                    weight="medium",
-                ),
-                rx.icon("external-link", size=14),
-                spacing="2",
-                align="center",
-                padding="0.5em",
-                style={
-                    "backgroundColor": rx.color("violet", 2),
-                    "border": f"1px solid {rx.color('violet', 4)}",
-                    "borderRadius": "6px",
-                    "transition": "all 0.2s ease",
-                    "_hover": {
-                        "backgroundColor": rx.color("violet", 3),
-                        "borderColor": rx.color("violet", 5),
-                        "transform": "translateY(-1px)",
-                    },
-                },
-            ),
-            href="/framework",
-            underline="none",
-        ),
-        None,
     )
 
 
 def performance_cards():
-    """Create performance cards with dynamic charts that adapt to any number of categories"""
     categories = State.get_categories_list
 
-    # Use loading flag instead of checking data directly
     return rx.cond(
         State.is_loading_financial,
-        # Show skeleton grid while loading
         rx.box(
             rx.fragment(
                 performance_card_skeleton(),
@@ -157,57 +134,17 @@ def performance_cards():
             width="100%",
             style={"min_width": "0"},
         ),
-        # Show actual content when loaded
-        rx.vstack(
-            rx.cond(
-                ~GlobalFrameworkState.has_selected_framework,
-                rx.callout.root(
-                    rx.callout.icon(
-                        rx.icon("target", size=20),
-                    ),
-                    rx.callout.text(
-                        rx.hstack(
-                            rx.text(
-                                "No investment framework selected. ",
-                                size="2",
-                                weight="medium",
-                            ),
-                            rx.link(
-                                rx.button(
-                                    rx.icon("arrow-right", size=16),
-                                    "Select a Framework",
-                                    size="2",
-                                    variant="soft",
-                                    color_scheme="violet",
-                                ),
-                                href="/framework",
-                                underline="none",
-                            ),
-                            spacing="3",
-                            align="center",
-                        )
-                    ),
-                    color_scheme="violet",
-                    variant="surface",
-                    size="1",
-                    style={"marginBottom": "1em"},
-                ),
-                None,
+        rx.box(
+            rx.foreach(
+                categories,
+                lambda category: create_dynamic_chart(category),
             ),
-            rx.box(
-                rx.foreach(
-                    categories,
-                    lambda category: create_dynamic_chart(category),
-                ),
-                display="grid",
-                grid_template_columns="repeat(3, 1fr)",
-                gap="1rem",
-                width="100%",
-                max_height="70vh",
-                overflow="visible",
-                style={"min_width": "0"},
-            ),
-            spacing="3",
+            display="grid",
+            grid_template_columns="repeat(3, 1fr)",
+            gap="1rem",
             width="100%",
+            max_height="70vh",
+            overflow="visible",
+            style={"min_width": "0"},
         ),
     )
