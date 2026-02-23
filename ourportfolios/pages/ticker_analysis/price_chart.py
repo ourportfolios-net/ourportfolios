@@ -185,7 +185,12 @@ def price_chart_card():
                         left="0",
                     ),
                 ),
-                rx.box(id="price_chart", width="100%", height="100%"),
+                rx.box(
+                    id="price_chart",
+                    width="100%",
+                    height="100%",
+                    key=State.render_key,
+                ),
                 width="100%",
                 height="350px",
                 max_height="350px",
