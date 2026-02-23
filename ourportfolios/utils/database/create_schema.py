@@ -22,133 +22,156 @@ from sqlalchemy import (
     text as sa_text,
 )
 from sqlalchemy.dialects.postgresql import insert as pg_insert
-from vnstock import Vnstock
+from vnstock import Vnstock, Trading
+from database import company_sync_engine
 
-from ourscheduler.populate_db.company import load_price_df
 from ourportfolios.utils.preprocessing.event_texts import process_events_for_display
 
-SCHEMA = "tickers"
-metadata = MetaData(schema=SCHEMA)
 
-overview_df = Table(
-    "overview_df",
-    metadata,
-    Column("symbol", Text, primary_key=True),
-    Column("exchange", Text),
-    Column("industry", Text),
-    Column("no_shareholders", BigInteger),
-    Column("foreign_percent", Double),
-    Column("outstanding_share", Double),
-    Column("issue_share", Double),
-    Column("established_year", Text),
-    Column("no_employees", BigInteger),
-    Column("short_name", Text),
-    Column("website", Text),
-    Column("market_cap", BigInteger),
-)
+def _build_metadata(schema_name: str) -> tuple[MetaData, dict]:
+    """Build metadata and all table objects for a given schema name."""
+    metadata = MetaData(schema=schema_name)
 
-price_df = Table(
-    "price_df",
-    metadata,
-    Column("symbol", Text, primary_key=True),
-    Column("current_price", Double),
-    Column("price_change", Double),
-    Column("pct_price_change", Double),
-    Column("accumulated_volume", BigInteger),
-)
+    overview_df = Table(
+        "overview_df",
+        metadata,
+        Column("symbol", Text, primary_key=True),
+        Column("exchange", Text),
+        Column("industry", Text),
+        Column("no_shareholders", BigInteger),
+        Column("foreign_percent", Double),
+        Column("outstanding_share", Double),
+        Column("issue_share", Double),
+        Column("established_year", Text),
+        Column("no_employees", BigInteger),
+        Column("short_name", Text),
+        Column("website", Text),
+        Column("market_cap", BigInteger),
+    )
 
-price_history = Table(
-    "price_history",
-    metadata,
-    Column("symbol", Text, ForeignKey(f"{SCHEMA}.overview_df.symbol"), nullable=False),
-    Column("date", Date, nullable=False),
-    Column("open", Double),
-    Column("high", Double),
-    Column("low", Double),
-    Column("close", Double, nullable=False),
-    Column("volume", BigInteger),
-    UniqueConstraint("symbol", "date", name="price_history_pkey"),
-    Index("idx_price_history_symbol", "symbol"),
-    Index("idx_price_history_date_brin", "date", postgresql_using="brin"),
-)
+    price_df = Table(
+        "price_df",
+        metadata,
+        Column("symbol", Text, primary_key=True),
+        Column("current_price", Double),
+        Column("price_change", Double),
+        Column("pct_price_change", Double),
+        Column("accumulated_volume", BigInteger),
+    )
 
-stats_df = Table(
-    "stats_df",
-    metadata,
-    Column("id", BigInteger, Identity(), primary_key=True),
-    Column("symbol", Text, ForeignKey(f"{SCHEMA}.overview_df.symbol")),
-    Column("roe", Double),
-    Column("roa", Double),
-    Column("ev_ebitda", Double),
-    Column("dividend_yield", Double),
-    Column("gross_margin", Double),
-    Column("net_margin", Double),
-    Column("doe", Double),
-    Column("alpha", Double),
-    Column("beta", Double),
-    Column("pe", Double),
-    Column("pb", Double),
-    Column("eps", BigInteger),
-    Column("ps", Double),
-    Column("ev", Double),
-    Column("rsi14", Double),
-)
+    price_history = Table(
+        "price_history",
+        metadata,
+        Column(
+            "symbol",
+            Text,
+            ForeignKey(f"{schema_name}.overview_df.symbol"),
+            nullable=False,
+        ),
+        Column("date", Date, nullable=False),
+        Column("open", Double),
+        Column("high", Double),
+        Column("low", Double),
+        Column("close", Double, nullable=False),
+        Column("volume", BigInteger),
+        UniqueConstraint("symbol", "date", name="price_history_pkey"),
+        Index("idx_price_history_symbol", "symbol"),
+        Index("idx_price_history_date_brin", "date", postgresql_using="brin"),
+    )
 
-shareholders_df = Table(
-    "shareholders_df",
-    metadata,
-    Column("symbol", Text, ForeignKey(f"{SCHEMA}.overview_df.symbol")),
-    Column("share_holder", Text),
-    Column("share_own_percent", Double),
-)
+    stats_df = Table(
+        "stats_df",
+        metadata,
+        Column("id", BigInteger, Identity(), primary_key=True),
+        Column("symbol", Text, ForeignKey(f"{schema_name}.overview_df.symbol")),
+        Column("roe", Double),
+        Column("roa", Double),
+        Column("ev_ebitda", Double),
+        Column("dividend_yield", Double),
+        Column("gross_margin", Double),
+        Column("net_margin", Double),
+        Column("doe", Double),
+        Column("alpha", Double),
+        Column("beta", Double),
+        Column("pe", Double),
+        Column("pb", Double),
+        Column("eps", BigInteger),
+        Column("ps", Double),
+        Column("ev", Double),
+        Column("rsi14", Double),
+    )
 
-events_df = Table(
-    "events_df",
-    metadata,
-    Column("symbol", Text, ForeignKey(f"{SCHEMA}.overview_df.symbol")),
-    Column("event_name", Text),
-    Column("price_change_ratio", Double),
-    Column("event_desc", Text),
-)
+    shareholders_df = Table(
+        "shareholders_df",
+        metadata,
+        Column("symbol", Text, ForeignKey(f"{schema_name}.overview_df.symbol")),
+        Column("share_holder", Text),
+        Column("share_own_percent", Double),
+    )
 
-news_df = Table(
-    "news_df",
-    metadata,
-    Column("symbol", Text, ForeignKey(f"{SCHEMA}.overview_df.symbol")),
-    Column("title", Text),
-    Column("publish_date", Text),
-    Column("price_change_ratio", Double),
-)
+    events_df = Table(
+        "events_df",
+        metadata,
+        Column("symbol", Text, ForeignKey(f"{schema_name}.overview_df.symbol")),
+        Column("event_name", Text),
+        Column("price_change_ratio", Double),
+        Column("event_desc", Text),
+    )
 
-profile_df = Table(
-    "profile_df",
-    metadata,
-    Column("symbol", Text, ForeignKey(f"{SCHEMA}.overview_df.symbol")),
-    Column("company_name", Text),
-    Column("company_profile", Text),
-    Column("history_dev", Text),
-    Column("company_promise", Text),
-    Column("business_risk", Text),
-    Column("key_developments", Text),
-    Column("business_strategies", Text),
-)
+    news_df = Table(
+        "news_df",
+        metadata,
+        Column("symbol", Text, ForeignKey(f"{schema_name}.overview_df.symbol")),
+        Column("title", Text),
+        Column("publish_date", Text),
+        Column("price_change_ratio", Double),
+    )
 
-officers_df = Table(
-    "officers_df",
-    metadata,
-    Column("symbol", Text, ForeignKey(f"{SCHEMA}.overview_df.symbol")),
-    Column("officer_name", Text),
-    Column("officer_position", Text),
-    Column("officer_own_percent", Double),
-)
+    profile_df = Table(
+        "profile_df",
+        metadata,
+        Column("symbol", Text, ForeignKey(f"{schema_name}.overview_df.symbol")),
+        Column("company_name", Text),
+        Column("company_profile", Text),
+        Column("history_dev", Text),
+        Column("company_promise", Text),
+        Column("business_risk", Text),
+        Column("key_developments", Text),
+        Column("business_strategies", Text),
+    )
+
+    officers_df = Table(
+        "officers_df",
+        metadata,
+        Column("symbol", Text, ForeignKey(f"{schema_name}.overview_df.symbol")),
+        Column("officer_name", Text),
+        Column("officer_position", Text),
+        Column("officer_own_percent", Double),
+    )
+
+    tables = {
+        "overview_df": overview_df,
+        "price_df": price_df,
+        "price_history": price_history,
+        "stats_df": stats_df,
+        "shareholders_df": shareholders_df,
+        "events_df": events_df,
+        "news_df": news_df,
+        "profile_df": profile_df,
+        "officers_df": officers_df,
+    }
+
+    return metadata, tables
 
 
-def create_tickers_schema(engine: Engine) -> None:
-    """Create tickers schema and all tables idempotently."""
-    print(f"[schema] Initializing '{SCHEMA}'...")
+def create_tickers_schema(schema_name: str, engine: Engine) -> tuple[MetaData, dict]:
+    """Create tickers schema and all tables idempotently. Returns (metadata, tables)."""
+    print(f"[schema] Initializing '{schema_name}'...")
+
+    metadata, tables = _build_metadata(schema_name)
 
     with engine.connect() as conn:
-        conn.execute(sa_text(f"CREATE SCHEMA IF NOT EXISTS {SCHEMA}"))
+        conn.execute(sa_text(f"CREATE SCHEMA IF NOT EXISTS {schema_name}"))
         conn.commit()
     print("[schema] ✓ Schema created")
 
@@ -158,10 +181,24 @@ def create_tickers_schema(engine: Engine) -> None:
     print("[schema] ✓ Indexes: idx_price_history_symbol, idx_price_history_date_brin")
     print("[schema] Done")
 
+    return metadata, tables
+
 
 # TODO: Adjust to new vnstock version
-def add_ticker(symbol: str, engine: Engine, years_history: int = 3) -> None:
+def add_ticker(
+    symbol: str, engine: Engine, schema_name: str, years_history: int = 3
+) -> None:
     """Fetch all data for one ticker from vnstock and insert into every table."""
+    _, tables = _build_metadata(schema_name)
+    overview_df = tables["overview_df"]
+    price_df = tables["price_df"]
+    price_history = tables["price_history"]
+    shareholders_df = tables["shareholders_df"]
+    events_df = tables["events_df"]
+    news_df = tables["news_df"]
+    profile_df = tables["profile_df"]
+    officers_df = tables["officers_df"]
+
     print(f"[{symbol}] Starting population...")
     stock = Vnstock().stock(symbol=symbol, source="VCI")
     company = stock.company
@@ -177,18 +214,8 @@ def add_ticker(symbol: str, engine: Engine, years_history: int = 3) -> None:
         )
     if "foreign_percent" in raw.columns:
         raw["foreign_percent"] = round(raw["foreign_percent"] * 100, 2)
-    raw = raw.drop(
-        columns=[
-            "industry_id",
-            "industry_id_v2",
-            "delta_in_year",
-            "delta_in_month",
-            "delta_in_week",
-            "stock_rating",
-            "company_type",
-        ],
-        errors="ignore",
-    )
+    valid_cols = {c.name for c in overview_df.c}
+    raw = raw.loc[:, raw.columns.isin(valid_cols)]
 
     stmt = (
         pg_insert(overview_df)
@@ -406,6 +433,65 @@ def add_ticker(symbol: str, engine: Engine, years_history: int = 3) -> None:
     print(f"[{symbol}] Done")
 
 
-# if __name__ == "__main__":
-#     create_tickers_schema(company_sync_engine)
-#     add_ticker("FPT", company_sync_engine)
+def load_price_df(tickers: list[str], verbose: bool = False) -> pd.DataFrame:
+    """Load price board for given tickers and return a cleaned DataFrame."""
+    if verbose:
+        print(f"Loading price board for {len(tickers)} tickers...")
+
+    _empty = pd.DataFrame(
+        columns=[
+            "symbol",
+            "current_price",
+            "price_change",
+            "pct_price_change",
+            "accumulated_volume",
+        ]
+    )
+
+    try:
+        df = Trading(source="vci", symbol="ACB").price_board(symbols_list=tickers)
+    except Exception as e:
+        if verbose:
+            print(f"Error fetching price board: {e}")
+        return _empty
+
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = df.columns.droplevel(0)
+    if "exchange" in df.columns:
+        df = df.drop("exchange", axis=1)
+    df = df.loc[:, ~df.columns.duplicated()]
+
+    if "match_price" in df.columns:
+        df = df.rename(columns={"match_price": "current_price"})
+        df["price_change"] = df["current_price"] - df["ref_price"]
+        df["pct_price_change"] = (
+            df["price_change"] / df["ref_price"].replace({0: pd.NA})
+        ) * 100
+    elif "ref_price" in df.columns:
+        df = df.rename(columns={"ref_price": "current_price"})
+        df["price_change"] = 0
+        df["pct_price_change"] = 0
+    else:
+        return _empty
+
+    df["current_price"] = round(df["current_price"] * 1e-3, 2)
+    df["price_change"] = round(df["price_change"] * 1e-3, 2)
+    df["pct_price_change"] = round(df["pct_price_change"], 2)
+
+    if verbose:
+        print(f"Price board shape: {df.shape}")
+
+    return df[
+        [
+            "symbol",
+            "current_price",
+            "price_change",
+            "pct_price_change",
+            "accumulated_volume",
+        ]
+    ]
+
+
+if __name__ == "__main__":
+    create_tickers_schema("tickers2", company_sync_engine)
+    # add_ticker("FPT", company_sync_engine, schema_name="tickers2")

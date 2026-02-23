@@ -16,12 +16,21 @@ This project uses **[uv](https://docs.astral.sh/uv)** for dependency and package
 
    ```bash
    uv sync
-
    ```
 
-3. (Optional) [A PostgreSQL Database URI](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING-URIS) could be provided through a `.env` file. Duplicate the `.template` file and paste your own Database URI.
+3. [A PostgreSQL Database URI](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING-URIS) should then be provided through a `.env` file. Duplicate the `.env.template` file and paste your own Database URI. The database should then be reproducable with
 
-4. **Run the frontend locally**
+   ```bash
+   uv run python ourportfolios/utils/database/create_schema.py
+   ```
+
+   The database should then be populated with `add_ticker()` placed in the same file. Use a notebook or add it right below `create_schema.py` as well. For example, adding `FPT` to the database would look like this:
+
+   ```python
+   add_ticker("FPT", company_sync_engine, schema_name="tickers2"
+   ```
+
+4. **The Webapp should then be accessible with**
    ```bash
    uv run reflex run
    ```
@@ -30,4 +39,4 @@ This project uses **[uv](https://docs.astral.sh/uv)** for dependency and package
 
 ### Credits
 
-This project is maintained by [Dank,](https://www.linkedin.com/in/hmdank) alongside with the help of [Phuc](https://github.com/Sevastopol12) and [Dang.](https://github.com/Vmoi-777) Feel free to contact us for anything, including bug reports, ideas for future features, or just somebody to talk to :DD
+This project is maintained and owned by [Dank,](https://www.linkedin.com/in/hmdank) alongside with the help of [Phuc](https://github.com/Sevastopol12) and [Dang.](https://github.com/Vmoi-777) Feel free to contact us for anything, including bug reports, ideas for future features, or just somebody to talk to :DD
