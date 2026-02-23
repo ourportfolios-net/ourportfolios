@@ -2,9 +2,8 @@
 
 import reflex as rx
 
-from ...components.cards import glass_card
 from ...components.drawer import CartState
-from ...styles import white, purple, BTN_PURPLE_SM, BTN_GHOST_SM, CARD_BORDER
+from ...styles import white, CARD_BORDER
 from .state import State
 from .dialog import company_profile_dialog
 

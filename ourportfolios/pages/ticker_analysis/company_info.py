@@ -1,7 +1,6 @@
 """Company information components."""
 
 import reflex as rx
-from ...components.cards import glass_card
 from ...styles import white, CARD_BORDER
 from .state import State
 

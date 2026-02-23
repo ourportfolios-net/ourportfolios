@@ -147,7 +147,6 @@ class State(SessionIsolatedStateMixin, rx.State):
                 return
 
             ticker = self.ticker
-            ticker_changed = ticker != self._current_ticker
 
             # Always reset and reload — _data_loaded is set False on every mount
             self._current_ticker = ticker
