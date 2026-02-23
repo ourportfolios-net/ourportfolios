@@ -123,19 +123,49 @@ def key_metrics_card():
                     padding_top="1em",
                 ),
                 rx.tabs.content(
-                    rx.box(
-                        financial_statements(
-                            [
-                                State.income_statement,
-                                State.balance_sheet,
-                                State.cash_flow,
-                            ],
-                            show_skeleton=State.is_loading_financial,
+                    rx.cond(
+                        State.is_loading_financial,
+                        # Skeleton for all three statements while loading
+                        rx.box(
+                            rx.vstack(
+                                *[
+                                    rx.vstack(
+                                        rx.skeleton(
+                                            rx.box(height="28px", width="180px"),
+                                            loading=True,
+                                            style={"border_radius": "6px"},
+                                        ),
+                                        rx.skeleton(
+                                            rx.box(height="120px", width="100%"),
+                                            loading=True,
+                                            style={"border_radius": "6px"},
+                                        ),
+                                        spacing="2",
+                                        width="100%",
+                                    )
+                                    for _ in range(3)
+                                ],
+                                spacing="6",
+                                width="100%",
+                            ),
+                            width="100%",
+                            padding_top="2em",
+                            padding_left="0.5em",
                         ),
-                        width="100%",
-                        padding_top="2em",
-                        padding_left="0.5em",
-                        style={"display": "block", "textAlign": "left"},
+                        rx.box(
+                            financial_statements(
+                                [
+                                    State.income_statement,
+                                    State.balance_sheet,
+                                    State.cash_flow,
+                                ],
+                                show_skeleton=False,
+                            ),
+                            width="100%",
+                            padding_top="2em",
+                            padding_left="0.5em",
+                            style={"display": "block", "textAlign": "left"},
+                        ),
                     ),
                     value="statement",
                     padding_top="1em",

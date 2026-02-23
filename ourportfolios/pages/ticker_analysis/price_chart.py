@@ -66,9 +66,7 @@ def _ma_toggle(label: str, period_key: str):
                 "_hover": {"background": white(0.06), "color": white(0.7)},
             },
         ),
-        on_click=lambda: PriceChartState.add_ma_period(
-            ~PriceChartState.selected_ma_period[period_key], period_key
-        ),
+        on_click=PriceChartState.toggle_ma_period(period_key),
     )
 
 
@@ -94,7 +92,7 @@ def _rsi_toggle():
                 "_hover": {"background": white(0.06), "color": white(0.7)},
             },
         ),
-        on_click=PriceChartState.add_rsi_line(~PriceChartState.rsi_line),
+        on_click=PriceChartState.toggle_rsi_line,
     )
 
 
@@ -201,17 +199,34 @@ def price_chart_card():
             rx.hstack(
                 # Left: interval buttons
                 rx.hstack(
-                    rx.foreach(
-                        PriceChartState.df_by_interval.keys(),
-                        lambda item: rx.button(
-                            item,
-                            size="2",
-                            on_click=PriceChartState.set_interval(item),
-                            style=rx.cond(
-                                PriceChartState.selected_interval == item,
-                                _BTN_ACTIVE,
-                                _BTN_BASE,
-                            ),
+                    rx.button(
+                        "1D",
+                        size="2",
+                        on_click=PriceChartState.set_interval("1D"),
+                        style=rx.cond(
+                            PriceChartState.selected_interval == "1D",
+                            _BTN_ACTIVE,
+                            _BTN_BASE,
+                        ),
+                    ),
+                    rx.button(
+                        "1W",
+                        size="2",
+                        on_click=PriceChartState.set_interval("1W"),
+                        style=rx.cond(
+                            PriceChartState.selected_interval == "1W",
+                            _BTN_ACTIVE,
+                            _BTN_BASE,
+                        ),
+                    ),
+                    rx.button(
+                        "1M",
+                        size="2",
+                        on_click=PriceChartState.set_interval("1M"),
+                        style=rx.cond(
+                            PriceChartState.selected_interval == "1M",
+                            _BTN_ACTIVE,
+                            _BTN_BASE,
                         ),
                     ),
                     spacing="1",
@@ -220,19 +235,8 @@ def price_chart_card():
                 rx.spacer(),
                 # Right: inline indicator toggles
                 rx.hstack(
-                    # Divider label
-                    rx.text(
-                        "Overlays",
-                        size="1",
-                        color=white(0.25),
-                        weight="medium",
-                        style={
-                            "letter_spacing": "0.06em",
-                            "text_transform": "uppercase",
-                        },
-                    ),
                     rx.box(width="1px", height="16px", background=white(0.08)),
-                    # MA toggles — iterate over known keys
+                    # MA toggles
                     _ma_toggle("MA20", "20"),
                     _ma_toggle("MA50", "50"),
                     _ma_toggle("MA100", "100"),
