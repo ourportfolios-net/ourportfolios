@@ -8,13 +8,6 @@ titles = ["Income\nStatement", "Balance\nSheet", "Cash\nFlow"]
 
 
 def financial_statements(df_list, show_skeleton=False):
-    """
-    Display financial statements with optional skeleton loading state.
-
-    Args:
-        df_list: List of dataframes [income_statement, balance_sheet, cash_flow]
-        show_skeleton: If True, show skeleton placeholders for tables
-    """
     return rx.vstack(
         *[
             rx.box(
@@ -29,10 +22,29 @@ def financial_statements(df_list, show_skeleton=False):
     )
 
 
+def _render_header_cell(h):
+    return rx.table.column_header_cell(h)
+
+
+def _render_body_row(data):
+    """Render a single row — uses index-based access to avoid lambda closure bug."""
+    return rx.table.row(
+        rx.foreach(
+            data.items(),
+            lambda kv: rx.table.cell(
+                rx.cond(
+                    kv[1] != None,  # noqa: E711
+                    rx.text(kv[1]),
+                    rx.text(""),
+                )
+            ),
+        )
+    )
+
+
 def preview_table(data, idx, show_skeleton=False):
     title = titles[idx]
 
-    # Always show the title and buttons
     header = rx.vstack(
         rx.text(
             title,
@@ -75,17 +87,14 @@ def preview_table(data, idx, show_skeleton=False):
         padding_left="1em",
     )
 
-    # Table content - either skeleton or actual data
-    table_content = rx.cond(
-        show_skeleton,
-        # Skeleton for loading state - simple rectangle
-        rx.skeleton(
+    if show_skeleton:
+        table_content = rx.skeleton(
             height="200px",
             width="43em",
             border_radius="8px",
-        ),
-        # Actual table or "No data available"
-        rx.cond(
+        )
+    else:
+        table_content = rx.cond(
             data.length() > 0,
             rx.scroll_area(
                 rx.table.root(
@@ -93,23 +102,14 @@ def preview_table(data, idx, show_skeleton=False):
                         rx.table.row(
                             rx.foreach(
                                 data[0].keys(),
-                                lambda h: rx.table.column_header_cell(h),
+                                _render_header_cell,
                             )
                         )
                     ),
                     rx.table.body(
                         rx.foreach(
                             data[:5],
-                            lambda row: rx.table.row(
-                                rx.foreach(
-                                    data[0].keys(),
-                                    lambda h: rx.table.cell(
-                                        rx.text(row[h])
-                                        if row[h] is not None
-                                        else rx.text("")
-                                    ),
-                                )
-                            ),
+                            _render_body_row,
                         )
                     ),
                     size="1",
@@ -130,8 +130,7 @@ def preview_table(data, idx, show_skeleton=False):
                 },
             ),
             rx.text("No data available"),
-        ),
-    )
+        )
 
     return rx.vstack(
         rx.hstack(
@@ -144,6 +143,21 @@ def preview_table(data, idx, show_skeleton=False):
     )
 
 
+def _render_expanded_row(data):
+    return rx.table.row(
+        rx.foreach(
+            data.items(),
+            lambda kv: rx.table.cell(
+                rx.cond(
+                    kv[1] != None,  # noqa: E711
+                    rx.text(kv[1]),
+                    rx.text(""),
+                )
+            ),
+        )
+    )
+
+
 def expanded_dialog(data, idx):
     content = rx.center(
         rx.scroll_area(
@@ -152,25 +166,14 @@ def expanded_dialog(data, idx):
                     rx.table.row(
                         rx.foreach(
                             data[0].keys(),
-                            lambda h: rx.table.column_header_cell(h),
+                            _render_header_cell,
                         )
                     )
                 ),
                 rx.table.body(
                     rx.foreach(
                         data,
-                        lambda row: rx.table.row(
-                            rx.foreach(
-                                data[0].keys(),
-                                lambda h: rx.table.cell(
-                                    rx.cond(
-                                        row[h] is not None,
-                                        rx.text(row[h]),
-                                        rx.text(""),
-                                    )
-                                ),
-                            )
-                        ),
+                        _render_expanded_row,
                     )
                 ),
                 size="2",

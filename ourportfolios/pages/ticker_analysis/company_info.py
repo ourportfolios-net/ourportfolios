@@ -1,62 +1,77 @@
-"""Company information components - FIXED."""
+"""Company information components."""
 
 import reflex as rx
-from ...components.cards import glass_card
+from ...styles import white, CARD_BORDER
 from .state import State
+
+_CARD_RADIUS = "10px"
+
+
+def _skel(w: str, h: str) -> rx.Component:
+    return rx.skeleton(
+        rx.box(width=w, height=h),
+        loading=True,
+        style={"border_radius": "6px"},
+    )
 
 
 def company_info_card_skeleton():
-    return glass_card(
+    return rx.box(
         rx.vstack(
-            rx.box(
-                rx.skeleton(height="2.5rem", width="12rem", border_radius="14px"),
+            # Segmented control placeholder
+            rx.hstack(
+                _skel("60px", "28px"),
+                _skel("60px", "28px"),
+                _skel("50px", "28px"),
+                spacing="2",
                 width="100%",
-                display="flex",
-                justify_content="center",
+                justify="center",
             ),
+            # Pie chart placeholder
             rx.box(
-                rx.skeleton(height="220px", width="220px", border_radius="50%"),
+                rx.skeleton(
+                    rx.box(width="160px", height="160px"),
+                    loading=True,
+                    style={"border_radius": "50%"},
+                ),
                 width="100%",
                 display="flex",
                 justify_content="center",
                 align_items="center",
-                style={"marginTop": "2.5em", "marginBottom": "2.5em"},
+                style={"marginTop": "1.5em", "marginBottom": "1.5em"},
             ),
-            glass_card(
+            # List rows
+            rx.box(
                 rx.vstack(
                     *[
-                        rx.box(
-                            rx.hstack(
-                                rx.skeleton(
-                                    height="1.2rem", width="8rem", border_radius="14px"
-                                ),
-                                rx.skeleton(
-                                    height="1.2rem", width="3rem", border_radius="14px"
-                                ),
-                                align="center",
-                                justify="between",
-                                width="100%",
-                            ),
-                            rx.skeleton(
-                                height="1rem", width="10rem", border_radius="14px"
-                            ),
+                        rx.hstack(
+                            _skel("55%", "14px"),
+                            rx.spacer(),
+                            _skel("25%", "14px"),
                             width="100%",
+                            align="center",
                         )
-                        for _ in range(3)
+                        for _ in range(5)
                     ],
-                    spacing="4",
+                    spacing="3",
                     width="100%",
                 ),
-                padding="1em",
+                background=white(0.02),
+                border=f"1px solid {white(0.05)}",
+                border_radius="8px",
+                padding="0.75rem",
+                width="100%",
             ),
-            justify="center",
-            align="center",
+            spacing="4",
             width="100%",
-            spacing="0",
         ),
+        background=white(0.025),
+        border=CARD_BORDER,
+        border_radius=_CARD_RADIUS,
+        padding="1.25rem",
         width="100%",
-        flex=0.6,
-        min_width=0,
+        flex="0.6",
+        min_width="0",
         max_width="20em",
     )
 
@@ -79,11 +94,10 @@ def shareholders_pie_chart():
 
 
 def company_generic_info_card():
-    # Use loading flag instead of checking data
     return rx.cond(
         State.is_loading_company,
         company_info_card_skeleton(),
-        glass_card(
+        rx.box(
             rx.vstack(
                 rx.box(
                     rx.segmented_control.root(
@@ -109,7 +123,7 @@ def company_generic_info_card():
                             align_items="center",
                             style={"marginTop": "2.5em", "marginBottom": "2.5em"},
                         ),
-                        glass_card(
+                        rx.box(
                             rx.scroll_area(
                                 rx.vstack(
                                     rx.foreach(
@@ -126,12 +140,18 @@ def company_generic_info_card():
                                                     color_scheme="gray",
                                                     variant="surface",
                                                     high_contrast=True,
+                                                    style={"border_radius": "6px"},
                                                 ),
                                                 align="center",
+                                                justify="between",
+                                                width="100%",
                                             ),
                                             rx.text(
-                                                officer["officer_position"], size="2"
+                                                officer["officer_position"],
+                                                size="2",
+                                                color=white(0.45),
                                             ),
+                                            width="100%",
                                         ),
                                     ),
                                     spacing="3",
@@ -139,8 +159,11 @@ def company_generic_info_card():
                                 ),
                                 style={"height": "24.3em"},
                             ),
+                            background=white(0.02),
+                            border=f"1px solid {white(0.05)}",
+                            border_radius="8px",
+                            padding="0.75rem",
                             width="100%",
-                            padding="1em",
                         ),
                         justify="center",
                         align="center",
@@ -152,22 +175,30 @@ def company_generic_info_card():
                             rx.vstack(
                                 rx.foreach(
                                     State.events,
-                                    lambda event: glass_card(
+                                    lambda event: rx.box(
                                         rx.hstack(
                                             rx.heading(
                                                 event["event_name"],
                                                 weight="medium",
                                                 size="3",
                                             ),
-                                            rx.badge(f"{event['price_change_ratio']}%"),
+                                            rx.badge(
+                                                f"{event['price_change_ratio']}%",
+                                                style={"border_radius": "6px"},
+                                            ),
                                             align="center",
                                         ),
                                         rx.text(
                                             event["event_desc"],
                                             weight="regular",
                                             size="1",
+                                            color=white(0.45),
                                         ),
-                                        padding="1em",
+                                        background=white(0.02),
+                                        border=f"1px solid {white(0.05)}",
+                                        border_radius="8px",
+                                        padding="0.75rem",
+                                        width="100%",
                                     ),
                                 ),
                                 spacing="3",
@@ -178,7 +209,7 @@ def company_generic_info_card():
                             rx.vstack(
                                 rx.foreach(
                                     State.news,
-                                    lambda news: glass_card(
+                                    lambda news: rx.box(
                                         rx.hstack(
                                             rx.text(
                                                 f"{news['title']} ({news['publish_date']})",
@@ -192,15 +223,19 @@ def company_generic_info_card():
                                                     != news["price_change_ratio"]
                                                 ),
                                                 rx.badge(
-                                                    f"{news['price_change_ratio']}%"
+                                                    f"{news['price_change_ratio']}%",
+                                                    style={"border_radius": "6px"},
                                                 ),
                                             ),
                                             align="center",
                                             justify="between",
                                             width="100%",
                                         ),
+                                        background=white(0.02),
+                                        border=f"1px solid {white(0.05)}",
+                                        border_radius="8px",
+                                        padding="0.75rem",
                                         width="100%",
-                                        padding="1em",
                                     ),
                                 ),
                             ),
@@ -215,9 +250,13 @@ def company_generic_info_card():
                 width="100%",
                 style={"height": "100%"},
             ),
+            background=white(0.025),
+            border=CARD_BORDER,
+            border_radius=_CARD_RADIUS,
+            padding="1.25rem",
             width="100%",
-            flex=0.6,
-            min_width=0,
+            flex="0.6",
+            min_width="0",
             max_width="20em",
             style={"height": "100%"},
         ),

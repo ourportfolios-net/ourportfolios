@@ -1,5 +1,3 @@
-"""Price chart component State"""
-
 import asyncio
 import reflex as rx
 import pandas as pd
@@ -12,13 +10,10 @@ from ..utils.compute_instrument import compute_ma, compute_rsi
 from ..utils.database.fetch_data import load_historical_data
 
 
-# Price chart State
 class PriceChartState(rx.State):
     if TYPE_CHECKING:
         ticker: str
-    # Flag to track if chart.js has loaded
     chart_script_loaded: bool = False
-    # Loading state
     is_loading: bool = True
     _last_ticker: str = ""
 
@@ -29,20 +24,20 @@ class PriceChartState(rx.State):
     rsi_line: bool = False
 
     ma_period: dict[str, Any] = {
-        "5": "#D19DFF",  # purple 11
-        "10": "#B661FFC2",  # purple 9
-        "20": "#AEFEEDF5",  # mint 10
-        "50": "#41FFDF76",  # mint 8
-        "100": "#70B8FF",  # blue 11
-        "200": "#3094FEB9",  # blue 8
+        "5": "#D19DFF",
+        "10": "#B661FFC2",
+        "20": "#AEFEEDF5",
+        "50": "#41FFDF76",
+        "100": "#70B8FF",
+        "200": "#3094FEB9",
     }
 
+    df_daily: pd.DataFrame = pd.DataFrame()
     df_by_interval: dict[str, Any] = {
         "1D": pd.DataFrame(),
         "1W": pd.DataFrame(),
         "1M": pd.DataFrame(),
     }
-    # Date range for each interval
     interval_range: dict[str, Any] = {
         "1D": date.today() - relativedelta(years=5),
         "1W": date.today(),
@@ -51,10 +46,25 @@ class PriceChartState(rx.State):
 
     rsi_period: int = 14
 
+    def _resample(self, df: pd.DataFrame, interval: str) -> pd.DataFrame:
+        """Resample daily OHLCV DataFrame to weekly or monthly."""
+        if df.empty or interval == "1D":
+            return df
+        rule = "W" if interval == "1W" else "ME"
+        df2 = df.copy()
+        df2["time"] = pd.to_datetime(df2["time"])
+        df2 = df2.set_index("time")
+        agg = {
+            "open": "first",
+            "high": "max",
+            "low": "min",
+            "close": "last",
+            "volume": "sum",
+        }
+        return df2.resample(rule).agg(agg).dropna(subset=["close"]).reset_index()
+
     @rx.event(background=True)
     async def load_state(self, ticker: str):
-        """Initialize chart with default settings - called from ticker_analysis state"""
-        # Capture all needed state inside the context block first
         async with self:
             if ticker == self._last_ticker and not self.df.empty:
                 self.is_loading = False
@@ -63,39 +73,29 @@ class PriceChartState(rx.State):
 
             self._last_ticker = ticker
             self.is_loading = True
-            # Capture state values we need outside the block
-            interval_keys = list(self.df_by_interval.keys())
-            interval_range = dict(self.interval_range)
+            start_date = (date.today() - relativedelta(years=5)).strftime("%Y-%m-%d")
 
         try:
             end_date = (date.today() + relativedelta(days=1)).strftime("%Y-%m-%d")
 
-            def fetch_all():
-                return {
-                    i_range: load_historical_data(
-                        symbol=ticker,
-                        start=interval_range[i_range].strftime("%Y-%m-%d"),
-                        end=end_date,
-                        interval=i_range,
-                    )
-                    for i_range in interval_keys
-                }
+            def fetch_daily():
+                return load_historical_data(
+                    symbol=ticker,
+                    start=start_date,
+                    end=end_date,
+                    interval="1D",
+                )
 
-            df_by_interval_temp = await asyncio.get_event_loop().run_in_executor(
-                None, fetch_all
-            )
+            df_daily = await asyncio.get_event_loop().run_in_executor(None, fetch_daily)
 
             async with self:
-                self.df_by_interval = df_by_interval_temp
-                # Default range
-                self.df: pd.DataFrame = self.df_by_interval[self.selected_interval]
-                # Loads MA options
+                self.df_daily = df_daily
+                self.df = self._resample(df_daily, self.selected_interval)
                 self.selected_ma_period = {
                     item: False for item in self.ma_period.keys()
                 }
                 self.is_loading = False
 
-            # Initialize chart
             yield PriceChartState.render_price_chart
 
         except Exception as e:
@@ -105,7 +105,6 @@ class PriceChartState(rx.State):
 
     @rx.event(background=True)
     async def render_price_chart(self):
-        # Only render if script is loaded
         async with self:
             yield rx.call_script(
                 f"""
@@ -122,12 +121,12 @@ class PriceChartState(rx.State):
                 """
             )
 
-    @rx.event
-    def set_interval(self, _range):
-        self.selected_interval = _range
-        self.df = self.df_by_interval[self.selected_interval]
-
-        yield from self.render_price_chart()
+    @rx.event(background=True)
+    async def set_interval(self, _range):
+        async with self:
+            self.selected_interval = _range
+            self.df = self._resample(self.df_daily, _range)
+        yield PriceChartState.render_price_chart
 
     @rx.event
     def set_selection(self):
@@ -135,67 +134,67 @@ class PriceChartState(rx.State):
             self.selected_chart = "Price"
         else:
             self.selected_chart = "Candlestick"
-        yield from self.render_price_chart()
+        yield PriceChartState.render_price_chart
 
     @rx.event
     def add_ma_period(self, value: bool, period: str):
         self.selected_ma_period[period] = value
-        yield from self.render_price_chart()
+        yield PriceChartState.render_price_chart
 
     @rx.event
     def add_rsi_line(self):
-        if not self.rsi_line:
-            self.rsi_line = True
-        else:
-            self.rsi_line = False
-        yield from self.render_price_chart()
+        self.rsi_line = not self.rsi_line
+        yield PriceChartState.render_price_chart
+
+    @rx.event
+    def toggle_ma_period(self, period_key: str):
+        self.selected_ma_period[period_key] = not self.selected_ma_period.get(
+            period_key, False
+        )
+        yield PriceChartState.render_price_chart
+
+    @rx.event
+    def toggle_rsi_line(self):
+        self.rsi_line = not self.rsi_line
+        yield PriceChartState.render_price_chart
+
+    # ─────────────────────────────────────────────────────────────────────────
 
     @rx.var
     def ohlc_data(self) -> list[dict[str, Any]]:
-        """Return a list of {time, open, high, low, close}"""
         if self.df.empty:
             return []
-
         df2 = self.df.copy()
         if "time" not in self.df.columns:
             df2 = df2.reset_index()
-
         df2["time"] = df2["time"].apply(lambda x: x.strftime("%Y-%m-%d"))
         return df2.to_dict("records")
 
     @rx.var
     def price_data(self) -> list[dict[str, Any]]:
-        """Return a list of {time, value } from 'close'"""
         if (self.df.empty) or (not {"time", "close"}.issubset(self.df.columns)):
             return []
-
         df2 = self.df[["time", "close"]].rename(columns={"close": "value"})
         df2["time"] = df2["time"].apply(lambda x: x.strftime("%Y-%m-%d"))
         return df2.dropna(how="any", axis=0).to_dict("records")
 
     @rx.var
     def ma_data(self) -> dict[str, list[dict[str, Any]]]:
-        """If ma_period > 0, compute MA"""
         if self.df.empty:
             return {}
-
         df2 = self.df.copy()
         if "time" not in df2.columns:
             df2 = df2.reset_index()
-
-        ma_data = {
+        return {
             period: compute_ma(df2, ma_period=int(period))
             for period, state in self.selected_ma_period.items()
             if state
         }
-        return ma_data
 
     @rx.var
     def rsi_data(self) -> list[dict[str, Any]]:
-        """If rsi_period > 0, compute RSI"""
         if self.df.empty or not self.rsi_line:
             return []
-
         df2 = self.df.copy()
         if "time" not in df2.columns:
             df2 = df2.reset_index()
@@ -203,38 +202,27 @@ class PriceChartState(rx.State):
 
     @rx.var
     def chart_data(self) -> str:
-        """Summarize chart data"""
-        # Price
         price_data = (
             self.ohlc_data if self.selected_chart == "Candlestick" else self.price_data
         )
-        # MA line
-        ma_line_data = self.ma_data
-        # RSI line
-        rsi_line_data = self.rsi_data
-
         data: dict[str, Any] = {
             "type": self.selected_chart,
             "price_data": price_data,
-            "ma_line_data": ma_line_data,
-            "rsi_line_data": rsi_line_data,
+            "ma_line_data": self.ma_data,
+            "rsi_line_data": self.rsi_data,
         }
-
         return json.dumps(data)
 
-    # Chart layout
     @rx.var
     def chart_options(self) -> str:
-        """Return chart configurations"""
         options: dict[str, Any] = {}
-        # Chart layout
         options["chart_layout"] = {
             "layout": {
                 "background": {"type": "solid", "color": "#131722"},
-                "textColor": "#FFFFFFED",  # gray 12
+                "textColor": "#FFFFFFED",
             },
             "grid": {
-                "horzLines": {"color": "#FFFFFF09"},  # gray 2
+                "horzLines": {"color": "#FFFFFF09"},
                 "vertLines": {"color": "#FFFFFF09"},
             },
             "priceScale": {
@@ -245,45 +233,37 @@ class PriceChartState(rx.State):
                 "scaleMargins": {"top": 0.7, "bottom": 0},
             },
             "timeScale": {
-                "borderColor": "#FFF1E9EC",  # bronze 12
+                "borderColor": "#FFF1E9EC",
                 "rightOffset": 10,
                 "minBarSpacing": 3,
                 "lockVisibleTimeRangeOnResize": True,
             },
         }
-        # Series setting
         if self.selected_chart == "Candlestick":
             options["series_configs"] = {
-                "upColor": "#46FEA5D4",  # green 11
+                "upColor": "#46FEA5D4",
                 "wickUpColor": "#46FEA5D4",
-                "downColor": "#FF6465EB",  # red 10
+                "downColor": "#FF6465EB",
                 "wickDownColor": "#FF6465EB",
                 "borderVisible": False,
             }
         else:
             options["series_configs"] = {
-                "color": "#3B9EFF",  # blue 10
+                "color": "#3B9EFF",
                 "lineWidth": 2,
                 "priceLineVisible": False,
                 "lastValueVisible": True,
                 "crosshairMarkerVisible": True,
                 "crosshairMarkerRadius": 4,
-                "crosshairMarkerBorderColor": "#3B9EFF",  # blue 10
+                "crosshairMarkerBorderColor": "#3B9EFF",
             }
-
-        # RSI setting
         if self.rsi_line:
             options["rsi_configs"] = {
-                "color": "#9176FED7",  # violet 10
+                "color": "#9176FED7",
                 "lineWidth": 2,
-                "priceFormat": {
-                    "type": "price",
-                    "precision": 2,
-                },
+                "priceFormat": {"type": "price", "precision": 2},
                 "priceScale": "rsi-scale",
             }
-
-        # MA lines
         options["ma_line_configs"] = {
             period: {
                 "color": unique_color,
@@ -292,12 +272,9 @@ class PriceChartState(rx.State):
                 "lastValueVisible": True,
                 "crosshairMarkerVisible": True,
                 "crosshairMarkerRadius": 4,
-                "crosshairMarkerBorderColor": unique_color,  # blue 10
+                "crosshairMarkerBorderColor": unique_color,
             }
             for period, unique_color in self.ma_period.items()
-            if self.selected_ma_period.get(
-                period, None
-            )  # Each ma line is binded to its unique color
+            if self.selected_ma_period.get(period, None)
         }
-
         return json.dumps(options)

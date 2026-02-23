@@ -8,6 +8,7 @@ from .database import (
     company_sync_engine,
     company_engine,
     price_sync_engine,
+    price_engine,
 )
 
 
@@ -27,15 +28,6 @@ _OHLCV_AGG = {
 
 
 def fetch_income_statement(ticker_symbol: str, period: str = "year") -> pd.DataFrame:
-    """Fetch income statement data from dedicated tables.
-
-    Args:
-        ticker_symbol: Stock ticker symbol
-        period: 'year' or 'quarter'
-
-    Returns:
-        DataFrame with income statement data in wide format (columns = metrics, rows = periods)
-    """
     try:
         if period == "quarter":
             query = text("""
@@ -58,7 +50,6 @@ def fetch_income_statement(ticker_symbol: str, period: str = "year") -> pd.DataF
         if df.empty:
             return pd.DataFrame()
 
-        # Pivot from normalized format to wide format
         if period == "quarter":
             df["period"] = (
                 "Q" + df["quarter"].astype(str) + " " + df["year"].astype(str)
@@ -66,7 +57,6 @@ def fetch_income_statement(ticker_symbol: str, period: str = "year") -> pd.DataF
             pivot_df = df.pivot(
                 index="period", columns="metric", values="value"
             ).reset_index()
-            # Add year and quarter columns back
             period_map = df.set_index("period")[["year", "quarter"]].drop_duplicates()
             pivot_df = pivot_df.merge(period_map, on="period")
             pivot_df = pivot_df.drop(columns=["period"])
@@ -77,7 +67,6 @@ def fetch_income_statement(ticker_symbol: str, period: str = "year") -> pd.DataF
             pivot_df = df.pivot(
                 index="year", columns="metric", values="value"
             ).reset_index()
-            # Sort by year descending to show newest first
             pivot_df = pivot_df.sort_values("year", ascending=False).reset_index(
                 drop=True
             )
@@ -89,15 +78,6 @@ def fetch_income_statement(ticker_symbol: str, period: str = "year") -> pd.DataF
 
 
 def fetch_balance_sheet(ticker_symbol: str, period: str = "year") -> pd.DataFrame:
-    """Fetch balance sheet data from dedicated tables.
-
-    Args:
-        ticker_symbol: Stock ticker symbol
-        period: 'year' or 'quarter'
-
-    Returns:
-        DataFrame with balance sheet data in wide format (columns = metrics, rows = periods)
-    """
     try:
         if period == "quarter":
             query = text("""
@@ -120,7 +100,6 @@ def fetch_balance_sheet(ticker_symbol: str, period: str = "year") -> pd.DataFram
         if df.empty:
             return pd.DataFrame()
 
-        # Pivot from normalized format to wide format
         if period == "quarter":
             df["period"] = (
                 "Q" + df["quarter"].astype(str) + " " + df["year"].astype(str)
@@ -128,7 +107,6 @@ def fetch_balance_sheet(ticker_symbol: str, period: str = "year") -> pd.DataFram
             pivot_df = df.pivot(
                 index="period", columns="metric", values="value"
             ).reset_index()
-            # Add year and quarter columns back
             period_map = df.set_index("period")[["year", "quarter"]].drop_duplicates()
             pivot_df = pivot_df.merge(period_map, on="period")
             pivot_df = pivot_df.drop(columns=["period"])
@@ -139,7 +117,6 @@ def fetch_balance_sheet(ticker_symbol: str, period: str = "year") -> pd.DataFram
             pivot_df = df.pivot(
                 index="year", columns="metric", values="value"
             ).reset_index()
-            # Sort by year descending to show newest first
             pivot_df = pivot_df.sort_values("year", ascending=False).reset_index(
                 drop=True
             )
@@ -151,15 +128,6 @@ def fetch_balance_sheet(ticker_symbol: str, period: str = "year") -> pd.DataFram
 
 
 def fetch_cash_flow(ticker_symbol: str, period: str = "year") -> pd.DataFrame:
-    """Fetch cash flow data from dedicated tables.
-
-    Args:
-        ticker_symbol: Stock ticker symbol
-        period: 'year' or 'quarter'
-
-    Returns:
-        DataFrame with cash flow data in wide format (columns = metrics, rows = periods)
-    """
     try:
         if period == "quarter":
             query = text("""
@@ -182,7 +150,6 @@ def fetch_cash_flow(ticker_symbol: str, period: str = "year") -> pd.DataFrame:
         if df.empty:
             return pd.DataFrame()
 
-        # Pivot from normalized format to wide format
         if period == "quarter":
             df["period"] = (
                 "Q" + df["quarter"].astype(str) + " " + df["year"].astype(str)
@@ -200,7 +167,6 @@ def fetch_cash_flow(ticker_symbol: str, period: str = "year") -> pd.DataFrame:
             pivot_df = df.pivot(
                 index="year", columns="metric", values="value"
             ).reset_index()
-            # Sort by year descending to show newest first
             pivot_df = pivot_df.sort_values("year", ascending=False).reset_index(
                 drop=True
             )
@@ -212,14 +178,6 @@ def fetch_cash_flow(ticker_symbol: str, period: str = "year") -> pd.DataFrame:
 
 
 def fetch_company_data(symbol: str) -> dict[str, pd.DataFrame]:
-    """Fetch all company data tables for a given ticker from the tickers schema.
-
-    Args:
-        symbol: Ticker symbol to fetch data for
-
-    Returns:
-        Dictionary with dataframes for each data type
-    """
     tables = [
         "overview",
         "shareholders",
@@ -250,14 +208,6 @@ def fetch_company_data(symbol: str) -> dict[str, pd.DataFrame]:
 
 
 async def fetch_price_data_async(symbol: str) -> pd.DataFrame:
-    """Fetch current price board data for a given ticker from database.
-
-    Args:
-        symbol: Ticker symbol
-
-    Returns:
-        DataFrame with current price board data (current_price, price_change, etc.)
-    """
     try:
         query = text("""
             SELECT symbol, current_price, price_change, pct_price_change, accumulated_volume
@@ -275,14 +225,6 @@ async def fetch_price_data_async(symbol: str) -> pd.DataFrame:
 
 
 def fetch_stats_for_ticker(symbol: str) -> pd.DataFrame:
-    """Fetch statistics for a specific ticker.
-
-    Args:
-        symbol: Ticker symbol
-
-    Returns:
-        DataFrame with ticker statistics
-    """
     try:
         query = text("""
             SELECT * FROM tickers.stats_df WHERE ticker = :symbol
@@ -295,11 +237,6 @@ def fetch_stats_for_ticker(symbol: str) -> pd.DataFrame:
 
 
 def fetch_all_tickers() -> pd.DataFrame:
-    """Fetch list of all available tickers.
-
-    Returns:
-        DataFrame with ticker information
-    """
     try:
         query = text("""
             SELECT ticker, market_cap, roe, roa, pe, pb 
@@ -319,7 +256,6 @@ def load_historical_data(
     end: str = (date.today() + timedelta(days=1)).strftime("%Y-%m-%d"),
     interval: str = "1D",
 ) -> pd.DataFrame:
-    """Load historical OHLCV data from tickers.price_history, resampled to interval."""
     try:
         query = text("""
             SELECT date AS time, open, high, low, close, volume
@@ -354,15 +290,6 @@ def load_historical_data(
 async def fetch_income_statement_async(
     ticker_symbol: str, period: str = "year"
 ) -> pd.DataFrame:
-    """Fetch income statement data from database (async version).
-
-    Args:
-        ticker_symbol: Stock ticker symbol
-        period: 'year' or 'quarter'
-
-    Returns:
-        DataFrame with income statement data in wide format
-    """
     try:
         if period == "quarter":
             query = text("""
@@ -379,7 +306,7 @@ async def fetch_income_statement_async(
                 ORDER BY year DESC
             """)
 
-        async with company_engine.connect() as conn:
+        async with price_engine.connect() as conn:
             result = await conn.execute(query, {"symbol": ticker_symbol})
             rows = result.fetchall()
             df = pd.DataFrame(rows, columns=result.keys())
@@ -414,15 +341,6 @@ async def fetch_income_statement_async(
 async def fetch_balance_sheet_async(
     ticker_symbol: str, period: str = "year"
 ) -> pd.DataFrame:
-    """Fetch balance sheet data from database (async version).
-
-    Args:
-        ticker_symbol: Stock ticker symbol
-        period: 'year' or 'quarter'
-
-    Returns:
-        DataFrame with balance sheet data in wide format
-    """
     try:
         if period == "quarter":
             query = text("""
@@ -439,7 +357,7 @@ async def fetch_balance_sheet_async(
                 ORDER BY year DESC
             """)
 
-        async with company_engine.connect() as conn:
+        async with price_engine.connect() as conn:
             result = await conn.execute(query, {"symbol": ticker_symbol})
             rows = result.fetchall()
             df = pd.DataFrame(rows, columns=result.keys())
@@ -474,15 +392,6 @@ async def fetch_balance_sheet_async(
 async def fetch_cash_flow_async(
     ticker_symbol: str, period: str = "year"
 ) -> pd.DataFrame:
-    """Fetch cash flow data from database (async version).
-
-    Args:
-        ticker_symbol: Stock ticker symbol
-        period: 'year' or 'quarter'
-
-    Returns:
-        DataFrame with cash flow data in wide format
-    """
     try:
         if period == "quarter":
             query = text("""
@@ -499,7 +408,7 @@ async def fetch_cash_flow_async(
                 ORDER BY year DESC
             """)
 
-        async with company_engine.connect() as conn:
+        async with price_engine.connect() as conn:
             result = await conn.execute(query, {"symbol": ticker_symbol})
             rows = result.fetchall()
             df = pd.DataFrame(rows, columns=result.keys())
@@ -532,15 +441,6 @@ async def fetch_cash_flow_async(
 
 
 async def fetch_ratios_async(ticker_symbol: str, period: str = "year") -> pd.DataFrame:
-    """Fetch pre-computed ratios from database (async version).
-
-    Args:
-        ticker_symbol: Stock ticker symbol
-        period: 'year' or 'quarter'
-
-    Returns:
-        DataFrame with ratios in wide format (columns = metrics, rows = periods)
-    """
     try:
         if period == "quarter":
             query = text("""

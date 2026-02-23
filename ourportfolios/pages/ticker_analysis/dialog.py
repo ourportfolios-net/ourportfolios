@@ -1,13 +1,14 @@
 """Company profile dialog component for displaying detailed company information."""
 
 import reflex as rx
-from ...components.cards import glass_card
+from ...styles import white, CARD_BORDER
 from ...components.common_dialog import common_dialog
 from .state import State
 
+_CARD_RADIUS = "10px"
+
 
 def company_profile_dialog():
-    """Dialog component that displays all company profile information in tabs."""
     profile_data = State.profile
 
     def create_profile_tab_content(content_key: str, tab_value: str):
@@ -28,7 +29,6 @@ def company_profile_dialog():
             padding="1em",
         )
 
-    # Dialog content
     dialog_content = rx.tabs.root(
         rx.tabs.list(
             rx.tabs.trigger("Company Profile", value="profile"),
@@ -51,28 +51,29 @@ def company_profile_dialog():
     )
 
     return rx.fragment(
-        # Trigger button
-        glass_card(
+        rx.box(
             rx.hstack(
-                rx.icon("info", size=18),
-                rx.text("More info", size="2", weight="medium"),
-                rx.icon("external-link", size=14),
+                rx.icon("info", size=15, color=white(0.5)),
+                rx.text("More info", size="2", weight="medium", color=white(0.7)),
+                rx.icon("external-link", size=12, color=white(0.4)),
                 spacing="2",
                 align="center",
             ),
-            padding="0.75em 1em",
+            padding="0.6em 0.9em",
             cursor="pointer",
             width="100%",
             on_click=State.set_profile_dialog_open(True),
+            background=white(0.025),
+            border=CARD_BORDER,
+            border_radius=_CARD_RADIUS,
             style={
-                "transition": "all 0.2s ease",
+                "transition": "all 0.15s ease",
                 "_hover": {
-                    "transform": "translateY(-1px)",
-                    "backgroundColor": rx.color("accent", 2),
+                    "background": white(0.045),
+                    "border_color": white(0.13),
                 },
             },
         ),
-        # Dialog using common_dialog
         common_dialog(
             content=dialog_content,
             is_open=State.profile_dialog_open,
