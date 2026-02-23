@@ -2,6 +2,31 @@
 
 <!-- version list -->
 
+## v0.11.0 (2026-02-23)
+
+### Bug Fixes
+
+- **price-chart**: Fix all buttons functionalities
+  ([`0113c01`](https://github.com/ourportfolios-net/ourportfolios/commit/0113c01d637c7f5b42f953775549855154ea2a55))
+
+### Chores
+
+- **ruff**: Comply with checks
+  ([`5346f2b`](https://github.com/ourportfolios-net/ourportfolios/commit/5346f2b14cbb68ce1168b0e1b38fddd175811199))
+
+### Features
+
+- Add mounting to price chart
+  ([`10a3bbe`](https://github.com/ourportfolios-net/ourportfolios/commit/10a3bbe2c14be2553498cbf5d6be6e7f21afb52d))
+
+- **financial-statements**: Rearrange column orders according to the standardized financial
+  statement
+  ([`b9fd3b6`](https://github.com/ourportfolios-net/ourportfolios/commit/b9fd3b683fa7db6eaefdf501a03cf3eda5754758))
+
+- **page**: Redesign ticker analysis
+  ([`cd1da40`](https://github.com/ourportfolios-net/ourportfolios/commit/cd1da40b4ed75c6749ea9fe531967d0d0c22d576))
+
+
 ## v0.10.1 (2026-02-22)
 
 ### Bug Fixes
