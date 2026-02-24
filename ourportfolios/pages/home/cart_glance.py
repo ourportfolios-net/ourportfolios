@@ -12,7 +12,7 @@ def _cart_item_row(item: dict, index: int) -> rx.Component:
             rx.hstack(
                 rx.link(
                     rx.text(item["name"], size="4", weight="medium"),
-                    href=f"/analyze/{item['name']}",
+                    href=f"/tickers/{item['name']}",
                     underline="none",
                 ),
                 rx.badge(item.get("industry", "Unknown"), size="1"),

@@ -113,7 +113,7 @@ def suggestion_card(value: dict[str, Any]) -> rx.Component:
             align="center",
             spacing="1",
         ),
-        on_click=[rx.redirect(f"/analyze/{ticker}"), SearchBarState.set_query("")],
+        on_click=[rx.redirect(f"/tickers/{ticker}"), SearchBarState.set_query("")],
         width="100%",
         padding="10px 12px",
         border_radius="8px",

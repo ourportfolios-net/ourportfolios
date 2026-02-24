@@ -17,7 +17,7 @@ def ticker_of_the_day_card():
                     left="0",
                     z_index="1",
                 ),
-                href=f"/analyze/{HomeState.ticker_of_day_symbol}",
+                href=f"/tickers/{HomeState.ticker_of_day_symbol}",
             ),
             rx.hstack(
                 rx.vstack(

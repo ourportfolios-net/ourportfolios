@@ -159,7 +159,7 @@ class HomeState(rx.State):
     @rx.event
     def navigate_to_ticker_of_day(self):
         if self.ticker_of_day_symbol and self.ticker_of_day_symbol != "N/A":
-            return rx.redirect(f"/analyze/{self.ticker_of_day_symbol}")
+            return rx.redirect(f"/tickers/{self.ticker_of_day_symbol}")
 
     @rx.event
     def start_framework_hover(self) -> None:

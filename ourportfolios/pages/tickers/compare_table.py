@@ -156,7 +156,7 @@ def compare_table() -> rx.Component:
                                                 ),
                                                 align="center",
                                             ),
-                                            href=f"/analyze/{stock['symbol']}",
+                                            href=f"/tickers/{stock['symbol']}",
                                             text_decoration="none",
                                             _hover={"text_decoration": "none"},
                                         ),
