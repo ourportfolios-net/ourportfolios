@@ -25,8 +25,8 @@ def breadcrumb(ticker: str):
         ),
         rx.icon("chevron-right", size=13, color="rgba(255,255,255,0.2)"),
         rx.link(
-            "Analyze",
-            href="/select",
+            "Tickers",
+            href="/tickers",
             size="2",
             class_name="breadcrumb-home",
         ),
@@ -44,7 +44,7 @@ def breadcrumb(ticker: str):
 
 
 @rx.page(
-    route="/analyze/[ticker]",
+    route="/tickers/[ticker]",
     on_load=State.on_mount,
 )
 def index():

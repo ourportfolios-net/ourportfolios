@@ -1,12 +1,5 @@
 import reflex as rx
 
-cards = [
-    {"title": "Recommend", "details": "Card 1 details", "link": "/framework"},
-    {"title": "Select", "details": "Card 2 details", "link": "/select"},
-    {"title": "Analyze", "details": "Card 3 details", "link": "/analyze"},
-    {"title": "Simulate", "details": "Card 4 details", "link": "/simulate"},
-]
-
 
 def glass_card(*children, **props) -> rx.Component:
     """Create a glassmorphism card with rounded corners.

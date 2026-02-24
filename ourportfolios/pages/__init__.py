@@ -4,17 +4,15 @@
 from . import landing
 from . import analyze
 from . import ticker_analysis
-from . import ticker_board
+from . import tickers
 from . import framework
-from . import select
 from . import industry_analysis
 
 __all__ = [
     "landing",
     "analyze",
     "ticker_analysis",
-    "ticker_board",
+    "tickers",
     "framework",
-    "select",
     "industry_analysis",
 ]
