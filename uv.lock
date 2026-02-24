@@ -775,7 +775,7 @@ requires-dist = [
 
 [[package]]
 name = "ourscheduler"
-version = "0.4.1"
+version = "0.4.2"
 source = { editable = "../ourscheduler" }
 dependencies = [
     { name = "asyncpg" },

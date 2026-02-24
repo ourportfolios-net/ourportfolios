@@ -6,7 +6,7 @@ from ourportfolios.components.navbar import navbar
 from ourportfolios.components.drawer import drawer_button
 from .state import StockComparisonState
 
-from ourportfolios.pages.compare.comparison_table import comparison_section
+from ourportfolios.pages.ticker_board.comparison_table import comparison_section
 
 
 @rx.page(

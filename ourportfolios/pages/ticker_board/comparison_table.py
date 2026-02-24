@@ -1,6 +1,6 @@
 import reflex as rx
 from .state import StockComparisonState
-from ourportfolios.pages.compare.controls import comparison_controls
+from ourportfolios.pages.ticker_board.controls import comparison_controls
 
 
 def stock_metric_cell(stock: dict, metric_key: str, industry: str) -> rx.Component:
@@ -117,8 +117,10 @@ def comparison_table_section() -> rx.Component:
                                     rx.box(
                                         rx.button(
                                             rx.icon("x", size=12),
-                                            on_click=lambda: StockComparisonState.remove_stock_from_compare(
-                                                stock["symbol"]
+                                            on_click=lambda: (
+                                                StockComparisonState.remove_stock_from_compare(
+                                                    stock["symbol"]
+                                                )
                                             ),
                                             variant="ghost",
                                             size="2",

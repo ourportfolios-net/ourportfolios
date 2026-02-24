@@ -6,7 +6,7 @@ from ourportfolios.pages import (  # noqa: F401
     ticker_analysis,
     industry_analysis,
     analyze,
-    compare,
+    ticker_board,
     home,
 )
 
