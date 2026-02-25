@@ -32,11 +32,11 @@ def indigo(a: float) -> str:
 
 
 # Recharts tooltip shared styles
-TOOLTIP_CURSOR = {"fill": "rgba(255, 255, 255, 0.1)"}
+TOOLTIP_CURSOR = {"fill": "rgba(255, 255, 255, 0.06)"}
 TOOLTIP_CONTENT_STYLE = {
-    "backgroundColor": "rgba(0, 0, 0, 0.9)",
-    "border": "1px solid #666",
-    "borderRadius": "4px",
+    "backgroundColor": "rgba(14, 14, 18, 0.95)",
+    "border": "1px solid rgba(255,255,255,0.08)",
+    "borderRadius": "8px",
     "padding": "6px 10px",
 }
 TOOLTIP_WRAPPER_STYLE = {"zIndex": "9999"}
@@ -56,34 +56,35 @@ TEXT_ACCENT = "#a78bfa"
 
 # ── Surfaces ─────────────────────────────────────────────────────────────────
 
-CARD_BG = white(0.025)
+# These match the framework page card exactly
+CARD_BG = white(0.03)
 CARD_BORDER = f"1px solid {white(0.07)}"
-SURFACE_BG = white(0.03)
+SURFACE_BG = white(0.025)
 SURFACE_BORDER = f"1px solid {white(0.05)}"
-SUBTLE_BG = white(0.04)
-SUBTLE_BORDER = f"1px solid {white(0.09)}"
+SUBTLE_BG = white(0.035)
+SUBTLE_BORDER = f"1px solid {white(0.07)}"
 DIVIDER = white(0.05)
-SKELETON_BG = white(0.08)
+SKELETON_BG = white(0.06)
 
 # ── Common style dicts ────────────────────────────────────────────────────────
 
 INPUT_STYLE = {
     "background": white(0.04),
-    "border": f"1px solid {white(0.09)}",
+    "border": f"1px solid {white(0.08)}",
     "border_radius": "10px",
     "color": "white",
     "width": "100%",
-    "_placeholder": {"color": white(0.22)},
+    "_placeholder": {"color": white(0.2)},
     "_focus": {
-        "border_color": purple(0.45),
-        "box_shadow": f"0 0 0 3px {purple(0.08)}",
+        "border_color": purple(0.4),
+        "box_shadow": f"0 0 0 3px {purple(0.07)}",
         "outline": "none",
     },
 }
 
 SELECT_STYLE = {
     "background": white(0.04),
-    "border": f"1px solid {white(0.09)}",
+    "border": f"1px solid {white(0.08)}",
     "border_radius": "10px",
     "color": "white",
     "width": "100%",
@@ -91,38 +92,41 @@ SELECT_STYLE = {
 }
 
 LABEL_STYLE = {
-    "font_size": "11px",
-    "font_weight": "600",
-    "color": white(0.55),
-    "letter_spacing": "0.07em",
+    "font_size": "10px",
+    "font_weight": "700",
+    "color": white(0.35),
+    "letter_spacing": "0.08em",
     "text_transform": "uppercase",
 }
 
 BTN_PURPLE = {
-    "background": purple(0.18),
-    "border": f"1px solid {purple(0.45)}",
-    "border_radius": "10px",
+    "background": purple(0.15),
+    "border": f"1px solid {purple(0.35)}",
+    "border_radius": "9px",
     "color": TEXT_PURPLE,
     "font_weight": "600",
     "cursor": "pointer",
-    "_hover": {"background": purple(0.28)},
+    "_hover": {"background": purple(0.22)},
+    "transition": "all 0.15s ease",
 }
 
-BTN_PURPLE_SM = {**BTN_PURPLE, "border_radius": "8px"}
+BTN_PURPLE_SM = {**BTN_PURPLE, "border_radius": "7px"}
 
 BTN_GHOST = {
-    "background": white(0.05),
-    "border": f"1px solid {white(0.1)}",
-    "border_radius": "10px",
-    "color": white(0.5),
+    "background": white(0.04),
+    "border": f"1px solid {white(0.08)}",
+    "border_radius": "9px",
+    "color": white(0.45),
     "cursor": "pointer",
-    "_hover": {"background": white(0.09)},
+    "_hover": {"background": white(0.07), "color": "white"},
+    "transition": "all 0.15s ease",
 }
 
-BTN_GHOST_SM = {**BTN_GHOST, "border_radius": "8px"}
+BTN_GHOST_SM = {**BTN_GHOST, "border_radius": "7px"}
 
-BTN_GHOST_XS = {**BTN_GHOST, "border_radius": "6px", "color": white(0.7)}
+BTN_GHOST_XS = {**BTN_GHOST, "border_radius": "6px"}
 
+# ── CARD_STYLE: single source of truth, matches framework page cards exactly ──
 CARD_STYLE = {
     "background": CARD_BG,
     "border": CARD_BORDER,
@@ -148,22 +152,16 @@ CARD_HOVER = {
     },
 }
 
-DECISION_HUB_HOVER = {
-    "_hover": {
-        "& > :nth-child(2)": {
-            "background": white(0.04),
-            "border_color": white(0.05),
-        }
-    }
-}
+# Kept for backward compat but no longer needed on home cards
+DECISION_HUB_HOVER = {}
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 _ICON_COLORS = {
-    "purple": (purple(0.2), purple(0.3), "var(--accent-purple)"),
-    "blue": (blue(0.2), blue(0.3), "var(--blue-9)"),
-    "green": (green(0.2), green(0.3), "var(--green-9)"),
-    "indigo": (indigo(0.15), indigo(0.3), "var(--indigo-9)"),
+    "purple": (purple(0.1), purple(0.2), "rgba(167, 139, 250, 0.85)"),
+    "blue": (blue(0.1), blue(0.2), "rgba(96, 165, 250, 0.85)"),
+    "green": (green(0.1), green(0.2), "rgba(52, 211, 153, 0.85)"),
+    "indigo": (indigo(0.1), indigo(0.2), "rgba(129, 140, 248, 0.85)"),
 }
 
 
@@ -190,22 +188,23 @@ def icon_color(color: str = "purple") -> str:
 
 
 def glow_orb_style(color: str = "purple") -> dict:
-    colors = {"purple": purple(0.1), "blue": blue(0.1), "green": green(0.1)}
+    """Kept for any pages that still use it."""
+    colors = {"purple": purple(0.07), "blue": blue(0.07), "green": green(0.07)}
     return {
         "position": "absolute",
-        "right": "-3rem",
-        "top": "-3rem",
-        "width": "160px",
-        "height": "160px",
+        "right": "-2rem",
+        "top": "-2rem",
+        "width": "130px",
+        "height": "130px",
         "background": colors.get(color, colors["purple"]),
-        "filter": "blur(60px)",
+        "filter": "blur(50px)",
         "border_radius": "9999px",
-        "transition": "all 0.3s ease",
+        "pointer_events": "none",
     }
 
 
 def skeleton_box_style(
-    width: str, height: str, radius: str = "4px", opacity: float = 0.08
+    width: str, height: str, radius: str = "4px", opacity: float = 0.06
 ) -> dict:
     return {
         "width": width,
@@ -221,7 +220,7 @@ def skeleton_box_style(
 LANDING_CARD = {
     "background": "transparent",
     "backdrop_filter": "blur(20px)",
-    "border": f"1px solid {white(0.08)}",
+    "border": f"1px solid {white(0.07)}",
     "border_radius": "1.5rem",
     "display": "flex",
     "flex_direction": "column",
@@ -231,7 +230,7 @@ LANDING_METRIC_BOX = {
     "flex": "1",
     "padding": "0.875rem",
     "background": white(0.02),
-    "border": f"1px solid {white(0.08)}",
+    "border": f"1px solid {white(0.07)}",
     "border_radius": "0.625rem",
 }
 
@@ -239,7 +238,7 @@ LANDING_CHART_BOX = {
     "flex": "1",
     "padding": "0.75rem",
     "background": white(0.02),
-    "border": f"1px solid {white(0.08)}",
+    "border": f"1px solid {white(0.07)}",
     "border_radius": "0.75rem",
 }
 
@@ -247,7 +246,7 @@ LANDING_LIST_ROW = {
     "width": "100%",
     "padding": "1rem 1.25rem",
     "background": white(0.02),
-    "border": f"1px solid {white(0.08)}",
+    "border": f"1px solid {white(0.07)}",
     "border_radius": "0.75rem",
 }
 
@@ -255,7 +254,7 @@ LANDING_LIST_ROW_SELECTED = {
     "width": "100%",
     "padding": "1rem 1.25rem",
     "background": purple(0.1),
-    "border": f"1px solid {purple(0.3)}",
+    "border": f"1px solid {purple(0.25)}",
     "border_radius": "0.75rem",
 }
 

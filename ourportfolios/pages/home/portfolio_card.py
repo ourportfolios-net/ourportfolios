@@ -1,40 +1,31 @@
 import reflex as rx
 from ...state.home_state import HomeState
-from ...components.cards import glass_card
-from ...styles import (
-    glow_orb_style,
-    icon_box_style,
-    SURFACE_CARD_STYLE,
-    DECISION_HUB_HOVER,
-    white,
-    green,
-)
+from ...styles import CARD_STYLE, white, green
+
+_PREVIEW_H = "200px"
 
 
-def _perf_bar(
-    hover_width: str, hover_color: str, idle_color: str = white(0.15)
-) -> rx.Component:
+def _perf_bar(hover_width: str, hover_color: str) -> rx.Component:
     return rx.hstack(
         rx.box(
-            width="36px", height="14px", border_radius="4px", background=white(0.08)
+            width="30px", height="11px", border_radius="4px", background=white(0.06)
         ),
         rx.box(
             rx.box(
-                width=rx.cond(HomeState.is_portfolio_hovered, hover_width, "50%"),
+                width=rx.cond(HomeState.is_portfolio_hovered, hover_width, "40%"),
                 height="100%",
                 background=rx.cond(
-                    HomeState.is_portfolio_hovered, hover_color, idle_color
+                    HomeState.is_portfolio_hovered, hover_color, white(0.08)
                 ),
                 border_radius="4px",
-                transition="all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                transition="all 0.7s cubic-bezier(0.34, 1.56, 0.64, 1)",
             ),
             width="100%",
-            height="14px",
-            background=white(0.05),
+            height="11px",
+            background=white(0.04),
             border_radius="4px",
             overflow="hidden",
             flex="1",
-            max_width="calc(100% - 100px)",
         ),
         spacing="3",
         align="center",
@@ -44,97 +35,148 @@ def _perf_bar(
 
 def portfolio_card_with_hover():
     return rx.box(
-        rx.box(**glow_orb_style("green")),
-        glass_card(
-            rx.vstack(
-                rx.hstack(
-                    rx.vstack(
-                        rx.heading("Manage Portfolio", size="5", font_weight="700"),
-                        rx.text(
-                            "Track performance, view allocation and rebalance your current holdings.",
-                            color=white(0.5),
-                            font_size="12px",
-                            line_height="1.5",
-                        ),
-                        spacing="2",
-                        align="start",
-                        flex="1",
-                    ),
-                    rx.box(
-                        rx.icon("arrow-right-left", size=20, color="var(--green-9)"),
-                        **icon_box_style("green"),
-                    ),
-                    spacing="3",
-                    align="start",
-                    width="100%",
-                ),
-                rx.box(flex="1"),
+        rx.vstack(
+            # Header: title left, green icon right
+            rx.hstack(
                 rx.vstack(
-                    rx.vstack(
-                        rx.box(
-                            width="80px",
-                            height="10px",
-                            border_radius="4px",
-                            background=white(0.08),
+                    rx.text(
+                        "Manage Portfolio",
+                        size="4",
+                        weight="bold",
+                        color="white",
+                        line_height="1.3",
+                    ),
+                    rx.text(
+                        "Track performance, view allocation and rebalance your current holdings.",
+                        size="2",
+                        color=white(0.38),
+                        line_height="1.65",
+                        style={
+                            "display": "-webkit-box",
+                            "-webkit-line-clamp": "3",
+                            "-webkit-box-orient": "vertical",
+                            "overflow": "hidden",
+                        },
+                    ),
+                    spacing="2",
+                    align="start",
+                    flex="1",
+                ),
+                rx.box(
+                    rx.icon(
+                        "arrow-right-left", size=16, color="rgba(52, 211, 153, 0.9)"
+                    ),
+                    background=green(0.12),
+                    border=f"1px solid {green(0.25)}",
+                    border_radius="10px",
+                    padding="9px",
+                    display="flex",
+                    align_items="center",
+                    justify_content="center",
+                    flex_shrink="0",
+                ),
+                spacing="3",
+                align="start",
+                width="100%",
+            ),
+            # Preview
+            rx.box(
+                rx.vstack(
+                    rx.box(
+                        width="60px",
+                        height="9px",
+                        border_radius="4px",
+                        background=white(0.06),
+                    ),
+                    rx.hstack(
+                        rx.text(
+                            HomeState.portfolio_value,
+                            font_size="18px",
+                            font_weight="800",
+                            letter_spacing="-0.02em",
+                            style={"transition": "all 1s ease"},
                         ),
-                        rx.hstack(
-                            rx.text(
-                                HomeState.portfolio_value,
-                                font_size="18px",
-                                font_weight="700",
-                                style={"transition": "all 1s ease"},
-                            ),
-                            rx.spacer(),
-                            rx.badge(
-                                HomeState.portfolio_change,
-                                color_scheme="green",
-                                size="1",
-                                font_weight="700",
-                                style={"transition": "all 1s ease"},
-                            ),
-                            justify="between",
-                            align="center",
-                            width="100%",
+                        rx.spacer(),
+                        rx.badge(
+                            HomeState.portfolio_change,
+                            color_scheme="green",
+                            size="1",
+                            font_weight="700",
+                            style={"transition": "all 1s ease"},
                         ),
-                        spacing="2",
-                        align="start",
                         width="100%",
-                        margin_bottom="0.75rem",
+                        align="center",
                     ),
                     rx.vstack(
-                        _perf_bar("70%", green(0.5)),
-                        _perf_bar("30%", green(0.35)),
-                        _perf_bar("30%", green(0.35)),
+                        _perf_bar("68%", green(0.5)),
+                        _perf_bar("42%", green(0.35)),
+                        _perf_bar("28%", green(0.25)),
                         spacing="3",
                         width="100%",
                     ),
-                    spacing="0",
-                    **SURFACE_CARD_STYLE,
-                ),
-                rx.button(
-                    "Open Portfolio Manager",
-                    size="2",
+                    spacing="3",
                     width="100%",
-                    font_weight="700",
-                    border_radius="10px",
-                    variant="outline",
-                    on_click=HomeState.handle_portfolio,
-                    cursor="pointer",
-                    transition="all 0.2s ease",
-                    _active={"transform": "scale(0.98)"},
                 ),
-                spacing="3",
+                padding="0.75rem",
+                border_radius="10px",
+                background=white(0.02),
+                border=f"1px solid {white(0.04)}",
                 width="100%",
-                height="100%",
+                height=_PREVIEW_H,
+                overflow="hidden",
             ),
-            padding="1rem",
+            # Footer button
+            rx.box(
+                rx.hstack(
+                    rx.text(
+                        "Open Portfolio Manager",
+                        font_size="13px",
+                        font_weight="700",
+                        color=white(0.7),
+                    ),
+                    rx.icon("arrow-right", size=14, color=white(0.5)),
+                    spacing="2",
+                    align="center",
+                    justify="center",
+                    width="100%",
+                ),
+                width="100%",
+                padding="0.6rem 1rem",
+                border_radius="9px",
+                background=white(0.03),
+                border=f"1px solid {white(0.07)}",
+                cursor="pointer",
+                transition="all 0.15s ease",
+                _hover={"background": white(0.06), "border_color": white(0.12)},
+                position="relative",
+                z_index="2",
+            ),
+            spacing="4",
             width="100%",
-            height="420px",
+            height="100%",
         ),
-        height="100%",
-        position="relative",
-        overflow="hidden",
+        rx.box(
+            position="absolute",
+            top="0",
+            left="0",
+            width="100%",
+            height="100%",
+            z_index="1",
+            cursor="pointer",
+            on_click=HomeState.handle_portfolio,
+        ),
         on_mouse_enter=HomeState.start_portfolio_hover,
         on_mouse_leave=HomeState.end_portfolio_hover,
-        **DECISION_HUB_HOVER,
+        **CARD_STYLE,
+        position="relative",
+        overflow="hidden",
+        style={
+            "height": "420px",
+            "transition": "all 0.15s ease",
+            "_hover": {
+                "background": white(0.045),
+                "border_color": white(0.13),
+                "transform": "translateY(-1px)",
+            },
+        },
     )
