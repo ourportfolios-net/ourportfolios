@@ -1,7 +1,23 @@
 import reflex as rx
 from ...state.home_state import HomeState
 from ...components.cards import glass_card
-from ...styles import white
+from ...styles import (
+    white,
+    purple,
+    green,
+    red,
+    GREEN_LABEL,
+    RED_LABEL,
+    GREEN_FILL,
+    GREEN_FADE,
+    RED_FILL,
+    RED_FADE,
+    GREEN_BORDER,
+    RED_BORDER,
+    GREEN_BG,
+    RED_BG,
+    accent_btn,
+)
 
 
 def vnindex_mini_chart():
@@ -10,8 +26,8 @@ def vnindex_mini_chart():
         rx.recharts.area_chart(
             rx.recharts.area(
                 data_key="normalized_close",
-                stroke="rgba(139, 92, 246, 0.9)",
-                fill="rgba(139, 92, 246, 0.08)",
+                stroke=purple(0.9),
+                fill=purple(0.08),
                 stroke_width=1.5,
             ),
             rx.recharts.x_axis(data_key="name", hide=True),
@@ -27,10 +43,7 @@ def vnindex_mini_chart():
 def _time_btn(label: str, active: bool = False) -> rx.Component:
     return rx.box(
         rx.text(
-            label,
-            font_size="11px",
-            font_weight="600",
-            color="white" if active else white(0.3),
+            label, size="1", weight="bold", color="white" if active else white(0.3)
         ),
         padding="0.2rem 0.5rem",
         border_radius="5px",
@@ -42,21 +55,15 @@ def _time_btn(label: str, active: bool = False) -> rx.Component:
 
 
 def _sector_bar(name: str, value: str, is_positive: bool = True) -> rx.Component:
-    bar_fill = "rgba(16, 185, 129, 0.5)" if is_positive else "rgba(239, 68, 68, 0.5)"
-    bar_fade = "rgba(16, 185, 129, 0.08)" if is_positive else "rgba(239, 68, 68, 0.08)"
-    label_color = "rgba(52, 211, 153, 1)" if is_positive else "rgba(248, 113, 113, 1)"
-    border = "rgba(16, 185, 129, 0.12)" if is_positive else "rgba(239, 68, 68, 0.12)"
-    bg = "rgba(16, 185, 129, 0.05)" if is_positive else "rgba(239, 68, 68, 0.05)"
+    label_color = GREEN_LABEL if is_positive else RED_LABEL
+    bar_fill = GREEN_FILL if is_positive else RED_FILL
+    bar_fade = GREEN_FADE if is_positive else RED_FADE
+    border = GREEN_BORDER if is_positive else RED_BORDER
+    bg = GREEN_BG if is_positive else RED_BG
 
     return rx.box(
         rx.vstack(
-            rx.text(
-                name,
-                font_size="9px",
-                font_weight="700",
-                letter_spacing="0.08em",
-                color=label_color,
-            ),
+            rx.text(name, size="1", weight="bold", color=label_color),
             rx.box(
                 rx.box(
                     width="100%",
@@ -70,7 +77,7 @@ def _sector_bar(name: str, value: str, is_positive: bool = True) -> rx.Component
                 overflow="hidden",
                 background=white(0.02),
             ),
-            rx.text(value, font_size="13px", font_weight="700", color="white"),
+            rx.text(value, size="3", weight="bold", color="white"),
             spacing="1",
             align="center",
             width="100%",
@@ -86,12 +93,12 @@ def _sector_bar(name: str, value: str, is_positive: bool = True) -> rx.Component
 
 def _sector_chip(name: str, value: str, is_positive: bool = True) -> rx.Component:
     return rx.hstack(
-        rx.text(name, font_size="10px", font_weight="500", color=white(0.35)),
+        rx.text(name, size="1", weight="medium", color=white(0.35)),
         rx.badge(
             value,
             color_scheme="green" if is_positive else "gray",
             size="1",
-            font_weight="700",
+            weight="bold",
         ),
         spacing="2",
         align="center",
@@ -107,14 +114,14 @@ def market_overview_section():
                         width="5px",
                         height="5px",
                         border_radius="50%",
-                        background="rgba(139, 92, 246, 0.8)",
+                        background=purple(0.8),
                     ),
                     rx.text(
                         "MARKET OVERVIEW",
-                        font_size="10px",
-                        font_weight="700",
-                        letter_spacing="0.08em",
+                        size="1",
+                        weight="bold",
                         color=white(0.35),
+                        letter_spacing="0.08em",
                     ),
                     spacing="2",
                     align="center",
@@ -138,12 +145,12 @@ def market_overview_section():
                 rx.box(
                     rx.hstack(
                         rx.vstack(
-                            rx.text("VNIndex", font_size="11px", color=white(0.35)),
+                            rx.text("VNIndex", size="1", color=white(0.35)),
                             rx.hstack(
                                 rx.text(
                                     HomeState.vnindex_value,
-                                    font_size="22px",
-                                    font_weight="800",
+                                    size="6",
+                                    weight="bold",
                                     color="white",
                                     letter_spacing="-0.02em",
                                 ),
@@ -153,7 +160,7 @@ def market_overview_section():
                                         HomeState.vnindex_is_positive, "green", "red"
                                     ),
                                     size="1",
-                                    font_weight="700",
+                                    weight="bold",
                                 ),
                                 spacing="2",
                                 align="end",
@@ -188,33 +195,7 @@ def market_overview_section():
                 width="100%",
                 align="center",
             ),
-            # Footer button - smaller and bottom right
-            rx.box(
-                rx.link(
-                    rx.hstack(
-                        rx.text(
-                            "View Full Market Data",
-                            font_size="11px",
-                            font_weight="600",
-                            color=white(0.7),
-                        ),
-                        rx.icon("arrow-right", size=12, color=white(0.5)),
-                        spacing="1",
-                        align="center",
-                    ),
-                    href="/market",
-                    underline="none",
-                ),
-                width="auto",
-                padding="0.45rem 0.75rem",
-                border_radius="7px",
-                background=white(0.03),
-                border=f"1px solid {white(0.07)}",
-                cursor="pointer",
-                transition="all 0.15s ease",
-                _hover={"background": white(0.06), "border_color": white(0.12)},
-                align_self="flex-end",
-            ),
+            accent_btn("View Market", href="/market"),
             spacing="4",
             width="100%",
         ),

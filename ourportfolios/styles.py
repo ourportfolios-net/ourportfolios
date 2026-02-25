@@ -1,6 +1,8 @@
 """Centralized style tokens and helpers for consistent UI."""
 
-# ── Colors ──────────────────────────────────────────────────────────────────
+import reflex as rx
+
+# ── Colors ────────────────────────────────────────────────────────────────────
 
 
 def purple(a: float) -> str:
@@ -31,21 +33,46 @@ def indigo(a: float) -> str:
     return f"rgba(99, 102, 241, {a})"
 
 
-# Recharts tooltip shared styles
-TOOLTIP_CURSOR = {"fill": "rgba(255, 255, 255, 0.06)"}
+# ── Semantic color aliases ────────────────────────────────────────────────────
+
+# Use green/red helpers for positive/negative
+GREEN_LABEL = green(1.0)  # "rgba(16, 185, 129, 1.0)"  — bright green text
+RED_LABEL = red(1.0)
+
+GREEN_FILL = green(0.5)
+RED_FILL = red(0.5)
+
+GREEN_FADE = green(0.08)
+RED_FADE = red(0.08)
+
+GREEN_BORDER = green(0.12)
+RED_BORDER = red(0.12)
+
+GREEN_BG = green(0.05)
+RED_BG = red(0.05)
+
+
+# ── Recharts ──────────────────────────────────────────────────────────────────
+
+TOOLTIP_CURSOR = {"fill": white(0.06)}
 TOOLTIP_CONTENT_STYLE = {
     "backgroundColor": "rgba(14, 14, 18, 0.95)",
-    "border": "1px solid rgba(255,255,255,0.08)",
+    "border": f"1px solid {white(0.08)}",
     "borderRadius": "8px",
     "padding": "6px 10px",
 }
 TOOLTIP_WRAPPER_STYLE = {"zIndex": "9999"}
 
-# Error / danger colours
+
+# ── Error / danger ────────────────────────────────────────────────────────────
+
 ERROR_COLOR = "rgba(255, 100, 100, 0.8)"
 ERROR_BORDER = "1px solid rgba(255, 80, 80, 0.5)"
 ERROR_SHADOW = "0 0 0 3px rgba(255, 80, 80, 0.08)"
 DELETE_HOVER = "rgba(236, 93, 94, 0.85)"
+
+
+# ── Text tokens ───────────────────────────────────────────────────────────────
 
 TEXT_PRIMARY = "white"
 TEXT_SECONDARY = white(0.5)
@@ -54,19 +81,71 @@ TEXT_MUTED = white(0.2)
 TEXT_PURPLE = "#c4b5fd"
 TEXT_ACCENT = "#a78bfa"
 
-# ── Surfaces ─────────────────────────────────────────────────────────────────
 
-# These match the framework page card exactly
+# ── Surfaces ──────────────────────────────────────────────────────────────────
+
 CARD_BG = white(0.03)
 CARD_BORDER = f"1px solid {white(0.07)}"
+
 SURFACE_BG = white(0.025)
 SURFACE_BORDER = f"1px solid {white(0.05)}"
+
 SUBTLE_BG = white(0.035)
 SUBTLE_BORDER = f"1px solid {white(0.07)}"
+
 DIVIDER = white(0.05)
 SKELETON_BG = white(0.06)
 
-# ── Common style dicts ────────────────────────────────────────────────────────
+
+# ── Card styles ───────────────────────────────────────────────────────────────
+
+CARD_STYLE = {
+    "background": CARD_BG,
+    "border": CARD_BORDER,
+    "border_radius": "14px",
+    "padding": "1.5rem",
+    "min_height": "240px",
+}
+
+# Standard hover applied to ALL cards (hub cards, glass cards, framework card)
+CARD_HOVER_STYLE = {
+    "transition": "all 0.15s ease",
+    "_hover": {
+        "background": white(0.055),
+        "border_color": white(0.13),
+        "transform": "translateY(-1px)",
+    },
+}
+
+# Hub card base = CARD_STYLE + hover + extra layout props
+HUB_CARD_STYLE = {
+    **CARD_STYLE,
+    **CARD_HOVER_STYLE,
+    "position": "relative",
+    "overflow": "hidden",
+    "height": "420px",
+}
+
+SURFACE_CARD_STYLE = {
+    "padding": "0.75rem",
+    "border_radius": "10px",
+    "background": SURFACE_BG,
+    "border": SURFACE_BORDER,
+    "width": "100%",
+}
+
+# Preview box inside hub cards
+PREVIEW_BOX_STYLE = {
+    "padding": "0.75rem",
+    "border_radius": "10px",
+    "background": white(0.02),
+    "border": f"1px solid {white(0.04)}",
+    "width": "100%",
+    "overflow": "hidden",
+}
+
+
+# ── Form controls ─────────────────────────────────────────────────────────────
 
 INPUT_STYLE = {
     "background": white(0.04),
@@ -99,6 +178,9 @@ LABEL_STYLE = {
     "text_transform": "uppercase",
 }
 
+
+# ── Dialog / modal buttons ────────────────────────────────────────────────────
+
 BTN_PURPLE = {
     "background": purple(0.15),
     "border": f"1px solid {purple(0.35)}",
@@ -123,51 +205,103 @@ BTN_GHOST = {
 }
 
 BTN_GHOST_SM = {**BTN_GHOST, "border_radius": "7px"}
-
 BTN_GHOST_XS = {**BTN_GHOST, "border_radius": "6px"}
 
-# ── CARD_STYLE: single source of truth, matches framework page cards exactly ──
-CARD_STYLE = {
-    "background": CARD_BG,
-    "border": CARD_BORDER,
-    "border_radius": "14px",
-    "padding": "1.5rem",
-    "min_height": "240px",
-}
 
-SURFACE_CARD_STYLE = {
-    "padding": "0.75rem",
-    "border_radius": "10px",
-    "background": SURFACE_BG,
-    "border": SURFACE_BORDER,
-    "width": "100%",
-}
+# ── Card CTA button components ────────────────────────────────────────────────
 
-CARD_HOVER = {
-    "transition": "all 0.15s ease",
-    "_hover": {
-        "background": white(0.045),
-        "border_color": white(0.13),
-        "transform": "translateY(-1px)",
-    },
-}
 
-# Kept for backward compat but no longer needed on home cards
-DECISION_HUB_HOVER = {}
+def accent_btn(
+    label: str,
+    icon: str = "arrow-right",
+    href: str | None = None,
+    on_click=None,
+    icon_left: bool = False,
+) -> rx.Component:
+    """Small rounded ghost CTA used at the bottom-right of cards.
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
+    Rest state:  white(0.04) bg, white(0.09) border, white(0.65) text, white(0.45) icon.
+    Hover state: lightens bg + border, same as card hover language — no purple.
+    """
+    icon_el = rx.icon(icon, size=12, color=white(0.5))
+    label_el = rx.text(label, size="1", weight="medium", color=white(0.65))
+    children = [icon_el, label_el] if icon_left else [label_el, icon_el]
+
+    inner = rx.box(
+        rx.hstack(*children, spacing="1", align="center"),
+        padding="0.35em 0.75em",
+        background=white(0.04),
+        border=f"1px solid {white(0.09)}",
+        border_radius="8px",
+        transition="all 0.15s ease",
+        _hover={"background": white(0.09), "border_color": white(0.2)},
+        cursor="pointer",
+        align_self="flex-end",
+        position="relative",
+        z_index="2",
+        display="inline-flex",
+    )
+    if href:
+        return rx.link(
+            inner,
+            href=href,
+            underline="none",
+            align_self="flex-end",
+            position="relative",
+            z_index="2",
+        )
+    if on_click:
+        return rx.box(
+            inner,
+            on_click=on_click,
+            cursor="pointer",
+            align_self="flex-end",
+            position="relative",
+            z_index="2",
+        )
+    return inner
+
+
+def ghost_btn(
+    label: str,
+    icon: str = "arrow-right",
+    href: str | None = None,
+    on_click=None,
+) -> rx.Component:
+    """Alias of accent_btn — kept for call-sites that use the ghost variant."""
+    return accent_btn(label, icon=icon, href=href, on_click=on_click)
+
+
+# ── Icon box helper ───────────────────────────────────────────────────────────
 
 _ICON_COLORS = {
-    "purple": (purple(0.1), purple(0.2), "rgba(167, 139, 250, 0.85)"),
-    "blue": (blue(0.1), blue(0.2), "rgba(96, 165, 250, 0.85)"),
-    "green": (green(0.1), green(0.2), "rgba(52, 211, 153, 0.85)"),
+    "purple": (purple(0.12), purple(0.25), "rgba(167, 139, 250, 0.9)"),
+    "blue": (blue(0.12), blue(0.25), "rgba(96, 165, 250, 0.9)"),
+    "green": (green(0.12), green(0.25), "rgba(52, 211, 153, 0.9)"),
     "indigo": (indigo(0.1), indigo(0.2), "rgba(129, 140, 248, 0.85)"),
 }
+
+
+def icon_box(icon_name: str, color: str = "purple", size: int = 16) -> rx.Component:
+    """Renders a coloured square icon box — replaces repeated inline rx.box(...) blocks."""
+    bg, border, icon_color_val = _ICON_COLORS.get(color, _ICON_COLORS["purple"])
+    return rx.box(
+        rx.icon(icon_name, size=size, color=icon_color_val),
+        background=bg,
+        border=f"1px solid {border}",
+        border_radius="10px",
+        padding="9px",
+        display="flex",
+        align_items="center",
+        justify_content="center",
+        flex_shrink="0",
+    )
 
 
 def icon_box_style(
     color: str = "purple", size: str = "40px", radius: str = "10px"
 ) -> dict:
+    """Returns a style dict for cases where a component helper isn't suitable."""
     bg, border, _ = _ICON_COLORS.get(color, _ICON_COLORS["purple"])
     return {
         "width": size,
@@ -187,8 +321,10 @@ def icon_color(color: str = "purple") -> str:
     return c
 
 
+# ── Misc helpers ──────────────────────────────────────────────────────────────
+
+
 def glow_orb_style(color: str = "purple") -> dict:
-    """Kept for any pages that still use it."""
     colors = {"purple": purple(0.07), "blue": blue(0.07), "green": green(0.07)}
     return {
         "position": "absolute",
@@ -258,6 +394,7 @@ LANDING_LIST_ROW_SELECTED = {
     "border_radius": "0.75rem",
 }
 
+
 # ── Table / comparison ────────────────────────────────────────────────────────
 
 TABLE_CELL_BORDER = f"1px solid {white(0.04)}"
@@ -267,3 +404,7 @@ TICKER_CARD_STYLE = {
     "marginLeft": "0.6em",
     "_hover": {"marginLeft": "0"},
 }
+
+# kept for backward compat
+CARD_HOVER = CARD_HOVER_STYLE
+DECISION_HUB_HOVER = {}

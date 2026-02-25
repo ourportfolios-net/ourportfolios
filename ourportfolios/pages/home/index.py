@@ -1,45 +1,46 @@
 import reflex as rx
 from ...state.home_state import HomeState
-from .decision_hub import decision_hub_section
+from .hub_cards import compare_assets_card, manage_portfolio_card
+from .framework_card import select_framework_card, selected_framework_card
 from .market_overview import market_overview_section
 from .ticker_of_day import ticker_of_the_day_card
-from .selected_framework_card import selected_framework_card
-from .cart_glance import cart_glance_panel
+from .cart_card import cart_card
 from ...components.navbar import navbar
+
+
+def decision_hub_section():
+    return rx.grid(
+        select_framework_card(),
+        compare_assets_card(),
+        manage_portfolio_card(),
+        columns=rx.breakpoints(initial="1", md="3", lg="3"),
+        gap="1.25rem",
+        width="100%",
+    )
 
 
 @rx.page(route="/home", on_load=HomeState.on_mount)
 def index() -> rx.Component:
-    """Render the home page."""
     return rx.box(
         navbar(),
         rx.box(
-            # Main two-column layout
             rx.flex(
-                # ── Left Column (73%): Market Overview + Decision Hub Cards ──
+                # Left column
                 rx.box(
                     rx.vstack(
-                        # Market Overview section (large)
                         market_overview_section(),
-                        # Decision Hub Cards row
-                        rx.box(
-                            decision_hub_section(),
-                            width="100%",
-                        ),
+                        decision_hub_section(),
                         spacing="5",
                         width="100%",
                     ),
                     width=rx.breakpoints(initial="100%", lg="73%"),
                 ),
-                # ── Right Column (27%): Ticker of Day + Comparison Cart ──
+                # Right column
                 rx.box(
                     rx.vstack(
-                        # Ticker of the Day card
                         ticker_of_the_day_card(),
-                        # Selected Framework card
                         selected_framework_card(),
-                        # Comparison Cart panel
-                        cart_glance_panel(),
+                        cart_card(),
                         spacing="5",
                         width="100%",
                     ),

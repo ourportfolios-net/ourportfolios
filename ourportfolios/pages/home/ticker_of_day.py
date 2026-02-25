@@ -20,22 +20,16 @@ def ticker_of_the_day_card():
                 href=f"/analyze/{HomeState.ticker_of_day_symbol}",
             ),
             rx.vstack(
-                # Eyebrow label — no icon
                 rx.text(
-                    "Ticker of the Day",
-                    font_size="11px",
-                    font_weight="500",
-                    color=white(0.35),
-                    letter_spacing="0.01em",
+                    "Ticker of the Day", size="1", weight="medium", color=white(0.35)
                 ),
-                # Main row
                 rx.hstack(
                     rx.vstack(
                         rx.hstack(
                             rx.text(
                                 HomeState.ticker_of_day_symbol,
-                                font_size="30px",
-                                font_weight="800",
+                                size="8",
+                                weight="bold",
                                 color="white",
                                 letter_spacing="-0.02em",
                                 line_height="1",
@@ -56,7 +50,7 @@ def ticker_of_the_day_card():
                         ),
                         rx.text(
                             HomeState.ticker_of_day_name,
-                            font_size="11px",
+                            size="1",
                             color=white(0.35),
                             white_space="nowrap",
                             overflow="hidden",
@@ -70,8 +64,8 @@ def ticker_of_the_day_card():
                     rx.vstack(
                         rx.text(
                             HomeState.ticker_of_day_price,
-                            font_size="24px",
-                            font_weight="800",
+                            size="7",
+                            weight="bold",
                             color="white",
                             letter_spacing="-0.02em",
                         ),
@@ -79,7 +73,7 @@ def ticker_of_the_day_card():
                             HomeState.ticker_of_day_change,
                             color_scheme="green",
                             size="1",
-                            font_weight="700",
+                            weight="bold",
                         ),
                         spacing="1",
                         align="end",
@@ -100,6 +94,4 @@ def ticker_of_the_day_card():
         padding="1.125rem 1.25rem",
         width="100%",
         cursor="pointer",
-        transition="all 0.15s ease",
-        _hover={"border_color": white(0.12), "background": white(0.035)},
     )

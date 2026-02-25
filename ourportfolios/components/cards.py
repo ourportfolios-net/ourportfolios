@@ -7,29 +7,29 @@ cards = [
     {"title": "Simulate", "details": "Card 4 details", "link": "/simulate"},
 ]
 
+# Shared base for all right-column and market overview cards
+_GLASS_BG = "rgba(255, 255, 255, 0.03)"
+_GLASS_BORDER = "1px solid rgba(255, 255, 255, 0.07)"
+_GLASS_HOVER_BG = "rgba(255, 255, 255, 0.055)"
+_GLASS_HOVER_BORDER = "rgba(255, 255, 255, 0.13)"
+
 
 def glass_card(*children, **props) -> rx.Component:
-    """Create a glassmorphism card with rounded corners.
-
-    A reusable card component with:
-    - Glass morphism effect (blur + transparency)
-    - Rounded corners
-    - Subtle border
-    - Dark background with blur
-
-    Args:
-        *children: Child components to render inside the card
-        **props: Additional props to pass to the box component
-
-    Returns:
-        rx.Component: A glassmorphism card
-    """
-    # Extract custom props or set defaults
     padding = props.pop("padding", "1rem")
     border_radius = props.pop("border_radius", "14px")
-    background = props.pop("background", "rgba(40, 40, 40, 0.5)")
-    border = props.pop("border", "1px solid rgba(255, 255, 255, 0.08)")
+    background = props.pop("background", _GLASS_BG)
+    border = props.pop("border", _GLASS_BORDER)
     backdrop_filter = props.pop("backdrop_filter", "blur(12px)")
+    _hover = props.pop(
+        "_hover",
+        {
+            "background": _GLASS_HOVER_BG,
+            "border_color": _GLASS_HOVER_BORDER,
+        },
+    )
+    # Only set default transition if caller didn't already pass one
+    if "transition" not in props:
+        props["transition"] = "all 0.15s ease"
     return rx.box(
         *children,
         padding=padding,
@@ -37,16 +37,17 @@ def glass_card(*children, **props) -> rx.Component:
         background=background,
         backdrop_filter=backdrop_filter,
         border=border,
+        _hover=_hover,
         **props,
     )
 
 
 def portfolio_card(card, idx, total):
     def get_card_position_size(idx, total):
-        spread_x = 65  # percent of parent width; lower for more overlap
-        spread_y = 15  # vertical spread
-        width = 23  # percent of parent width; adjust for desired overlap
-        height = 48  # percent of parent height
+        spread_x = 65
+        spread_y = 15
+        width = 23
+        height = 48
 
         if total > 1:
             center = (idx / (total - 1)) * spread_x + (50 - spread_x / 2)

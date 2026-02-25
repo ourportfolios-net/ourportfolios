@@ -1,5 +1,3 @@
-"""Ticker cart glance panel for the home page."""
-
 import reflex as rx
 from ...state.cart_state import CartState
 from ...components.cards import glass_card
@@ -18,13 +16,6 @@ def _cart_item_row(item: dict, index: int) -> rx.Component:
             variant="outline",
             color_scheme="gray",
             size="1",
-            style={
-                "border_radius": "6px",
-                "font_size": "10px",
-                "letter_spacing": "0.02em",
-                "color": white(0.5),
-                "border_color": white(0.12),
-            },
         ),
         rx.spacer(),
         rx.box(
@@ -50,15 +41,14 @@ def _cart_item_row(item: dict, index: int) -> rx.Component:
     )
 
 
-def cart_glance_panel() -> rx.Component:
+def cart_card() -> rx.Component:
     return glass_card(
         rx.vstack(
             rx.text(
                 "Comparison Cart",
-                font_size="11px",
-                font_weight="500",
+                size="1",
+                weight="medium",
                 color=white(0.35),
-                letter_spacing="0.01em",
             ),
             rx.cond(
                 CartState.cart_items,
@@ -77,11 +67,7 @@ def cart_glance_panel() -> rx.Component:
                     },
                 ),
                 rx.vstack(
-                    rx.text(
-                        "No tickers in cart",
-                        font_size="12px",
-                        color=white(0.2),
-                    ),
+                    rx.text("No tickers in cart", size="2", color=white(0.2)),
                     align="center",
                     width="100%",
                     padding_y="1rem",
