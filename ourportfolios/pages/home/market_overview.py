@@ -188,6 +188,33 @@ def market_overview_section():
                 width="100%",
                 align="center",
             ),
+            # Footer button - smaller and bottom right
+            rx.box(
+                rx.link(
+                    rx.hstack(
+                        rx.text(
+                            "View Full Market Data",
+                            font_size="11px",
+                            font_weight="600",
+                            color=white(0.7),
+                        ),
+                        rx.icon("arrow-right", size=12, color=white(0.5)),
+                        spacing="1",
+                        align="center",
+                    ),
+                    href="/market",
+                    underline="none",
+                ),
+                width="auto",
+                padding="0.45rem 0.75rem",
+                border_radius="7px",
+                background=white(0.03),
+                border=f"1px solid {white(0.07)}",
+                cursor="pointer",
+                transition="all 0.15s ease",
+                _hover={"background": white(0.06), "border_color": white(0.12)},
+                align_self="flex-end",
+            ),
             spacing="4",
             width="100%",
         ),

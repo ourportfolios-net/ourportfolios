@@ -27,6 +27,7 @@ def selected_framework_card():
                     href="/framework",
                     underline="none",
                 ),
+                rx.spacer(),
                 rx.hstack(
                     rx.vstack(
                         rx.text(
@@ -55,7 +56,10 @@ def selected_framework_card():
                     rx.link(
                         rx.hstack(
                             rx.text(
-                                "CHANGE", size="1", weight="bold", color=TEXT_ACCENT
+                                "CHANGE",
+                                font_size="11px",
+                                weight="medium",
+                                color=TEXT_ACCENT,
                             ),
                             rx.icon("arrow-right", size=12, color=TEXT_ACCENT),
                             spacing="1",
@@ -102,35 +106,32 @@ def selected_framework_card():
                     spacing="1",
                     width="100%",
                 ),
+                rx.spacer(),
                 rx.box(
                     rx.link(
                         rx.hstack(
                             rx.text(
                                 "Select Framework",
-                                font_size="13px",
-                                font_weight="700",
+                                font_size="11px",
+                                font_weight="600",
                                 color=white(0.55),
                             ),
-                            rx.icon("arrow-right", size=14, color=white(0.4)),
-                            spacing="2",
+                            rx.icon("arrow-right", size=12, color=white(0.4)),
+                            spacing="1",
                             align="center",
-                            justify="center",
-                            width="100%",
                         ),
                         href="/framework",
                         underline="none",
-                        width="100%",
-                        display="flex",
-                        justify_content="center",
                     ),
-                    width="100%",
-                    padding="0.6rem 1rem",
-                    border_radius="9px",
+                    width="auto",
+                    padding="0.45rem 0.75rem",
+                    border_radius="7px",
                     background=white(0.03),
                     border=f"1px solid {white(0.07)}",
                     cursor="pointer",
                     transition="all 0.15s ease",
                     _hover={"background": white(0.06), "border_color": white(0.12)},
+                    align_self="flex-end",
                 ),
                 spacing="3",
                 align="start",
