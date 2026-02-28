@@ -25,7 +25,6 @@ def index() -> rx.Component:
         navbar(),
         rx.box(
             rx.flex(
-                # Left column
                 rx.box(
                     rx.vstack(
                         market_overview_section(),
@@ -33,9 +32,8 @@ def index() -> rx.Component:
                         spacing="5",
                         width="100%",
                     ),
-                    width=rx.breakpoints(initial="100%", lg="73%"),
+                    width=rx.breakpoints(initial="100%", lg="75%"),
                 ),
-                # Right column
                 rx.box(
                     rx.vstack(
                         ticker_of_the_day_card(),
@@ -44,7 +42,7 @@ def index() -> rx.Component:
                         spacing="5",
                         width="100%",
                     ),
-                    width=rx.breakpoints(initial="100%", lg="27%"),
+                    width=rx.breakpoints(initial="100%", lg="25%"),
                     margin_top=rx.breakpoints(initial="1.5rem", lg="0"),
                 ),
                 direction=rx.breakpoints(initial="column", lg="row"),
