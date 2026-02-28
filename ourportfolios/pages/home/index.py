@@ -51,7 +51,7 @@ def index() -> rx.Component:
                 gap=rx.breakpoints(initial="0", lg="2rem"),
                 width="100%",
             ),
-            width="85vw",
+            width="90vw",
             margin="0 auto",
             padding_y="2rem",
         ),
