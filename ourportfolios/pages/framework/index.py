@@ -3,6 +3,7 @@
 import reflex as rx
 
 from ...components.navbar import navbar
+from ...components.breadcrumb import breadcrumb
 
 from .state import FrameworkState
 from .framework_cards import category_filter_button, framework_card, skeleton_card
@@ -10,34 +11,10 @@ from .framework_dialog import framework_dialog
 from .add_framework_dialog import add_framework_dialog, add_metric_selector
 
 
-def breadcrumb():
-    """Breadcrumb navigation"""
-    return rx.hstack(
-        rx.html(
-            "<style>.breadcrumb-home { color: rgba(255,255,255,0.35) !important; text-decoration: none !important; transition: color 0.15s ease; } .breadcrumb-home:hover { color: white !important; }</style>"
-        ),
-        rx.link(
-            "Home",
-            href="/home",
-            size="2",
-            class_name="breadcrumb-home",
-        ),
-        rx.icon("chevron-right", size=13, color="rgba(255,255,255,0.2)"),
-        rx.text(
-            "Frameworks",
-            size="2",
-            color="rgba(255,255,255,0.75)",
-            weight="medium",
-        ),
-        spacing="2",
-        align="center",
-    )
-
-
 def page_header():
     """Page header"""
     return rx.vstack(
-        breadcrumb(),
+        breadcrumb("/framework", tail_label="Frameworks"),
         rx.heading(
             "Choose Your Framework",
             size="8",
