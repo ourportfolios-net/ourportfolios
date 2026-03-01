@@ -75,7 +75,7 @@ def _ticker_real():
                     width="100%",
                     z_index="1",
                 ),
-                href=f"/analyze/{HomeState.ticker_of_day_symbol}",
+                href=f"/tickers/{HomeState.ticker_of_day_symbol}",
             ),
             rx.vstack(
                 rx.text(

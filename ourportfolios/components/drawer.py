@@ -52,7 +52,7 @@ def cart_drawer_content():
                                                             size="4",
                                                             weight="medium",
                                                         ),
-                                                        href=f"/analyze/{item['name']}",
+                                                        href=f"/tickers/{item['name']}",
                                                         underline="none",
                                                     ),
                                                     rx.badge(
@@ -72,8 +72,8 @@ def cart_drawer_content():
                                                         "padding": "0.3em 0.7em",
                                                         "fontSize": "0.9em",
                                                     },
-                                                    on_click=lambda: CartState.remove_item(
-                                                        i
+                                                    on_click=lambda: (
+                                                        CartState.remove_item(i)
                                                     ),
                                                 ),
                                                 align_items="center",
@@ -105,7 +105,7 @@ def cart_drawer_content():
                                                         size="4",
                                                         weight="medium",
                                                     ),
-                                                    href=f"/analyze/{item['name']}",
+                                                    href=f"/tickers/{item['name']}",
                                                     underline="none",
                                                 ),
                                                 rx.badge(
