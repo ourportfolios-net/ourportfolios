@@ -2,7 +2,7 @@ import reflex as rx
 from ...state.home_state import HomeState
 from ...state.framework_state import GlobalFrameworkState
 from ...components.cards import glass_card
-from ...styles import CARD_STYLE, white, purple, accent_btn, ghost_btn
+from ...styles import CARD_STYLE, white, purple, accent_btn
 
 _CARD_H = "68px"
 _PREVIEW_H = "200px"
