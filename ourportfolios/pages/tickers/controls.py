@@ -190,10 +190,12 @@ def _categorical_filter():
 
 def _filter_tabs() -> rx.Component:
     return rx.tabs.root(
-        rx.tabs.list(
-            rx.tabs.trigger("Fundamental", value="fundamental"),
-            rx.tabs.trigger("Categorical", value="categorical"),
-            rx.tabs.trigger("Technical", value="technical"),
+        rx.hstack(
+            rx.tabs.list(
+                rx.tabs.trigger("Fundamental", value="fundamental"),
+                rx.tabs.trigger("Categorical", value="categorical"),
+                rx.tabs.trigger("Technical", value="technical"),
+            ),
             rx.spacer(),
             rx.button(
                 rx.hstack(
@@ -206,12 +208,17 @@ def _filter_tabs() -> rx.Component:
                 size="1",
                 style=BTN_GHOST_XS,
             ),
+            width="100%",
+            align="center",
+            padding_x="0.75em",
+            padding_top="0.5em",
+            padding_bottom="0",
         ),
         rx.tabs.content(_metrics_filter(option="F"), value="fundamental"),
         rx.tabs.content(_categorical_filter(), value="categorical"),
         rx.tabs.content(_metrics_filter(option="T"), value="technical"),
         default_value="fundamental",
-        style={"flex": "1"},
+        style={"flex": "1", "display": "flex", "flex_direction": "column"},
     )
 
 

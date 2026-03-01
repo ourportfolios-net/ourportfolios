@@ -71,7 +71,7 @@ def ticker_card(
             rx.box(
                 rx.link(
                     rx.text(ticker, weight="medium", size="7"),
-                    href=f"/analyze/{ticker}",
+                    href=f"/tickers/{ticker}",
                     style={"textDecoration": "none", "color": "inherit"},
                 ),
                 rx.text(organ_name, color=rx.color("gray", 7), size="2"),
