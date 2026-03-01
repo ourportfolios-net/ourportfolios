@@ -207,6 +207,51 @@ BTN_GHOST = {
 BTN_GHOST_SM = {**BTN_GHOST, "border_radius": "7px"}
 BTN_GHOST_XS = {**BTN_GHOST, "border_radius": "6px"}
 
+# Secondary (icon+label) – the standard toolbar button look
+BTN_SECONDARY = {
+    "background": white(0.05),
+    "border": f"1px solid {white(0.1)}",
+    "border_radius": "8px",
+    "color": white(0.6),
+    "font_weight": "500",
+    "font_size": "13px",
+    "cursor": "pointer",
+    "transition": "all 0.15s ease",
+    "_hover": {
+        "background": white(0.09),
+        "color": white(0.9),
+        "border_color": white(0.18),
+    },
+}
+
+BTN_SECONDARY_ACTIVE = {
+    **BTN_SECONDARY,
+    "background": white(0.09),
+    "border": f"1px solid {white(0.18)}",
+    "color": white(0.9),
+    "font_weight": "600",
+}
+
+# Pill toggle – used for view/mode switches (matches price_chart.py _chart_type_toggle)
+PILL_TOGGLE = {
+    "background": white(0.03),
+    "border": f"1px solid {white(0.06)}",
+    "border_radius": "6px",
+    "color": white(0.35),
+    "cursor": "pointer",
+    "transition": "all 0.15s ease",
+    "_hover": {"background": white(0.06), "color": white(0.7)},
+}
+
+PILL_TOGGLE_ACTIVE = {
+    "background": white(0.1),
+    "border": f"1px solid {white(0.18)}",
+    "border_radius": "6px",
+    "color": "white",
+    "cursor": "pointer",
+    "transition": "all 0.15s ease",
+}
+
 
 # ── Card CTA button components ────────────────────────────────────────────────
 

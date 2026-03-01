@@ -12,38 +12,9 @@ from ...styles import (
     BTN_PURPLE_SM,
     BTN_GHOST_SM,
     BTN_GHOST_XS,
+    BTN_SECONDARY,
+    BTN_SECONDARY_ACTIVE,
 )
-
-
-# ── Shared button styles ──────────────────────────────────────────────────────
-
-_BTN_ICON_SECONDARY = {
-    "background": white(0.05),
-    "border": f"1px solid {white(0.1)}",
-    "border_radius": "8px",
-    "color": white(0.6),
-    "font_weight": "500",
-    "font_size": "13px",
-    "cursor": "pointer",
-    "transition": "all 0.15s ease",
-    "_hover": {
-        "background": white(0.09),
-        "color": white(0.9),
-        "border_color": white(0.18),
-    },
-}
-
-_BTN_FILTER_ACTIVE = {
-    "background": purple(0.18),
-    "border": f"1px solid {purple(0.5)}",
-    "border_radius": "8px",
-    "color": TEXT_PURPLE,
-    "font_weight": "600",
-    "font_size": "13px",
-    "cursor": "pointer",
-    "transition": "all 0.15s ease",
-    "_hover": {"background": purple(0.28)},
-}
 
 
 # ── Filter sliders ────────────────────────────────────────────────────────────
@@ -277,7 +248,7 @@ def filter_button() -> rx.Component:
                 ),
                 size="2",
                 style=rx.cond(
-                    TickersPageState.has_filter, _BTN_FILTER_ACTIVE, _BTN_ICON_SECONDARY
+                    TickersPageState.has_filter, BTN_SECONDARY_ACTIVE, BTN_SECONDARY
                 ),
             )
         ),
@@ -334,7 +305,7 @@ def _sort_button() -> rx.Component:
                     align="center",
                 ),
                 size="2",
-                style=_BTN_ICON_SECONDARY,
+                style=BTN_SECONDARY,
             ),
         ),
         rx.menu.content(
@@ -392,12 +363,12 @@ def _active_filter_chips() -> rx.Component:
 
 def board_toolbar() -> rx.Component:
     return rx.hstack(
-        # Search — matches framework page search style exactly
+        # Search
         rx.box(
             rx.icon(
                 "search",
                 size=14,
-                color="rgba(255,255,255,0.25)",
+                color=white(0.25),
                 style={
                     "position": "absolute",
                     "left": "10px",
@@ -412,15 +383,15 @@ def board_toolbar() -> rx.Component:
                 on_change=TickersPageState.set_search_query,
                 size="2",
                 style={
-                    "background": "rgba(255,255,255,0.04)",
-                    "border": "1px solid rgba(255,255,255,0.08)",
+                    "background": white(0.04),
+                    "border": f"1px solid {white(0.08)}",
                     "border_radius": "8px",
                     "color": "white",
                     "padding_left": "2rem",
                     "width": "280px",
-                    "_placeholder": {"color": "rgba(255,255,255,0.22)"},
+                    "_placeholder": {"color": white(0.22)},
                     "_focus": {
-                        "border_color": "rgba(139,92,246,0.4)",
+                        "border_color": purple(0.4),
                         "outline": "none",
                     },
                 },
@@ -493,7 +464,7 @@ def _compare_search_bar() -> rx.Component:
                 rx.icon(
                     "search",
                     size=14,
-                    color="rgba(255,255,255,0.25)",
+                    color=white(0.25),
                     style={
                         "position": "absolute",
                         "left": "10px",
@@ -514,15 +485,15 @@ def _compare_search_bar() -> rx.Component:
                     ),
                     size="2",
                     style={
-                        "background": "rgba(255,255,255,0.04)",
-                        "border": "1px solid rgba(255,255,255,0.08)",
+                        "background": white(0.04),
+                        "border": f"1px solid {white(0.08)}",
                         "border_radius": "8px",
                         "color": "white",
                         "padding_left": "2rem",
                         "width": "280px",
-                        "_placeholder": {"color": "rgba(255,255,255,0.22)"},
+                        "_placeholder": {"color": white(0.22)},
                         "_focus": {
-                            "border_color": "rgba(139,92,246,0.4)",
+                            "border_color": purple(0.4),
                             "outline": "none",
                         },
                     },
@@ -552,7 +523,7 @@ def _compare_search_bar() -> rx.Component:
                     border=f"1px solid {white(0.08)}",
                     background="#111111",
                     overflow="hidden",
-                    box_shadow="0 8px 32px rgba(0,0,0,0.6)",
+                    box_shadow=f"0 8px 32px {white(0)}",
                     min_width="280px",
                 ),
                 rx.fragment(),
@@ -624,7 +595,7 @@ def _metrics_settings_dialog() -> rx.Component:
             rx.button(
                 rx.icon("settings-2", size=14),
                 size="2",
-                style=_BTN_ICON_SECONDARY,
+                style=BTN_SECONDARY,
             )
         ),
         rx.dialog.content(
@@ -750,7 +721,7 @@ def compare_toolbar() -> rx.Component:
             ),
             on_click=TickersPageState.toggle_graphs,
             size="2",
-            style=_BTN_ICON_SECONDARY,
+            style=BTN_SECONDARY,
         ),
         _metrics_settings_dialog(),
         flex="1",

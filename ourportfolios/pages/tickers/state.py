@@ -94,6 +94,11 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         )
 
     @rx.var
+    def is_board_loading(self) -> bool:
+        """True while the ticker data cache is still loading."""
+        return not self._data_loaded
+
+    @rx.var
     def max_ticker_volume(self) -> float:
         """Max volume across the current ticker list for scaling the volume bar."""
         return 0.0  # Actual max is computed client-side from TickerBoardState.tickers
