@@ -40,34 +40,61 @@ def _period_btn(label: str) -> rx.Component:
     )
 
 
-def vnindex_card() -> rx.Component:
+_SK = (
+    "linear-gradient(90deg,"
+    "rgba(255,255,255,0.04) 0%,"
+    "rgba(255,255,255,0.09) 50%,"
+    "rgba(255,255,255,0.04) 100%)"
+)
+
+
+def _sk(w: str = "100%", h: str = "12px", r: str = "5px") -> rx.Component:
     return rx.box(
-        rx.vstack(
-            rx.text("VNIndex", size="1", weight="medium", color=TEXT_TERTIARY),
-            rx.hstack(
-                rx.vstack(
-                    rx.text(
-                        HomeState.vnindex_value,
-                        size="6",
-                        weight="bold",
-                        color=TEXT_PRIMARY,
-                        letter_spacing="-0.02em",
-                        line_height="1",
-                    ),
-                    rx.badge(
-                        HomeState.vnindex_change,
-                        color_scheme=rx.cond(
-                            HomeState.vnindex_is_positive, "green", "red"
+        width=w,
+        height=h,
+        border_radius=r,
+        background=_SK,
+        background_size="800px 100%",
+        animation="shimmer 1.6s infinite linear",
+    )
+
+
+def vnindex_card() -> rx.Component:
+    _shell = dict(
+        padding="0.875rem 1rem",
+        border_radius="10px",
+        background=CARD_BG,
+        border=CARD_BORDER,
+        width="100%",
+        box_sizing="border-box",
+    )
+    return rx.cond(
+        HomeState.vnindex_value,
+        rx.box(
+            rx.vstack(
+                rx.text("VNIndex", size="1", weight="medium", color=TEXT_TERTIARY),
+                rx.hstack(
+                    rx.vstack(
+                        rx.text(
+                            HomeState.vnindex_value,
+                            size="6",
+                            weight="bold",
+                            color=TEXT_PRIMARY,
+                            letter_spacing="-0.02em",
+                            line_height="1",
                         ),
-                        variant="soft",
-                        size="1",
+                        rx.badge(
+                            HomeState.vnindex_change,
+                            color_scheme=rx.cond(
+                                HomeState.vnindex_is_positive, "green", "red"
+                            ),
+                            variant="soft",
+                            size="1",
+                        ),
+                        spacing="2",
+                        align="start",
+                        flex_shrink="0",
                     ),
-                    spacing="2",
-                    align="start",
-                    flex_shrink="0",
-                ),
-                rx.cond(
-                    HomeState.vnindex_chart_data,
                     rx.recharts.area_chart(
                         rx.recharts.area(
                             data_key="normalized_close",
@@ -85,24 +112,39 @@ def vnindex_card() -> rx.Component:
                         height=70,
                         margin={"top": 8, "right": 8, "bottom": 8, "left": 4},
                     ),
-                    rx.box(width="140px", height="70px"),
+                    spacing="3",
+                    align="center",
+                    width="100%",
+                    flex="1",
                 ),
-                spacing="3",
-                align="center",
+                spacing="2",
+                align="start",
                 width="100%",
-                flex="1",
+                height="100%",
             ),
-            spacing="2",
-            align="start",
-            width="100%",
-            height="100%",
+            **_shell,
         ),
-        padding="0.875rem 1rem",
-        border_radius="10px",
-        background=CARD_BG,
-        border=CARD_BORDER,
-        width="100%",
-        box_sizing="border-box",
+        # Skeleton
+        rx.box(
+            rx.vstack(
+                _sk("52px", "10px"),
+                rx.hstack(
+                    rx.vstack(
+                        _sk("88px", "28px", "6px"),
+                        _sk("56px", "18px", "8px"),
+                        spacing="2",
+                    ),
+                    _sk("140px", "70px", "6px"),
+                    spacing="3",
+                    align="center",
+                    width="100%",
+                ),
+                spacing="2",
+                align="start",
+                width="100%",
+            ),
+            **_shell,
+        ),
     )
 
 
