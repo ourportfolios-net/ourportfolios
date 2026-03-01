@@ -4,43 +4,13 @@ import reflex as rx
 
 from ...components.navbar import navbar
 from ...components.drawer import drawer_button
+from ...components.breadcrumb import breadcrumb
 
 from .state import State
 from .info_cards import name_card, general_info_card
 from .price_chart import price_chart_card
 from .metrics_card import key_metrics_card
 from .company_info import company_generic_info_card
-
-
-def breadcrumb(ticker: str):
-    return rx.hstack(
-        rx.html(
-            "<style>.breadcrumb-home { color: rgba(255,255,255,0.35) !important; text-decoration: none !important; transition: color 0.15s ease; } .breadcrumb-home:hover { color: white !important; }</style>"
-        ),
-        rx.link(
-            "Home",
-            href="/home",
-            size="2",
-            class_name="breadcrumb-home",
-        ),
-        rx.icon("chevron-right", size=13, color="rgba(255,255,255,0.2)"),
-        rx.link(
-            "Tickers",
-            href="/tickers",
-            size="2",
-            class_name="breadcrumb-home",
-        ),
-        rx.icon("chevron-right", size=13, color="rgba(255,255,255,0.2)"),
-        rx.text(
-            ticker,
-            size="2",
-            color="rgba(255,255,255,0.75)",
-            weight="medium",
-        ),
-        spacing="2",
-        align="center",
-        style={"marginBottom": "0.5em"},
-    )
 
 
 @rx.page(
@@ -54,7 +24,7 @@ def index():
             rx.center(
                 rx.box(
                     rx.vstack(
-                        breadcrumb(State.ticker),
+                        breadcrumb("/tickers/[ticker]", tail_label=State.ticker),
                         rx.hstack(
                             rx.vstack(
                                 name_card(),

@@ -3,6 +3,7 @@
 import reflex as rx
 
 from ...components.navbar import navbar
+from ...components.breadcrumb import breadcrumb
 
 from .state import FrameworkState
 from .framework_cards import category_filter_button, framework_card, skeleton_card
@@ -10,34 +11,10 @@ from .framework_dialog import framework_dialog
 from .add_framework_dialog import add_framework_dialog, add_metric_selector
 
 
-def breadcrumb():
-    """Breadcrumb navigation"""
-    return rx.hstack(
-        rx.html(
-            "<style>.breadcrumb-home { color: rgba(255,255,255,0.35) !important; text-decoration: none !important; transition: color 0.15s ease; } .breadcrumb-home:hover { color: white !important; }</style>"
-        ),
-        rx.link(
-            "Home",
-            href="/home",
-            size="2",
-            class_name="breadcrumb-home",
-        ),
-        rx.icon("chevron-right", size=13, color="rgba(255,255,255,0.2)"),
-        rx.text(
-            "Frameworks",
-            size="2",
-            color="rgba(255,255,255,0.75)",
-            weight="medium",
-        ),
-        spacing="2",
-        align="center",
-    )
-
-
 def page_header():
     """Page header"""
     return rx.vstack(
-        breadcrumb(),
+        breadcrumb("/framework", tail_label="Frameworks"),
         rx.heading(
             "Choose Your Framework",
             size="8",
@@ -73,31 +50,27 @@ def toolbar():
                     "search",
                     size=14,
                     color="rgba(255,255,255,0.25)",
-                    style={
-                        "position": "absolute",
-                        "left": "10px",
-                        "top": "50%",
-                        "transform": "translateY(-50%)",
-                        "pointer_events": "none",
-                    },
+                    position="absolute",
+                    left="10px",
+                    top="50%",
+                    transform="translateY(-50%)",
+                    pointer_events="none",
                 ),
                 rx.input(
                     placeholder="Search frameworks...",
                     value=FrameworkState.search_query,
                     on_change=FrameworkState.set_search_query,
                     size="2",
-                    style={
-                        "background": "rgba(255,255,255,0.04)",
-                        "border": "1px solid rgba(255,255,255,0.08)",
-                        "border_radius": "8px",
-                        "color": "white",
-                        "padding_left": "2rem",
-                        "width": "280px",
-                        "_placeholder": {"color": "rgba(255,255,255,0.22)"},
-                        "_focus": {
-                            "border_color": "rgba(139,92,246,0.4)",
-                            "outline": "none",
-                        },
+                    background="rgba(255,255,255,0.04)",
+                    border="1px solid rgba(255,255,255,0.08)",
+                    border_radius="8px",
+                    color="white",
+                    padding_left="2rem",
+                    width="280px",
+                    _placeholder={"color": "rgba(255,255,255,0.22)"},
+                    _focus={
+                        "border_color": "rgba(139,92,246,0.4)",
+                        "outline": "none",
                     },
                 ),
                 position="relative",
@@ -109,19 +82,17 @@ def toolbar():
                 "Add Framework",
                 on_click=FrameworkState.open_add_dialog,
                 size="2",
-                style={
-                    "background": "rgba(255,255,255,0.05)",
-                    "border": "1px solid rgba(255,255,255,0.1)",
-                    "border_radius": "8px",
-                    "color": "rgba(255,255,255,0.7)",
-                    "font_weight": "500",
-                    "cursor": "pointer",
-                    "transition": "all 0.15s ease",
-                    "_hover": {
-                        "background": "rgba(255,255,255,0.09)",
-                        "border_color": "rgba(255,255,255,0.18)",
-                        "color": "white",
-                    },
+                background="rgba(255,255,255,0.05)",
+                border="1px solid rgba(255,255,255,0.1)",
+                border_radius="8px",
+                color="rgba(255,255,255,0.7)",
+                font_weight="500",
+                cursor="pointer",
+                transition="all 0.15s ease",
+                _hover={
+                    "background": "rgba(255,255,255,0.09)",
+                    "border_color": "rgba(255,255,255,0.18)",
+                    "color": "white",
                 },
             ),
             spacing="2",

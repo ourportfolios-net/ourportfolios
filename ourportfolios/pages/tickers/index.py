@@ -4,28 +4,13 @@ import reflex as rx
 
 from ...components.navbar import navbar
 from ...components.drawer import drawer_button
+from ...components.breadcrumb import breadcrumb
 from ...styles import white, purple, TEXT_PURPLE
 
 from .state import TickersPageState
 from .controls import board_toolbar, compare_toolbar
 from .compare_table import compare_table, empty_compare_state
 from .ticker_board import new_ticker_board
-
-
-def breadcrumb():
-    return rx.hstack(
-        rx.html(
-            "<style>"
-            ".bc-home { color: rgba(255,255,255,0.35) !important; text-decoration: none !important; transition: color 0.15s ease; }"
-            ".bc-home:hover { color: white !important; }"
-            "</style>"
-        ),
-        rx.link("Home", href="/home", size="2", class_name="bc-home"),
-        rx.icon("chevron-right", size=13, color="rgba(255,255,255,0.2)"),
-        rx.text("Tickers", size="2", color="rgba(255,255,255,0.75)", weight="medium"),
-        spacing="2",
-        align="center",
-    )
 
 
 def view_toggle():
@@ -93,7 +78,7 @@ def view_toggle():
 def page_header():
     """Compact two-line header — breadcrumb + title+subtitle inline with toggle."""
     return rx.vstack(
-        breadcrumb(),
+        breadcrumb("/tickers"),
         rx.hstack(
             rx.vstack(
                 rx.heading("Tickers", size="7", weight="bold", color="white"),

@@ -13,9 +13,7 @@ from ...styles import (
 
 
 def _skel(w: str, h: str) -> rx.Component:
-    return rx.skeleton(
-        rx.box(width=w, height=h), loading=True, style={"border_radius": "6px"}
-    )
+    return rx.skeleton(rx.box(width=w, height=h), loading=True, border_radius="6px")
 
 
 def skeleton_card() -> rx.Component:
@@ -25,7 +23,7 @@ def skeleton_card() -> rx.Component:
                 rx.skeleton(
                     rx.box(width="31px", height="31px"),
                     loading=True,
-                    style={"border_radius": "8px"},
+                    border_radius="8px",
                 ),
                 rx.spacer(),
                 _skel("70px", "18px"),
@@ -125,11 +123,9 @@ def framework_card(framework):
                     variant="soft",
                     color_scheme="gray",
                     size="1",
-                    style={
-                        "border_radius": "6px",
-                        "font_size": "10px",
-                        "letter_spacing": "0.03em",
-                    },
+                    border_radius="6px",
+                    font_size="10px",
+                    letter_spacing="0.03em",
                 ),
                 width="100%",
                 align="center",
@@ -147,11 +143,11 @@ def framework_card(framework):
                     size="2",
                     color=white(0.38),
                     line_height="1.65",
+                    display="-webkit-box",
+                    overflow="hidden",
                     style={
-                        "display": "-webkit-box",
                         "-webkit-line-clamp": "3",
                         "-webkit-box-orient": "vertical",
-                        "overflow": "hidden",
                     },
                 ),
                 spacing="2",
@@ -200,12 +196,10 @@ def framework_card(framework):
         on_click=lambda: FrameworkState.show_framework_dialog(framework),
         **CARD_STYLE,
         cursor="pointer",
-        style={
-            "transition": "all 0.15s ease",
-            "_hover": {
-                "background": white(0.045),
-                "border_color": white(0.13),
-                "transform": "translateY(-1px)",
-            },
+        transition="all 0.15s ease",
+        _hover={
+            "background": white(0.045),
+            "border_color": white(0.13),
+            "transform": "translateY(-1px)",
         },
     )

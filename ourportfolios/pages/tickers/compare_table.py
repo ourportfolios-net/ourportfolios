@@ -6,12 +6,9 @@ from .state import TickersPageState
 from ...styles import (
     white,
     purple,
-    TEXT_PURPLE,
-    TEXT_ACCENT,
     TOOLTIP_CURSOR,
     TOOLTIP_CONTENT_STYLE,
     TOOLTIP_WRAPPER_STYLE,
-    BTN_GHOST_XS,
     DELETE_HOVER,
 )
 

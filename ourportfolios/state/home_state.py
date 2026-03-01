@@ -23,8 +23,8 @@ class HomeState(rx.State):
     ]
 
     vnindex_chart_data: list[dict] = []
-    vnindex_value: str = "Loading..."
-    vnindex_change: str = "..."
+    vnindex_value: str = ""
+    vnindex_change: str = ""
     vnindex_is_positive: bool = True
 
     _base_portfolio_value: float = 142590.22
