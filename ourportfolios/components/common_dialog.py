@@ -36,14 +36,10 @@ def common_dialog(
         A dialog component wrapped in rx.cond for conditional rendering
     """
 
-    # Build the style dict
-    style = {
-        "width": width,
-        "height": height,
-        "padding": padding,
-    }
+    # Build optional keyword args for max_width
+    extra_props = {}
     if max_width:
-        style["maxWidth"] = max_width
+        extra_props["max_width"] = max_width
 
     # Build the header with close button and optional title
     header_content = []
@@ -53,14 +49,10 @@ def common_dialog(
             rx.text(
                 rx.icon("x"),
                 on_click=on_close,
-                style={
-                    "cursor": "pointer",
-                    "userSelect": "none",
-                    "color": rx.color("accent", 10),
-                    "_hover": {
-                        "color": rx.color("accent", 7),
-                    },
-                },
+                cursor="pointer",
+                user_select="none",
+                color=rx.color("accent", 10),
+                _hover={"color": rx.color("accent", 7)},
             ),
         )
         header_content.append(close_button)
@@ -97,7 +89,7 @@ def common_dialog(
     return rx.cond(
         is_open,
         rx.dialog.root(
-            rx.dialog.trigger(rx.button("hidden", style={"display": "none"})),
+            rx.dialog.trigger(rx.button("hidden", display="none")),
             rx.dialog.content(
                 rx.vstack(
                     *dialog_content,
@@ -106,7 +98,10 @@ def common_dialog(
                     width="100%",
                     height="100%",
                 ),
-                style=style,
+                width=width,
+                height=height,
+                padding=padding,
+                **extra_props,
             ),
             open=True,
             on_open_change=on_open_change if on_open_change else on_close,

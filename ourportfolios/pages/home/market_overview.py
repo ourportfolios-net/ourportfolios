@@ -40,23 +40,8 @@ def _period_btn(label: str) -> rx.Component:
     )
 
 
-_SK = (
-    "linear-gradient(90deg,"
-    "rgba(255,255,255,0.04) 0%,"
-    "rgba(255,255,255,0.09) 50%,"
-    "rgba(255,255,255,0.04) 100%)"
-)
-
-
-def _sk(w: str = "100%", h: str = "12px", r: str = "5px") -> rx.Component:
-    return rx.box(
-        width=w,
-        height=h,
-        border_radius=r,
-        background=_SK,
-        background_size="800px 100%",
-        animation="shimmer 1.6s infinite linear",
-    )
+def _skel(w: str = "100%", h: str = "12px", r: str = "6px") -> rx.Component:
+    return rx.skeleton(rx.box(width=w, height=h), loading=True, border_radius=r)
 
 
 def vnindex_card() -> rx.Component:
@@ -127,14 +112,14 @@ def vnindex_card() -> rx.Component:
         # Skeleton
         rx.box(
             rx.vstack(
-                _sk("52px", "10px"),
+                _skel("52px", "10px"),
                 rx.hstack(
                     rx.vstack(
-                        _sk("88px", "28px", "6px"),
-                        _sk("56px", "18px", "8px"),
+                        _skel("88px", "28px", "6px"),
+                        _skel("56px", "18px", "8px"),
                         spacing="2",
                     ),
-                    _sk("140px", "70px", "6px"),
+                    _skel("140px", "70px", "6px"),
                     spacing="3",
                     align="center",
                     width="100%",
@@ -372,39 +357,27 @@ def _chip_row() -> rx.Component:
     )
 
 
-def _shimmer_tile(w: str, h: str) -> rx.Component:
-    return rx.box(
-        width=w,
-        height=h,
-        border_radius="8px",
-        background="linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 100%)",
-        background_size="800px 100%",
-        animation="shimmer 1.6s infinite linear",
-        flex_shrink="0",
-    )
-
-
 def _treemap_skeleton() -> rx.Component:
     """Only shown on initial mount when tiles list is empty."""
     return rx.vstack(
         rx.hstack(
-            _shimmer_tile("42%", "200px"),
-            _shimmer_tile("35%", "200px"),
-            _shimmer_tile("23%", "200px"),
+            _skel("42%", "200px", "8px"),
+            _skel("35%", "200px", "8px"),
+            _skel("23%", "200px", "8px"),
             spacing="2",
             width="100%",
         ),
         rx.hstack(
-            _shimmer_tile("33%", "190px"),
-            _shimmer_tile("33%", "190px"),
-            _shimmer_tile("33%", "190px"),
+            _skel("33%", "190px", "8px"),
+            _skel("33%", "190px", "8px"),
+            _skel("33%", "190px", "8px"),
             spacing="2",
             width="100%",
         ),
         rx.hstack(
-            _shimmer_tile("25%", "180px"),
-            _shimmer_tile("38%", "180px"),
-            _shimmer_tile("37%", "180px"),
+            _skel("25%", "180px", "8px"),
+            _skel("38%", "180px", "8px"),
+            _skel("37%", "180px", "8px"),
             spacing="2",
             width="100%",
         ),
