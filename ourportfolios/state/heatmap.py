@@ -1,33 +1,22 @@
 """
 Heatmap state — squarified nested treemap.
 
-Layout:
-  - Top MAX_TREEMAP_INDUSTRIES by market cap → industry tiles (3 per row).
-  - All remaining industries → HeatmapChip pills shown below the treemap.
-  - Row height ∝ cap^0.40.  Within-row tile width ∝ sqrt(cap).
-  - _CTR_W / _CTR_H must match the pixel constants in market_overview.py.
-
-Ticker subtiles:
-  - Each tile reserves LABEL_H_PX at the top for the industry name pill.
-  - Subtiles fill the space below; y-coordinates are offset accordingly.
-  - Best-N: largest N ≤ _MAX_N where every subtile min(w,h) ≥ _MIN_PX.
-
-Colours (all pre-computed; UI layer has zero conditionals):
-  - Dark muted green / dark maroon / near-transparent gray.
-  - Opacity encodes magnitude (0.14 → 0.60).
-  - HeatmapTile stores `bg` so the UI can set the industry tile background
-    to match its direction/magnitude (no black canvas).
+Subtile layout:
+- Squarify with market-cap-proportional weights (cap^0.5).
+- Weights are clamped so max/min ratio ≤ 3.0 — prevents extreme strips
+  while keeping clear visual hierarchy between large and small caps.
+- _MAX_N = 4 — show at most 4 tickers per industry tile to keep tiles readable.
+- _best_n: tries N=4 down to N=1, picks the largest N where all rects
+  have min(w,h) >= _MIN_PX.
 """
 
-import re
+from urllib.parse import quote
 import reflex as rx
 from pydantic import BaseModel
 from sqlalchemy import text
 
 from ..utils.database.database import get_company_session
-from ..styles import white, green, red
-
-# ── Constants ───────────────────────────────────────────────────────────────────
+from ..styles import green, red, white
 
 _PERIOD_TABLE = {
     "1D": "daily_changes",
@@ -36,82 +25,73 @@ _PERIOD_TABLE = {
     "1Y": "yearly_changes",
 }
 
-MAX_TREEMAP_INDUSTRIES = 9  # top N → tiles; rest → chips
-ITEMS_PER_ROW = 3  # tiles per row
-_CTR_W = 760.0  # must match market_overview._TREEMAP_W_PX
-_CTR_H = 540.0  # must match market_overview._TREEMAP_H
-LABEL_H_PX = 26.0  # px reserved at tile top for the industry pill
-_MIN_PX = 46.0  # minimum subtile dimension
-_MAX_N = 5  # hard cap on tickers per industry tile
-_MIN_TILE_H_PX = 80.0  # rows shorter than this overflow to chips
+MAX_TREEMAP_INDUSTRIES = 9
+ITEMS_PER_ROW = 3
+_CTR_W = 760.0
+_CTR_H = 620.0
+LABEL_H_PX = 30.0
+_MIN_PX = 52.0  # min(w,h) for a subtile — keeps tiles readable
+_MAX_N = 4  # max tickers shown per industry tile
+_MIN_TILE_H_PX = 80.0
+_MAX_WEIGHT_RATIO = 3.0  # largest weight can be at most 3× the smallest
 
-# ── Colour ─────────────────────────────────────────────────────────────────────
-
-_GREEN_BASE = "rgba(22, 52, 38, 1)"  # dark forest green
-_RED_BASE = "rgba(52, 19, 22, 1)"  # dark maroon
-_DARK_BG = "rgba(10, 10, 14, 1)"  # base for color-mix blending
+_DARK_BG = "rgba(10, 10, 12, 1)"
+_GREEN_TINT = "rgba(16, 185, 129, 1)"
+_RED_TINT = "rgba(239, 68, 68, 1)"
 
 
 def _direction(pct: float) -> str:
-    if pct > 0.30:
+    if pct > 0:
         return "up"
-    if pct < -0.30:
+    if pct < 0:
         return "down"
     return "neutral"
 
 
-def _opacity(pct: float) -> float:
+def _tint_opacity(pct: float) -> float:
     a = abs(pct)
     if a >= 5.0:
-        return 0.60
+        return 0.18
     if a >= 3.0:
-        return 0.48
+        return 0.13
     if a >= 1.5:
-        return 0.36
+        return 0.09
     if a >= 0.5:
-        return 0.24
-    return 0.14
+        return 0.06
+    return 0.04
 
 
-def _bg(direction: str, opacity: float) -> str:
-    pct = round(opacity * 100)
+def _bg(direction: str, tint_op: float) -> str:
+    pct = min(round(tint_op * 100 * 3), 40)
     if direction == "up":
-        return f"color-mix(in srgb, {_GREEN_BASE} {pct}%, {_DARK_BG})"
+        return f"color-mix(in srgb, {_GREEN_TINT} {pct}%, {_DARK_BG})"
     if direction == "down":
-        return f"color-mix(in srgb, {_RED_BASE} {pct}%, {_DARK_BG})"
-    return white(0.03)
-
-
-# Industry-level bg uses a fixed, lighter opacity so the tile background
-# is subtler than the individual ticker subtiles placed on top.
-_IND_OPACITY = 0.18
+        return f"color-mix(in srgb, {_RED_TINT} {pct}%, {_DARK_BG})"
+    return _DARK_BG
 
 
 def _ind_bg(direction: str) -> str:
-    """Muted background for the whole industry tile (behind ticker subtiles)."""
-    return _bg(direction, _IND_OPACITY)
-
-
-def _border_color(direction: str) -> str:
     if direction == "up":
-        return green(0.22)
+        return f"color-mix(in srgb, {_GREEN_TINT} 8%, {_DARK_BG})"
     if direction == "down":
-        return red(0.22)
-    return white(0.06)
+        return f"color-mix(in srgb, {_RED_TINT} 8%, {_DARK_BG})"
+    return _DARK_BG
 
 
-def _pct_color(direction: str) -> str:
+def _pct_color_scheme(direction: str) -> str:
     if direction == "up":
-        return green(0.80)
+        return "green"
     if direction == "down":
-        return red(0.80)
-    return white(0.28)
+        return "red"
+    return "gray"
 
 
-def _slugify(name: str) -> str:
-    s = re.sub(r"[&/]", " ", name.lower())
-    s = re.sub(r"[^a-z0-9\s-]", "", s)
-    return re.sub(r"-+", "-", re.sub(r"\s+", "-", s.strip()))
+def _url_industry(name: str) -> str:
+    return f"/industries/{quote(name, safe='')}"
+
+
+def _url_ticker(symbol: str) -> str:
+    return f"/tickers/{symbol.upper()}"
 
 
 # ── Squarify ───────────────────────────────────────────────────────────────────
@@ -170,23 +150,33 @@ def _squarify(weights: list, W: float, H: float) -> list:
     return out
 
 
+def _capped_weights(caps: list) -> list:
+    """
+    cap^0.5 weights, then clamp so max/min <= _MAX_WEIGHT_RATIO.
+    Preserves ordering and relative size signal while preventing extreme strips.
+    """
+    raw = [max(c, 1.0) ** 0.5 for c in caps]
+    mn = min(raw)
+    ceiling = mn * _MAX_WEIGHT_RATIO
+    return [min(w, ceiling) for w in raw]
+
+
 def _best_n(caps: list, W: float, H: float) -> int:
-    """Largest N ≤ _MAX_N where every subtile has min(w,h) ≥ _MIN_PX."""
     avail_H = max(H - LABEL_H_PX, 1.0)
-    weights = [max(c, 1.0) ** 0.5 for c in caps]
     for n in range(min(len(caps), _MAX_N), 0, -1):
-        rects = _squarify(weights[:n], W, avail_H)
+        weights = _capped_weights(caps[:n])
+        rects = _squarify(weights, W, avail_H)
         if rects and all(min(rw, rh) >= _MIN_PX for _, _, rw, rh in rects):
             return n
     return 1
 
 
 def _size_hint(min_dim: float) -> str:
-    if min_dim > 100:
+    if min_dim > 110:
         return "xl"
-    if min_dim > 70:
+    if min_dim > 75:
         return "large"
-    if min_dim > 50:
+    if min_dim > 52:
         return "medium"
     return "small"
 
@@ -197,11 +187,11 @@ def _size_hint(min_dim: float) -> str:
 class TickerSubtile(BaseModel):
     symbol: str = ""
     pct_label: str = ""
+    pct_color_scheme: str = "gray"
     bg: str = _DARK_BG
-    pct_color: str = "rgba(255,255,255,0.28)"
     url: str = ""
     x: float = 0.0
-    y: float = 0.0  # % from tile top — already offset below the label
+    y: float = 0.0
     w: float = 100.0
     h: float = 100.0
     size: str = "small"
@@ -210,9 +200,8 @@ class TickerSubtile(BaseModel):
 class HeatmapTile(BaseModel):
     name: str = ""
     pct_label: str = ""
-    bg: str = "rgba(255,255,255,0.03)"  # industry tile bg
-    border: str = "rgba(255,255,255,0.06)"
-    pct_color: str = "rgba(255,255,255,0.28)"
+    bg: str = _DARK_BG
+    pct_color_scheme: str = "gray"
     url: str = ""
     tickers: list[TickerSubtile] = []
     x: float = 0.0
@@ -224,9 +213,8 @@ class HeatmapTile(BaseModel):
 class HeatmapChip(BaseModel):
     name: str = ""
     pct_label: str = ""
-    bg: str = "rgba(255,255,255,0.03)"
-    border: str = "rgba(255,255,255,0.06)"
-    pct_color: str = "rgba(255,255,255,0.28)"
+    bg: str = _DARK_BG
+    pct_color_scheme: str = "gray"
     url: str = ""
 
 
@@ -255,32 +243,32 @@ def _build(industry_rows, ticker_rows):
     for ind_row in chip_inds:
         name = str(ind_row[0])
         avg_pct = float(ind_row[1] or 0.0)
-        d, op = _direction(avg_pct), _opacity(avg_pct)
+        d = _direction(avg_pct)
         sign = "+" if avg_pct >= 0 else ""
         chips.append(
             HeatmapChip(
                 name=name,
                 pct_label=f"{sign}{avg_pct:.2f}%",
-                bg=_bg(d, op),
-                border=_border_color(d),
-                pct_color=_pct_color(d),
-                url=f"/industries/{_slugify(name)}",
+                bg=_bg(d, _tint_opacity(avg_pct)),
+                pct_color_scheme=_pct_color_scheme(d),
+                url=_url_industry(name),
             )
         )
 
-    rows = [
+    rows_layout = [
         treemap_inds[i : i + ITEMS_PER_ROW]
         for i in range(0, len(treemap_inds), ITEMS_PER_ROW)
     ]
     row_ws = [
-        sum(max(ind_cap.get(str(r[0]), 1.0), 1.0) ** 0.40 for r in row) for row in rows
+        sum(max(ind_cap.get(str(r[0]), 1.0), 1.0) ** 0.40 for r in row)
+        for row in rows_layout
     ]
     grand = max(sum(row_ws), 1.0)
 
     tiles: list[HeatmapTile] = []
     y_pct_accum = 0.0
 
-    for row, rw in zip(rows, row_ws):
+    for row, rw in zip(rows_layout, row_ws):
         h_pct = rw / grand * 100.0
         tile_h_px = h_pct / 100.0 * _CTR_H
 
@@ -288,17 +276,16 @@ def _build(industry_rows, ticker_rows):
             for ind_row in row:
                 name = str(ind_row[0])
                 avg_pct = float(ind_row[1] or 0.0)
-                d, op = _direction(avg_pct), _opacity(avg_pct)
+                d = _direction(avg_pct)
                 sign = "+" if avg_pct >= 0 else ""
                 chips.insert(
                     0,
                     HeatmapChip(
                         name=name,
                         pct_label=f"{sign}{avg_pct:.2f}%",
-                        bg=_bg(d, op),
-                        border=_border_color(d),
-                        pct_color=_pct_color(d),
-                        url=f"/industries/{_slugify(name)}",
+                        bg=_bg(d, _tint_opacity(avg_pct)),
+                        pct_color_scheme=_pct_color_scheme(d),
+                        url=_url_industry(name),
                     ),
                 )
             continue
@@ -323,14 +310,12 @@ def _build(industry_rows, ticker_rows):
                 n = _best_n(caps, tile_w_px, tile_h_px)
                 top = items[:n]
                 avail_H = tile_h_px - LABEL_H_PX
-
-                rects = _squarify([c**0.5 for _, _, c in top], tile_w_px, avail_H)
-
+                rects = _squarify(_capped_weights(caps[:n]), tile_w_px, avail_H)
                 label_pct = LABEL_H_PX / tile_h_px * 100.0
                 ticker_zone = 100.0 - label_pct
 
                 for (sym, t_pct, _), (ix, iy, iw, ih) in zip(top, rects):
-                    t_d, t_op = _direction(t_pct), _opacity(t_pct)
+                    t_d = _direction(t_pct)
                     t_sign = "+" if t_pct >= 0 else ""
                     y_in_tile = label_pct + (iy / avail_H * ticker_zone)
                     h_in_tile = ih / avail_H * ticker_zone
@@ -338,9 +323,9 @@ def _build(industry_rows, ticker_rows):
                         TickerSubtile(
                             symbol=sym,
                             pct_label=f"{t_sign}{t_pct:.2f}%",
-                            bg=_bg(t_d, t_op),
-                            pct_color=_pct_color(t_d),
-                            url=f"/tickers/{sym.lower()}",
+                            pct_color_scheme=_pct_color_scheme(t_d),
+                            bg=_bg(t_d, _tint_opacity(t_pct)),
+                            url=_url_ticker(sym),
                             x=round(ix / tile_w_px * 100.0, 5),
                             y=round(y_in_tile, 5),
                             w=round(iw / tile_w_px * 100.0, 5),
@@ -353,10 +338,9 @@ def _build(industry_rows, ticker_rows):
                 HeatmapTile(
                     name=name,
                     pct_label=f"{sign}{avg_pct:.2f}%",
-                    bg=_ind_bg(d),  # muted industry background colour
-                    border=_border_color(d),
-                    pct_color=_pct_color(d),
-                    url=f"/industries/{_slugify(name)}",
+                    bg=_ind_bg(d),
+                    pct_color_scheme=_pct_color_scheme(d),
+                    url=_url_industry(name),
                     tickers=subtiles,
                     x=round(x_pct, 5),
                     y=round(y_pct_accum, 5),
