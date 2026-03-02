@@ -70,6 +70,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
     industry_filter: dict[str, bool] = {}
     technicals_current_value: dict[str, list[float]] = {}
     fundamentals_current_value: dict[str, list[float]] = {}
+    slider_reset_key: int = 0
 
     # ── Compare state ─────────────────────────────────────────────────────────
     stocks: list[dict[str, Any]] = []
@@ -235,14 +236,15 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         async with self:
             if self._data_loaded or not self.is_mounted():
                 return
-            await self.get_all_industries()
+            await self._load_industries()
             if not self.is_mounted():
                 return
-            await self.get_all_exchanges()
+            await self._load_exchanges()
             if not self.is_mounted():
                 return
-            self.get_fundamentals_default_value()
-            self.get_technicals_default_value()
+            self._reset_fundamentals()
+            self._reset_technicals()
+            self.slider_reset_key += 1
             self.search_query = ""
             ticker_board_state = await self.get_state(TickerBoardState)
             await ticker_board_state.load_all_tickers_cache()
@@ -262,47 +264,74 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         self.search_query = value
         return TickerBoardState.set_search_query(value)
 
-    @rx.event(background=True)
-    async def set_sort_option(self, option: str) -> None:
-        async with self:
-            self.selected_sort_option = option
-        yield
-        async with self:
-            ticker_board_state = await self.get_state(TickerBoardState)
-            ticker_board_state.set_sort_option(self.sort_options[option])
+    @rx.event
+    def set_sort_option(self, option: str):
+        self.selected_sort_option = option
+        return TickerBoardState.set_sort_option(self.sort_options[option])
 
-    @rx.event(background=True)
-    async def set_sort_order(self, order: str) -> None:
-        async with self:
-            self.selected_sort_order = order
-        yield
-        async with self:
-            ticker_board_state = await self.get_state(TickerBoardState)
-            ticker_board_state.set_sort_order(order)
+    @rx.event
+    def set_sort_order(self, order: str):
+        self.selected_sort_order = order
+        return TickerBoardState.set_sort_order(order)
 
-    @rx.event(background=True)
-    @session_isolated
-    async def apply_filters(self) -> None:
-        async with self:
-            ticker_board_state = await self.get_state(TickerBoardState)
-            ticker_board_state.apply_filters(
-                filters={
-                    "industry": self.selected_industry,
-                    "exchange": self.selected_exchange,
-                    "fundamental": {
-                        metric: self.fundamentals_current_value[metric]
-                        for metric in self.selected_fundamental_metric
-                    },
-                    "technical": {
-                        metric: self.technicals_current_value[metric]
-                        for metric in self.selected_technical_metric
-                    },
-                }
-            )
+    def _build_filters(self) -> dict:
+        """Build the filters dict from current state — used by apply/remove."""
+        return {
+            "industry": self.selected_industry,
+            "exchange": self.selected_exchange,
+            "fundamental": {
+                metric: self.fundamentals_current_value[metric]
+                for metric in self.selected_fundamental_metric
+            },
+            "technical": {
+                metric: self.technicals_current_value[metric]
+                for metric in self.selected_technical_metric
+            },
+        }
+
+    @rx.event
+    def apply_filters(self):
+        return TickerBoardState.apply_filters(filters=self._build_filters())
+
+    @rx.event
+    def remove_filter_chip(self, item: str, filter_type: str):
+        """Remove a filter chip and re-apply filters."""
+        if filter_type == "industry":
+            self.industry_filter[item] = False
+            self.selected_industry = self.selected_industry - {item}
+        elif filter_type == "exchange":
+            self.exchange_filter[item] = False
+            self.selected_exchange = self.selected_exchange - {item}
+        elif filter_type == "fundamental":
+            self.fundamentals_current_value[item] = [0.00, 0.00]
+            self.selected_fundamental_metric = self.selected_fundamental_metric - {item}
+        elif filter_type == "technical":
+            self.technicals_current_value[item] = [0.00, 0.00]
+            self.selected_technical_metric = self.selected_technical_metric - {item}
+        return TickerBoardState.apply_filters(filters=self._build_filters())
 
     @rx.event
     @session_isolated
     async def get_all_industries(self) -> None:
+        await self._load_industries()
+
+    @rx.event
+    @session_isolated
+    async def get_all_exchanges(self) -> None:
+        await self._load_exchanges()
+
+    @rx.event
+    def get_fundamentals_default_value(self) -> None:
+        self._reset_fundamentals()
+        self.slider_reset_key += 1
+
+    @rx.event
+    def get_technicals_default_value(self) -> None:
+        self._reset_technicals()
+        self.slider_reset_key += 1
+
+    # ── Private helpers (callable from any context) ───────────────────────────
+    async def _load_industries(self) -> None:
         try:
             async with get_company_session() as session:
                 stmt = select(distinct(OverviewORM.industry))
@@ -313,9 +342,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
             print(f"TICKERS PAGE ERROR: Failed to load industries: {e}")
             self.industry_filter = {}
 
-    @rx.event
-    @session_isolated
-    async def get_all_exchanges(self) -> None:
+    async def _load_exchanges(self) -> None:
         try:
             async with get_company_session() as session:
                 stmt = select(distinct(OverviewORM.exchange))
@@ -326,80 +353,74 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
             print(f"TICKERS PAGE ERROR: Failed to load exchanges: {e}")
             self.exchange_filter = {}
 
-    @rx.event
-    def get_fundamentals_default_value(self) -> None:
+    def _reset_fundamentals(self) -> None:
         self.fundamentals_current_value = {
             key: [0.00, 0.00] for key in self.fundamentals_default_value
         }
 
-    @rx.event
-    def get_technicals_default_value(self) -> None:
+    def _reset_technicals(self) -> None:
         self.technicals_current_value = {
             key: [0.00, 0.00] for key in self.technicals_default_value
         }
 
-    @rx.event(background=True)
-    async def set_exchange(self, exchange: str, value: bool) -> None:
-        async with self:
-            self.exchange_filter[exchange] = value
-        yield
-        async with self:
-            if value:
-                self.selected_exchange.add(exchange)
-            else:
-                self.selected_exchange.discard(exchange)
+    @rx.event
+    def set_exchange(self, exchange: str, value: bool) -> None:
+        self.exchange_filter[exchange] = value
+        if value:
+            self.selected_exchange = self.selected_exchange | {exchange}
+        else:
+            self.selected_exchange = self.selected_exchange - {exchange}
 
-    @rx.event(background=True)
-    async def set_industry(self, industry: str, value: bool) -> None:
-        async with self:
-            self.industry_filter[industry] = value
-        yield
-        async with self:
-            if value:
-                self.selected_industry.add(industry)
-            else:
-                self.selected_industry.discard(industry)
+    @rx.event
+    def set_industry(self, industry: str, value: bool) -> None:
+        self.industry_filter[industry] = value
+        if value:
+            self.selected_industry = self.selected_industry | {industry}
+        else:
+            self.selected_industry = self.selected_industry - {industry}
 
-    @rx.event(background=True)
-    async def set_fundamental_metric(self, metric: str, value: list[float]) -> None:
-        async with self:
-            self.fundamentals_current_value[metric] = value
-        yield
-        async with self:
-            upper = self.fundamentals_default_value[metric][1]
-            if sum(value) > 0 and sum(value) < upper:
-                self.selected_fundamental_metric.add(metric)
-            else:
-                self.selected_fundamental_metric.discard(metric)
+    @rx.event
+    def update_fundamental_value(self, metric: str, value: list[float]) -> None:
+        """Lightweight: only update the display value (called on every drag)."""
+        self.fundamentals_current_value[metric] = value
 
-    @rx.event(background=True)
-    async def set_technical_metric(self, metric: str, value: list[float]) -> None:
-        async with self:
-            self.technicals_current_value[metric] = value
-        yield
-        async with self:
-            upper = self.technicals_default_value[metric][1]
-            if sum(value) > 0 and sum(value) < upper:
-                self.selected_technical_metric.add(metric)
-            else:
-                self.selected_technical_metric.discard(metric)
+    @rx.event
+    def update_technical_value(self, metric: str, value: list[float]) -> None:
+        """Lightweight: only update the display value (called on every drag)."""
+        self.technicals_current_value[metric] = value
 
-    @rx.event(background=True)
-    @session_isolated
-    async def clear_all_filters(self) -> None:
-        async with self:
-            self.selected_technical_metric = set()
-            self.selected_fundamental_metric = set()
-            self.selected_industry = set()
-            self.selected_exchange = set()
-        async with self:
-            ticker_board_state = await self.get_state(TickerBoardState)
-            ticker_board_state.clear_all_filters()
-        async with self:
-            self.get_technicals_default_value()
-            self.get_fundamentals_default_value()
-            await self.get_all_industries()
-            await self.get_all_exchanges()
+    @rx.event
+    def set_fundamental_metric(self, metric: str, value: list[float]) -> None:
+        """Full handler: update value + active-metric set (called on release)."""
+        self.fundamentals_current_value[metric] = value
+        default_max = self.fundamentals_default_value[metric][1]
+        if value[0] > 0.0 or (value[1] > 0.0 and value[1] < default_max):
+            self.selected_fundamental_metric = self.selected_fundamental_metric | {metric}
+        else:
+            self.selected_fundamental_metric = self.selected_fundamental_metric - {metric}
+
+    @rx.event
+    def set_technical_metric(self, metric: str, value: list[float]) -> None:
+        """Full handler: update value + active-metric set (called on release)."""
+        self.technicals_current_value[metric] = value
+        default_max = self.technicals_default_value[metric][1]
+        if value[0] > 0.0 or (value[1] > 0.0 and value[1] < default_max):
+            self.selected_technical_metric = self.selected_technical_metric | {metric}
+        else:
+            self.selected_technical_metric = self.selected_technical_metric - {metric}
+
+    @rx.event
+    def clear_all_filters(self):
+        self.selected_technical_metric = set()
+        self.selected_fundamental_metric = set()
+        self.selected_industry = set()
+        self.selected_exchange = set()
+        self._reset_technicals()
+        self._reset_fundamentals()
+        self.industry_filter = {k: False for k in self.industry_filter}
+        self.exchange_filter = {k: False for k in self.exchange_filter}
+        self.slider_reset_key += 1
+        return TickerBoardState.clear_all_filters()
 
     # ── Compare events ────────────────────────────────────────────────────────
     @rx.event

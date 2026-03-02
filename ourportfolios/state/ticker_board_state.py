@@ -2,9 +2,9 @@
 
 import reflex as rx
 from typing import Any
-from sqlalchemy import select
+from sqlalchemy import select, func, and_
 from ..utils.database.database import get_company_session
-from ..utils.database.models import PriceORM, ProfileORM, OverviewORM
+from ..utils.database.models import PriceORM, ProfileORM, OverviewORM, StatsORM
 
 
 class TickerBoardState(rx.State):
@@ -24,9 +24,9 @@ class TickerBoardState(rx.State):
     @rx.event
     def apply_filters(self, filters: dict[str, Any]) -> None:
         if "exchange" in filters:
-            self.selected_exchange = filters["exchange"]
+            self.selected_exchange = set(filters["exchange"])
         if "industry" in filters:
-            self.selected_industry = filters["industry"]
+            self.selected_industry = set(filters["industry"])
         if "fundamental" in filters:
             self.selected_fundamental_metric = filters["fundamental"]
         if "technical" in filters:
@@ -49,6 +49,24 @@ class TickerBoardState(rx.State):
             return
         try:
             async with get_company_session() as session:
+                # Subquery: latest stats row id per symbol
+                latest_stats = (
+                    select(
+                        StatsORM.symbol.label("stats_symbol"),
+                        func.max(StatsORM.id).label("max_id"),
+                    )
+                    .group_by(StatsORM.symbol)
+                    .subquery()
+                )
+
+                # Metric columns derived from the ORM model
+                metric_col_names = [
+                    c.name
+                    for c in StatsORM.__table__.columns
+                    if c.name not in ("id", "symbol")
+                ]
+                stats_columns = [getattr(StatsORM, n) for n in metric_col_names]
+
                 stmt = (
                     select(
                         PriceORM.symbol,
@@ -59,9 +77,21 @@ class TickerBoardState(rx.State):
                         OverviewORM.market_cap,
                         OverviewORM.industry,
                         OverviewORM.exchange,
+                        *stats_columns,
                     )
                     .join(ProfileORM, PriceORM.symbol == ProfileORM.symbol)
                     .join(OverviewORM, PriceORM.symbol == OverviewORM.symbol)
+                    .outerjoin(
+                        latest_stats,
+                        PriceORM.symbol == latest_stats.c.stats_symbol,
+                    )
+                    .outerjoin(
+                        StatsORM,
+                        and_(
+                            StatsORM.symbol == latest_stats.c.stats_symbol,
+                            StatsORM.id == latest_stats.c.max_id,
+                        ),
+                    )
                     .order_by(PriceORM.accumulated_volume.desc())
                 )
                 result = await session.execute(stmt)
@@ -79,6 +109,25 @@ class TickerBoardState(rx.State):
     @rx.event
     def set_sort_order(self, order: str) -> None:
         self.selected_sort_order = order
+
+    @staticmethod
+    def _passes_metric_filters(
+        ticker: dict[str, Any], metrics: dict[str, list[float]]
+    ) -> bool:
+        """Return True if ticker passes every metric range filter."""
+        for metric, bounds in metrics.items():
+            if len(bounds) != 2:
+                continue
+            lo, hi = bounds[0], bounds[1]
+            val = ticker.get(metric)
+            if val is None:
+                return False
+            try:
+                if not (lo <= float(val) <= hi):
+                    return False
+            except (ValueError, TypeError):
+                return False
+        return True
 
     @rx.var(cache=True)
     def get_all_tickers(self) -> list[dict[str, Any]]:
@@ -101,6 +150,20 @@ class TickerBoardState(rx.State):
         if self.selected_exchange:
             results = [
                 t for t in results if t.get("exchange") in self.selected_exchange
+            ]
+
+        if self.selected_fundamental_metric:
+            results = [
+                t
+                for t in results
+                if self._passes_metric_filters(t, self.selected_fundamental_metric)
+            ]
+
+        if self.selected_technical_metric:
+            results = [
+                t
+                for t in results
+                if self._passes_metric_filters(t, self.selected_technical_metric)
             ]
 
         if self.selected_sort_option and results:

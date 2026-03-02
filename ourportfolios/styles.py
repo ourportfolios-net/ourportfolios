@@ -232,6 +232,19 @@ BTN_SECONDARY_ACTIVE = {
     "font_weight": "600",
 }
 
+# View toggle – active/inactive for Board/Compare switches
+BTN_VIEW_ACTIVE = {
+    **BTN_SECONDARY,
+    "background": white(0.09),
+    "border": f"1px solid {white(0.18)}",
+    "color": white(0.9),
+    "font_weight": "600",
+}
+
+BTN_VIEW_INACTIVE = {
+    **BTN_SECONDARY,
+}
+
 # Pill toggle – used for view/mode switches (matches price_chart.py _chart_type_toggle)
 PILL_TOGGLE = {
     "background": white(0.03),

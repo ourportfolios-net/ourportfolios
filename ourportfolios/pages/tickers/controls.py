@@ -8,13 +8,62 @@ from ...styles import (
     white,
     purple,
     TEXT_PURPLE,
+    TEXT_ACCENT,
+    INPUT_STYLE,
+    SELECT_STYLE,
     LABEL_STYLE,
+    BTN_PURPLE,
     BTN_PURPLE_SM,
+    BTN_GHOST,
     BTN_GHOST_SM,
     BTN_GHOST_XS,
-    BTN_SECONDARY,
-    BTN_SECONDARY_ACTIVE,
+    SURFACE_CARD_STYLE,
 )
+
+
+# ── Shared button styles ──────────────────────────────────────────────────────
+
+BTN_ICON_SECONDARY = {
+    "background": white(0.05),
+    "border": f"1px solid {white(0.1)}",
+    "border_radius": "8px",
+    "color": white(0.6),
+    "font_weight": "500",
+    "font_size": "13px",
+    "cursor": "pointer",
+    "transition": "all 0.15s ease",
+    "_hover": {
+        "background": white(0.09),
+        "color": white(0.9),
+        "border_color": white(0.18),
+    },
+}
+
+BTN_VIEW_ACTIVE = {
+    **BTN_ICON_SECONDARY,
+    "background": white(0.09),
+    "border": f"1px solid {white(0.18)}",
+    "color": white(0.9),
+    "font_weight": "600",
+}
+
+BTN_VIEW_INACTIVE = {
+    **BTN_ICON_SECONDARY,
+}
+
+# Keep private aliases for internal use
+_BTN_ICON_SECONDARY = BTN_ICON_SECONDARY
+_BTN_FILTER_ACTIVE = {
+    "background": purple(0.18),
+    "border": f"1px solid {purple(0.5)}",
+    "border_radius": "8px",
+    "color": TEXT_PURPLE,
+    "font_weight": "600",
+    "font_size": "13px",
+    "cursor": "pointer",
+    "transition": "all 0.15s ease",
+    "_hover": {"background": purple(0.28)},
+}
 
 
 # ── Filter sliders ────────────────────────────────────────────────────────────
@@ -23,7 +72,15 @@ from ...styles import (
 def _metric_slider(metric_tag: str, option: str):
     return rx.vstack(
         rx.hstack(
-            rx.text(metric_tag.upper(), style={**LABEL_STYLE, "font_size": "10px"}),
+            rx.text(
+                metric_tag.upper(),
+                style={
+                    **LABEL_STYLE,
+                    "font_size": "13px",
+                    "color": white(0.55),
+                    "white_space": "nowrap",
+                },
+            ),
             rx.spacer(),
             rx.text(
                 rx.cond(
@@ -31,28 +88,39 @@ def _metric_slider(metric_tag: str, option: str):
                     f"{TickersPageState.fundamentals_current_value[metric_tag][0]} – {TickersPageState.fundamentals_current_value[metric_tag][1]}",
                     f"{TickersPageState.technicals_current_value[metric_tag][0]} – {TickersPageState.technicals_current_value[metric_tag][1]}",
                 ),
-                size="1",
+                size="2",
                 color=TEXT_PURPLE,
-                weight="medium",
+                weight="bold",
+                white_space="nowrap",
             ),
             width="100%",
             align="center",
         ),
         rx.slider(
-            value=rx.cond(
+            default_value=rx.cond(
                 option == "F",
                 TickersPageState.fundamentals_current_value[metric_tag],
                 TickersPageState.technicals_current_value[metric_tag],
             ),
             on_change=lambda value_range: rx.cond(
                 option == "F",
+                TickersPageState.update_fundamental_value(
+                    metric=metric_tag, value=value_range
+                ),
+                TickersPageState.update_technical_value(
+                    metric=metric_tag, value=value_range
+                ),
+            ),
+            on_value_commit=lambda value_range: rx.cond(
+                option == "F",
                 TickersPageState.set_fundamental_metric(
                     metric=metric_tag, value=value_range
-                ).throttle(50),
+                ),
                 TickersPageState.set_technical_metric(
                     metric=metric_tag, value=value_range
-                ).throttle(50),
+                ),
             ),
+            key=f"{metric_tag}_{TickersPageState.slider_reset_key}",
             min_=0.00,
             max=rx.cond(
                 option == "F",
@@ -65,13 +133,14 @@ def _metric_slider(metric_tag: str, option: str):
                 TickersPageState.technicals_default_value[metric_tag][1] / 100,
             ),
             variant="surface",
-            size="1",
+            size="2",
             radius="full",
+            width="100%",
         ),
         width="100%",
-        spacing="2",
-        padding="0.6em 0.75em",
-        border_radius="8px",
+        spacing="3",
+        padding="0.75em 1em",
+        border_radius="10px",
         background=white(0.025),
         border=f"1px solid {white(0.07)}",
     )
@@ -89,20 +158,20 @@ def _metrics_filter(option: str = "F") -> rx.Component:
                 lambda metric_tag: _metric_slider(metric_tag, option),
             ),
             columns=rx.breakpoints(xs="1", sm="2", md="3", lg="4"),
-            gap="0.6em",
+            gap="0.75em",
             width="100%",
         ),
-        padding="0.75em",
-        height="22em",
+        padding="0.85em",
+        style={"flex": "1", "min_height": "0"},
         scrollbars="vertical",
-        type="always",
+        type="hover",
     )
 
 
 def _categorical_filter():
     return rx.vstack(
         rx.vstack(
-            rx.text("EXCHANGE", style=LABEL_STYLE),
+            rx.text("EXCHANGE", style={**LABEL_STYLE, "font_size": "13px"}),
             rx.flex(
                 rx.foreach(
                     TickersPageState.exchange_filter.items(),
@@ -112,17 +181,18 @@ def _categorical_filter():
                         on_change=lambda value: TickersPageState.set_exchange(
                             exchange=item[0], value=value
                         ),
-                        size="2",
+                        size="3",
                         color_scheme="violet",
+                        style={"font_size": "15px"},
                     ),
                 ),
-                gap="0.75em",
+                gap="1em",
                 wrap="wrap",
             ),
-            spacing="2",
+            spacing="3",
         ),
         rx.vstack(
-            rx.text("INDUSTRY", style=LABEL_STYLE),
+            rx.text("INDUSTRY", style={**LABEL_STYLE, "font_size": "13px"}),
             rx.scroll_area(
                 rx.flex(
                     rx.foreach(
@@ -133,22 +203,23 @@ def _categorical_filter():
                             on_change=lambda value: TickersPageState.set_industry(
                                 industry=item[0], value=value
                             ),
-                            size="2",
+                            size="3",
                             color_scheme="violet",
+                            style={"font_size": "15px"},
                         ),
                     ),
-                    gap="0.75em",
+                    gap="1em",
                     wrap="wrap",
                 ),
                 scrollbars="vertical",
                 type="hover",
-                height="10em",
+                height="12em",
                 width="100%",
             ),
-            spacing="2",
+            spacing="3",
         ),
-        padding="0.75em",
-        spacing="4",
+        padding="0.85em",
+        spacing="5",
         width="100%",
     )
 
@@ -178,62 +249,69 @@ def _filter_tabs() -> rx.Component:
             padding_x="0.75em",
             padding_top="0.5em",
             padding_bottom="0",
+            flex_shrink="0",
         ),
-        rx.tabs.content(_metrics_filter(option="F"), value="fundamental"),
-        rx.tabs.content(_categorical_filter(), value="categorical"),
-        rx.tabs.content(_metrics_filter(option="T"), value="technical"),
+        rx.tabs.content(
+            _metrics_filter(option="F"),
+            value="fundamental",
+            style={"flex": "1", "min_height": "0", "overflow": "hidden"},
+        ),
+        rx.tabs.content(
+            _categorical_filter(),
+            value="categorical",
+            style={"flex": "1", "min_height": "0", "overflow": "auto"},
+        ),
+        rx.tabs.content(
+            _metrics_filter(option="T"),
+            value="technical",
+            style={"flex": "1", "min_height": "0", "overflow": "hidden"},
+        ),
         default_value="fundamental",
-        style={"flex": "1", "display": "flex", "flex_direction": "column"},
+        style={
+            "flex": "1",
+            "display": "flex",
+            "flex_direction": "column",
+            "min_height": "0",
+        },
     )
 
 
 def _selected_filter_chip(item: str, filter: str) -> rx.Component:
-    return rx.badge(
-        rx.text(
-            rx.cond(
-                filter == "fundamental",
-                f"{item}: {TickersPageState.fundamentals_current_value.get(item, [0.00, 0.00])[0]}–{TickersPageState.fundamentals_current_value.get(item, [0.00, 0.00])[1]}",
-                rx.cond(
-                    filter == "technical",
-                    f"{item}: {TickersPageState.technicals_current_value.get(item, [0.00, 0.00])[0]}–{TickersPageState.technicals_current_value.get(item, [0.00, 0.00])[1]}",
-                    item,
-                ),
-            ),
-            size="1",
-            weight="medium",
+    label = rx.cond(
+        filter == "fundamental",
+        f"{item}: {TickersPageState.fundamentals_current_value.get(item, [0.00, 0.00])[0]}–{TickersPageState.fundamentals_current_value.get(item, [0.00, 0.00])[1]}",
+        rx.cond(
+            filter == "technical",
+            f"{item}: {TickersPageState.technicals_current_value.get(item, [0.00, 0.00])[0]}–{TickersPageState.technicals_current_value.get(item, [0.00, 0.00])[1]}",
+            item,
         ),
-        rx.button(
-            rx.icon("x", size=9),
-            variant="ghost",
-            size="1",
-            style={
-                "padding": "0",
-                "min_width": "auto",
-                "height": "auto",
-                "cursor": "pointer",
-            },
-            on_click=[
-                rx.cond(
-                    filter == "industry",
-                    TickersPageState.set_industry(item, False),
-                    rx.cond(
-                        filter == "exchange",
-                        TickersPageState.set_exchange(item, False),
-                        rx.cond(
-                            filter == "fundamental",
-                            TickersPageState.set_fundamental_metric(item, [0.00, 0.00]),
-                            TickersPageState.set_technical_metric(item, [0.00, 0.00]),
-                        ),
-                    ),
-                ),
-                TickersPageState.apply_filters,
-            ],
-        ),
-        variant="soft",
-        color_scheme="violet",
-        radius="full",
-        size="1",
     )
+    return rx.hstack(
+        rx.text(label, size="1", weight="medium", color=white(0.7)),
+        rx.box(
+            rx.icon("x", size=10, color=white(0.3)),
+            cursor="pointer",
+            display="flex",
+            align_items="center",
+            on_click=TickersPageState.remove_filter_chip(item, filter),
+        ),
+        spacing="2",
+        align="center",
+        padding="0 10px",
+        border_radius="6px",
+        background=white(0.05),
+        border=f"1px solid {white(0.1)}",
+        height="28px",
+        flex_shrink="0",
+        transition="all 0.15s ease",
+        _hover={"background": white(0.09), "border_color": white(0.18)},
+    )
+
+
+_FILTER_BTN_CSS = f"""<style>
+.filter-btn-inactive:hover {{ background: {white(0.09)} !important; color: {white(0.9)} !important; border-color: {white(0.18)} !important; }}
+.filter-btn-active:hover {{ background: {purple(0.28)} !important; }}
+</style>"""
 
 
 def filter_button() -> rx.Component:
@@ -247,30 +325,43 @@ def filter_button() -> rx.Component:
                     align="center",
                 ),
                 size="2",
-                style=rx.cond(
-                    TickersPageState.has_filter, BTN_SECONDARY_ACTIVE, BTN_SECONDARY
+                class_name=rx.cond(
+                    TickersPageState.has_filter,
+                    "filter-btn-active",
+                    "filter-btn-inactive",
                 ),
+                background=rx.cond(
+                    TickersPageState.has_filter, purple(0.18), white(0.05)
+                ),
+                border=rx.cond(
+                    TickersPageState.has_filter,
+                    f"1px solid {purple(0.5)}",
+                    f"1px solid {white(0.1)}",
+                ),
+                border_radius="8px",
+                color=rx.cond(TickersPageState.has_filter, TEXT_PURPLE, white(0.6)),
+                font_weight=rx.cond(TickersPageState.has_filter, "600", "500"),
+                font_size="13px",
+                cursor="pointer",
+                transition="all 0.15s ease",
             )
         ),
         rx.menu.content(
             rx.flex(
                 _filter_tabs(),
-                rx.flex(
-                    rx.spacer(),
-                    rx.button(
-                        "Apply filters",
-                        on_click=TickersPageState.apply_filters,
-                        size="2",
-                        style=BTN_PURPLE_SM,
-                    ),
-                    direction="row",
-                    width="100%",
-                    padding="0.6em 1em",
-                    border_top=f"1px solid {white(0.06)}",
-                ),
                 direction="column",
-                height="100%",
-                width="100%",
+                style={"flex": "1", "min_height": "0", "overflow": "hidden"},
+            ),
+            rx.button(
+                "Apply filters",
+                on_click=TickersPageState.apply_filters,
+                size="2",
+                style={
+                    **BTN_PURPLE_SM,
+                    "position": "absolute",
+                    "bottom": "0.75em",
+                    "right": "0.75em",
+                },
             ),
             width=rx.breakpoints(
                 initial="27em", xs="30em", sm="40em", md="44em", lg="56em"
@@ -281,6 +372,7 @@ def filter_button() -> rx.Component:
                 "background": "#111111",
                 "border": f"1px solid {white(0.08)}",
                 "border_radius": "12px",
+                "position": "relative",
             },
             side="bottom",
         ),
@@ -305,7 +397,7 @@ def _sort_button() -> rx.Component:
                     align="center",
                 ),
                 size="2",
-                style=BTN_SECONDARY,
+                style=BTN_ICON_SECONDARY,
             ),
         ),
         rx.menu.content(
@@ -355,20 +447,22 @@ def _active_filter_chips() -> rx.Component:
             lambda item: _selected_filter_chip(item, "technical"),
         ),
         direction="row",
-        wrap="wrap",
-        gap="2",
+        wrap="nowrap",
+        gap="8px",
         align="center",
+        height="34px",
+        align_items="center",
     )
 
 
 def board_toolbar() -> rx.Component:
     return rx.hstack(
-        # Search
+        # Search — matches framework page search style exactly
         rx.box(
             rx.icon(
                 "search",
                 size=14,
-                color=white(0.25),
+                color="rgba(255,255,255,0.25)",
                 style={
                     "position": "absolute",
                     "left": "10px",
@@ -383,15 +477,15 @@ def board_toolbar() -> rx.Component:
                 on_change=TickersPageState.set_search_query,
                 size="2",
                 style={
-                    "background": white(0.04),
-                    "border": f"1px solid {white(0.08)}",
+                    "background": "rgba(255,255,255,0.04)",
+                    "border": "1px solid rgba(255,255,255,0.08)",
                     "border_radius": "8px",
                     "color": "white",
                     "padding_left": "2rem",
                     "width": "280px",
-                    "_placeholder": {"color": white(0.22)},
+                    "_placeholder": {"color": "rgba(255,255,255,0.22)"},
                     "_focus": {
-                        "border_color": purple(0.4),
+                        "border_color": "rgba(139,92,246,0.4)",
                         "outline": "none",
                     },
                 },
@@ -403,15 +497,20 @@ def board_toolbar() -> rx.Component:
         # Active chips
         rx.cond(
             TickersPageState.has_filter,
-            rx.scroll_area(
+            rx.box(
                 _active_filter_chips(),
-                scrollbars="horizontal",
-                type="hover",
-                height="2.4em",
                 max_width="40em",
+                overflow_x="auto",
+                overflow_y="hidden",
+                height="34px",
+                display="flex",
+                align_items="center",
+                flex_shrink="1",
+                min_width="0",
             ),
             rx.fragment(),
         ),
+        rx.html(_FILTER_BTN_CSS),
         rx.spacer(),
         _sort_button(),
         filter_button(),
@@ -464,7 +563,7 @@ def _compare_search_bar() -> rx.Component:
                 rx.icon(
                     "search",
                     size=14,
-                    color=white(0.25),
+                    color="rgba(255,255,255,0.25)",
                     style={
                         "position": "absolute",
                         "left": "10px",
@@ -485,15 +584,15 @@ def _compare_search_bar() -> rx.Component:
                     ),
                     size="2",
                     style={
-                        "background": white(0.04),
-                        "border": f"1px solid {white(0.08)}",
+                        "background": "rgba(255,255,255,0.04)",
+                        "border": "1px solid rgba(255,255,255,0.08)",
                         "border_radius": "8px",
                         "color": "white",
                         "padding_left": "2rem",
                         "width": "280px",
-                        "_placeholder": {"color": white(0.22)},
+                        "_placeholder": {"color": "rgba(255,255,255,0.22)"},
                         "_focus": {
-                            "border_color": purple(0.4),
+                            "border_color": "rgba(139,92,246,0.4)",
                             "outline": "none",
                         },
                     },
@@ -523,7 +622,7 @@ def _compare_search_bar() -> rx.Component:
                     border=f"1px solid {white(0.08)}",
                     background="#111111",
                     overflow="hidden",
-                    box_shadow=f"0 8px 32px {white(0)}",
+                    box_shadow="0 8px 32px rgba(0,0,0,0.6)",
                     min_width="280px",
                 ),
                 rx.fragment(),
@@ -595,7 +694,7 @@ def _metrics_settings_dialog() -> rx.Component:
             rx.button(
                 rx.icon("settings-2", size=14),
                 size="2",
-                style=BTN_SECONDARY,
+                style=BTN_ICON_SECONDARY,
             )
         ),
         rx.dialog.content(
@@ -721,7 +820,7 @@ def compare_toolbar() -> rx.Component:
             ),
             on_click=TickersPageState.toggle_graphs,
             size="2",
-            style=BTN_SECONDARY,
+            style=BTN_ICON_SECONDARY,
         ),
         _metrics_settings_dialog(),
         flex="1",
