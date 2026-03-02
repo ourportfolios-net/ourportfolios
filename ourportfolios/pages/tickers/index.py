@@ -4,15 +4,12 @@ import reflex as rx
 
 from ...components.navbar import navbar
 from ...components.drawer import drawer_button
-from ...styles import white, purple, TEXT_PURPLE
+from ...styles import white, purple, TEXT_PURPLE, BTN_SECONDARY, BTN_SECONDARY_ACTIVE
 
 from .state import TickersPageState
 from .controls import (
     board_toolbar,
     compare_toolbar,
-    BTN_ICON_SECONDARY,
-    BTN_VIEW_ACTIVE,
-    BTN_VIEW_INACTIVE,
 )
 from .compare_table import compare_table, empty_compare_state
 from .ticker_board import new_ticker_board
@@ -45,11 +42,22 @@ def view_toggle():
             ),
             on_click=TickersPageState.set_view_mode("board"),
             size="2",
-            style=rx.cond(
-                TickersPageState.view_mode == "board",
-                BTN_VIEW_ACTIVE,
-                BTN_VIEW_INACTIVE,
+            background=rx.cond(
+                TickersPageState.view_mode == "board", white(0.09), white(0.05)
             ),
+            border=rx.cond(
+                TickersPageState.view_mode == "board",
+                f"1px solid {white(0.18)}",
+                f"1px solid {white(0.1)}",
+            ),
+            color=rx.cond(
+                TickersPageState.view_mode == "board", white(0.9), white(0.6)
+            ),
+            font_weight=rx.cond(TickersPageState.view_mode == "board", "600", "500"),
+            font_size="13px",
+            border_radius="8px",
+            cursor="pointer",
+            transition="all 0.15s ease",
         ),
         rx.button(
             rx.hstack(
@@ -60,11 +68,22 @@ def view_toggle():
             ),
             on_click=TickersPageState.set_view_mode("compare"),
             size="2",
-            style=rx.cond(
-                TickersPageState.view_mode == "compare",
-                BTN_VIEW_ACTIVE,
-                BTN_VIEW_INACTIVE,
+            background=rx.cond(
+                TickersPageState.view_mode == "compare", white(0.09), white(0.05)
             ),
+            border=rx.cond(
+                TickersPageState.view_mode == "compare",
+                f"1px solid {white(0.18)}",
+                f"1px solid {white(0.1)}",
+            ),
+            color=rx.cond(
+                TickersPageState.view_mode == "compare", white(0.9), white(0.6)
+            ),
+            font_weight=rx.cond(TickersPageState.view_mode == "compare", "600", "500"),
+            font_size="13px",
+            border_radius="8px",
+            cursor="pointer",
+            transition="all 0.15s ease",
         ),
         spacing="2",
         flex_shrink="0",

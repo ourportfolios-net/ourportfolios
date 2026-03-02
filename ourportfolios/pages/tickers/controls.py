@@ -42,7 +42,6 @@ BTN_ICON_SECONDARY = {
 BTN_VIEW_ACTIVE = {
     **BTN_ICON_SECONDARY,
     "background": white(0.09),
-    "border": f"1px solid {white(0.18)}",
     "color": white(0.9),
     "font_weight": "600",
 }
@@ -540,7 +539,7 @@ def _compare_search_suggestion(ticker_value: dict) -> rx.Component:
                 rx.icon("plus", size=13),
                 on_click=TickersPageState.add_ticker_to_compare(ticker),
                 size="1",
-                style=BTN_PURPLE_SM,
+                style=BTN_ICON_SECONDARY,
             ),
             align="center",
             width="100%",
