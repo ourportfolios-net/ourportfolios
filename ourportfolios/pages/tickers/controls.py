@@ -8,16 +8,10 @@ from ...styles import (
     white,
     purple,
     TEXT_PURPLE,
-    TEXT_ACCENT,
-    INPUT_STYLE,
-    SELECT_STYLE,
     LABEL_STYLE,
-    BTN_PURPLE,
     BTN_PURPLE_SM,
-    BTN_GHOST,
     BTN_GHOST_SM,
     BTN_GHOST_XS,
-    SURFACE_CARD_STYLE,
 )
 
 

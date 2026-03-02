@@ -4,7 +4,7 @@ import reflex as rx
 
 from ...components.navbar import navbar
 from ...components.drawer import drawer_button
-from ...styles import white, purple, TEXT_PURPLE, BTN_SECONDARY, BTN_SECONDARY_ACTIVE
+from ...styles import white
 
 from .state import TickersPageState
 from .controls import (
