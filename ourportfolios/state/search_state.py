@@ -21,24 +21,44 @@ class SearchBarState(rx.State):
     empty_state_display_suggestion: bool = False
     outstanding_tickers: dict[str, Any] = {}
     ticker_list: list[dict[str, Any]] = []
+    comparison_suggestions: list[dict[str, Any]] = []
 
     @rx.event
     def set_query(self, text: str = "") -> None:
         self.search_query = text
 
-    @rx.event
-    def set_comparison_query(self, text: str = "") -> None:
-        self.comparison_search_query = text
+    @rx.event(background=True)
+    async def set_comparison_query(self, text: str = "") -> None:
+        async with self:
+            self.comparison_search_query = text
+        if not text:
+            async with self:
+                self.comparison_suggestions = list(self.ticker_list[:30])
+            return
+        result = await self._fetch_by_prefix(text)
+        if not result:
+            result = await self._fetch_by_permutations(text)
+        if not result:
+            result = await self._fetch_by_prefix(text[0])
+        async with self:
+            self.comparison_suggestions = result
 
     @rx.event
-    def set_display_suggestions(self, state: bool):
-        yield time.sleep(0.2)
-        self.display_suggestion = state
+    def focus_comparison_search(self) -> None:
+        self.empty_state_display_suggestion = True
+        if not self.comparison_search_query:
+            self.comparison_suggestions = list(self.ticker_list[:30])
 
     @rx.event
-    def set_empty_state_display_suggestions(self, state: bool):
-        yield time.sleep(0.2)
-        self.empty_state_display_suggestion = state
+    def blur_comparison_search(self) -> None:
+        yield time.sleep(0.15)
+        self.empty_state_display_suggestion = False
+
+    @rx.event
+    def clear_comparison_search(self) -> None:
+        self.comparison_search_query = ""
+        self.empty_state_display_suggestion = False
+        self.comparison_suggestions = []
 
     @rx.var
     async def get_suggest_ticker(self) -> list[dict[str, Any]]:
@@ -53,18 +73,15 @@ class SearchBarState(rx.State):
             result = await self._fetch_by_prefix(self.search_query[0])
         return result
 
-    @rx.var
-    async def get_comparison_suggest_ticker(self) -> list[dict[str, Any]]:
-        if not self.empty_state_display_suggestion:
-            return []
-        if not self.comparison_search_query:
-            return self.ticker_list
-        result = await self._fetch_by_prefix(self.comparison_search_query)
-        if not result:
-            result = await self._fetch_by_permutations(self.comparison_search_query)
-        if not result:
-            result = await self._fetch_by_prefix(self.comparison_search_query[0])
-        return result
+    @rx.event
+    def set_display_suggestions(self, state: bool):
+        yield time.sleep(0.2)
+        self.display_suggestion = state
+
+    @rx.event
+    def set_empty_state_display_suggestions(self, state: bool):
+        yield time.sleep(0.2)
+        self.empty_state_display_suggestion = state
 
     async def _fetch_by_prefix(self, prefix: str) -> list[dict[str, Any]]:
         return await self._fetch_tickers(

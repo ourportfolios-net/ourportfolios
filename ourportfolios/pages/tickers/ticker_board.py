@@ -27,6 +27,16 @@ from ...styles import (
 )
 from .state import TickersPageState
 
+_COMPARE_BTN = {
+    **BTN_GHOST_XS,
+    "color": "rgba(139,92,246,0.55)",
+    "_hover": {
+        "background": "rgba(139,92,246,0.1)",
+        "color": "rgba(139,92,246,0.9)",
+        "border_color": "rgba(139,92,246,0.3)",
+    },
+}
+
 
 # ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -72,6 +82,15 @@ def _cart_btn(symbol: str) -> rx.Component:
         on_click=CartState.add_item(symbol),
         size="1",
         **BTN_GHOST_XS,
+    )
+
+
+def _compare_btn(symbol: str) -> rx.Component:
+    return rx.button(
+        rx.icon("bar-chart-2", size=13),
+        on_click=[TickersPageState.set_view_mode("compare"), TickersPageState.add_ticker_to_compare(symbol)],
+        size="1",
+        **_COMPARE_BTN,
     )
 
 
@@ -161,6 +180,13 @@ def ticker_row(ticker: dict) -> rx.Component:
                 # Cart
                 rx.box(
                     _cart_btn(symbol),
+                    on_click=rx.stop_propagation,
+                    display="flex",
+                    align_items="center",
+                ),
+                # Compare
+                rx.box(
+                    _compare_btn(symbol),
                     on_click=rx.stop_propagation,
                     display="flex",
                     align_items="center",

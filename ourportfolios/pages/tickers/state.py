@@ -84,6 +84,12 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
     is_loading_historical: bool = False
     _data_cache: dict[str, dict[str, Any]] = {}
 
+    # Pending metric buffer — absorbs dialog checkbox changes without touching
+    # selected_metrics (and therefore without triggering the heavy compare-table
+    # computed vars).  Flushed → selected_metrics only on dialog close.
+    pending_metrics: list[str] = []
+    metrics_dialog_open: bool = False
+
     # ── Computed vars ─────────────────────────────────────────────────────────
     @rx.var
     def has_filter(self) -> bool:
@@ -125,21 +131,32 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         state: dict[str, bool] = {}
         for category, metrics in self.all_metrics.items():
             state[category] = bool(metrics) and all(
-                m in self.selected_metrics for m in metrics
+                m in self.pending_metrics for m in metrics
             )
         return state
 
     @rx.var
     def metric_selection_state(self) -> dict[str, bool]:
         return {
-            metric: metric in self.selected_metrics
+            metric: metric in self.pending_metrics
             for metric in self.all_available_metrics
         }
 
     @rx.var
+    def latest_values_by_ticker(self) -> dict[str, dict[str, Any]]:
+        latest: defaultdict[str, dict[str, Any]] = defaultdict(dict)
+        for metric_key, metric_data in self.historical_data.items():
+            if metric_data:
+                latest_period = metric_data[-1]
+                for ticker in self.compare_list:
+                    if ticker in latest_period:
+                        latest[ticker][metric_key] = latest_period[ticker]
+        return dict(latest)
+
+    @rx.var
     def formatted_stocks(self) -> list[dict[str, Any]]:
         formatted: list[dict[str, Any]] = []
-        latest_values_by_ticker = self._get_latest_values_by_ticker()
+        latest_values_by_ticker = self.latest_values_by_ticker
         for stock in self.stocks:
             formatted_stock: dict[str, Any] = {}
             ticker = stock.get("symbol", "")
@@ -177,7 +194,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
     @rx.var
     def industry_best_performers(self) -> dict[str, dict[str, str]]:
         industry_best: dict[str, dict[str, str]] = {}
-        latest_values = self._get_latest_values_by_ticker()
+        latest_values = self.latest_values_by_ticker
         lower_is_better = {
             "P/E",
             "P/B",
@@ -453,33 +470,50 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         self.stocks = [s for s in self.stocks if s.get("symbol") != ticker]
 
     @rx.event
-    def toggle_metric(self, metric: str) -> None:
-        if metric in self.selected_metrics:
-            self.selected_metrics = [m for m in self.selected_metrics if m != metric]
+    def add_to_compare_from_board(self, ticker: str) -> None:
+        """Add a ticker from the board view and jump to the compare view."""
+        self.view_mode = "compare"
+        return TickersPageState.add_ticker_to_compare(ticker)  # type: ignore[return-value]
+
+    # ── Metrics-dialog lifecycle ──────────────────────────────────────────────
+
+    @rx.event
+    def handle_metrics_dialog_change(self, open: bool) -> None:
+        if open:
+            self.pending_metrics = list(self.selected_metrics)
+            self.metrics_dialog_open = True
         else:
-            self.selected_metrics = self.selected_metrics + [metric]
+            self.selected_metrics = list(self.pending_metrics)
+            self.metrics_dialog_open = False
+
+    @rx.event
+    def toggle_metric(self, metric: str) -> None:
+        if metric in self.pending_metrics:
+            self.pending_metrics = [m for m in self.pending_metrics if m != metric]
+        else:
+            self.pending_metrics = self.pending_metrics + [metric]
 
     @rx.event
     def toggle_category(self, category: str) -> None:
         category_metrics = self.all_metrics.get(category, [])
-        all_selected = all(m in self.selected_metrics for m in category_metrics)
+        all_selected = all(m in self.pending_metrics for m in category_metrics)
         if all_selected:
-            self.selected_metrics = [
-                m for m in self.selected_metrics if m not in category_metrics
+            self.pending_metrics = [
+                m for m in self.pending_metrics if m not in category_metrics
             ]
         else:
             new_metrics = [
-                m for m in category_metrics if m not in self.selected_metrics
+                m for m in category_metrics if m not in self.pending_metrics
             ]
-            self.selected_metrics = self.selected_metrics + new_metrics
+            self.pending_metrics = self.pending_metrics + new_metrics
 
     @rx.event
     def select_all_metrics(self) -> None:
-        self.selected_metrics = list(set(self.all_available_metrics))
+        self.pending_metrics = list(set(self.all_available_metrics))
 
     @rx.event
     def clear_all_metrics(self) -> None:
-        self.selected_metrics = []
+        self.pending_metrics = []
 
     @rx.event
     def toggle_graphs(self) -> None:
@@ -500,6 +534,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                 yield rx.toast.error(f"{ticker} is already in the comparison!")
                 return
             self.is_loading_data = True
+            time_period_copy = self.time_period
         try:
             async with self:
                 self.compare_list = self.compare_list + [ticker]
@@ -510,9 +545,15 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                 result = await session.execute(stmt)
                 row = result.mappings().first()
                 if row is not None:
+                    # Fetch only the new ticker's data and merge incrementally
+                    data = await get_transformed_dataframes(ticker, period=time_period_copy)
                     async with self:
                         self.stocks = self.stocks + [dict(row)]
-                    await self.fetch_historical_data()
+                        cache_key = f"{ticker}_{time_period_copy}"
+                        self._data_cache[cache_key] = data
+                        self.historical_data = self._merge_one_ticker_into_historical_data(
+                            ticker, data, self.historical_data, time_period_copy
+                        )
                     yield rx.toast.success(f"{ticker} added!")
                 else:
                     async with self:
@@ -544,24 +585,17 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
             if not self.compare_list:
                 self.stocks = []
                 return
+            compare_list_copy = list(self.compare_list)
         stocks: list[dict[str, Any]] = []
         try:
             async with get_company_session() as session:
-                async with self:
-                    compare_list_copy = list(self.compare_list)
-                for ticker in compare_list_copy:
-                    try:
-                        stmt = select(
-                            OverviewORM.symbol,
-                            OverviewORM.industry,
-                            OverviewORM.market_cap,
-                        ).where(OverviewORM.symbol == ticker)
-                        result = await session.execute(stmt)
-                        row = result.mappings().first()
-                        if row is not None:
-                            stocks.append(dict(row))
-                    except Exception:
-                        continue
+                stmt = select(
+                    OverviewORM.symbol,
+                    OverviewORM.industry,
+                    OverviewORM.market_cap,
+                ).where(OverviewORM.symbol.in_(compare_list_copy))
+                result = await session.execute(stmt)
+                stocks = [dict(row) for row in result.mappings().all()]
         except Exception:
             pass
         async with self:
@@ -616,6 +650,67 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         finally:
             async with self:
                 self.is_loading_historical = False
+
+    @staticmethod
+    def _merge_one_ticker_into_historical_data(
+        ticker: str,
+        ticker_data: Any,
+        existing: dict[str, list[dict[str, Any]]],
+        time_period: str,
+    ) -> dict[str, list[dict[str, Any]]]:
+        """Merge a single ticker's data into an already-built historical_data dict."""
+        if not ticker_data or "categorized_ratios" not in ticker_data:
+            return existing
+        max_periods = 8 if time_period == "quarter" else 4
+        ticker_metric_periods: defaultdict[str, dict[str, Any]] = defaultdict(dict)
+        new_periods_ordered: list[str] = []
+        for _category, category_data in ticker_data["categorized_ratios"].items():
+            if not category_data:
+                continue
+            df = pd.DataFrame(category_data)
+            if df.empty:
+                continue
+            if time_period == "quarter":
+                if "Quarter" not in df.columns:
+                    continue
+                df["period"] = (
+                    "Q" + df["Quarter"].astype(str) + " " + df["Year"].astype(str)
+                )
+                df = df.sort_values(by=["Year", "Quarter"], ascending=False)
+            else:
+                if "Quarter" in df.columns:
+                    continue
+                df["period"] = df["Year"].astype(str)
+                df = df.sort_values(by="Year", ascending=False)
+            df = df.head(max_periods)
+            available_columns = [
+                c for c in df.columns if c not in {"Year", "Quarter", "period"}
+            ]
+            for _, row in df.iterrows():
+                period = str(row["period"])
+                if period not in new_periods_ordered:
+                    new_periods_ordered.append(period)
+                for metric in available_columns:
+                    val = row[metric]
+                    if pd.notna(val):
+                        ticker_metric_periods[metric][period] = val
+        result: dict[str, list[dict[str, Any]]] = dict(existing)
+        for metric, period_values in ticker_metric_periods.items():
+            if metric not in result:
+                result[metric] = [
+                    {"period": p, ticker: v}
+                    for p, v in period_values.items()
+                ]
+            else:
+                period_index = {e["period"]: i for i, e in enumerate(result[metric])}
+                new_list = [dict(e) for e in result[metric]]
+                for period, val in period_values.items():
+                    if period in period_index:
+                        new_list[period_index[period]][ticker] = val
+                    else:
+                        new_list.append({"period": period, ticker: val})
+                result[metric] = new_list
+        return result
 
     @staticmethod
     def _extract_historical_data_static(

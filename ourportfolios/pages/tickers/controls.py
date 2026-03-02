@@ -531,7 +531,13 @@ def _compare_search_suggestion(ticker_value: dict) -> rx.Component:
             rx.spacer(),
             rx.button(
                 rx.icon("plus", size=13),
-                on_click=TickersPageState.add_ticker_to_compare(ticker),
+                # on_mouse_down fires before the input loses focus, so the
+                # dropdown is still visible when the event fires.
+                on_mouse_down=[
+                    TickersPageState.set_view_mode("compare"),
+                    TickersPageState.add_ticker_to_compare(ticker),
+                    SearchBarState.clear_comparison_search(),
+                ],
                 size="1",
                 style=BTN_ICON_SECONDARY,
             ),
@@ -569,12 +575,8 @@ def _compare_search_bar() -> rx.Component:
                     placeholder="Add tickers to compare...",
                     value=SearchBarState.comparison_search_query,
                     on_change=SearchBarState.set_comparison_query,
-                    on_blur=lambda: SearchBarState.set_empty_state_display_suggestions(
-                        False
-                    ),
-                    on_focus=lambda: SearchBarState.set_empty_state_display_suggestions(
-                        True
-                    ),
+                    on_blur=SearchBarState.blur_comparison_search,
+                    on_focus=SearchBarState.focus_comparison_search,
                     size="2",
                     style={
                         "background": "rgba(255,255,255,0.04)",
@@ -596,11 +598,11 @@ def _compare_search_bar() -> rx.Component:
             ),
             rx.cond(
                 SearchBarState.empty_state_display_suggestion
-                & (SearchBarState.get_comparison_suggest_ticker.length() > 0),
+                & (SearchBarState.comparison_suggestions.length() > 0),
                 rx.box(
                     rx.scroll_area(
                         rx.foreach(
-                            SearchBarState.get_comparison_suggest_ticker,
+                            SearchBarState.comparison_suggestions,
                             _compare_search_suggestion,
                         ),
                         scrollbars="vertical",
@@ -806,6 +808,8 @@ def _metrics_settings_dialog() -> rx.Component:
                 "border_radius": "14px",
             },
         ),
+        open=TickersPageState.metrics_dialog_open,
+        on_open_change=TickersPageState.handle_metrics_dialog_change,
     )
 
 
