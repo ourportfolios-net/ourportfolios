@@ -635,53 +635,59 @@ def _compare_search_bar() -> rx.Component:
 def _metric_category_card(category: str) -> rx.Component:
     return rx.box(
         rx.vstack(
+            # Category header — name left, select-all checkbox right
             rx.hstack(
-                rx.text(category, size="2", weight="bold", color=white(0.85)),
+                rx.text(category, size="5", weight="bold", color=white(0.92)),
                 rx.spacer(),
                 rx.checkbox(
                     checked=TickersPageState.category_selection_state[category],
-                    on_change=lambda: TickersPageState.toggle_category(category),
+                    on_change=lambda checked: TickersPageState.toggle_category(
+                        category
+                    ),
                     size="2",
                     color_scheme="violet",
                 ),
                 width="100%",
                 align="center",
             ),
-            rx.box(height="1px", width="100%", background=white(0.06)),
-            rx.vstack(
+            # Metrics in a 2-column CSS grid — cuts card height in half
+            rx.box(
                 rx.foreach(
                     TickersPageState.all_metrics[category],
                     lambda metric: rx.hstack(
                         rx.checkbox(
                             checked=TickersPageState.metric_selection_state[metric],
-                            on_change=lambda: TickersPageState.toggle_metric(metric),
+                            on_change=lambda checked: TickersPageState.toggle_metric(
+                                metric
+                            ),
                             size="1",
                             color_scheme="violet",
                         ),
                         rx.text(
                             TickersPageState.metric_labels[metric],
-                            size="1",
-                            color=white(0.5),
+                            size="2",
+                            color=white(0.65),
                         ),
                         spacing="2",
                         align="center",
                     ),
                 ),
-                spacing="2",
-                align="start",
+                display="grid",
+                grid_template_columns="1fr 1fr",
+                gap="0.45em 1em",
                 width="100%",
             ),
             spacing="2",
             align="start",
             width="100%",
         ),
-        padding="0.75em",
+        padding="0.75em 0.9em",
         border_radius="10px",
         background=white(0.025),
         border=f"1px solid {white(0.07)}",
         style={
             "transition": "all 0.15s ease",
-            "_hover": {"background": white(0.04), "border_color": white(0.12)},
+            "_hover": {"background": white(0.035), "border_color": white(0.12)},
         },
         width="100%",
     )
@@ -698,9 +704,11 @@ def _metrics_settings_dialog() -> rx.Component:
         ),
         rx.dialog.content(
             rx.vstack(
+                # ── Header ──────────────────────────────────────────────────
                 rx.hstack(
                     rx.text("Metric Settings", size="5", weight="bold", color="white"),
                     rx.spacer(),
+                    # Period toggle
                     rx.hstack(
                         rx.text(
                             "Quarterly",
@@ -729,6 +737,8 @@ def _metrics_settings_dialog() -> rx.Component:
                         spacing="2",
                         align="center",
                     ),
+                    rx.box(width="1px", height="1.2em", background=white(0.1)),
+                    # Import cart
                     rx.button(
                         rx.hstack(
                             rx.icon("import", size=13),
@@ -739,6 +749,7 @@ def _metrics_settings_dialog() -> rx.Component:
                         size="2",
                         style=BTN_GHOST_SM,
                     ),
+                    # Close
                     rx.dialog.close(
                         rx.icon(
                             "x",
@@ -756,6 +767,7 @@ def _metrics_settings_dialog() -> rx.Component:
                     spacing="3",
                 ),
                 rx.box(height="1px", width="100%", background=white(0.06)),
+                # ── 4-column card grid, taller to minimise scrolling ─────────
                 rx.scroll_area(
                     rx.box(
                         rx.foreach(
@@ -764,13 +776,14 @@ def _metrics_settings_dialog() -> rx.Component:
                         ),
                         display="grid",
                         grid_template_columns="repeat(3, 1fr)",
-                        gap="0.75em",
+                        gap="0.65em",
                         width="100%",
                     ),
                     type="auto",
                     scrollbars="vertical",
-                    style={"height": "55vh"},
+                    style={"height": "68vh"},
                 ),
+                # ── Footer: Select All / Clear All bottom-right ───────────────
                 rx.hstack(
                     rx.spacer(),
                     rx.button(
@@ -786,11 +799,12 @@ def _metrics_settings_dialog() -> rx.Component:
                         style=BTN_GHOST_SM,
                     ),
                     spacing="2",
+                    width="100%",
                 ),
                 spacing="4",
                 width="100%",
             ),
-            width="75vw",
+            width="82vw",
             max_width="1600px",
             style={
                 "background": "#111111",

@@ -242,6 +242,9 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
             await self._load_exchanges()
             if not self.is_mounted():
                 return
+            await self._discover_metrics()
+            if not self.is_mounted():
+                return
             self._reset_fundamentals()
             self._reset_technicals()
             self.slider_reset_key += 1
@@ -331,6 +334,27 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         self.slider_reset_key += 1
 
     # ── Private helpers (callable from any context) ───────────────────────────
+    async def _discover_metrics(self) -> None:
+        """Populate all_metrics from DB — must be called inside async with self:."""
+        try:
+            sample_data = await get_transformed_dataframes("VNM", period="quarter")
+            if sample_data and "categorized_ratios" in sample_data:
+                new_metrics: dict[str, list[str]] = {}
+                for category, category_data in sample_data[
+                    "categorized_ratios"
+                ].items():
+                    if not category_data:
+                        continue
+                    df = pd.DataFrame(category_data)
+                    new_metrics[category] = [
+                        c
+                        for c in df.columns
+                        if c not in {"Year", "Quarter", "period"}
+                    ]
+                self.all_metrics = new_metrics
+        except Exception:
+            pass
+
     async def _load_industries(self) -> None:
         try:
             async with get_company_session() as session:
@@ -546,23 +570,8 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
     @rx.event
     @session_isolated
     async def discover_all_metrics_from_db(self) -> None:
-        try:
-            sample_data = await get_transformed_dataframes("VNM", period="quarter")
-            if sample_data and "categorized_ratios" in sample_data:
-                new_metrics: dict[str, list[str]] = {}
-                for category, category_data in sample_data[
-                    "categorized_ratios"
-                ].items():
-                    if not category_data:
-                        continue
-                    df = pd.DataFrame(category_data)
-                    new_metrics[category] = [
-                        c for c in df.columns if c not in {"Year", "Quarter", "period"}
-                    ]
-                async with self:
-                    self.all_metrics = new_metrics
-        except Exception:
-            pass
+        async with self:
+            await self._discover_metrics()
 
     @rx.event
     @session_isolated
