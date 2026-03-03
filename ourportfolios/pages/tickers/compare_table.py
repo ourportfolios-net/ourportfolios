@@ -24,6 +24,7 @@ _ROW_H_SIMPLE = "3.8em"
 _HEADER_H = "2.5em"
 _CELL_BORDER = f"1px solid {white(0.04)}"
 _STICKY_BORDER = f"1px solid {white(0.06)}"
+_BOARD_H = "42em"
 
 
 # ── Sparkline ─────────────────────────────────────────────────────────────────
@@ -190,29 +191,38 @@ def _ticker_card(stock: dict) -> rx.Component:
 
 def _industry_row(industry: str) -> rx.Component:
     return rx.box(
-        rx.badge(
-            industry,
-            variant="soft",
-            color_scheme="gray",
-            size="2",
-            style={
-                "border_radius": "5px",
-                "font_size": "11px",
-                "letter_spacing": "0.04em",
-            },
+        rx.box(
+            rx.badge(
+                industry,
+                variant="soft",
+                color_scheme="gray",
+                size="2",
+                style={
+                    "border_radius": "5px",
+                    "font_size": "11px",
+                    "letter_spacing": "0.04em",
+                },
+            ),
+            width=_TICKER_W,
+            min_width=_TICKER_W,
+            max_width=_TICKER_W,
+            height="2em",
+            display="flex",
+            align_items="center",
+            padding_left="0.85em",
+            position="sticky",
+            left="0",
+            z_index="4",
+            background=white(0.012),
         ),
         height="2em",
         min_height="2em",
         display="flex",
         align_items="center",
-        padding_left="0.85em",
         border_bottom=_CELL_BORDER,
         background=white(0.012),
-        position="sticky",
-        left="0",
-        z_index="4",
-        width="100%",
-        min_width="max-content",
+        width="max-content",
+        min_width="100%",
     )
 
 
@@ -432,7 +442,7 @@ def compare_table() -> rx.Component:
                             flex_shrink="0",
                             position="sticky",
                             left="0",
-                            z_index="3",
+                            z_index="5",
                             background=TABLE_BG,
                         ),
                         rx.foreach(
@@ -445,7 +455,7 @@ def compare_table() -> rx.Component:
                         min_width="100%",
                         position="sticky",
                         top="0",
-                        z_index="2",
+                        z_index="6",
                         background=TABLE_BG,
                     ),
                     # Industry groups + rows
@@ -488,7 +498,7 @@ def compare_table() -> rx.Component:
                 ),
                 scrollbars="both",
                 type="auto",
-                style={"width": "100%", "max_height": "calc(100vh - 19em)"},
+                style={"width": "100%", "height": _BOARD_H},
             ),
         ),
         rx.html(
