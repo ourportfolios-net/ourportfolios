@@ -84,9 +84,6 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
     is_loading_historical: bool = False
     _data_cache: dict[str, dict[str, Any]] = {}
 
-    # Pending metric buffer — absorbs dialog checkbox changes without touching
-    # selected_metrics (and therefore without triggering the heavy compare-table
-    # computed vars).  Flushed → selected_metrics only on dialog close.
     pending_metrics: list[str] = []
     metrics_dialog_open: bool = False
 
@@ -102,13 +99,11 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
 
     @rx.var
     def is_board_loading(self) -> bool:
-        """True while the ticker data cache is still loading."""
         return not self._data_loaded
 
     @rx.var
     def max_ticker_volume(self) -> float:
-        """Max volume across the current ticker list for scaling the volume bar."""
-        return 0.0  # Actual max is computed client-side from TickerBoardState.tickers
+        return 0.0
 
     @rx.var
     def all_available_metrics(self) -> list[str]:
@@ -192,6 +187,12 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         return dict(groups)
 
     @rx.var
+    def pending_tickers(self) -> list[str]:
+        """Tickers in compare_list that don't yet have loaded stock data."""
+        loaded = {s.get("symbol", "") for s in self.stocks}
+        return [t for t in self.compare_list if t not in loaded]
+
+    @rx.var
     def industry_best_performers(self) -> dict[str, dict[str, str]]:
         industry_best: dict[str, dict[str, str]] = {}
         latest_values = self.latest_values_by_ticker
@@ -253,19 +254,32 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         async with self:
             if self._data_loaded or not self.is_mounted():
                 return
-            await self._load_industries()
-            if not self.is_mounted():
-                return
-            await self._load_exchanges()
-            if not self.is_mounted():
-                return
-            await self._discover_metrics()
-            if not self.is_mounted():
-                return
+
+        # Fetch all data outside the lock so other events (e.g. add_ticker_to_compare)
+        # can acquire the state lock while loading is in progress.
+        industry_filter = await self._load_industries()
+        if not self.is_mounted():
+            return
+        async with self:
+            self.industry_filter = industry_filter
+
+        exchange_filter = await self._load_exchanges()
+        if not self.is_mounted():
+            return
+        async with self:
+            self.exchange_filter = exchange_filter
+
+        all_metrics = await self._discover_metrics()
+        if not self.is_mounted():
+            return
+        async with self:
+            self.all_metrics = all_metrics
             self._reset_fundamentals()
             self._reset_technicals()
             self.slider_reset_key += 1
             self.search_query = ""
+
+        async with self:
             ticker_board_state = await self.get_state(TickerBoardState)
             await ticker_board_state.load_all_tickers_cache()
             self._data_loaded = True
@@ -295,7 +309,6 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         return TickerBoardState.set_sort_order(order)
 
     def _build_filters(self) -> dict:
-        """Build the filters dict from current state — used by apply/remove."""
         return {
             "industry": self.selected_industry,
             "exchange": self.selected_exchange,
@@ -315,7 +328,6 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
 
     @rx.event
     def remove_filter_chip(self, item: str, filter_type: str):
-        """Remove a filter chip and re-apply filters."""
         if filter_type == "industry":
             self.industry_filter[item] = False
             self.selected_industry = self.selected_industry - {item}
@@ -333,12 +345,12 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
     @rx.event
     @session_isolated
     async def get_all_industries(self) -> None:
-        await self._load_industries()
+        self.industry_filter = await self._load_industries()
 
     @rx.event
     @session_isolated
     async def get_all_exchanges(self) -> None:
-        await self._load_exchanges()
+        self.exchange_filter = await self._load_exchanges()
 
     @rx.event
     def get_fundamentals_default_value(self) -> None:
@@ -350,9 +362,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         self._reset_technicals()
         self.slider_reset_key += 1
 
-    # ── Private helpers (callable from any context) ───────────────────────────
-    async def _discover_metrics(self) -> None:
-        """Populate all_metrics from DB — must be called inside async with self:."""
+    async def _discover_metrics(self) -> dict[str, list[str]]:
         try:
             sample_data = await get_transformed_dataframes("VNM", period="quarter")
             if sample_data and "categorized_ratios" in sample_data:
@@ -364,35 +374,34 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                         continue
                     df = pd.DataFrame(category_data)
                     new_metrics[category] = [
-                        c
-                        for c in df.columns
-                        if c not in {"Year", "Quarter", "period"}
+                        c for c in df.columns if c not in {"Year", "Quarter", "period"}
                     ]
-                self.all_metrics = new_metrics
+                return new_metrics
         except Exception:
             pass
+        return {}
 
-    async def _load_industries(self) -> None:
+    async def _load_industries(self) -> dict[str, bool]:
         try:
             async with get_company_session() as session:
                 stmt = select(distinct(OverviewORM.industry))
                 result = await session.execute(stmt)
                 industries = [row[0] for row in result.all() if row[0] is not None]
-                self.industry_filter = {item: False for item in industries}
+            return {item: False for item in industries}
         except Exception as e:
             print(f"TICKERS PAGE ERROR: Failed to load industries: {e}")
-            self.industry_filter = {}
+            return {}
 
-    async def _load_exchanges(self) -> None:
+    async def _load_exchanges(self) -> dict[str, bool]:
         try:
             async with get_company_session() as session:
                 stmt = select(distinct(OverviewORM.exchange))
                 result = await session.execute(stmt)
                 exchanges = [row[0] for row in result.all() if row[0] is not None]
-                self.exchange_filter = {item: False for item in exchanges}
+            return {item: False for item in exchanges}
         except Exception as e:
             print(f"TICKERS PAGE ERROR: Failed to load exchanges: {e}")
-            self.exchange_filter = {}
+            return {}
 
     def _reset_fundamentals(self) -> None:
         self.fundamentals_current_value = {
@@ -422,27 +431,27 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
 
     @rx.event
     def update_fundamental_value(self, metric: str, value: list[float]) -> None:
-        """Lightweight: only update the display value (called on every drag)."""
         self.fundamentals_current_value[metric] = value
 
     @rx.event
     def update_technical_value(self, metric: str, value: list[float]) -> None:
-        """Lightweight: only update the display value (called on every drag)."""
         self.technicals_current_value[metric] = value
 
     @rx.event
     def set_fundamental_metric(self, metric: str, value: list[float]) -> None:
-        """Full handler: update value + active-metric set (called on release)."""
         self.fundamentals_current_value[metric] = value
         default_max = self.fundamentals_default_value[metric][1]
         if value[0] > 0.0 or (value[1] > 0.0 and value[1] < default_max):
-            self.selected_fundamental_metric = self.selected_fundamental_metric | {metric}
+            self.selected_fundamental_metric = self.selected_fundamental_metric | {
+                metric
+            }
         else:
-            self.selected_fundamental_metric = self.selected_fundamental_metric - {metric}
+            self.selected_fundamental_metric = self.selected_fundamental_metric - {
+                metric
+            }
 
     @rx.event
     def set_technical_metric(self, metric: str, value: list[float]) -> None:
-        """Full handler: update value + active-metric set (called on release)."""
         self.technicals_current_value[metric] = value
         default_max = self.technicals_default_value[metric][1]
         if value[0] > 0.0 or (value[1] > 0.0 and value[1] < default_max):
@@ -471,12 +480,10 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
 
     @rx.event
     def add_to_compare_from_board(self, ticker: str) -> None:
-        """Add a ticker from the board view and jump to the compare view."""
         self.view_mode = "compare"
         return TickersPageState.add_ticker_to_compare(ticker)  # type: ignore[return-value]
 
     # ── Metrics-dialog lifecycle ──────────────────────────────────────────────
-
     @rx.event
     def handle_metrics_dialog_change(self, open: bool) -> None:
         if open:
@@ -502,9 +509,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                 m for m in self.pending_metrics if m not in category_metrics
             ]
         else:
-            new_metrics = [
-                m for m in category_metrics if m not in self.pending_metrics
-            ]
+            new_metrics = [m for m in category_metrics if m not in self.pending_metrics]
             self.pending_metrics = self.pending_metrics + new_metrics
 
     @rx.event
@@ -526,41 +531,64 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
             self.time_period = "year" if checked else "quarter"
         await self.fetch_historical_data()
 
-    @rx.event
+    @rx.event(background=True)
     @session_isolated
     async def add_ticker_to_compare(self, ticker: str):
+        # ── Phase 1: guard + optimistic update (sends state to frontend immediately)
+        duplicate = False
+        time_period_copy = "quarter"
         async with self:
             if ticker in self.compare_list:
-                yield rx.toast.error(f"{ticker} is already in the comparison!")
-                return
-            self.is_loading_data = True
-            time_period_copy = self.time_period
-        try:
-            async with self:
+                duplicate = True
+            else:
+                self.is_loading_data = True
+                time_period_copy = self.time_period
+                # Auto-select all metrics on first add so table is never blank
+                if not self.compare_list and not self.selected_metrics:
+                    all_m: list[str] = []
+                    for ms in self.all_metrics.values():
+                        all_m.extend(ms)
+                    self.selected_metrics = all_m
+                    self.pending_metrics = list(all_m)
+                # Immediately add to compare_list so pending_tickers drives a
+                # skeleton row in the UI before data arrives.
                 self.compare_list = self.compare_list + [ticker]
+
+        # yield outside the context manager so frontend gets the state delta above
+        if duplicate:
+            yield rx.toast.error(f"{ticker} is already in the comparison!")
+            return
+
+        # ── Phase 2: fetch data (no lock held — skeleton is visible here)
+        try:
+            row = None
             async with get_company_session() as session:
                 stmt = select(
                     OverviewORM.symbol, OverviewORM.industry, OverviewORM.market_cap
                 ).where(OverviewORM.symbol == ticker)
                 result = await session.execute(stmt)
                 row = result.mappings().first()
-                if row is not None:
-                    # Fetch only the new ticker's data and merge incrementally
-                    data = await get_transformed_dataframes(ticker, period=time_period_copy)
-                    async with self:
-                        self.stocks = self.stocks + [dict(row)]
-                        cache_key = f"{ticker}_{time_period_copy}"
-                        self._data_cache[cache_key] = data
-                        self.historical_data = self._merge_one_ticker_into_historical_data(
+
+            if row is not None:
+                data = await get_transformed_dataframes(
+                    ticker, period=time_period_copy
+                )
+                async with self:
+                    self.stocks = self.stocks + [dict(row)]
+                    cache_key = f"{ticker}_{time_period_copy}"
+                    self._data_cache[cache_key] = data
+                    self.historical_data = (
+                        self._merge_one_ticker_into_historical_data(
                             ticker, data, self.historical_data, time_period_copy
                         )
-                    yield rx.toast.success(f"{ticker} added!")
-                else:
-                    async with self:
-                        self.compare_list = [
-                            t for t in self.compare_list if t != ticker
-                        ]
-                    yield rx.toast.error(f"No data found for {ticker}")
+                    )
+                yield rx.toast.success(f"{ticker} added!")
+            else:
+                async with self:
+                    self.compare_list = [
+                        t for t in self.compare_list if t != ticker
+                    ]
+                yield rx.toast.error(f"No data found for {ticker}")
         except Exception:
             async with self:
                 self.compare_list = [t for t in self.compare_list if t != ticker]
@@ -604,8 +632,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
     @rx.event
     @session_isolated
     async def discover_all_metrics_from_db(self) -> None:
-        async with self:
-            await self._discover_metrics()
+        self.all_metrics = await self._discover_metrics()
 
     @rx.event
     @session_isolated
@@ -658,7 +685,6 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         existing: dict[str, list[dict[str, Any]]],
         time_period: str,
     ) -> dict[str, list[dict[str, Any]]]:
-        """Merge a single ticker's data into an already-built historical_data dict."""
         if not ticker_data or "categorized_ratios" not in ticker_data:
             return existing
         max_periods = 8 if time_period == "quarter" else 4
@@ -698,8 +724,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         for metric, period_values in ticker_metric_periods.items():
             if metric not in result:
                 result[metric] = [
-                    {"period": p, ticker: v}
-                    for p, v in period_values.items()
+                    {"period": p, ticker: v} for p, v in period_values.items()
                 ]
             else:
                 period_index = {e["period"]: i for i, e in enumerate(result[metric])}

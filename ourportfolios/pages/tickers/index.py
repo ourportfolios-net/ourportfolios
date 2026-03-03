@@ -1,34 +1,16 @@
-"""Tickers page — viewport-fitted, no layout shift on view toggle."""
+"""Tickers page."""
 
 import reflex as rx
 
 from ...components.navbar import navbar
 from ...components.drawer import drawer_button
+from ...components.breadcrumb import breadcrumb
 from ...styles import white
 
 from .state import TickersPageState
-from .controls import (
-    board_toolbar,
-    compare_toolbar,
-)
+from .controls import board_toolbar, compare_toolbar
 from .compare_table import compare_table, empty_compare_state
 from .ticker_board import new_ticker_board
-
-
-def breadcrumb():
-    return rx.hstack(
-        rx.html(
-            "<style>"
-            ".bc-home { color: rgba(255,255,255,0.35) !important; text-decoration: none !important; transition: color 0.15s ease; }"
-            ".bc-home:hover { color: white !important; }"
-            "</style>"
-        ),
-        rx.link("Home", href="/home", size="2", class_name="bc-home"),
-        rx.icon("chevron-right", size=13, color="rgba(255,255,255,0.2)"),
-        rx.text("Tickers", size="2", color="rgba(255,255,255,0.75)", weight="medium"),
-        spacing="2",
-        align="center",
-    )
 
 
 def view_toggle():
@@ -91,9 +73,8 @@ def view_toggle():
 
 
 def page_header():
-    """Compact two-line header — breadcrumb + title+subtitle inline with toggle."""
     return rx.vstack(
-        breadcrumb(),
+        breadcrumb("/tickers"),
         rx.hstack(
             rx.vstack(
                 rx.heading("Tickers", size="7", weight="bold", color="white"),
@@ -117,12 +98,7 @@ def page_header():
 
 
 def toolbar_row():
-    """
-    Fixed-height toolbar row. Both toolbars are rendered but only the active
-    one is visible — this prevents the row from reflowing when switching views.
-    """
     return rx.hstack(
-        # Board toolbar — hidden (opacity+pointer-events) when in compare mode
         rx.box(
             board_toolbar(),
             style={
@@ -138,7 +114,6 @@ def toolbar_row():
                 "right": "0",
             },
         ),
-        # Compare toolbar — hidden when in board mode
         rx.box(
             compare_toolbar(),
             style={
@@ -154,7 +129,6 @@ def toolbar_row():
                 "right": "0",
             },
         ),
-        # Invisible spacer to hold the row height regardless of which toolbar shows
         rx.box(height="34px", flex="1"),
         width="100%",
         align="center",
@@ -163,12 +137,7 @@ def toolbar_row():
 
 
 def content_area():
-    """
-    Both views are always in the DOM; only the active one is visible.
-    This kills the layout shift entirely — dimensions stay constant.
-    """
     return rx.box(
-        # Board view
         rx.box(
             new_ticker_board(),
             style={
@@ -181,7 +150,6 @@ def content_area():
                 "inset": "0",
             },
         ),
-        # Compare view
         rx.box(
             rx.cond(
                 TickersPageState.compare_list.length() > 0,
@@ -219,10 +187,7 @@ def main_content():
     )
 
 
-@rx.page(
-    route="/tickers",
-    on_load=TickersPageState.on_mount,
-)
+@rx.page(route="/tickers", on_load=TickersPageState.on_mount)
 def index():
     return rx.box(
         navbar(),
@@ -237,7 +202,7 @@ def index():
                 height="100%",
             ),
             width="100%",
-            padding_top="5em",  # clears navbar
+            padding_top="5em",
             padding_x="0",
             display="flex",
             flex_direction="column",

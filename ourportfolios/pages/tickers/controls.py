@@ -44,7 +44,6 @@ BTN_VIEW_INACTIVE = {
     **BTN_ICON_SECONDARY,
 }
 
-# Keep private aliases for internal use
 _BTN_ICON_SECONDARY = BTN_ICON_SECONDARY
 _BTN_FILTER_ACTIVE = {
     "background": purple(0.18),
@@ -450,7 +449,6 @@ def _active_filter_chips() -> rx.Component:
 
 def board_toolbar() -> rx.Component:
     return rx.hstack(
-        # Search — matches framework page search style exactly
         rx.box(
             rx.icon(
                 "search",
@@ -487,7 +485,6 @@ def board_toolbar() -> rx.Component:
             display="flex",
             align_items="center",
         ),
-        # Active chips
         rx.cond(
             TickersPageState.has_filter,
             rx.box(
@@ -531,8 +528,6 @@ def _compare_search_suggestion(ticker_value: dict) -> rx.Component:
             rx.spacer(),
             rx.button(
                 rx.icon("plus", size=13),
-                # on_mouse_down fires before the input loses focus, so the
-                # dropdown is still visible when the event fires.
                 on_mouse_down=[
                     TickersPageState.set_view_mode("compare"),
                     TickersPageState.add_ticker_to_compare(ticker),
@@ -631,7 +626,6 @@ def _compare_search_bar() -> rx.Component:
 def _metric_category_card(category: str) -> rx.Component:
     return rx.box(
         rx.vstack(
-            # Category header — name left, select-all checkbox right
             rx.hstack(
                 rx.text(category, size="5", weight="bold", color=white(0.92)),
                 rx.spacer(),
@@ -646,7 +640,6 @@ def _metric_category_card(category: str) -> rx.Component:
                 width="100%",
                 align="center",
             ),
-            # Metrics in a 2-column CSS grid — cuts card height in half
             rx.box(
                 rx.foreach(
                     TickersPageState.all_metrics[category],
@@ -700,11 +693,9 @@ def _metrics_settings_dialog() -> rx.Component:
         ),
         rx.dialog.content(
             rx.vstack(
-                # ── Header ──────────────────────────────────────────────────
                 rx.hstack(
                     rx.text("Metric Settings", size="5", weight="bold", color="white"),
                     rx.spacer(),
-                    # Period toggle
                     rx.hstack(
                         rx.text(
                             "Quarterly",
@@ -734,7 +725,6 @@ def _metrics_settings_dialog() -> rx.Component:
                         align="center",
                     ),
                     rx.box(width="1px", height="1.2em", background=white(0.1)),
-                    # Import cart
                     rx.button(
                         rx.hstack(
                             rx.icon("import", size=13),
@@ -745,7 +735,6 @@ def _metrics_settings_dialog() -> rx.Component:
                         size="2",
                         style=BTN_GHOST_SM,
                     ),
-                    # Close
                     rx.dialog.close(
                         rx.icon(
                             "x",
@@ -763,7 +752,6 @@ def _metrics_settings_dialog() -> rx.Component:
                     spacing="3",
                 ),
                 rx.box(height="1px", width="100%", background=white(0.06)),
-                # ── 4-column card grid, taller to minimise scrolling ─────────
                 rx.scroll_area(
                     rx.box(
                         rx.foreach(
@@ -779,7 +767,6 @@ def _metrics_settings_dialog() -> rx.Component:
                     scrollbars="vertical",
                     style={"height": "68vh"},
                 ),
-                # ── Footer: Select All / Clear All bottom-right ───────────────
                 rx.hstack(
                     rx.spacer(),
                     rx.button(
