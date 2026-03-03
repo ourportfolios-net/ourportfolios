@@ -570,24 +570,18 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                 row = result.mappings().first()
 
             if row is not None:
-                data = await get_transformed_dataframes(
-                    ticker, period=time_period_copy
-                )
+                data = await get_transformed_dataframes(ticker, period=time_period_copy)
                 async with self:
                     self.stocks = self.stocks + [dict(row)]
                     cache_key = f"{ticker}_{time_period_copy}"
                     self._data_cache[cache_key] = data
-                    self.historical_data = (
-                        self._merge_one_ticker_into_historical_data(
-                            ticker, data, self.historical_data, time_period_copy
-                        )
+                    self.historical_data = self._merge_one_ticker_into_historical_data(
+                        ticker, data, self.historical_data, time_period_copy
                     )
                 yield rx.toast.success(f"{ticker} added!")
             else:
                 async with self:
-                    self.compare_list = [
-                        t for t in self.compare_list if t != ticker
-                    ]
+                    self.compare_list = [t for t in self.compare_list if t != ticker]
                 yield rx.toast.error(f"No data found for {ticker}")
         except Exception:
             async with self:
