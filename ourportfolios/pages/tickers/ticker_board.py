@@ -88,7 +88,7 @@ def _cart_btn(symbol: str) -> rx.Component:
 def _compare_btn(symbol: str) -> rx.Component:
     return rx.button(
         rx.icon("bar-chart-2", size=13),
-        on_click=[TickersPageState.set_view_mode("compare"), TickersPageState.add_ticker_to_compare(symbol)],
+        on_click=TickersPageState.add_ticker_to_compare(symbol),
         size="1",
         **_COMPARE_BTN,
     )
@@ -290,11 +290,14 @@ def _empty_state() -> rx.Component:
 # ── Public export ──────────────────────────────────────────────────────────────
 
 
+_BOARD_H = "42em"
+
+
 def new_ticker_board() -> rx.Component:
     """Ticker board — skeleton → row list → empty state."""
     return rx.cond(
         TickersPageState.is_board_loading,
-        skeleton_list(),
+        rx.box(skeleton_list(), height=_BOARD_H, overflow="hidden", width="100%"),
         rx.cond(
             TickerBoardState.get_all_tickers.length() > 0,
             rx.box(
@@ -306,14 +309,14 @@ def new_ticker_board() -> rx.Component:
                     ),
                     scrollbars="vertical",
                     type="hover",
-                    style={"height": "100%", "width": "100%"},
+                    style={"height": _BOARD_H, "width": "100%"},
                 ),
                 border_radius="14px",
                 border=CARD_BORDER,
                 background=CARD_BG,
                 overflow="hidden",
                 width="100%",
-                height="100%",
+                height=_BOARD_H,
             ),
             _empty_state(),
         ),

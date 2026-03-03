@@ -9,7 +9,7 @@ import pandas as pd
 
 from ...state import TickerBoardState
 from ...utils.database.database import get_company_session
-from ...utils.database.models import OverviewORM
+from ...utils.database.models import OverviewORM, ProfileORM
 from ...utils.session_manager import SessionIsolatedStateMixin, session_isolated
 from ...state.cart_state import CartState
 from ...utils.preprocessing.financial_statements import get_transformed_dataframes
@@ -157,6 +157,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
             ticker = stock.get("symbol", "")
             formatted_stock["symbol"] = ticker
             formatted_stock["industry"] = stock.get("industry", "Unknown")
+            formatted_stock["company_name"] = stock.get("company_name", "")
             if "market_cap" in stock:
                 formatted_stock["market_cap"] = format_large_number(
                     stock["market_cap"], decimals=2
@@ -249,48 +250,65 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         super().on_unmount()
 
     @rx.event(background=True)
-    @session_isolated
     async def auto_load_data(self) -> None:
         async with self:
             if self._data_loaded or not self.is_mounted():
                 return
 
-        # Fetch all data outside the lock so other events (e.g. add_ticker_to_compare)
-        # can acquire the state lock while loading is in progress.
-        industry_filter = await self._load_industries()
+        # Run the two cheap filter fetches in parallel — metrics discovery
+        # is deferred until the user opens the compare view so it doesn't
+        # block the ticker board from appearing.
+        industry_filter, exchange_filter = await asyncio.gather(
+            self._load_industries(),
+            self._load_exchanges(),
+        )
         if not self.is_mounted():
             return
         async with self:
             self.industry_filter = industry_filter
-
-        exchange_filter = await self._load_exchanges()
-        if not self.is_mounted():
-            return
-        async with self:
             self.exchange_filter = exchange_filter
-
-        all_metrics = await self._discover_metrics()
-        if not self.is_mounted():
-            return
-        async with self:
-            self.all_metrics = all_metrics
             self._reset_fundamentals()
             self._reset_technicals()
             self.slider_reset_key += 1
             self.search_query = ""
 
+        # Fetch the full ticker cache outside the state lock so it doesn't
+        # block other state updates (e.g. add_ticker_to_compare) while the
+        # multi-table join is running.
+        try:
+            all_tickers = await TickerBoardState._fetch_tickers_data()
+        except Exception as e:
+            print(f"TICKERS PAGE ERROR: Failed to load ticker cache: {e}")
+            return
+        if not self.is_mounted():
+            return
         async with self:
             ticker_board_state = await self.get_state(TickerBoardState)
-            await ticker_board_state.load_all_tickers_cache()
+            ticker_board_state._all_tickers_cache = all_tickers
+            ticker_board_state._cache_loaded = True
             self._data_loaded = True
 
     # ── View mode ─────────────────────────────────────────────────────────────
     @rx.event
-    def set_view_mode(self, mode: str | list[str]) -> None:
+    def set_view_mode(self, mode: str | list[str]):
         if isinstance(mode, list):
             self.view_mode = mode[0] if mode else "board"
         else:
             self.view_mode = mode
+        # Lazily load compare metrics the first time the user opens compare.
+        if self.view_mode == "compare" and not self.all_metrics:
+            return TickersPageState.load_compare_metrics
+
+    @rx.event(background=True)
+    async def load_compare_metrics(self) -> None:
+        async with self:
+            if self.all_metrics or not self.is_mounted():
+                return
+        all_metrics = await TickersPageState._discover_metrics()
+        if not self.is_mounted():
+            return
+        async with self:
+            self.all_metrics = all_metrics
 
     # ── Board / filter events ─────────────────────────────────────────────────
     @rx.event
@@ -362,7 +380,8 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         self._reset_technicals()
         self.slider_reset_key += 1
 
-    async def _discover_metrics(self) -> dict[str, list[str]]:
+    @staticmethod
+    async def _discover_metrics() -> dict[str, list[str]]:
         try:
             sample_data = await get_transformed_dataframes("VNM", period="quarter")
             if sample_data and "categorized_ratios" in sample_data:
@@ -480,7 +499,6 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
 
     @rx.event
     def add_to_compare_from_board(self, ticker: str) -> None:
-        self.view_mode = "compare"
         return TickersPageState.add_ticker_to_compare(ticker)  # type: ignore[return-value]
 
     # ── Metrics-dialog lifecycle ──────────────────────────────────────────────
@@ -537,22 +555,18 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         # ── Phase 1: guard + optimistic update (sends state to frontend immediately)
         duplicate = False
         time_period_copy = "quarter"
+        needs_metrics = False
         async with self:
             if ticker in self.compare_list:
                 duplicate = True
             else:
                 self.is_loading_data = True
                 time_period_copy = self.time_period
-                # Auto-select all metrics on first add so table is never blank
-                if not self.compare_list and not self.selected_metrics:
-                    all_m: list[str] = []
-                    for ms in self.all_metrics.values():
-                        all_m.extend(ms)
-                    self.selected_metrics = all_m
-                    self.pending_metrics = list(all_m)
                 # Immediately add to compare_list so pending_tickers drives a
                 # skeleton row in the UI before data arrives.
                 self.compare_list = self.compare_list + [ticker]
+                # Check if we need to load metrics (first add, no metrics yet)
+                needs_metrics = not self.all_metrics
 
         # yield outside the context manager so frontend gets the state delta above
         if duplicate:
@@ -563,14 +577,32 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         try:
             row = None
             async with get_company_session() as session:
-                stmt = select(
-                    OverviewORM.symbol, OverviewORM.industry, OverviewORM.market_cap
-                ).where(OverviewORM.symbol == ticker)
+                stmt = (
+                    select(
+                        OverviewORM.symbol,
+                        OverviewORM.industry,
+                        OverviewORM.market_cap,
+                        ProfileORM.company_name,
+                    )
+                    .join(ProfileORM, OverviewORM.symbol == ProfileORM.symbol)
+                    .where(OverviewORM.symbol == ticker)
+                )
                 result = await session.execute(stmt)
                 row = result.mappings().first()
 
             if row is not None:
-                data = await get_transformed_dataframes(ticker, period=time_period_copy)
+                # If this is the first add and metrics aren't loaded yet, fetch them
+                # concurrently with the financial data to avoid blocking the add.
+                if needs_metrics:
+                    data, all_metrics = await asyncio.gather(
+                        get_transformed_dataframes(ticker, period=time_period_copy),
+                        TickersPageState._discover_metrics(),
+                    )
+                else:
+                    data = await get_transformed_dataframes(
+                        ticker, period=time_period_copy
+                    )
+                    all_metrics = {}
                 async with self:
                     self.stocks = self.stocks + [dict(row)]
                     cache_key = f"{ticker}_{time_period_copy}"
@@ -578,7 +610,24 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                     self.historical_data = self._merge_one_ticker_into_historical_data(
                         ticker, data, self.historical_data, time_period_copy
                     )
-                yield rx.toast.success(f"{ticker} added!")
+                    # Populate and auto-select metrics on first add
+                    if all_metrics and not self.all_metrics:
+                        self.all_metrics = all_metrics
+                    if not self.selected_metrics and self.all_metrics:
+                        all_m: list[str] = []
+                        for ms in self.all_metrics.values():
+                            all_m.extend(ms)
+                        self.selected_metrics = all_m
+                        self.pending_metrics = list(all_m)
+                yield rx.toast.success(
+                    f"{ticker} added to Compare",
+                    action={
+                        "label": "View",
+                        "on_click": TickersPageState.set_view_mode("compare"),
+                    },
+                    position="bottom-right",
+                    duration=5000,
+                )
             else:
                 async with self:
                     self.compare_list = [t for t in self.compare_list if t != ticker]
@@ -611,11 +660,16 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         stocks: list[dict[str, Any]] = []
         try:
             async with get_company_session() as session:
-                stmt = select(
-                    OverviewORM.symbol,
-                    OverviewORM.industry,
-                    OverviewORM.market_cap,
-                ).where(OverviewORM.symbol.in_(compare_list_copy))
+                stmt = (
+                    select(
+                        OverviewORM.symbol,
+                        OverviewORM.industry,
+                        OverviewORM.market_cap,
+                        ProfileORM.company_name,
+                    )
+                    .join(ProfileORM, OverviewORM.symbol == ProfileORM.symbol)
+                    .where(OverviewORM.symbol.in_(compare_list_copy))
+                )
                 result = await session.execute(stmt)
                 stocks = [dict(row) for row in result.mappings().all()]
         except Exception:

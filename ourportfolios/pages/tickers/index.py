@@ -167,9 +167,9 @@ def content_area():
             },
         ),
         position="relative",
-        flex="1",
-        min_height="0",
         width="100%",
+        height="42em",
+        flex_shrink="0",
     )
 
 
@@ -181,9 +181,6 @@ def main_content():
         content_area(),
         spacing="4",
         width="100%",
-        flex="1",
-        min_height="0",
-        overflow="hidden",
     )
 
 
@@ -197,25 +194,16 @@ def index():
                 width="86vw",
                 max_width="1800px",
                 margin="0 auto",
-                display="flex",
-                flex_direction="column",
-                height="100%",
             ),
             width="100%",
             padding_top="5em",
+            padding_bottom="2.5em",
             padding_x="0",
-            display="flex",
-            flex_direction="column",
-            flex="1",
-            min_height="0",
         ),
         drawer_button(),
         on_unmount=TickersPageState.on_unmount,
         background="#090909",
         color="white",
-        height="100vh",
+        min_height="100vh",
         width="100%",
-        display="flex",
-        flex_direction="column",
-        overflow="hidden",
     )

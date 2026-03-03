@@ -43,60 +43,66 @@ class TickerBoardState(rx.State):
     def set_search_query(self, value: str) -> None:
         self.search_query = value
 
+    @staticmethod
+    async def _fetch_tickers_data() -> list[dict[str, Any]]:
+        """Execute the raw DB query outside any state lock and return the rows."""
+        async with get_company_session() as session:
+            # Subquery: latest stats row id per symbol
+            latest_stats = (
+                select(
+                    StatsORM.symbol.label("stats_symbol"),
+                    func.max(StatsORM.id).label("max_id"),
+                )
+                .group_by(StatsORM.symbol)
+                .subquery()
+            )
+
+            # Metric columns derived from the ORM model
+            metric_col_names = [
+                c.name
+                for c in StatsORM.__table__.columns
+                if c.name not in ("id", "symbol")
+            ]
+            stats_columns = [getattr(StatsORM, n) for n in metric_col_names]
+
+            stmt = (
+                select(
+                    PriceORM.symbol,
+                    PriceORM.current_price,
+                    PriceORM.accumulated_volume,
+                    PriceORM.pct_price_change,
+                    ProfileORM.company_name,
+                    OverviewORM.market_cap,
+                    OverviewORM.industry,
+                    OverviewORM.exchange,
+                    *stats_columns,
+                )
+                .join(ProfileORM, PriceORM.symbol == ProfileORM.symbol)
+                .join(OverviewORM, PriceORM.symbol == OverviewORM.symbol)
+                .outerjoin(
+                    latest_stats,
+                    PriceORM.symbol == latest_stats.c.stats_symbol,
+                )
+                .outerjoin(
+                    StatsORM,
+                    and_(
+                        StatsORM.symbol == latest_stats.c.stats_symbol,
+                        StatsORM.id == latest_stats.c.max_id,
+                    ),
+                )
+                .order_by(PriceORM.accumulated_volume.desc())
+            )
+            result = await session.execute(stmt)
+            return [dict(row) for row in result.mappings().all()]
+
     @rx.event
     async def load_all_tickers_cache(self) -> None:
         if self._cache_loaded:
             return
         try:
-            async with get_company_session() as session:
-                # Subquery: latest stats row id per symbol
-                latest_stats = (
-                    select(
-                        StatsORM.symbol.label("stats_symbol"),
-                        func.max(StatsORM.id).label("max_id"),
-                    )
-                    .group_by(StatsORM.symbol)
-                    .subquery()
-                )
-
-                # Metric columns derived from the ORM model
-                metric_col_names = [
-                    c.name
-                    for c in StatsORM.__table__.columns
-                    if c.name not in ("id", "symbol")
-                ]
-                stats_columns = [getattr(StatsORM, n) for n in metric_col_names]
-
-                stmt = (
-                    select(
-                        PriceORM.symbol,
-                        PriceORM.current_price,
-                        PriceORM.accumulated_volume,
-                        PriceORM.pct_price_change,
-                        ProfileORM.company_name,
-                        OverviewORM.market_cap,
-                        OverviewORM.industry,
-                        OverviewORM.exchange,
-                        *stats_columns,
-                    )
-                    .join(ProfileORM, PriceORM.symbol == ProfileORM.symbol)
-                    .join(OverviewORM, PriceORM.symbol == OverviewORM.symbol)
-                    .outerjoin(
-                        latest_stats,
-                        PriceORM.symbol == latest_stats.c.stats_symbol,
-                    )
-                    .outerjoin(
-                        StatsORM,
-                        and_(
-                            StatsORM.symbol == latest_stats.c.stats_symbol,
-                            StatsORM.id == latest_stats.c.max_id,
-                        ),
-                    )
-                    .order_by(PriceORM.accumulated_volume.desc())
-                )
-                result = await session.execute(stmt)
-                self._all_tickers_cache = [dict(row) for row in result.mappings().all()]
-                self._cache_loaded = True
+            rows = await TickerBoardState._fetch_tickers_data()
+            self._all_tickers_cache = rows
+            self._cache_loaded = True
         except Exception as e:
             print(
                 f"TICKER BOARD ERROR: Failed to load ticker cache: {type(e).__name__}: {e}"

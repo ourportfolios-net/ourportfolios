@@ -6,11 +6,9 @@ from .state import TickersPageState
 from ...styles import (
     white,
     purple,
-    LABEL_STYLE,
     TOOLTIP_CURSOR,
     TOOLTIP_CONTENT_STYLE,
     TOOLTIP_WRAPPER_STYLE,
-    DELETE_HOVER,
     TEXT_TERTIARY,
 )
 
@@ -18,8 +16,8 @@ from ...styles import (
 _TICKER_W = "11em"
 _METRIC_W_GRAPH = "10em"
 _METRIC_W_SIMPLE = "6.5em"
-_ROW_H_GRAPH = "5em"
-_ROW_H_SIMPLE = "3em"
+_ROW_H_GRAPH = "4.6em"
+_ROW_H_SIMPLE = "3.8em"
 _HEADER_H = "2.5em"
 _TABLE_BG = "#0d0d0d"
 _STICKY_BG = "#0d0d0d"
@@ -102,10 +100,10 @@ def _metric_cell(stock: dict, metric_key: str, industry: str) -> rx.Component:
 
 
 def _ticker_card(stock: dict) -> rx.Component:
-    """Card-style sticky symbol cell with hover lift animation."""
+    """Card-style sticky symbol cell with hover slide-left animation."""
     row_h = rx.cond(TickersPageState.show_graphs, _ROW_H_GRAPH, _ROW_H_SIMPLE)
     symbol = stock["symbol"].to(str)
-    industry = stock["industry"].to(str)
+    company_name = stock.get("company_name", "").to(str)
     return rx.box(
         rx.box(
             rx.hstack(
@@ -115,10 +113,10 @@ def _ticker_card(stock: dict) -> rx.Component:
                             symbol,
                             weight="bold",
                             color="white",
-                            style={"font_size": "13px", "line_height": "1"},
+                            style={"font_size": "15px", "line_height": "1"},
                         ),
                         rx.text(
-                            industry,
+                            company_name,
                             color=TEXT_TERTIARY,
                             style={
                                 "font_size": "10px",
@@ -141,11 +139,11 @@ def _ticker_card(stock: dict) -> rx.Component:
                 rx.box(
                     rx.icon(
                         "x",
-                        size=11,
+                        size=14,
                         color=white(0.2),
                         style={
                             "transition": "color 0.15s ease",
-                            "_hover": {"color": DELETE_HOVER},
+                            "_hover": {"color": white(0.9)},
                         },
                     ),
                     cursor="pointer",
@@ -166,7 +164,7 @@ def _ticker_card(stock: dict) -> rx.Component:
             _hover={
                 "background": white(0.07),
                 "border_color": white(0.13),
-                "transform": "translateY(-1px)",
+                "transform": "translateX(-3px)",
                 "box_shadow": "0 4px 16px rgba(0,0,0,0.35)",
             },
         ),
@@ -194,11 +192,11 @@ def _industry_row(industry: str) -> rx.Component:
         rx.badge(
             industry,
             variant="soft",
-            color_scheme="violet",
-            size="1",
+            color_scheme="gray",
+            size="2",
             style={
                 "border_radius": "5px",
-                "font_size": "10px",
+                "font_size": "11px",
                 "letter_spacing": "0.04em",
             },
         ),
@@ -211,6 +209,7 @@ def _industry_row(industry: str) -> rx.Component:
         background=white(0.012),
         position="sticky",
         left="0",
+        z_index="4",
         width="100%",
         min_width="max-content",
     )
@@ -225,14 +224,14 @@ def _header_metric_col(metric_key: str) -> rx.Component:
         rx.tooltip(
             rx.text(
                 TickersPageState.metric_labels[metric_key],
+                size="1",
+                weight="medium",
+                color=white(0.45),
                 style={
-                    **LABEL_STYLE,
                     "white_space": "nowrap",
                     "overflow": "hidden",
                     "text_overflow": "ellipsis",
                     "max_width": "100%",
-                    "font_size": "9px",
-                    "letter_spacing": "0.07em",
                 },
             ),
             content=TickersPageState.metric_labels[metric_key],
@@ -420,7 +419,10 @@ def compare_table() -> rx.Component:
                     rx.hstack(
                         rx.box(
                             rx.text(
-                                "SYMBOL", style={**LABEL_STYLE, "font_size": "9px"}
+                                "Symbol",
+                                size="1",
+                                weight="medium",
+                                color=white(0.45),
                             ),
                             width=_TICKER_W,
                             min_width=_TICKER_W,
