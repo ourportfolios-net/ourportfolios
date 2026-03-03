@@ -12,50 +12,14 @@ from ...styles import (
     BTN_PURPLE_SM,
     BTN_GHOST_SM,
     BTN_GHOST_XS,
+    BTN_SECONDARY,
+    CHIP_STYLE,
+    SEARCH_ICON_STYLE,
+    SEARCH_INPUT_STYLE,
+    MODAL_BG,
+    MODAL_PANEL_STYLE,
+    FLEX_COL_FILL,
 )
-
-
-# ── Shared button styles ──────────────────────────────────────────────────────
-
-BTN_ICON_SECONDARY = {
-    "background": white(0.05),
-    "border": f"1px solid {white(0.1)}",
-    "border_radius": "8px",
-    "color": white(0.6),
-    "font_weight": "500",
-    "font_size": "13px",
-    "cursor": "pointer",
-    "transition": "all 0.15s ease",
-    "_hover": {
-        "background": white(0.09),
-        "color": white(0.9),
-        "border_color": white(0.18),
-    },
-}
-
-BTN_VIEW_ACTIVE = {
-    **BTN_ICON_SECONDARY,
-    "background": white(0.09),
-    "color": white(0.9),
-    "font_weight": "600",
-}
-
-BTN_VIEW_INACTIVE = {
-    **BTN_ICON_SECONDARY,
-}
-
-_BTN_ICON_SECONDARY = BTN_ICON_SECONDARY
-_BTN_FILTER_ACTIVE = {
-    "background": purple(0.18),
-    "border": f"1px solid {purple(0.5)}",
-    "border_radius": "8px",
-    "color": TEXT_PURPLE,
-    "font_weight": "600",
-    "font_size": "13px",
-    "cursor": "pointer",
-    "transition": "all 0.15s ease",
-    "_hover": {"background": purple(0.28)},
-}
 
 
 # ── Filter sliders ────────────────────────────────────────────────────────────
@@ -246,25 +210,20 @@ def _filter_tabs() -> rx.Component:
         rx.tabs.content(
             _metrics_filter(option="F"),
             value="fundamental",
-            style={"flex": "1", "min_height": "0", "overflow": "hidden"},
+            style={**FLEX_COL_FILL, "overflow": "hidden"},
         ),
         rx.tabs.content(
             _categorical_filter(),
             value="categorical",
-            style={"flex": "1", "min_height": "0", "overflow": "auto"},
+            style={**FLEX_COL_FILL, "overflow": "auto"},
         ),
         rx.tabs.content(
             _metrics_filter(option="T"),
             value="technical",
-            style={"flex": "1", "min_height": "0", "overflow": "hidden"},
+            style={**FLEX_COL_FILL, "overflow": "hidden"},
         ),
         default_value="fundamental",
-        style={
-            "flex": "1",
-            "display": "flex",
-            "flex_direction": "column",
-            "min_height": "0",
-        },
+        style=FLEX_COL_FILL,
     )
 
 
@@ -290,23 +249,13 @@ def _selected_filter_chip(item: str, filter: str) -> rx.Component:
         spacing="2",
         align="center",
         padding="0 10px",
-        border_radius="6px",
-        background=white(0.05),
-        border=f"1px solid {white(0.1)}",
-        height="28px",
         flex_shrink="0",
-        transition="all 0.15s ease",
-        _hover={"background": white(0.09), "border_color": white(0.18)},
+        style=CHIP_STYLE,
     )
 
 
-_FILTER_BTN_CSS = f"""<style>
-.filter-btn-inactive:hover {{ background: {white(0.09)} !important; color: {white(0.9)} !important; border-color: {white(0.18)} !important; }}
-.filter-btn-active:hover {{ background: {purple(0.28)} !important; }}
-</style>"""
-
-
 def filter_button() -> rx.Component:
+    _active = TickersPageState.has_filter
     return rx.menu.root(
         rx.menu.trigger(
             rx.button(
@@ -317,22 +266,15 @@ def filter_button() -> rx.Component:
                     align="center",
                 ),
                 size="2",
-                class_name=rx.cond(
-                    TickersPageState.has_filter,
-                    "filter-btn-active",
-                    "filter-btn-inactive",
-                ),
-                background=rx.cond(
-                    TickersPageState.has_filter, purple(0.18), white(0.05)
-                ),
+                background=rx.cond(_active, purple(0.18), white(0.05)),
                 border=rx.cond(
-                    TickersPageState.has_filter,
+                    _active,
                     f"1px solid {purple(0.5)}",
                     f"1px solid {white(0.1)}",
                 ),
                 border_radius="8px",
-                color=rx.cond(TickersPageState.has_filter, TEXT_PURPLE, white(0.6)),
-                font_weight=rx.cond(TickersPageState.has_filter, "600", "500"),
+                color=rx.cond(_active, TEXT_PURPLE, white(0.6)),
+                font_weight=rx.cond(_active, "600", "500"),
                 font_size="13px",
                 cursor="pointer",
                 transition="all 0.15s ease",
@@ -342,7 +284,7 @@ def filter_button() -> rx.Component:
             rx.flex(
                 _filter_tabs(),
                 direction="column",
-                style={"flex": "1", "min_height": "0", "overflow": "hidden"},
+                style={**FLEX_COL_FILL, "overflow": "hidden"},
             ),
             rx.button(
                 "Apply filters",
@@ -361,8 +303,7 @@ def filter_button() -> rx.Component:
             height="30em",
             padding="0",
             style={
-                "background": "#111111",
-                "border": f"1px solid {white(0.08)}",
+                **MODAL_PANEL_STYLE,
                 "border_radius": "12px",
                 "position": "relative",
             },
@@ -389,7 +330,7 @@ def _sort_button() -> rx.Component:
                     align="center",
                 ),
                 size="2",
-                style=BTN_ICON_SECONDARY,
+                style=BTN_SECONDARY,
             ),
         ),
         rx.menu.content(
@@ -450,36 +391,13 @@ def _active_filter_chips() -> rx.Component:
 def board_toolbar() -> rx.Component:
     return rx.hstack(
         rx.box(
-            rx.icon(
-                "search",
-                size=14,
-                color="rgba(255,255,255,0.25)",
-                style={
-                    "position": "absolute",
-                    "left": "10px",
-                    "top": "50%",
-                    "transform": "translateY(-50%)",
-                    "pointer_events": "none",
-                },
-            ),
+            rx.icon("search", size=14, color=white(0.25), style=SEARCH_ICON_STYLE),
             rx.input(
                 placeholder="Search for a ticker...",
                 value=TickersPageState.search_query,
                 on_change=TickersPageState.set_search_query,
                 size="2",
-                style={
-                    "background": "rgba(255,255,255,0.04)",
-                    "border": "1px solid rgba(255,255,255,0.08)",
-                    "border_radius": "8px",
-                    "color": "white",
-                    "padding_left": "2rem",
-                    "width": "280px",
-                    "_placeholder": {"color": "rgba(255,255,255,0.22)"},
-                    "_focus": {
-                        "border_color": "rgba(139,92,246,0.4)",
-                        "outline": "none",
-                    },
-                },
+                style=SEARCH_INPUT_STYLE,
             ),
             position="relative",
             display="flex",
@@ -500,7 +418,6 @@ def board_toolbar() -> rx.Component:
             ),
             rx.fragment(),
         ),
-        rx.html(_FILTER_BTN_CSS),
         rx.spacer(),
         _sort_button(),
         filter_button(),
@@ -534,7 +451,7 @@ def _compare_search_suggestion(ticker_value: dict) -> rx.Component:
                     SearchBarState.clear_comparison_search(),
                 ],
                 size="1",
-                style=BTN_ICON_SECONDARY,
+                style=BTN_SECONDARY,
             ),
             align="center",
             width="100%",
@@ -554,18 +471,7 @@ def _compare_search_bar() -> rx.Component:
     return rx.box(
         rx.vstack(
             rx.box(
-                rx.icon(
-                    "search",
-                    size=14,
-                    color="rgba(255,255,255,0.25)",
-                    style={
-                        "position": "absolute",
-                        "left": "10px",
-                        "top": "50%",
-                        "transform": "translateY(-50%)",
-                        "pointer_events": "none",
-                    },
-                ),
+                rx.icon("search", size=14, color=white(0.25), style=SEARCH_ICON_STYLE),
                 rx.input(
                     placeholder="Add tickers to compare...",
                     value=SearchBarState.comparison_search_query,
@@ -573,19 +479,7 @@ def _compare_search_bar() -> rx.Component:
                     on_blur=SearchBarState.blur_comparison_search,
                     on_focus=SearchBarState.focus_comparison_search,
                     size="2",
-                    style={
-                        "background": "rgba(255,255,255,0.04)",
-                        "border": "1px solid rgba(255,255,255,0.08)",
-                        "border_radius": "8px",
-                        "color": "white",
-                        "padding_left": "2rem",
-                        "width": "280px",
-                        "_placeholder": {"color": "rgba(255,255,255,0.22)"},
-                        "_focus": {
-                            "border_color": "rgba(139,92,246,0.4)",
-                            "outline": "none",
-                        },
-                    },
+                    style=SEARCH_INPUT_STYLE,
                 ),
                 position="relative",
                 display="flex",
@@ -610,7 +504,7 @@ def _compare_search_bar() -> rx.Component:
                     z_index="200",
                     border_radius="10px",
                     border=f"1px solid {white(0.08)}",
-                    background="#111111",
+                    background=MODAL_BG,
                     overflow="hidden",
                     box_shadow="0 8px 32px rgba(0,0,0,0.6)",
                     min_width="280px",
@@ -688,7 +582,7 @@ def _metrics_settings_dialog() -> rx.Component:
             rx.button(
                 rx.icon("settings-2", size=14),
                 size="2",
-                style=BTN_ICON_SECONDARY,
+                style=BTN_SECONDARY,
             )
         ),
         rx.dialog.content(
@@ -789,11 +683,7 @@ def _metrics_settings_dialog() -> rx.Component:
             ),
             width="82vw",
             max_width="1600px",
-            style={
-                "background": "#111111",
-                "border": f"1px solid {white(0.08)}",
-                "border_radius": "14px",
-            },
+            style=MODAL_PANEL_STYLE,
         ),
         open=TickersPageState.metrics_dialog_open,
         on_open_change=TickersPageState.handle_metrics_dialog_change,
@@ -818,7 +708,7 @@ def compare_toolbar() -> rx.Component:
             ),
             on_click=TickersPageState.toggle_graphs,
             size="2",
-            style=BTN_ICON_SECONDARY,
+            style=BTN_SECONDARY,
         ),
         _metrics_settings_dialog(),
         flex="1",

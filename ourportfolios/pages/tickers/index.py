@@ -5,7 +5,12 @@ import reflex as rx
 from ...components.navbar import navbar
 from ...components.drawer import drawer_button
 from ...components.breadcrumb import breadcrumb
-from ...styles import white
+from ...styles import (
+    white,
+    DIVIDER,
+    PAGE_BG,
+    overlay_style,
+)
 
 from .state import TickersPageState
 from .controls import board_toolbar, compare_toolbar
@@ -13,60 +18,39 @@ from .compare_table import compare_table, empty_compare_state
 from .ticker_board import new_ticker_board
 
 
+# ── View toggle ────────────────────────────────────────────────────────────────
+
+
+def _toggle_btn(label: str, icon_name: str, mode: str) -> rx.Component:
+    is_active = TickersPageState.view_mode == mode
+    return rx.button(
+        rx.hstack(
+            rx.icon(icon_name, size=13),
+            rx.text(label),
+            spacing="2",
+            align="center",
+        ),
+        on_click=TickersPageState.set_view_mode(mode),
+        size="2",
+        background=rx.cond(is_active, white(0.09), white(0.05)),
+        border=rx.cond(
+            is_active,
+            f"1px solid {white(0.18)}",
+            f"1px solid {white(0.1)}",
+        ),
+        color=rx.cond(is_active, white(0.9), white(0.6)),
+        font_weight=rx.cond(is_active, "600", "500"),
+        font_size="13px",
+        border_radius="8px",
+        cursor="pointer",
+        transition="all 0.15s ease",
+    )
+
+
 def view_toggle():
     return rx.hstack(
-        rx.button(
-            rx.hstack(
-                rx.icon("layout-grid", size=13),
-                rx.text("Board"),
-                spacing="2",
-                align="center",
-            ),
-            on_click=TickersPageState.set_view_mode("board"),
-            size="2",
-            background=rx.cond(
-                TickersPageState.view_mode == "board", white(0.09), white(0.05)
-            ),
-            border=rx.cond(
-                TickersPageState.view_mode == "board",
-                f"1px solid {white(0.18)}",
-                f"1px solid {white(0.1)}",
-            ),
-            color=rx.cond(
-                TickersPageState.view_mode == "board", white(0.9), white(0.6)
-            ),
-            font_weight=rx.cond(TickersPageState.view_mode == "board", "600", "500"),
-            font_size="13px",
-            border_radius="8px",
-            cursor="pointer",
-            transition="all 0.15s ease",
-        ),
-        rx.button(
-            rx.hstack(
-                rx.icon("bar-chart-2", size=13),
-                rx.text("Compare"),
-                spacing="2",
-                align="center",
-            ),
-            on_click=TickersPageState.set_view_mode("compare"),
-            size="2",
-            background=rx.cond(
-                TickersPageState.view_mode == "compare", white(0.09), white(0.05)
-            ),
-            border=rx.cond(
-                TickersPageState.view_mode == "compare",
-                f"1px solid {white(0.18)}",
-                f"1px solid {white(0.1)}",
-            ),
-            color=rx.cond(
-                TickersPageState.view_mode == "compare", white(0.9), white(0.6)
-            ),
-            font_weight=rx.cond(TickersPageState.view_mode == "compare", "600", "500"),
-            font_size="13px",
-            border_radius="8px",
-            cursor="pointer",
-            transition="all 0.15s ease",
-        ),
+        _toggle_btn("Board", "layout-grid", "board"),
+        _toggle_btn("Compare", "bar-chart-2", "compare"),
         spacing="2",
         flex_shrink="0",
     )
@@ -98,37 +82,11 @@ def page_header():
 
 
 def toolbar_row():
+    _is_board = TickersPageState.view_mode == "board"
+    _is_compare = TickersPageState.view_mode == "compare"
     return rx.hstack(
-        rx.box(
-            board_toolbar(),
-            style={
-                "flex": "1",
-                "opacity": rx.cond(TickersPageState.view_mode == "board", "1", "0"),
-                "pointer_events": rx.cond(
-                    TickersPageState.view_mode == "board", "auto", "none"
-                ),
-                "transition": "opacity 0.15s ease",
-                "position": "absolute",
-                "left": "0",
-                "top": "0",
-                "right": "0",
-            },
-        ),
-        rx.box(
-            compare_toolbar(),
-            style={
-                "flex": "1",
-                "opacity": rx.cond(TickersPageState.view_mode == "compare", "1", "0"),
-                "pointer_events": rx.cond(
-                    TickersPageState.view_mode == "compare", "auto", "none"
-                ),
-                "transition": "opacity 0.15s ease",
-                "position": "absolute",
-                "left": "0",
-                "top": "0",
-                "right": "0",
-            },
-        ),
+        rx.box(board_toolbar(), style=overlay_style(_is_board)),
+        rx.box(compare_toolbar(), style=overlay_style(_is_compare)),
         rx.box(height="34px", flex="1"),
         width="100%",
         align="center",
@@ -137,34 +95,17 @@ def toolbar_row():
 
 
 def content_area():
+    _is_board = TickersPageState.view_mode == "board"
+    _is_compare = TickersPageState.view_mode == "compare"
     return rx.box(
-        rx.box(
-            new_ticker_board(),
-            style={
-                "opacity": rx.cond(TickersPageState.view_mode == "board", "1", "0"),
-                "pointer_events": rx.cond(
-                    TickersPageState.view_mode == "board", "auto", "none"
-                ),
-                "transition": "opacity 0.15s ease",
-                "position": "absolute",
-                "inset": "0",
-            },
-        ),
+        rx.box(new_ticker_board(), style=overlay_style(_is_board)),
         rx.box(
             rx.cond(
                 TickersPageState.compare_list.length() > 0,
                 compare_table(),
                 empty_compare_state(),
             ),
-            style={
-                "opacity": rx.cond(TickersPageState.view_mode == "compare", "1", "0"),
-                "pointer_events": rx.cond(
-                    TickersPageState.view_mode == "compare", "auto", "none"
-                ),
-                "transition": "opacity 0.15s ease",
-                "position": "absolute",
-                "inset": "0",
-            },
+            style=overlay_style(_is_compare),
         ),
         position="relative",
         width="100%",
@@ -176,7 +117,7 @@ def content_area():
 def main_content():
     return rx.vstack(
         page_header(),
-        rx.box(height="1px", width="100%", background=white(0.06)),
+        rx.box(height="1px", width="100%", background=DIVIDER),
         toolbar_row(),
         content_area(),
         spacing="4",
@@ -202,7 +143,7 @@ def index():
         ),
         drawer_button(),
         on_unmount=TickersPageState.on_unmount,
-        background="#090909",
+        background=PAGE_BG,
         color="white",
         min_height="100vh",
         width="100%",

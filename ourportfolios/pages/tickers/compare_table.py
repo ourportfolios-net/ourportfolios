@@ -10,17 +10,20 @@ from ...styles import (
     TOOLTIP_CONTENT_STYLE,
     TOOLTIP_WRAPPER_STYLE,
     TEXT_TERTIARY,
+    TEXT_TRUNCATE,
+    TABLE_BG,
+    CARD_BORDER,
 )
 
-# ── Layout constants ───────────────────────────────────────────────────────────
+# ── Layout constants ───────────────────────────────────────────────────────────────────────
 _TICKER_W = "11em"
 _METRIC_W_GRAPH = "10em"
 _METRIC_W_SIMPLE = "6.5em"
 _ROW_H_GRAPH = "4.6em"
 _ROW_H_SIMPLE = "3.8em"
 _HEADER_H = "2.5em"
-_TABLE_BG = "#0d0d0d"
-_STICKY_BG = "#0d0d0d"
+_CELL_BORDER = f"1px solid {white(0.04)}"
+_STICKY_BORDER = f"1px solid {white(0.06)}"
 
 
 # ── Sparkline ─────────────────────────────────────────────────────────────────
@@ -119,11 +122,9 @@ def _ticker_card(stock: dict) -> rx.Component:
                             company_name,
                             color=TEXT_TERTIARY,
                             style={
+                                **TEXT_TRUNCATE,
                                 "font_size": "10px",
                                 "line_height": "1.3",
-                                "white_space": "nowrap",
-                                "overflow": "hidden",
-                                "text_overflow": "ellipsis",
                                 "max_width": "7em",
                             },
                         ),
@@ -175,12 +176,12 @@ def _ticker_card(stock: dict) -> rx.Component:
         padding_x="0.5em",
         display="flex",
         align_items="center",
-        border_right=f"1px solid {white(0.06)}",
+        border_right=_STICKY_BORDER,
         flex_shrink="0",
         position="sticky",
         left="0",
         z_index="2",
-        background=_STICKY_BG,
+        background=TABLE_BG,
     )
 
 
@@ -205,7 +206,7 @@ def _industry_row(industry: str) -> rx.Component:
         display="flex",
         align_items="center",
         padding_left="0.85em",
-        border_bottom=f"1px solid {white(0.04)}",
+        border_bottom=_CELL_BORDER,
         background=white(0.012),
         position="sticky",
         left="0",
@@ -227,12 +228,7 @@ def _header_metric_col(metric_key: str) -> rx.Component:
                 size="1",
                 weight="medium",
                 color=white(0.45),
-                style={
-                    "white_space": "nowrap",
-                    "overflow": "hidden",
-                    "text_overflow": "ellipsis",
-                    "max_width": "100%",
-                },
+                style={**TEXT_TRUNCATE, "max_width": "100%"},
             ),
             content=TickersPageState.metric_labels[metric_key],
         ),
@@ -243,8 +239,8 @@ def _header_metric_col(metric_key: str) -> rx.Component:
         align_items="center",
         justify_content="center",
         padding_x="0.5em",
-        border_right=f"1px solid {white(0.04)}",
-        border_bottom=f"1px solid {white(0.06)}",
+        border_right=_CELL_BORDER,
+        border_bottom=_STICKY_BORDER,
         flex_shrink="0",
     )
 
@@ -280,7 +276,7 @@ def _skeleton_metric_cell() -> rx.Component:
         min_width=w,
         height=row_h,
         padding_x="0.5em",
-        border_right=f"1px solid {white(0.04)}",
+        border_right=_CELL_BORDER,
         display="flex",
         align_items="center",
         justify_content="center",
@@ -335,12 +331,12 @@ def _skeleton_row(ticker: str) -> rx.Component:
             padding_x="0.5em",
             display="flex",
             align_items="center",
-            border_right=f"1px solid {white(0.06)}",
+            border_right=_STICKY_BORDER,
             flex_shrink="0",
             position="sticky",
             left="0",
             z_index="2",
-            background=_STICKY_BG,
+            background=TABLE_BG,
         ),
         # One skeleton cell per selected metric
         rx.foreach(
@@ -349,7 +345,7 @@ def _skeleton_row(ticker: str) -> rx.Component:
         ),
         spacing="0",
         align="center",
-        border_bottom=f"1px solid {white(0.04)}",
+        border_bottom=_CELL_BORDER,
         width="max-content",
         min_width="100%",
         style={"flex_wrap": "nowrap"},
@@ -431,13 +427,13 @@ def compare_table() -> rx.Component:
                             display="flex",
                             align_items="center",
                             padding_left="0.85em",
-                            border_right=f"1px solid {white(0.06)}",
-                            border_bottom=f"1px solid {white(0.06)}",
+                            border_right=_STICKY_BORDER,
+                            border_bottom=_STICKY_BORDER,
                             flex_shrink="0",
                             position="sticky",
                             left="0",
                             z_index="3",
-                            background=_STICKY_BG,
+                            background=TABLE_BG,
                         ),
                         rx.foreach(
                             TickersPageState.selected_metrics,
@@ -450,7 +446,7 @@ def compare_table() -> rx.Component:
                         position="sticky",
                         top="0",
                         z_index="2",
-                        background=_TABLE_BG,
+                        background=TABLE_BG,
                     ),
                     # Industry groups + rows
                     rx.foreach(
@@ -469,7 +465,7 @@ def compare_table() -> rx.Component:
                                     ),
                                     spacing="0",
                                     align="center",
-                                    border_bottom=f"1px solid {white(0.04)}",
+                                    border_bottom=_CELL_BORDER,
                                     width="max-content",
                                     min_width="100%",
                                     style={
@@ -502,7 +498,7 @@ def compare_table() -> rx.Component:
         width="100%",
         border_radius="14px",
         border=f"1px solid {white(0.07)}",
-        background=_TABLE_BG,
+        background=TABLE_BG,
         overflow="hidden",
     )
 
