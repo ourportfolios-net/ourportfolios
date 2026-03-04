@@ -23,8 +23,8 @@ class HomeState(rx.State):
     ]
 
     vnindex_chart_data: list[dict] = []
-    vnindex_value: str = "Loading..."
-    vnindex_change: str = "..."
+    vnindex_value: str = ""
+    vnindex_change: str = ""
     vnindex_is_positive: bool = True
 
     _base_portfolio_value: float = 142590.22
@@ -159,7 +159,7 @@ class HomeState(rx.State):
     @rx.event
     def navigate_to_ticker_of_day(self):
         if self.ticker_of_day_symbol and self.ticker_of_day_symbol != "N/A":
-            return rx.redirect(f"/analyze/{self.ticker_of_day_symbol}")
+            return rx.redirect(f"/tickers/{self.ticker_of_day_symbol}")
 
     @rx.event
     def start_framework_hover(self) -> None:
@@ -253,7 +253,7 @@ class HomeState(rx.State):
 
     @rx.event
     def handle_compare(self):
-        return rx.redirect("/analyze/compare")
+        return rx.redirect("/tickers")
 
     @rx.event
     def handle_portfolio(self):

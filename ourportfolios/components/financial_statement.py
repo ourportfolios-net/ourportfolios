@@ -13,12 +13,12 @@ def financial_statements(df_list, show_skeleton=False):
             rx.box(
                 preview_table(tbl, i, show_skeleton),
                 expanded_dialog(tbl, i),
-                style={"minWidth": "0"},
+                min_width="0",
             )
             for i, tbl in enumerate(df_list)
         ],
         spacing="4",
-        style={"minWidth": "0"},
+        min_width="0",
     )
 
 
@@ -56,28 +56,20 @@ def preview_table(data, idx, show_skeleton=False):
             rx.icon(
                 "maximize",
                 on_click=lambda: FinancialStatementState.expand(idx),
-                style={
-                    "cursor": rx.cond(show_skeleton, "not-allowed", "pointer"),
-                    "userSelect": "none",
-                    "color": rx.cond(
-                        show_skeleton, rx.color("gray", 6), rx.color("accent", 10)
-                    ),
-                    "opacity": rx.cond(show_skeleton, "0.5", "1"),
-                    "pointerEvents": rx.cond(show_skeleton, "none", "auto"),
-                },
+                cursor=rx.cond(show_skeleton, "not-allowed", "pointer"),
+                user_select="none",
+                color=rx.color("gray", 10),
+                opacity=rx.cond(show_skeleton, "0.5", "1"),
+                pointer_events=rx.cond(show_skeleton, "none", "auto"),
             ),
             rx.icon(
                 "download",
                 on_click=lambda: FinancialStatementState.download_table_csv(data, idx),
-                style={
-                    "cursor": rx.cond(show_skeleton, "not-allowed", "pointer"),
-                    "userSelect": "none",
-                    "color": rx.cond(
-                        show_skeleton, rx.color("gray", 6), rx.color("accent", 10)
-                    ),
-                    "opacity": rx.cond(show_skeleton, "0.5", "1"),
-                    "pointerEvents": rx.cond(show_skeleton, "none", "auto"),
-                },
+                cursor=rx.cond(show_skeleton, "not-allowed", "pointer"),
+                user_select="none",
+                color=rx.color("gray", 10),
+                opacity=rx.cond(show_skeleton, "0.5", "1"),
+                pointer_events=rx.cond(show_skeleton, "none", "auto"),
             ),
             spacing="2",
         ),
@@ -114,20 +106,16 @@ def preview_table(data, idx, show_skeleton=False):
                     ),
                     size="1",
                     variant="surface",
-                    style={
-                        "minWidth": "max-content",
-                        "width": "auto",
-                        "display": "table",
-                    },
+                    min_width="max-content",
+                    width="auto",
+                    display="table",
                 ),
                 scrollbars="horizontal",
                 type="hover",
-                style={
-                    "height": "auto",
-                    "maxWidth": "43em",
-                    "position": "relative",
-                    "display": "block",
-                },
+                height="auto",
+                max_width="43em",
+                position="relative",
+                display="block",
             ),
             rx.text("No data available"),
         )
@@ -137,7 +125,8 @@ def preview_table(data, idx, show_skeleton=False):
             header,
             table_content,
             spacing="4",
-            style={"width": "100%", "alignItems": "center"},
+            width="100%",
+            align_items="center",
         ),
         width="100%",
     )
@@ -178,12 +167,10 @@ def expanded_dialog(data, idx):
                 ),
                 size="2",
                 variant="surface",
-                style={"fontSize": "12px"},
+                font_size="12px",
             ),
-            style={
-                "height": "67vh",
-                "width": "90vw",
-            },
+            height="67vh",
+            width="90vw",
             scrollbars="both",
         ),
         width="100%",

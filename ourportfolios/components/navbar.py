@@ -113,9 +113,9 @@ def _analyze_dropdown() -> rx.Component:
         ),
         _dropdown_item(
             icon="git-compare-arrows",
-            label="Compare Tickers",
+            label="Individual Tickers",
             description="Side-by-side ticker comparison",
-            href="/analyze/compare",
+            href="/tickers",
         ),
         spacing="1",
         width="280px",

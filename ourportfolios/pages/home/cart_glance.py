@@ -12,7 +12,7 @@ def _cart_item_row(item: dict, index: int) -> rx.Component:
             rx.hstack(
                 rx.link(
                     rx.text(item["name"], size="4", weight="medium"),
-                    href=f"/analyze/{item['name']}",
+                    href=f"/tickers/{item['name']}",
                     underline="none",
                 ),
                 rx.badge(item.get("industry", "Unknown"), size="1"),
@@ -24,11 +24,9 @@ def _cart_item_row(item: dict, index: int) -> rx.Component:
                 color_scheme="ruby",
                 size="1",
                 variant="soft",
-                style={
-                    "fontWeight": "medium",
-                    "padding": "0.3em 0.7em",
-                    "fontSize": "0.9em",
-                },
+                font_weight="medium",
+                padding="0.3em 0.7em",
+                font_size="0.9em",
                 on_click=lambda: CartState.remove_item(index),
             ),
             align_items="center",
@@ -61,10 +59,8 @@ def cart_glance_panel() -> rx.Component:
                     width="100%",
                     max_height="400px",
                     overflow_y="auto",
-                    style={
-                        "scrollbarWidth": "thin",
-                        "scrollbarColor": f"{white(0.1)} transparent",
-                    },
+                    scrollbar_width="thin",
+                    scrollbar_color=f"{white(0.1)} transparent",
                 ),
                 rx.box(
                     rx.vstack(

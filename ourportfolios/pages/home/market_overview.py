@@ -1,188 +1,470 @@
 import reflex as rx
+
 from ...state.home_state import HomeState
+from ...state.heatmap import HeatmapState, HeatmapTile, HeatmapChip, TickerSubtile
 from ...components.cards import glass_card
-from ...styles import white, green
+from ...styles import (
+    white,
+    purple,
+    CARD_BG,
+    CARD_BORDER,
+    TEXT_PRIMARY,
+    TEXT_TERTIARY,
+    accent_btn,
+)
+
+_TREEMAP_H = "620px"
+
+_TILE_BG = "rgba(255, 255, 255, 0.03)"
+_TILE_BORDER = "1px solid rgba(255, 255, 255, 0.07)"
+_TILE_HOVER_BORDER = "rgba(255, 255, 255, 0.20)"
+_SUBTILE_BORDER = "rgba(255, 255, 255, 0.05)"
 
 
-def vnindex_mini_chart():
-    return rx.cond(
-        HomeState.vnindex_chart_data,
-        rx.recharts.area_chart(
-            rx.recharts.area(
-                data_key="normalized_close",
-                stroke=rx.color("accent", 9),
-                fill=rx.color("accent", 3),
-                stroke_width=2,
-            ),
-            rx.recharts.x_axis(data_key="name", hide=True),
-            rx.recharts.y_axis(domain=[0, 1], hide=True),
-            data=HomeState.vnindex_chart_data,
-            width=100,
-            height=50,
-        ),
-        rx.box(width="100px", height="50px"),
-    )
-
-
-def _time_btn(label: str, active: bool = False) -> rx.Component:
+def _period_btn(label: str) -> rx.Component:
+    active = HeatmapState.selected_period == label
     return rx.box(
         rx.text(
             label,
-            font_size="11px",
-            font_weight="500",
-            color="white" if active else white(0.4),
-        ),
-        padding="0.25rem 0.625rem",
-        border_radius="4px",
-        background=white(0.1) if active else "transparent",
-        cursor="pointer",
-        _hover={"background": white(0.06)} if not active else {},
-        transition="background 0.15s ease",
-    )
-
-
-def _sector_card(name: str, value: str, is_positive: bool = True) -> rx.Component:
-    color = "var(--green-9)" if is_positive else "var(--red-9)"
-    bar_bg = green(0.4) if is_positive else "rgba(239, 68, 68, 0.4)"
-    bar_bg2 = green(0.15) if is_positive else "rgba(239, 68, 68, 0.15)"
-    return rx.box(
-        rx.vstack(
-            rx.text(
-                name,
-                font_size="10px",
-                font_weight="500",
-                letter_spacing="0.04em",
-                color=color,
-            ),
-            rx.box(
-                rx.box(
-                    width="100%",
-                    height="100%",
-                    background=f"linear-gradient(180deg, {bar_bg} 0%, {bar_bg2} 100%)",
-                    border_radius="4px",
-                ),
-                width="100%",
-                height="50px",
-                border_radius="4px",
-                overflow="hidden",
-            ),
-            rx.text(value, font_size="12px", font_weight="600", color="white"),
-            spacing="1",
-            align="center",
-            width="100%",
-        ),
-        padding="0.5rem",
-        border_radius="8px",
-        background=white(0.03),
-        border=f"1px solid {white(0.06)}",
-        flex="1",
-        min_width="70px",
-    )
-
-
-def _sector_chip(name: str, value: str, is_positive: bool = True) -> rx.Component:
-    return rx.hstack(
-        rx.text(name, font_size="10px", font_weight="500", color=white(0.5)),
-        rx.badge(
-            value,
-            color_scheme="green" if is_positive else "red",
             size="1",
-            font_weight="600",
+            weight="medium",
+            color=rx.cond(active, TEXT_PRIMARY, TEXT_TERTIARY),
         ),
-        spacing="2",
-        align="center",
+        padding="0.18rem 0.5rem",
+        border_radius="5px",
+        background=rx.cond(active, white(0.09), "transparent"),
+        cursor="pointer",
+        on_click=HeatmapState.set_period(label),
+        _hover={"background": white(0.05)},
+        transition="background 0.12s ease",
     )
 
 
-def market_overview_section():
-    return glass_card(
-        rx.vstack(
-            rx.hstack(
+def _skel(w: str = "100%", h: str = "12px", r: str = "6px") -> rx.Component:
+    return rx.skeleton(rx.box(width=w, height=h), loading=True, border_radius=r)
+
+
+def vnindex_card() -> rx.Component:
+    _shell = dict(
+        padding="0.875rem 1rem",
+        border_radius="10px",
+        background=CARD_BG,
+        border=CARD_BORDER,
+        width="100%",
+        box_sizing="border-box",
+    )
+    return rx.cond(
+        HomeState.vnindex_value,
+        rx.box(
+            rx.vstack(
+                rx.text("VNIndex", size="1", weight="medium", color=TEXT_TERTIARY),
                 rx.hstack(
-                    rx.box(
-                        width="6px",
-                        height="6px",
-                        border_radius="50%",
-                        background=rx.color("accent", 9),
-                    ),
-                    rx.text(
-                        "MARKET OVERVIEW",
-                        font_size="10px",
-                        font_weight="500",
-                        letter_spacing="0.08em",
-                        color=white(0.5),
-                    ),
-                    spacing="2",
-                    align="center",
-                ),
-                rx.spacer(),
-                rx.hstack(
-                    _time_btn("1D", active=True),
-                    _time_btn("1W"),
-                    _time_btn("1M"),
-                    _time_btn("1Y"),
-                    spacing="1",
-                    align="center",
-                    padding="0.125rem",
-                    border_radius="6px",
-                    background=white(0.03),
-                ),
-                width="100%",
-                align="center",
-            ),
-            rx.hstack(
-                rx.hstack(
-                    rx.hstack(
-                        rx.vstack(
-                            rx.text(
-                                "VNIndex",
-                                font_size="12px",
-                                font_weight="500",
-                                color=white(0.5),
-                            ),
-                            rx.text(
-                                HomeState.vnindex_value,
-                                font_size="20px",
-                                font_weight="700",
-                                color="white",
-                            ),
-                            spacing="0",
-                            align="start",
+                    rx.vstack(
+                        rx.text(
+                            HomeState.vnindex_value,
+                            size="6",
+                            weight="bold",
+                            color=TEXT_PRIMARY,
+                            letter_spacing="-0.02em",
+                            line_height="1",
                         ),
                         rx.badge(
                             HomeState.vnindex_change,
                             color_scheme=rx.cond(
                                 HomeState.vnindex_is_positive, "green", "red"
                             ),
+                            variant="soft",
                             size="1",
-                            font_weight="600",
                         ),
-                        spacing="3",
-                        align="end",
-                    ),
-                    vnindex_mini_chart(),
-                    spacing="4",
-                    align="center",
-                ),
-                rx.hstack(
-                    _sector_card("BANKS", "+2.4%", is_positive=True),
-                    _sector_card("REAL EST", "-0.8%", is_positive=False),
-                    rx.vstack(
-                        _sector_chip("TECH", "+1.1%", is_positive=True),
-                        _sector_chip("RETAIL", "0.0%", is_positive=True),
                         spacing="2",
+                        align="start",
+                        flex_shrink="0",
+                    ),
+                    rx.recharts.area_chart(
+                        rx.recharts.area(
+                            data_key="normalized_close",
+                            stroke=purple(0.85),
+                            fill=purple(0.12),
+                            stroke_width=1.8,
+                            dot=False,
+                            active_dot={"r": 4, "fill": purple(1.0), "strokeWidth": 0},
+                            is_animation_active=False,
+                        ),
+                        rx.recharts.x_axis(data_key="name", hide=True),
+                        rx.recharts.y_axis(domain=[0, 1], hide=True),
+                        data=HomeState.vnindex_chart_data,
+                        width=140,
+                        height=70,
+                        margin={"top": 8, "right": 8, "bottom": 8, "left": 4},
                     ),
                     spacing="3",
-                    align="stretch",
+                    align="center",
+                    width="100%",
                     flex="1",
                 ),
-                spacing="6",
+                spacing="2",
+                align="start",
+                width="100%",
+                height="100%",
+            ),
+            **_shell,
+        ),
+        # Skeleton
+        rx.box(
+            rx.vstack(
+                _skel("52px", "10px"),
+                rx.hstack(
+                    rx.vstack(
+                        _skel("88px", "28px", "6px"),
+                        _skel("56px", "18px", "8px"),
+                        spacing="2",
+                    ),
+                    _skel("140px", "70px", "6px"),
+                    spacing="3",
+                    align="center",
+                    width="100%",
+                ),
+                spacing="2",
+                align="start",
+                width="100%",
+            ),
+            **_shell,
+        ),
+    )
+
+
+# ── Ticker subtile ──────────────────────────────────────────────────────────────
+# Hover: brightness only — no bg or border change.
+# This gives a clean "lit up" feel without altering the color meaning.
+
+
+def _ticker_content(t: TickerSubtile) -> rx.Component:
+    return rx.cond(
+        t.size == "xl",
+        rx.vstack(
+            rx.text(
+                t.symbol,
+                size="5",
+                weight="bold",
+                color=white(0.95),
+                text_align="center",
+            ),
+            rx.badge(
+                t.pct_label, color_scheme=t.pct_color_scheme, variant="soft", size="1"
+            ),
+            spacing="1",
+            align="center",
+        ),
+        rx.cond(
+            t.size == "large",
+            rx.vstack(
+                rx.text(
+                    t.symbol,
+                    size="3",
+                    weight="bold",
+                    color=white(0.92),
+                    text_align="center",
+                ),
+                rx.badge(
+                    t.pct_label,
+                    color_scheme=t.pct_color_scheme,
+                    variant="soft",
+                    size="1",
+                ),
+                spacing="1",
+                align="center",
+            ),
+            rx.cond(
+                t.size == "medium",
+                rx.vstack(
+                    rx.text(
+                        t.symbol,
+                        size="2",
+                        weight="medium",
+                        color=white(0.88),
+                        text_align="center",
+                    ),
+                    rx.badge(
+                        t.pct_label,
+                        color_scheme=t.pct_color_scheme,
+                        variant="soft",
+                        size="1",
+                    ),
+                    spacing="0",
+                    align="center",
+                ),
+                rx.vstack(
+                    rx.text(
+                        t.symbol,
+                        size="1",
+                        weight="medium",
+                        color=white(0.80),
+                        text_align="center",
+                    ),
+                    rx.badge(
+                        t.pct_label,
+                        color_scheme=t.pct_color_scheme,
+                        variant="soft",
+                        size="1",
+                    ),
+                    spacing="0",
+                    align="center",
+                ),
+            ),
+        ),
+    )
+
+
+def _ticker_subtile(t: TickerSubtile) -> rx.Component:
+    return rx.link(
+        rx.box(
+            _ticker_content(t),
+            width="100%",
+            height="100%",
+            display="flex",
+            align_items="center",
+            justify_content="center",
+            overflow="hidden",
+            background=t.bg,
+            border_radius="6px",
+            border=f"1px solid {_SUBTILE_BORDER}",
+            transition="filter 0.12s ease",
+            # Brightness-only hover — highlights without changing color meaning
+            _hover={"filter": "brightness(1.22)"},
+        ),
+        href=t.url,
+        position="absolute",
+        left=f"calc({t.x}% + 3px)",
+        top=f"calc({t.y}% + 3px)",
+        width=f"calc({t.w}% - 6px)",
+        height=f"calc({t.h}% - 6px)",
+        z_index="2",
+        text_decoration="none",
+    )
+
+
+# ── Industry tile ──────────────────────────────────────────────────────────────
+# Hover: border brightens sharply + inset ring. No movement, no bg change.
+
+
+def _industry_tile(tile: HeatmapTile) -> rx.Component:
+    return rx.box(
+        rx.link(
+            rx.hstack(
+                rx.text(
+                    tile.name,
+                    size="1",
+                    weight="bold",
+                    color=white(0.85),
+                    white_space="nowrap",
+                    overflow="hidden",
+                    text_overflow="ellipsis",
+                ),
+                rx.badge(
+                    tile.pct_label,
+                    color_scheme=tile.pct_color_scheme,
+                    variant="soft",
+                    size="1",
+                    flex_shrink="0",
+                ),
+                spacing="2",
+                align="center",
+                overflow="hidden",
+                max_width="100%",
+            ),
+            href=tile.url,
+            text_decoration="none",
+            position="absolute",
+            top="0",
+            left="0",
+            right="0",
+            height="30px",
+            display="flex",
+            align_items="center",
+            padding="0 10px",
+            z_index="10",
+            border_bottom=f"1px solid {_SUBTILE_BORDER}",
+            border_radius="12px 12px 0 0",
+        ),
+        rx.foreach(tile.tickers, _ticker_subtile),
+        position="absolute",
+        left=f"calc({tile.x}% + 4px)",
+        top=f"calc({tile.y}% + 4px)",
+        width=f"calc({tile.w}% - 8px)",
+        height=f"calc({tile.h}% - 8px)",
+        border_radius="12px",
+        border=_TILE_BORDER,
+        background=tile.bg,
+        overflow="hidden",
+        cursor="pointer",
+        transition="border-color 0.15s ease, box-shadow 0.15s ease",
+        _hover={
+            "border_color": _TILE_HOVER_BORDER,
+            "box_shadow": f"inset 0 0 0 1px {white(0.10)}, 0 4px 20px rgba(0,0,0,0.28)",
+        },
+    )
+
+
+# ── Chip row ──────────────────────────────────────────────────────────────────
+
+
+def _chip(c: HeatmapChip) -> rx.Component:
+    return rx.link(
+        rx.hstack(
+            rx.text(
+                c.name,
+                size="1",
+                weight="medium",
+                color=white(0.55),
+                white_space="nowrap",
+            ),
+            rx.badge(
+                c.pct_label,
+                color_scheme=c.pct_color_scheme,
+                variant="soft",
+                size="1",
+                flex_shrink="0",
+            ),
+            spacing="2",
+            align="center",
+        ),
+        href=c.url,
+        padding="0.2rem 0.6rem",
+        border_radius="6px",
+        background=_TILE_BG,
+        border=_TILE_BORDER,
+        flex_shrink="0",
+        text_decoration="none",
+        transition="border-color 0.12s ease",
+        _hover={"border_color": _TILE_HOVER_BORDER},
+        display="inline-flex",
+    )
+
+
+def _chip_row() -> rx.Component:
+    return rx.cond(
+        HeatmapState.chips,
+        rx.box(
+            rx.hstack(
+                rx.foreach(HeatmapState.chips, _chip),
+                spacing="2",
+                wrap="wrap",
+            ),
+            padding_top="0.625rem",
+            width="100%",
+        ),
+        rx.box(),
+    )
+
+
+def _treemap_skeleton() -> rx.Component:
+    """Only shown on initial mount when tiles list is empty."""
+    return rx.vstack(
+        rx.hstack(
+            _skel("42%", "200px", "8px"),
+            _skel("35%", "200px", "8px"),
+            _skel("23%", "200px", "8px"),
+            spacing="2",
+            width="100%",
+        ),
+        rx.hstack(
+            _skel("33%", "190px", "8px"),
+            _skel("33%", "190px", "8px"),
+            _skel("33%", "190px", "8px"),
+            spacing="2",
+            width="100%",
+        ),
+        rx.hstack(
+            _skel("25%", "180px", "8px"),
+            _skel("38%", "180px", "8px"),
+            _skel("37%", "180px", "8px"),
+            spacing="2",
+            width="100%",
+        ),
+        spacing="2",
+        width="100%",
+        height=_TREEMAP_H,
+        overflow="hidden",
+    )
+
+
+def _treemap() -> rx.Component:
+    return rx.cond(
+        HeatmapState.tiles,
+        # Has data — tiles update in-place on period change, no flash
+        rx.vstack(
+            rx.box(
+                rx.foreach(HeatmapState.tiles, _industry_tile),
+                position="relative",
+                width="100%",
+                height=_TREEMAP_H,
+                border_radius="12px",
+                overflow="hidden",
+            ),
+            _chip_row(),
+            spacing="0",
+            width="100%",
+        ),
+        # Empty — initial mount skeleton only
+        _treemap_skeleton(),
+    )
+
+
+def market_overview_section() -> rx.Component:
+    return glass_card(
+        rx.vstack(
+            rx.hstack(
+                rx.hstack(
+                    rx.box(
+                        width="5px",
+                        height="5px",
+                        border_radius="50%",
+                        background=purple(0.85),
+                    ),
+                    rx.text(
+                        "MARKET OVERVIEW",
+                        size="1",
+                        weight="medium",
+                        color=TEXT_TERTIARY,
+                        letter_spacing="0.09em",
+                    ),
+                    spacing="2",
+                    align="center",
+                ),
+                rx.spacer(),
+                rx.hstack(
+                    _period_btn("1D"),
+                    _period_btn("1W"),
+                    _period_btn("1M"),
+                    _period_btn("1Y"),
+                    spacing="0",
+                    padding="0.16rem",
+                    border_radius="7px",
+                    background=white(0.03),
+                    border=f"1px solid {white(0.06)}",
+                ),
                 width="100%",
                 align="center",
             ),
+            rx.hstack(
+                rx.vstack(
+                    vnindex_card(),
+                    spacing="3",
+                    width="210px",
+                    flex_shrink="0",
+                    align="start",
+                ),
+                rx.box(_treemap(), flex="1", min_width="0"),
+                spacing="3",
+                width="100%",
+                align="start",
+            ),
+            accent_btn("View Full Market", href="/market"),
             spacing="4",
             width="100%",
         ),
-        padding="1.25rem",
+        padding="1.25rem 1.5rem",
         width="100%",
+        _hover={},
+        on_mount=HeatmapState.load_heatmap_data,
     )

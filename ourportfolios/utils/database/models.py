@@ -41,6 +41,29 @@ class ProfileORM(Base):
     company_name: Mapped[Optional[str]] = mapped_column(String)
 
 
+class StatsORM(Base):
+    __tablename__ = "stats_df"
+    __table_args__ = {"schema": "tickers"}
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    symbol: Mapped[Optional[str]] = mapped_column(String)
+    roe: Mapped[Optional[float]] = mapped_column(Float)
+    roa: Mapped[Optional[float]] = mapped_column(Float)
+    ev_ebitda: Mapped[Optional[float]] = mapped_column(Float)
+    dividend_yield: Mapped[Optional[float]] = mapped_column(Float)
+    gross_margin: Mapped[Optional[float]] = mapped_column(Float)
+    net_margin: Mapped[Optional[float]] = mapped_column(Float)
+    doe: Mapped[Optional[float]] = mapped_column(Float)
+    alpha: Mapped[Optional[float]] = mapped_column(Float)
+    beta: Mapped[Optional[float]] = mapped_column(Float)
+    pe: Mapped[Optional[float]] = mapped_column(Float)
+    pb: Mapped[Optional[float]] = mapped_column(Float)
+    eps: Mapped[Optional[int]] = mapped_column(BigInteger)
+    ps: Mapped[Optional[float]] = mapped_column(Float)
+    ev: Mapped[Optional[float]] = mapped_column(Float)
+    rsi14: Mapped[Optional[float]] = mapped_column(Float)
+
+
 class VNIndexORM(Base):
     __tablename__ = "vnindex"
     __table_args__ = {"schema": "market"}

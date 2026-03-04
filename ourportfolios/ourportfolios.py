@@ -2,11 +2,9 @@ import reflex as rx
 from ourportfolios.pages import (  # noqa: F401
     landing,
     framework,
-    select,
     ticker_analysis,
     industry_analysis,
-    analyze,
-    compare,
+    tickers,
     home,
 )
 
