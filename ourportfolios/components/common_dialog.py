@@ -2,6 +2,8 @@
 
 import reflex as rx
 
+from ..styles import MODAL_BG, white
+
 
 def common_dialog(
     content: rx.Component,
@@ -47,12 +49,13 @@ def common_dialog(
     if show_close_button:
         close_button = rx.dialog.close(
             rx.text(
-                rx.icon("x"),
+                rx.icon("x", size=18),
                 on_click=on_close,
                 cursor="pointer",
                 user_select="none",
-                color=rx.color("accent", 10),
-                _hover={"color": rx.color("accent", 7)},
+                color=white(0.45),
+                _hover={"color": "white"},
+                transition="color 0.15s ease",
             ),
         )
         header_content.append(close_button)
@@ -65,6 +68,7 @@ def common_dialog(
                 title,
                 weight="medium",
                 size=title_size,
+                color=white(0.85),
             )
         )
 
@@ -101,6 +105,10 @@ def common_dialog(
                 width=width,
                 height=height,
                 padding=padding,
+                background=MODAL_BG,
+                border=f"1px solid {white(0.08)}",
+                border_radius="14px",
+                box_shadow="0 25px 60px rgba(0, 0, 0, 0.6)",
                 **extra_props,
             ),
             open=True,

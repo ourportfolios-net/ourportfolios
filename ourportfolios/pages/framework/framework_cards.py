@@ -5,10 +5,10 @@ import reflex as rx
 from .state import FrameworkState
 from ...styles import (
     CARD_STYLE,
+    PILL_TOGGLE,
+    PILL_TOGGLE_ACTIVE,
+    accent_btn,
     white,
-    purple,
-    TEXT_PURPLE,
-    TEXT_ACCENT,
 )
 
 
@@ -67,39 +67,19 @@ def skeleton_card() -> rx.Component:
 def category_filter_button(category):
     is_active = FrameworkState.active_category == category.value
 
-    return rx.button(
-        category.label,
-        on_click=lambda: FrameworkState.set_active_category(category.value),
-        size="2",
-        style=rx.cond(
-            is_active,
-            {
-                "background": purple(0.18),
-                "border": f"1px solid {purple(0.5)}",
-                "border_radius": "999px",
-                "color": TEXT_PURPLE,
-                "font_weight": "600",
-                "font_size": "13px",
-                "cursor": "pointer",
-                "transition": "all 0.15s ease",
-                "padding": "0 16px",
-            },
-            {
-                "background": "transparent",
-                "border": f"1px solid {white(0.1)}",
-                "border_radius": "999px",
-                "color": white(0.5),
-                "font_weight": "500",
-                "font_size": "13px",
-                "cursor": "pointer",
-                "transition": "all 0.15s ease",
-                "padding": "0 16px",
-                "_hover": {
-                    "background": white(0.06),
-                    "color": white(0.85),
-                    "border_color": white(0.2),
-                },
-            },
+    return rx.cond(
+        is_active,
+        rx.button(
+            category.label,
+            on_click=lambda: FrameworkState.set_active_category(category.value),
+            size="2",
+            **PILL_TOGGLE_ACTIVE,
+        ),
+        rx.button(
+            category.label,
+            on_click=lambda: FrameworkState.set_active_category(category.value),
+            size="2",
+            **PILL_TOGGLE,
         ),
     )
 
@@ -175,14 +155,7 @@ def framework_card(framework):
                         align="start",
                     ),
                     rx.spacer(),
-                    rx.hstack(
-                        rx.text(
-                            "VIEW ASSETS", size="1", weight="bold", color=TEXT_ACCENT
-                        ),
-                        rx.icon("arrow-right", size=12, color=TEXT_ACCENT),
-                        spacing="1",
-                        align="center",
-                    ),
+                    accent_btn("View Framework"),
                     width="100%",
                     align="center",
                 ),

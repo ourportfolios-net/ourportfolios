@@ -12,7 +12,6 @@ from ...styles import (
     TEXT_TERTIARY,
     TEXT_TRUNCATE,
     TABLE_BG,
-    CARD_BORDER,
 )
 
 # ── Layout constants ───────────────────────────────────────────────────────────────────────
@@ -517,7 +516,7 @@ def empty_compare_state() -> rx.Component:
     return rx.center(
         rx.vstack(
             rx.box(
-                rx.icon("bar-chart-2", size=32, color=white(0.2)),
+                rx.icon("between_horizontal_start", size=32, color=white(0.2)),
                 padding="1.25em",
                 border_radius="14px",
                 background=white(0.035),

@@ -8,10 +8,10 @@ from ...styles import (
     white,
     purple,
     TEXT_PURPLE,
+    TEXT_PRIMARY,
+    TEXT_TERTIARY,
     LABEL_STYLE,
-    BTN_PURPLE_SM,
     BTN_GHOST_SM,
-    BTN_GHOST_XS,
     BTN_SECONDARY,
     CHIP_STYLE,
     SEARCH_ICON_STYLE,
@@ -45,8 +45,8 @@ def _metric_slider(metric_tag: str, option: str):
                     f"{TickersPageState.technicals_current_value[metric_tag][0]} – {TickersPageState.technicals_current_value[metric_tag][1]}",
                 ),
                 size="2",
-                color=TEXT_PURPLE,
-                weight="bold",
+                color=white(0.45),
+                weight="medium",
                 white_space="nowrap",
             ),
             width="100%",
@@ -103,24 +103,19 @@ def _metric_slider(metric_tag: str, option: str):
 
 
 def _metrics_filter(option: str = "F") -> rx.Component:
-    return rx.scroll_area(
-        rx.grid(
-            rx.foreach(
-                rx.cond(
-                    option == "F",
-                    TickersPageState.fundamentals_default_value.keys(),
-                    TickersPageState.technicals_default_value.keys(),
-                ),
-                lambda metric_tag: _metric_slider(metric_tag, option),
+    return rx.grid(
+        rx.foreach(
+            rx.cond(
+                option == "F",
+                TickersPageState.fundamentals_default_value.keys(),
+                TickersPageState.technicals_default_value.keys(),
             ),
-            columns=rx.breakpoints(xs="1", sm="2", md="3", lg="4"),
-            gap="0.75em",
-            width="100%",
+            lambda metric_tag: _metric_slider(metric_tag, option),
         ),
+        columns=rx.breakpoints(xs="1", sm="2", md="3", lg="4"),
+        gap="0.75em",
+        width="100%",
         padding="0.85em",
-        style={"flex": "1", "min_height": "0"},
-        scrollbars="vertical",
-        type="hover",
     )
 
 
@@ -197,8 +192,8 @@ def _filter_tabs() -> rx.Component:
                     align="center",
                 ),
                 on_click=TickersPageState.clear_all_filters,
-                size="1",
-                style=BTN_GHOST_XS,
+                size="2",
+                style=BTN_GHOST_SM,
             ),
             width="100%",
             align="center",
@@ -260,7 +255,7 @@ def filter_button() -> rx.Component:
         rx.menu.trigger(
             rx.button(
                 rx.hstack(
-                    rx.icon("sliders-horizontal", size=14),
+                    rx.icon("filter", size=14),
                     rx.text("Filter"),
                     spacing="2",
                     align="center",
@@ -287,11 +282,11 @@ def filter_button() -> rx.Component:
                 style={**FLEX_COL_FILL, "overflow": "hidden"},
             ),
             rx.button(
-                "Apply filters",
+                "Apply Filters",
                 on_click=TickersPageState.apply_filters,
                 size="2",
                 style={
-                    **BTN_PURPLE_SM,
+                    **BTN_GHOST_SM,
                     "position": "absolute",
                     "bottom": "0.75em",
                     "right": "0.75em",
@@ -419,7 +414,6 @@ def board_toolbar() -> rx.Component:
             rx.fragment(),
         ),
         rx.spacer(),
-        _sort_button(),
         filter_button(),
         spacing="2",
         align="center",
@@ -596,8 +590,8 @@ def _metrics_settings_dialog() -> rx.Component:
                             size="2",
                             color=rx.cond(
                                 TickersPageState.time_period == "quarter",
-                                TEXT_PURPLE,
-                                white(0.4),
+                                TEXT_PRIMARY,
+                                TEXT_TERTIARY,
                             ),
                         ),
                         rx.switch(
@@ -611,8 +605,8 @@ def _metrics_settings_dialog() -> rx.Component:
                             size="2",
                             color=rx.cond(
                                 TickersPageState.time_period == "year",
-                                TEXT_PURPLE,
-                                white(0.4),
+                                TEXT_PRIMARY,
+                                TEXT_TERTIARY,
                             ),
                         ),
                         spacing="2",
@@ -624,6 +618,7 @@ def _metrics_settings_dialog() -> rx.Component:
                             rx.icon("import", size=13),
                             rx.text("Import Cart"),
                             spacing="2",
+                            align="center",
                         ),
                         on_click=TickersPageState.import_from_cart,
                         size="2",

@@ -49,8 +49,8 @@ def _toggle_btn(label: str, icon_name: str, mode: str) -> rx.Component:
 
 def view_toggle():
     return rx.hstack(
-        _toggle_btn("Board", "layout-grid", "board"),
-        _toggle_btn("Compare", "bar-chart-2", "compare"),
+        _toggle_btn("Board", "layout_dashboard", "board"),
+        _toggle_btn("Compare", "between_horizontal_start", "compare"),
         spacing="2",
         flex_shrink="0",
     )
@@ -138,7 +138,7 @@ def index():
             ),
             width="100%",
             padding_top="5em",
-            padding_bottom="2.5em",
+            padding_bottom="1.8em",
             padding_x="0",
         ),
         drawer_button(),

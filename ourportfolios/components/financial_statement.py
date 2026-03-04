@@ -58,9 +58,7 @@ def preview_table(data, idx, show_skeleton=False):
                 on_click=lambda: FinancialStatementState.expand(idx),
                 cursor=rx.cond(show_skeleton, "not-allowed", "pointer"),
                 user_select="none",
-                color=rx.cond(
-                    show_skeleton, rx.color("gray", 6), rx.color("accent", 10)
-                ),
+                color=rx.color("gray", 10),
                 opacity=rx.cond(show_skeleton, "0.5", "1"),
                 pointer_events=rx.cond(show_skeleton, "none", "auto"),
             ),
@@ -69,9 +67,7 @@ def preview_table(data, idx, show_skeleton=False):
                 on_click=lambda: FinancialStatementState.download_table_csv(data, idx),
                 cursor=rx.cond(show_skeleton, "not-allowed", "pointer"),
                 user_select="none",
-                color=rx.cond(
-                    show_skeleton, rx.color("gray", 6), rx.color("accent", 10)
-                ),
+                color=rx.color("gray", 10),
                 opacity=rx.cond(show_skeleton, "0.5", "1"),
                 pointer_events=rx.cond(show_skeleton, "none", "auto"),
             ),

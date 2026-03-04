@@ -251,9 +251,12 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
 
     @rx.event(background=True)
     async def auto_load_data(self) -> None:
-        async with self:
-            if self._data_loaded or not self.is_mounted():
-                return
+        try:
+            async with self:
+                if self._data_loaded or not self.is_mounted():
+                    return
+        except asyncio.CancelledError:
+            return
 
         # Run the two cheap filter fetches in parallel — metrics discovery
         # is deferred until the user opens the compare view so it doesn't
@@ -262,15 +265,18 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
             self._load_industries(),
             self._load_exchanges(),
         )
-        if not self.is_mounted():
+        try:
+            async with self:
+                if not self.is_mounted():
+                    return
+                self.industry_filter = industry_filter
+                self.exchange_filter = exchange_filter
+                self._reset_fundamentals()
+                self._reset_technicals()
+                self.slider_reset_key += 1
+                self.search_query = ""
+        except asyncio.CancelledError:
             return
-        async with self:
-            self.industry_filter = industry_filter
-            self.exchange_filter = exchange_filter
-            self._reset_fundamentals()
-            self._reset_technicals()
-            self.slider_reset_key += 1
-            self.search_query = ""
 
         # Fetch the full ticker cache outside the state lock so it doesn't
         # block other state updates (e.g. add_ticker_to_compare) while the
@@ -280,13 +286,16 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         except Exception as e:
             print(f"TICKERS PAGE ERROR: Failed to load ticker cache: {e}")
             return
-        if not self.is_mounted():
+        try:
+            async with self:
+                if not self.is_mounted():
+                    return
+                ticker_board_state = await self.get_state(TickerBoardState)
+                ticker_board_state._all_tickers_cache = all_tickers
+                ticker_board_state._cache_loaded = True
+                self._data_loaded = True
+        except asyncio.CancelledError:
             return
-        async with self:
-            ticker_board_state = await self.get_state(TickerBoardState)
-            ticker_board_state._all_tickers_cache = all_tickers
-            ticker_board_state._cache_loaded = True
-            self._data_loaded = True
 
     # ── View mode ─────────────────────────────────────────────────────────────
     @rx.event
@@ -301,14 +310,20 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
 
     @rx.event(background=True)
     async def load_compare_metrics(self) -> None:
-        async with self:
-            if self.all_metrics or not self.is_mounted():
-                return
-        all_metrics = await TickersPageState._discover_metrics()
-        if not self.is_mounted():
+        try:
+            async with self:
+                if self.all_metrics or not self.is_mounted():
+                    return
+        except asyncio.CancelledError:
             return
-        async with self:
-            self.all_metrics = all_metrics
+        all_metrics = await TickersPageState._discover_metrics()
+        try:
+            async with self:
+                if not self.is_mounted():
+                    return
+                self.all_metrics = all_metrics
+        except asyncio.CancelledError:
+            return
 
     # ── Board / filter events ─────────────────────────────────────────────────
     @rx.event
@@ -325,6 +340,26 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
     def set_sort_order(self, order: str):
         self.selected_sort_order = order
         return TickerBoardState.set_sort_order(order)
+
+    @rx.event
+    def toggle_sort(self, field: str):
+        """Toggle sort on a column. DESC first for numeric fields, ASC first for symbol."""
+        current_field = self.sort_options.get(self.selected_sort_option, "")
+        if current_field == field:
+            new_order = "DESC" if self.selected_sort_order == "ASC" else "ASC"
+            self.selected_sort_order = new_order
+            return TickerBoardState.set_sort_order(new_order)
+        else:
+            for key, val in self.sort_options.items():
+                if val == field:
+                    self.selected_sort_option = key
+                    break
+            default_order = "ASC" if field == "symbol" else "DESC"
+            self.selected_sort_order = default_order
+            return [
+                TickerBoardState.set_sort_option(field),
+                TickerBoardState.set_sort_order(default_order),
+            ]
 
     def _build_filters(self) -> dict:
         return {
@@ -556,17 +591,22 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         duplicate = False
         time_period_copy = "quarter"
         needs_metrics = False
-        async with self:
-            if ticker in self.compare_list:
-                duplicate = True
-            else:
-                self.is_loading_data = True
-                time_period_copy = self.time_period
-                # Immediately add to compare_list so pending_tickers drives a
-                # skeleton row in the UI before data arrives.
-                self.compare_list = self.compare_list + [ticker]
-                # Check if we need to load metrics (first add, no metrics yet)
-                needs_metrics = not self.all_metrics
+        try:
+            async with self:
+                if not self.is_mounted():
+                    return
+                if ticker in self.compare_list:
+                    duplicate = True
+                else:
+                    self.is_loading_data = True
+                    time_period_copy = self.time_period
+                    # Immediately add to compare_list so pending_tickers drives a
+                    # skeleton row in the UI before data arrives.
+                    self.compare_list = self.compare_list + [ticker]
+                    # Check if we need to load metrics (first add, no metrics yet)
+                    needs_metrics = not self.all_metrics
+        except asyncio.CancelledError:
+            return
 
         # yield outside the context manager so frontend gets the state delta above
         if duplicate:
@@ -603,22 +643,29 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                         ticker, period=time_period_copy
                     )
                     all_metrics = {}
-                async with self:
-                    self.stocks = self.stocks + [dict(row)]
-                    cache_key = f"{ticker}_{time_period_copy}"
-                    self._data_cache[cache_key] = data
-                    self.historical_data = self._merge_one_ticker_into_historical_data(
-                        ticker, data, self.historical_data, time_period_copy
-                    )
-                    # Populate and auto-select metrics on first add
-                    if all_metrics and not self.all_metrics:
-                        self.all_metrics = all_metrics
-                    if not self.selected_metrics and self.all_metrics:
-                        all_m: list[str] = []
-                        for ms in self.all_metrics.values():
-                            all_m.extend(ms)
-                        self.selected_metrics = all_m
-                        self.pending_metrics = list(all_m)
+                try:
+                    async with self:
+                        if not self.is_mounted():
+                            return
+                        self.stocks = self.stocks + [dict(row)]
+                        cache_key = f"{ticker}_{time_period_copy}"
+                        self._data_cache[cache_key] = data
+                        self.historical_data = (
+                            self._merge_one_ticker_into_historical_data(
+                                ticker, data, self.historical_data, time_period_copy
+                            )
+                        )
+                        # Populate and auto-select metrics on first add
+                        if all_metrics and not self.all_metrics:
+                            self.all_metrics = all_metrics
+                        if not self.selected_metrics and self.all_metrics:
+                            all_m: list[str] = []
+                            for ms in self.all_metrics.values():
+                                all_m.extend(ms)
+                            self.selected_metrics = all_m
+                            self.pending_metrics = list(all_m)
+                except asyncio.CancelledError:
+                    return
                 yield rx.toast.success(
                     f"{ticker} added to Compare",
                     action={
@@ -629,16 +676,29 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                     duration=5000,
                 )
             else:
-                async with self:
-                    self.compare_list = [t for t in self.compare_list if t != ticker]
+                try:
+                    async with self:
+                        if not self.is_mounted():
+                            return
+                        self.compare_list = [
+                            t for t in self.compare_list if t != ticker
+                        ]
+                except asyncio.CancelledError:
+                    return
                 yield rx.toast.error(f"No data found for {ticker}")
         except Exception:
-            async with self:
-                self.compare_list = [t for t in self.compare_list if t != ticker]
+            try:
+                async with self:
+                    self.compare_list = [t for t in self.compare_list if t != ticker]
+            except asyncio.CancelledError:
+                return
             yield rx.toast.error(f"Error loading {ticker}")
         finally:
-            async with self:
-                self.is_loading_data = False
+            try:
+                async with self:
+                    self.is_loading_data = False
+            except asyncio.CancelledError:
+                pass
 
     @rx.event
     @session_isolated

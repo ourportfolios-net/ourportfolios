@@ -87,10 +87,96 @@ def _cart_btn(symbol: str) -> rx.Component:
 
 def _compare_btn(symbol: str) -> rx.Component:
     return rx.button(
-        rx.icon("bar-chart-2", size=13),
+        rx.icon("between_horizontal_start", size=13),
         on_click=TickersPageState.add_ticker_to_compare(symbol),
         size="1",
         **_COMPARE_BTN,
+    )
+
+
+# ── Column definitions ─────────────────────────────────────────────────────────
+# Each column: (label, sort_field, width).  Header and data rows both use this
+# list so adding/removing a column only requires editing one place.
+
+_COLUMNS = [
+    ("Price", "current_price", "70px"),
+    ("Change", "pct_price_change", "75px"),
+    ("Volume", "accumulated_volume", "70px"),
+    ("Mkt Cap", "market_cap", "75px"),
+]
+
+# Width reserved for the two trailing icon-buttons (cart + compare)
+_ACTIONS_WIDTH = "72px"
+
+
+# ── Sort indicator ─────────────────────────────────────────────────────────────
+
+
+def _sort_indicator(field: str) -> rx.Component:
+    current = TickersPageState.sort_options[TickersPageState.selected_sort_option]
+    return rx.cond(
+        current == field,
+        rx.cond(
+            TickersPageState.selected_sort_order == "ASC",
+            rx.icon("chevron-up", size=11, color=white(0.5)),
+            rx.icon("chevron-down", size=11, color=white(0.5)),
+        ),
+        rx.fragment(),
+    )
+
+
+# ── Header row ─────────────────────────────────────────────────────────────────
+
+
+def _header_cell(label: str, field: str, width: str) -> rx.Component:
+    return rx.box(
+        rx.hstack(
+            rx.text(label, size="1", color=white(0.3), weight="medium"),
+            _sort_indicator(field),
+            spacing="1",
+            align="center",
+        ),
+        on_click=lambda: TickersPageState.toggle_sort(field),
+        cursor="pointer",
+        user_select="none",
+        width=width,
+        display="flex",
+        justify_content="flex-end",
+        transition="opacity 0.12s ease",
+        _hover={"opacity": "0.7"},
+    )
+
+
+def _header_row() -> rx.Component:
+    return rx.hstack(
+        # Symbol column — left-aligned, fills remaining space
+        rx.box(
+            rx.hstack(
+                rx.text("Symbol", size="1", color=white(0.3), weight="medium"),
+                _sort_indicator("symbol"),
+                spacing="1",
+                align="center",
+            ),
+            on_click=lambda: TickersPageState.toggle_sort("symbol"),
+            cursor="pointer",
+            user_select="none",
+            flex="1",
+            min_width="0",
+            _hover={"opacity": "0.7"},
+            transition="opacity 0.12s ease",
+        ),
+        rx.spacer(),
+        rx.hstack(
+            *[_header_cell(label, field, w) for label, field, w in _COLUMNS],
+            rx.box(width=_ACTIONS_WIDTH, flex_shrink="0"),
+            spacing="4",
+            align="center",
+            flex_shrink="0",
+        ),
+        align="center",
+        width="100%",
+        padding=_ROW_PADDING,
+        border_bottom=f"1px solid {DIVIDER}",
     )
 
 
@@ -101,7 +187,7 @@ def ticker_row(ticker: dict) -> rx.Component:
     """Single ticker row — mirrors search_bar suggestion_card layout."""
     symbol = ticker["symbol"].to(str)
     name = ticker.get("company_name", "").to(str)
-    exchange = ticker.get("exchange", "").to(str)
+    industry = ticker.get("industry", "").to(str)
     price = ticker.get("current_price", 0).to(float)
     pct = ticker.get("pct_price_change", 0).to(float)
     volume = ticker.get("accumulated_volume", 0).to(float)
@@ -115,11 +201,11 @@ def ticker_row(ticker: dict) -> rx.Component:
                     rx.hstack(
                         # Symbol — size="5", weight="medium" (same as search_bar)
                         rx.text(symbol, size="5", weight="medium"),
-                        # Exchange badge — matches framework_cards.py badge style
+                        # Industry badge — matches framework_cards.py badge style
                         rx.cond(
-                            exchange != "",
+                            industry != "",
                             rx.badge(
-                                exchange,
+                                industry,
                                 variant="soft",
                                 color_scheme="gray",
                                 size="1",
@@ -151,45 +237,52 @@ def ticker_row(ticker: dict) -> rx.Component:
                 overflow="hidden",
             ),
             rx.spacer(),
-            # RIGHT — data + cart
+            # RIGHT — data columns (widths match _COLUMNS)
             rx.hstack(
-                # Price
-                rx.text(price, size="3", weight="medium", color=TEXT_SECONDARY),
-                # Change — reuses pct_change_badge from components/graph.py
-                pct_change_badge(diff=pct),
-                # Volume — icon + tooltip for context, no text label
-                rx.tooltip(
-                    rx.hstack(
-                        rx.icon("bar-chart-3", size=11, color=TEXT_MUTED),
-                        _compact_number(volume),
-                        spacing="1",
-                        align="center",
-                    ),
-                    content="Volume",
-                ),
-                # Market cap — icon + tooltip for context, no text label
-                rx.tooltip(
-                    rx.hstack(
-                        rx.icon("landmark", size=11, color=TEXT_MUTED),
-                        _compact_number(mktcap),
-                        spacing="1",
-                        align="center",
-                    ),
-                    content="Market Cap",
-                ),
-                # Cart
                 rx.box(
-                    _cart_btn(symbol),
-                    on_click=rx.stop_propagation,
+                    rx.text(price, size="2", weight="medium", color=TEXT_SECONDARY),
+                    width="70px",
                     display="flex",
-                    align_items="center",
+                    justify_content="flex-end",
                 ),
-                # Compare
                 rx.box(
-                    _compare_btn(symbol),
-                    on_click=rx.stop_propagation,
+                    pct_change_badge(diff=pct),
+                    width="75px",
                     display="flex",
-                    align_items="center",
+                    justify_content="flex-end",
+                ),
+                rx.box(
+                    _compact_number(volume),
+                    width="70px",
+                    display="flex",
+                    justify_content="flex-end",
+                ),
+                rx.box(
+                    _compact_number(mktcap),
+                    width="75px",
+                    display="flex",
+                    justify_content="flex-end",
+                ),
+                # Actions
+                rx.hstack(
+                    rx.box(
+                        rx.tooltip(_cart_btn(symbol), content="Add to cart"),
+                        on_click=rx.stop_propagation,
+                        display="flex",
+                        align_items="center",
+                    ),
+                    rx.box(
+                        rx.tooltip(
+                            _compare_btn(symbol), content="Add to comparison board"
+                        ),
+                        on_click=rx.stop_propagation,
+                        display="flex",
+                        align_items="center",
+                    ),
+                    spacing="2",
+                    width=_ACTIONS_WIDTH,
+                    justify_content="flex-end",
+                    flex_shrink="0",
                 ),
                 spacing="4",
                 align="center",
@@ -301,6 +394,7 @@ def new_ticker_board() -> rx.Component:
         rx.cond(
             TickerBoardState.get_all_tickers.length() > 0,
             rx.box(
+                _header_row(),
                 rx.scroll_area(
                     rx.vstack(
                         rx.foreach(TickerBoardState.get_all_tickers, ticker_row),
@@ -309,7 +403,7 @@ def new_ticker_board() -> rx.Component:
                     ),
                     scrollbars="vertical",
                     type="hover",
-                    style={"height": _BOARD_H, "width": "100%"},
+                    style={"flex": "1", "width": "100%"},
                 ),
                 border_radius="14px",
                 border=CARD_BORDER,
@@ -317,6 +411,8 @@ def new_ticker_board() -> rx.Component:
                 overflow="hidden",
                 width="100%",
                 height=_BOARD_H,
+                display="flex",
+                flex_direction="column",
             ),
             _empty_state(),
         ),

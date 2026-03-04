@@ -83,7 +83,7 @@ def _ticker_real():
                                 line_height="1",
                             ),
                             rx.button(
-                                rx.icon("shopping-cart", size=13),
+                                rx.icon("plus", size=13),
                                 size="2",
                                 variant="outline",
                                 on_click=CartState.add_item(

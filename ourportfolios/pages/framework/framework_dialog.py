@@ -4,7 +4,7 @@ import reflex as rx
 
 from .state import FrameworkState
 from ...components.common_dialog import common_dialog
-from ...styles import BTN_PURPLE, BTN_GHOST, white
+from ...styles import BTN_GHOST, white
 
 
 def metric_badge(metric):
@@ -121,7 +121,7 @@ def framework_dialog():
                 ),
                 on_click=lambda: FrameworkState.select_and_navigate_framework(),
                 size="3",
-                **BTN_PURPLE,
+                **BTN_GHOST,
             ),
             width="100%",
         ),
