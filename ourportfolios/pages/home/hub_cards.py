@@ -9,10 +9,6 @@ from ...styles import (
     green,
     accent_btn,
     icon_box,
-    GREEN_FILL,
-    GREEN_FADE,
-    RED_FILL,
-    RED_FADE,
 )
 
 _PREVIEW_H = "200px"

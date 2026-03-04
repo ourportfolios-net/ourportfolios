@@ -16,7 +16,6 @@ from pydantic import BaseModel
 from sqlalchemy import text
 
 from ..utils.database.database import get_company_session
-from ..styles import green, red, white
 
 _PERIOD_TABLE = {
     "1D": "daily_changes",

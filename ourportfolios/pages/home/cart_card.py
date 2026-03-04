@@ -61,10 +61,8 @@ def cart_card() -> rx.Component:
                     width="100%",
                     max_height="300px",
                     overflow_y="auto",
-                    style={
-                        "scrollbarWidth": "thin",
-                        "scrollbarColor": f"{white(0.06)} transparent",
-                    },
+                    scrollbar_width="thin",
+                    scrollbar_color=f"{white(0.06)} transparent",
                 ),
                 rx.vstack(
                     rx.text("No tickers in cart", size="2", color=white(0.2)),

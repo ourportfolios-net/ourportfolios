@@ -5,45 +5,30 @@ from ...components.cards import glass_card
 from ...styles import white
 
 
-_SK2 = (
-    "linear-gradient(90deg,"
-    "rgba(255,255,255,0.04) 0%,"
-    "rgba(255,255,255,0.09) 50%,"
-    "rgba(255,255,255,0.04) 100%)"
-)
-
-
-def _sk2(w: str = "100%", h: str = "12px", r: str = "5px") -> rx.Component:
-    return rx.box(
-        width=w,
-        height=h,
-        border_radius=r,
-        background=_SK2,
-        background_size="800px 100%",
-        animation="shimmer 1.6s infinite linear",
-    )
+def _skel(w: str = "100%", h: str = "12px", r: str = "6px") -> rx.Component:
+    return rx.skeleton(rx.box(width=w, height=h), loading=True, border_radius=r)
 
 
 def _ticker_skeleton() -> rx.Component:
     return glass_card(
         rx.vstack(
-            _sk2("100px", "10px"),
+            _skel("100px", "10px"),
             rx.hstack(
                 rx.hstack(
-                    _sk2("80px", "40px", "6px"),
-                    _sk2("32px", "32px", "7px"),
+                    _skel("80px", "40px", "6px"),
+                    _skel("32px", "32px", "7px"),
                     spacing="2",
                     align="center",
                 ),
                 rx.spacer(),
-                _sk2("72px", "28px", "6px"),
+                _skel("72px", "28px", "6px"),
                 width="100%",
                 align="end",
             ),
             rx.hstack(
-                _sk2("120px", "10px"),
+                _skel("120px", "10px"),
                 rx.spacer(),
-                _sk2("52px", "18px", "8px"),
+                _skel("52px", "18px", "8px"),
                 width="100%",
                 align="center",
             ),
@@ -98,7 +83,7 @@ def _ticker_real():
                                 line_height="1",
                             ),
                             rx.button(
-                                rx.icon("shopping-cart", size=13),
+                                rx.icon("plus", size=13),
                                 size="2",
                                 variant="outline",
                                 on_click=CartState.add_item(

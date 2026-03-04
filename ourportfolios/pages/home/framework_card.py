@@ -7,7 +7,6 @@ from ...styles import (
     PREVIEW_BOX_STYLE,
     SKELETON_BG,
     white,
-    purple,
     accent_btn,
     icon_box,
 )

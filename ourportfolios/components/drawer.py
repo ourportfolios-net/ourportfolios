@@ -4,6 +4,56 @@ import reflex as rx
 from ..state import CartState
 
 
+def _cart_item(item, i):
+    """Single cart item card — shared by scroll and non-scroll layouts."""
+    return rx.card(
+        rx.hstack(
+            rx.hstack(
+                rx.link(
+                    rx.text(item["name"], size="4", weight="medium"),
+                    href=f"/tickers/{item['name']}",
+                    underline="none",
+                ),
+                rx.badge(f"{item['industry']}", size="1"),
+                spacing="3",
+                align_items="center",
+            ),
+            rx.button(
+                rx.icon("list-minus", size=16),
+                color_scheme="ruby",
+                size="1",
+                variant="soft",
+                font_weight="medium",
+                padding="0.3em 0.7em",
+                font_size="0.9em",
+                on_click=lambda: CartState.remove_item(i),
+            ),
+            align_items="center",
+            justify_content="space-between",
+            width="100%",
+        ),
+        background_color=rx.color("accent", 2),
+        padding="0.8em 1em",
+        margin_bottom="0.7em",
+        width="100%",
+    )
+
+
+def _cart_items_list():
+    """Cart item list, scrollable when there are many items."""
+    items_vstack = rx.vstack(
+        rx.foreach(CartState.cart_items, _cart_item),
+        width="100%",
+        spacing="1",
+        padding="0 0.5em",
+    )
+    return rx.cond(
+        CartState.should_scroll,
+        rx.scroll_area(items_vstack, height="400px", width="100%"),
+        items_vstack,
+    )
+
+
 def cart_drawer_content():
     return rx.drawer.content(
         rx.box(
@@ -13,15 +63,10 @@ def cart_drawer_content():
                         rx.text(
                             rx.icon("x", size=20),
                             on_click=CartState.toggle_cart,
-                            style={
-                                "marginLeft": "auto",
-                                "cursor": "pointer",
-                                "userSelect": "none",
-                                "color": rx.color("accent", 10),
-                                "_hover": {
-                                    "color": rx.color("accent", 7),
-                                },
-                            },
+                            cursor="pointer",
+                            user_select="none",
+                            color=rx.color("accent", 10),
+                            _hover={"color": rx.color("accent", 7)},
                         )
                     ),
                     width="100%",
@@ -29,134 +74,21 @@ def cart_drawer_content():
                     justify_content="flex-end",
                     margin_bottom="1em",
                 ),
-                rx.heading(
-                    "Tickers Cart",
-                    size="6",
-                    weight="medium",
-                ),
+                rx.heading("Tickers Cart", size="6", weight="medium"),
                 rx.cond(
                     CartState.cart_items,
                     rx.box(
-                        rx.cond(
-                            CartState.should_scroll,
-                            rx.scroll_area(
-                                rx.vstack(
-                                    rx.foreach(
-                                        CartState.cart_items,
-                                        lambda item, i: rx.card(
-                                            rx.hstack(
-                                                rx.hstack(
-                                                    rx.link(
-                                                        rx.text(
-                                                            item["name"],
-                                                            size="4",
-                                                            weight="medium",
-                                                        ),
-                                                        href=f"/tickers/{item['name']}",
-                                                        underline="none",
-                                                    ),
-                                                    rx.badge(
-                                                        f"{item['industry']}",
-                                                        size="1",
-                                                    ),
-                                                    spacing="3",
-                                                    align_items="center",
-                                                ),
-                                                rx.button(
-                                                    rx.icon("list-minus", size=16),
-                                                    color_scheme="ruby",
-                                                    size="1",
-                                                    variant="soft",
-                                                    style={
-                                                        "fontWeight": "medium",
-                                                        "padding": "0.3em 0.7em",
-                                                        "fontSize": "0.9em",
-                                                    },
-                                                    on_click=lambda: (
-                                                        CartState.remove_item(i)
-                                                    ),
-                                                ),
-                                                align_items="center",
-                                                justify_content="space-between",
-                                                width="100%",
-                                            ),
-                                            background_color=rx.color("accent", 2),
-                                            padding="0.8em 1em",
-                                            margin_bottom="0.7em",
-                                            width="100%",  # Changed from "92%" to "100%"
-                                        ),
-                                    ),
-                                    width="100%",
-                                    spacing="1",
-                                    padding="0 0.5em",  # Add padding to the container instead
-                                ),
-                                height="400px",
-                                width="100%",  # Ensure scroll area takes full width
-                            ),
-                            rx.vstack(
-                                rx.foreach(
-                                    CartState.cart_items,
-                                    lambda item, i: rx.card(
-                                        rx.hstack(
-                                            rx.hstack(
-                                                rx.link(
-                                                    rx.text(
-                                                        item["name"],
-                                                        size="4",
-                                                        weight="medium",
-                                                    ),
-                                                    href=f"/tickers/{item['name']}",
-                                                    underline="none",
-                                                ),
-                                                rx.badge(
-                                                    f"{item['industry']}",
-                                                    size="1",
-                                                ),
-                                                spacing="3",
-                                                align_items="center",
-                                            ),
-                                            rx.button(
-                                                rx.icon("list-minus", size=16),
-                                                color_scheme="ruby",
-                                                size="1",
-                                                variant="soft",
-                                                style={
-                                                    "fontWeight": "medium",
-                                                    "padding": "0.3em 0.7em",
-                                                    "fontSize": "0.9em",
-                                                },
-                                                on_click=lambda: CartState.remove_item(
-                                                    i
-                                                ),
-                                            ),
-                                            align_items="center",
-                                            justify_content="space-between",
-                                            width="100%",
-                                        ),
-                                        background_color=rx.color("accent", 2),
-                                        padding="0.8em 1em",
-                                        margin_bottom="0.7em",
-                                        width="100%",  # Keep consistent with scroll area version
-                                    ),
-                                ),
-                                width="100%",
-                                spacing="1",
-                                padding="0 0.5em",  # Add same padding for consistency
-                            ),
-                        ),
-                        # Bottom right button - only shows when cart has items
+                        _cart_items_list(),
                         rx.link(
                             rx.button(
                                 rx.text("Compare"),
                                 size="3",
                                 variant="solid",
                                 on_click=CartState.toggle_cart,
-                                style={
-                                    "position": "fixed",
-                                    "bottom": "20px",
-                                    "right": "20px",
-                                    "zIndex": "1000",
-                                },
+                                position="fixed",
+                                bottom="20px",
+                                right="20px",
+                                z_index="1000",
                             ),
                             href="/analyze/compare",
                         ),
@@ -171,10 +103,8 @@ def cart_drawer_content():
             width="100%",
             padding="2em",
             border_radius="1em",
-            style={
-                "backdropFilter": "blur(14px)",
-                "background": "rgba(20, 20, 20, 0.7)",
-            },
+            backdrop_filter="blur(14px)",
+            background="rgba(20, 20, 20, 0.7)",
         ),
         width="28em",
         padding="1.5em 1em 1em 1em",
@@ -188,12 +118,10 @@ def drawer_button():
             rx.button(
                 rx.icon("shopping-cart", size=16),
                 on_click=CartState.toggle_cart,
-                style={
-                    "position": "fixed",
-                    "bottom": "2em",
-                    "left": "2em",
-                    "z_index": 1000,
-                },
+                position="fixed",
+                bottom="2em",
+                left="2em",
+                z_index="1000",
             )
         ),
         rx.drawer.overlay(on_click=CartState.toggle_cart),

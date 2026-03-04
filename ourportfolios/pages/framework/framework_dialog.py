@@ -4,7 +4,7 @@ import reflex as rx
 
 from .state import FrameworkState
 from ...components.common_dialog import common_dialog
-from ...styles import BTN_PURPLE, BTN_GHOST, white
+from ...styles import BTN_GHOST, white
 
 
 def metric_badge(metric):
@@ -13,7 +13,7 @@ def metric_badge(metric):
         variant="soft",
         color_scheme="gray",
         size="2",
-        style={"border_radius": "6px"},
+        border_radius="6px",
     )
 
 
@@ -60,7 +60,8 @@ def framework_dialog():
                         "#",
                     ),
                     is_external=True,
-                    style={"text_decoration": "none", "_hover": {"opacity": "0.8"}},
+                    text_decoration="none",
+                    _hover={"opacity": "0.8"},
                 ),
                 rx.fragment(),
             ),
@@ -109,7 +110,7 @@ def framework_dialog():
                 "Cancel",
                 on_click=FrameworkState.close_dialog,
                 size="3",
-                style=BTN_GHOST,
+                **BTN_GHOST,
             ),
             rx.spacer(),
             rx.button(
@@ -120,7 +121,7 @@ def framework_dialog():
                 ),
                 on_click=lambda: FrameworkState.select_and_navigate_framework(),
                 size="3",
-                style=BTN_PURPLE,
+                **BTN_GHOST,
             ),
             width="100%",
         ),

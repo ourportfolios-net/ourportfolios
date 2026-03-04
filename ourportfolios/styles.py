@@ -81,6 +81,12 @@ TEXT_MUTED = white(0.2)
 TEXT_PURPLE = "#c4b5fd"
 TEXT_ACCENT = "#a78bfa"
 
+TEXT_TRUNCATE = {
+    "white_space": "nowrap",
+    "overflow": "hidden",
+    "text_overflow": "ellipsis",
+}
+
 
 # ── Surfaces ──────────────────────────────────────────────────────────────────
 
@@ -95,6 +101,10 @@ SUBTLE_BORDER = f"1px solid {white(0.07)}"
 
 DIVIDER = white(0.05)
 SKELETON_BG = white(0.06)
+
+PAGE_BG = "#090909"
+MODAL_BG = "#111111"
+TABLE_BG = "#0d0d0d"
 
 
 # ── Card styles ───────────────────────────────────────────────────────────────
@@ -178,6 +188,20 @@ LABEL_STYLE = {
     "text_transform": "uppercase",
 }
 
+SEARCH_ICON_STYLE = {
+    "position": "absolute",
+    "left": "10px",
+    "top": "50%",
+    "transform": "translateY(-50%)",
+    "pointer_events": "none",
+}
+
+SEARCH_INPUT_STYLE = {
+    **INPUT_STYLE,
+    "padding_left": "2rem",
+    "width": "280px",
+}
+
 
 # ── Dialog / modal buttons ────────────────────────────────────────────────────
 
@@ -206,6 +230,108 @@ BTN_GHOST = {
 
 BTN_GHOST_SM = {**BTN_GHOST, "border_radius": "7px"}
 BTN_GHOST_XS = {**BTN_GHOST, "border_radius": "6px"}
+
+BTN_COMPARE = {
+    **BTN_GHOST_XS,
+    "color": purple(0.55),
+    "_hover": {
+        "background": purple(0.1),
+        "color": purple(0.9),
+        "border_color": purple(0.3),
+    },
+}
+
+# Secondary (icon+label) – the standard toolbar button look
+BTN_SECONDARY = {
+    "background": white(0.05),
+    "border": f"1px solid {white(0.1)}",
+    "border_radius": "8px",
+    "color": white(0.6),
+    "font_weight": "500",
+    "font_size": "13px",
+    "cursor": "pointer",
+    "transition": "all 0.15s ease",
+    "_hover": {
+        "background": white(0.09),
+        "color": white(0.9),
+        "border_color": white(0.18),
+    },
+}
+
+BTN_SECONDARY_ACTIVE = {
+    **BTN_SECONDARY,
+    "background": white(0.09),
+    "border": f"1px solid {white(0.18)}",
+    "color": white(0.9),
+    "font_weight": "600",
+}
+
+# View toggle – active/inactive for Board/Compare switches
+BTN_VIEW_ACTIVE = {
+    **BTN_SECONDARY,
+    "background": white(0.09),
+    "border": f"1px solid {white(0.18)}",
+    "color": white(0.9),
+    "font_weight": "600",
+}
+
+BTN_VIEW_INACTIVE = {
+    **BTN_SECONDARY,
+}
+
+BTN_FILTER_ACTIVE = {
+    "background": purple(0.18),
+    "border": f"1px solid {purple(0.5)}",
+    "border_radius": "8px",
+    "color": TEXT_PURPLE,
+    "font_weight": "600",
+    "font_size": "13px",
+    "cursor": "pointer",
+    "transition": "all 0.15s ease",
+    "_hover": {"background": purple(0.28)},
+}
+
+# Pill toggle – used for view/mode switches (matches price_chart.py _chart_type_toggle)
+PILL_TOGGLE = {
+    "background": white(0.03),
+    "border": f"1px solid {white(0.06)}",
+    "border_radius": "6px",
+    "color": white(0.35),
+    "cursor": "pointer",
+    "transition": "all 0.15s ease",
+    "_hover": {"background": white(0.06), "color": white(0.7)},
+}
+
+PILL_TOGGLE_ACTIVE = {
+    "background": white(0.1),
+    "border": f"1px solid {white(0.18)}",
+    "border_radius": "6px",
+    "color": "white",
+    "cursor": "pointer",
+    "transition": "all 0.15s ease",
+}
+
+CHIP_STYLE = {
+    "border_radius": "6px",
+    "background": white(0.05),
+    "border": f"1px solid {white(0.1)}",
+    "height": "28px",
+    "transition": "all 0.15s ease",
+    "_hover": {"background": white(0.09), "border_color": white(0.18)},
+}
+
+MODAL_PANEL_STYLE = {
+    "background": MODAL_BG,
+    "border": f"1px solid {white(0.08)}",
+    "border_radius": "14px",
+}
+
+FLEX_COL_FILL = {
+    "flex": "1",
+    "display": "flex",
+    "flex_direction": "column",
+    "min_height": "0",
+}
 
 
 # ── Card CTA button components ────────────────────────────────────────────────
@@ -348,6 +474,17 @@ def skeleton_box_style(
         "border_radius": radius,
         "background": f"rgba(255, 255, 255, {opacity})",
         "flex_shrink": "0",
+    }
+
+
+def overlay_style(is_active) -> dict:
+    """Absolute-positioned layer toggled via opacity."""
+    return {
+        "opacity": rx.cond(is_active, "1", "0"),
+        "pointer_events": rx.cond(is_active, "auto", "none"),
+        "transition": "opacity 0.15s ease",
+        "position": "absolute",
+        "inset": "0",
     }
 
 

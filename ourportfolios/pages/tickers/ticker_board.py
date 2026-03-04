@@ -1,134 +1,72 @@
-"""
-Ticker board — card-style rows.
+"""Ticker board — row-based list.
 
-Each row is a self-contained card:
-  LEFT:  Large symbol + exchange badge stacked above the company name
-  RIGHT: Stat blocks — Price · % Change · Volume · Mkt Cap — each as a
-         labeled mini-card, plus a cart button.
+Each row mirrors the search_bar suggestion_card layout:
+  LEFT:  Symbol (size 5, medium) + exchange badge + company name
+  RIGHT: Price · pct_change_badge · volume · mkt cap · cart
 
-No column header, no horizontal-table alignment. Clean, spacious, modern.
+Reuses pct_change_badge from components/graph.py — the same component
+used in search_bar.py — for change indicators.  Badge styling matches
+framework_cards.py (variant="soft", color_scheme="gray", border_radius="6px").
+All tokens come from styles.py.
 """
 
 import reflex as rx
 
+from ...components.graph import pct_change_badge
 from ...state import TickerBoardState
 from ...state.cart_state import CartState
-from ...styles import white, purple, TEXT_PURPLE
+from ...styles import (
+    white,
+    CARD_BG,
+    CARD_BORDER,
+    DIVIDER,
+    BTN_GHOST_XS,
+    TEXT_SECONDARY,
+    TEXT_TERTIARY,
+    TEXT_MUTED,
+)
+from .state import TickersPageState
+
+_COMPARE_BTN = {
+    **BTN_GHOST_XS,
+    "color": "rgba(139,92,246,0.55)",
+    "_hover": {
+        "background": "rgba(139,92,246,0.1)",
+        "color": "rgba(139,92,246,0.9)",
+        "border_color": "rgba(139,92,246,0.3)",
+    },
+}
 
 
-# ── % change badge ─────────────────────────────────────────────────────────────
+# ── Constants ──────────────────────────────────────────────────────────────────
+
+_SKELETON_ROW_COUNT = 12
+_ROW_PADDING = "0.85em 1.25em"
 
 
-def _pct_badge(pct) -> rx.Component:
-    _up = {
-        "background": "rgba(52,211,153,0.1)",
-        "border": "1px solid rgba(52,211,153,0.28)",
-        "border_radius": "6px",
-        "color": "rgba(52,211,153,0.92)",
-        "padding": "3px 10px",
-        "display": "inline-flex",
-        "align_items": "center",
-        "gap": "4px",
-        "font_size": "13px",
-        "font_weight": "700",
-        "white_space": "nowrap",
-    }
-    _dn = {
-        "background": "rgba(248,113,113,0.08)",
-        "border": "1px solid rgba(248,113,113,0.25)",
-        "border_radius": "6px",
-        "color": "rgba(248,113,113,0.88)",
-        "padding": "3px 10px",
-        "display": "inline-flex",
-        "align_items": "center",
-        "gap": "4px",
-        "font_size": "13px",
-        "font_weight": "700",
-        "white_space": "nowrap",
-    }
-    _flat = {
-        "background": white(0.04),
-        "border": f"1px solid {white(0.09)}",
-        "border_radius": "6px",
-        "color": white(0.35),
-        "padding": "3px 10px",
-        "display": "inline-flex",
-        "align_items": "center",
-        "gap": "4px",
-        "font_size": "13px",
-        "font_weight": "700",
-        "white_space": "nowrap",
-    }
+# ── Display helpers ────────────────────────────────────────────────────────────
+
+
+def _compact_number(val, size: str = "2") -> rx.Component:
+    """Format a number with K/M/B/T suffix — uses TEXT_SECONDARY."""
     return rx.cond(
-        pct > 0,
-        rx.box(rx.icon("trending-up", size=13), rx.text(f"{pct:.2f}%"), style=_up),
+        val >= 1_000_000_000_000,
+        rx.text(f"{val / 1_000_000_000_000:.1f}T", size=size, color=TEXT_SECONDARY),
         rx.cond(
-            pct < 0,
-            rx.box(
-                rx.icon("trending-down", size=13), rx.text(f"{pct:.2f}%"), style=_dn
-            ),
-            rx.box(rx.icon("minus", size=12), rx.text(f"{pct:.2f}%"), style=_flat),
-        ),
-    )
-
-
-def _price_color(pct):
-    return rx.cond(
-        pct > 0,
-        "rgba(52,211,153,0.9)",
-        rx.cond(pct < 0, "rgba(248,113,113,0.85)", white(0.6)),
-    )
-
-
-# ── Labeled stat block ─────────────────────────────────────────────────────────
-
-
-def _stat(label: str, value) -> rx.Component:
-    """A small labeled stat — label on top, value below."""
-    return rx.vstack(
-        rx.text(
-            label,
-            style={
-                "font_size": "9px",
-                "font_weight": "700",
-                "color": white(0.22),
-                "letter_spacing": "0.09em",
-                "text_transform": "uppercase",
-                "white_space": "nowrap",
-            },
-        ),
-        value,
-        spacing="1",
-        align="end",
-    )
-
-
-def _mktcap_text(mc) -> rx.Component:
-    return rx.cond(
-        mc >= 1_000_000_000_000,
-        rx.text(
-            f"{mc / 1_000_000_000_000:.1f}T",
-            size="2",
-            color=white(0.5),
-            weight="medium",
-        ),
-        rx.cond(
-            mc >= 1_000_000_000,
-            rx.text(
-                f"{mc / 1_000_000_000:.1f}B",
-                size="2",
-                color=white(0.5),
-                weight="medium",
-            ),
+            val >= 1_000_000_000,
+            rx.text(f"{val / 1_000_000_000:.1f}B", size=size, color=TEXT_SECONDARY),
             rx.cond(
-                mc > 0,
-                rx.text(
-                    f"{mc / 1_000_000:.0f}M",
-                    size="2",
-                    color=white(0.5),
-                    weight="medium",
+                val >= 1_000_000,
+                rx.text(f"{val / 1_000_000:.1f}M", size=size, color=TEXT_SECONDARY),
+                rx.cond(
+                    val >= 1_000,
+                    rx.text(f"{val / 1_000:.0f}K", size=size, color=TEXT_SECONDARY),
+                    rx.cond(
+                        val > 0,
+                        rx.text(val, size=size, color=TEXT_SECONDARY),
+                        rx.text("—", size=size, color=TEXT_MUTED),
+                    ),
                 ),
-                rx.text("—", size="2", color=white(0.2)),
             ),
         ),
     )
@@ -138,40 +76,118 @@ def _mktcap_text(mc) -> rx.Component:
 
 
 def _cart_btn(symbol: str) -> rx.Component:
+    """Cart icon — uses BTN_GHOST_XS from styles.py."""
     return rx.button(
-        rx.icon("shopping-cart", size=15),
+        rx.icon("shopping-cart", size=13),
         on_click=CartState.add_item(symbol),
-        style={
-            "background": white(0.04),
-            "border": f"1px solid {white(0.09)}",
-            "border_radius": "9px",
-            "color": white(0.35),
-            "cursor": "pointer",
-            "transition": "all 0.15s ease",
-            "_hover": {
-                "background": purple(0.18),
-                "border_color": purple(0.45),
-                "color": TEXT_PURPLE,
-            },
-            "width": "38px",
-            "height": "38px",
-            "display": "flex",
-            "align_items": "center",
-            "justify_content": "center",
-            "flex_shrink": "0",
-            "padding": "0",
-            "min_width": "auto",
-        },
+        size="1",
+        **BTN_GHOST_XS,
     )
 
 
-# ── Single ticker row (card style) ────────────────────────────────────────────
+def _compare_btn(symbol: str) -> rx.Component:
+    return rx.button(
+        rx.icon("between_horizontal_start", size=13),
+        on_click=TickersPageState.add_ticker_to_compare(symbol),
+        size="1",
+        **_COMPARE_BTN,
+    )
+
+
+# ── Column definitions ─────────────────────────────────────────────────────────
+# Each column: (label, sort_field, width).  Header and data rows both use this
+# list so adding/removing a column only requires editing one place.
+
+_COLUMNS = [
+    ("Price", "current_price", "70px"),
+    ("Change", "pct_price_change", "75px"),
+    ("Volume", "accumulated_volume", "70px"),
+    ("Mkt Cap", "market_cap", "75px"),
+]
+
+# Width reserved for the two trailing icon-buttons (cart + compare)
+_ACTIONS_WIDTH = "72px"
+
+
+# ── Sort indicator ─────────────────────────────────────────────────────────────
+
+
+def _sort_indicator(field: str) -> rx.Component:
+    current = TickersPageState.sort_options[TickersPageState.selected_sort_option]
+    return rx.cond(
+        current == field,
+        rx.cond(
+            TickersPageState.selected_sort_order == "ASC",
+            rx.icon("chevron-up", size=11, color=white(0.5)),
+            rx.icon("chevron-down", size=11, color=white(0.5)),
+        ),
+        rx.fragment(),
+    )
+
+
+# ── Header row ─────────────────────────────────────────────────────────────────
+
+
+def _header_cell(label: str, field: str, width: str) -> rx.Component:
+    return rx.box(
+        rx.hstack(
+            rx.text(label, size="1", color=white(0.3), weight="medium"),
+            _sort_indicator(field),
+            spacing="1",
+            align="center",
+        ),
+        on_click=lambda: TickersPageState.toggle_sort(field),
+        cursor="pointer",
+        user_select="none",
+        width=width,
+        display="flex",
+        justify_content="flex-end",
+        transition="opacity 0.12s ease",
+        _hover={"opacity": "0.7"},
+    )
+
+
+def _header_row() -> rx.Component:
+    return rx.hstack(
+        # Symbol column — left-aligned, fills remaining space
+        rx.box(
+            rx.hstack(
+                rx.text("Symbol", size="1", color=white(0.3), weight="medium"),
+                _sort_indicator("symbol"),
+                spacing="1",
+                align="center",
+            ),
+            on_click=lambda: TickersPageState.toggle_sort("symbol"),
+            cursor="pointer",
+            user_select="none",
+            flex="1",
+            min_width="0",
+            _hover={"opacity": "0.7"},
+            transition="opacity 0.12s ease",
+        ),
+        rx.spacer(),
+        rx.hstack(
+            *[_header_cell(label, field, w) for label, field, w in _COLUMNS],
+            rx.box(width=_ACTIONS_WIDTH, flex_shrink="0"),
+            spacing="4",
+            align="center",
+            flex_shrink="0",
+        ),
+        align="center",
+        width="100%",
+        padding=_ROW_PADDING,
+        border_bottom=f"1px solid {DIVIDER}",
+    )
+
+
+# ── Ticker row ─────────────────────────────────────────────────────────────────
 
 
 def ticker_row(ticker: dict) -> rx.Component:
+    """Single ticker row — mirrors search_bar suggestion_card layout."""
     symbol = ticker["symbol"].to(str)
     name = ticker.get("company_name", "").to(str)
-    exchange = ticker.get("exchange", "").to(str)
+    industry = ticker.get("industry", "").to(str)
     price = ticker.get("current_price", 0).to(float)
     pct = ticker.get("pct_price_change", 0).to(float)
     volume = ticker.get("accumulated_volume", 0).to(float)
@@ -179,32 +195,23 @@ def ticker_row(ticker: dict) -> rx.Component:
 
     return rx.box(
         rx.hstack(
-            # ── LEFT: symbol identity block
+            # LEFT — identity (matches search_bar.suggestion_card)
             rx.hstack(
                 rx.vstack(
                     rx.hstack(
-                        rx.text(
-                            symbol,
-                            size="6",
-                            weight="bold",
-                            color="white",
-                            line_height="1",
-                        ),
+                        # Symbol — size="5", weight="medium" (same as search_bar)
+                        rx.text(symbol, size="5", weight="medium"),
+                        # Industry badge — matches framework_cards.py badge style
                         rx.cond(
-                            exchange != "",
+                            industry != "",
                             rx.badge(
-                                exchange,
+                                industry,
+                                variant="soft",
+                                color_scheme="gray",
                                 size="1",
-                                style={
-                                    "background": white(0.05),
-                                    "border": f"1px solid {white(0.09)}",
-                                    "border_radius": "5px",
-                                    "color": white(0.38),
-                                    "font_size": "9px",
-                                    "letter_spacing": "0.06em",
-                                    "padding": "2px 6px",
-                                    "align_self": "center",
-                                },
+                                border_radius="6px",
+                                font_size="10px",
+                                letter_spacing="0.03em",
                             ),
                             rx.fragment(),
                         ),
@@ -213,13 +220,13 @@ def ticker_row(ticker: dict) -> rx.Component:
                     ),
                     rx.text(
                         name,
-                        size="1",
-                        color=white(0.22),
+                        size="2",
+                        color=TEXT_TERTIARY,
                         style={
                             "white_space": "nowrap",
                             "overflow": "hidden",
                             "text_overflow": "ellipsis",
-                            "max_width": "380px",
+                            "max_width": "400px",
                         },
                     ),
                     spacing="1",
@@ -230,87 +237,114 @@ def ticker_row(ticker: dict) -> rx.Component:
                 overflow="hidden",
             ),
             rx.spacer(),
-            # ── RIGHT: stat blocks + cart
+            # RIGHT — data columns (widths match _COLUMNS)
             rx.hstack(
-                # Price
-                _stat(
-                    "Price",
-                    rx.text(price, size="3", weight="bold", color=_price_color(pct)),
-                ),
-                # Divider
                 rx.box(
-                    width="1px", height="28px", background=white(0.07), flex_shrink="0"
-                ),
-                # % Change
-                _stat("Change", _pct_badge(pct)),
-                # Divider
-                rx.box(
-                    width="1px", height="28px", background=white(0.07), flex_shrink="0"
-                ),
-                # Volume
-                _stat(
-                    "Volume",
-                    rx.text(volume, size="2", color=white(0.5), weight="medium"),
-                ),
-                # Divider
-                rx.box(
-                    width="1px", height="28px", background=white(0.07), flex_shrink="0"
-                ),
-                # Mkt Cap
-                _stat("Mkt Cap", _mktcap_text(mktcap)),
-                # Cart — stop propagation so row click doesn't fire
-                rx.box(
-                    _cart_btn(symbol),
-                    on_click=rx.stop_propagation,
+                    rx.text(price, size="2", weight="medium", color=TEXT_SECONDARY),
+                    width="70px",
                     display="flex",
-                    align_items="center",
-                    margin_left="0.5em",
+                    justify_content="flex-end",
                 ),
-                spacing="5",
+                rx.box(
+                    pct_change_badge(diff=pct),
+                    width="75px",
+                    display="flex",
+                    justify_content="flex-end",
+                ),
+                rx.box(
+                    _compact_number(volume),
+                    width="70px",
+                    display="flex",
+                    justify_content="flex-end",
+                ),
+                rx.box(
+                    _compact_number(mktcap),
+                    width="75px",
+                    display="flex",
+                    justify_content="flex-end",
+                ),
+                # Actions
+                rx.hstack(
+                    rx.box(
+                        rx.tooltip(_cart_btn(symbol), content="Add to cart"),
+                        on_click=rx.stop_propagation,
+                        display="flex",
+                        align_items="center",
+                    ),
+                    rx.box(
+                        rx.tooltip(
+                            _compare_btn(symbol), content="Add to comparison board"
+                        ),
+                        on_click=rx.stop_propagation,
+                        display="flex",
+                        align_items="center",
+                    ),
+                    spacing="2",
+                    width=_ACTIONS_WIDTH,
+                    justify_content="flex-end",
+                    flex_shrink="0",
+                ),
+                spacing="4",
                 align="center",
                 flex_shrink="0",
             ),
             align="center",
             width="100%",
-            padding="1em 1.5em",
+            padding=_ROW_PADDING,
         ),
         on_click=rx.redirect(f"/tickers/{symbol}"),
         cursor="pointer",
         width="100%",
-        style={
-            "border_bottom": f"1px solid {white(0.05)}",
-            "transition": "background 0.1s ease",
-            "_hover": {"background": white(0.03)},
-        },
+        border_bottom=f"1px solid {DIVIDER}",
+        transition="background 0.12s ease",
+        _hover={"background": white(0.03)},
     )
 
 
-# ── Skeleton rows ──────────────────────────────────────────────────────────────
+# ── Skeleton row ───────────────────────────────────────────────────────────────
 
 
 def _skel(w: str, h: str = "13px") -> rx.Component:
-    return rx.skeleton(
-        rx.box(width=w, height=h), loading=True, style={"border_radius": "5px"}
-    )
+    return rx.skeleton(rx.box(width=w, height=h), loading=True, border_radius="5px")
 
 
 def _skeleton_row() -> rx.Component:
     return rx.hstack(
-        rx.vstack(_skel("80px", "22px"), _skel("200px", "11px"), spacing="2"),
+        rx.vstack(
+            rx.hstack(_skel("80px", "20px"), _skel("40px", "18px"), spacing="2"),
+            _skel("200px", "13px"),
+            spacing="2",
+        ),
         rx.spacer(),
         rx.hstack(
-            _skel("55px", "32px"),
-            _skel("80px", "26px"),
-            _skel("70px", "32px"),
-            _skel("50px", "32px"),
-            _skel("38px", "38px"),
-            spacing="5",
+            _skel("50px", "16px"),
+            _skel("65px", "20px"),
+            _skel("55px", "14px"),
+            _skel("50px", "14px"),
+            _skel("32px", "32px"),
+            spacing="4",
             align="center",
         ),
         align="center",
         width="100%",
-        padding="1em 1.5em",
-        border_bottom=f"1px solid {white(0.05)}",
+        padding=_ROW_PADDING,
+        border_bottom=f"1px solid {DIVIDER}",
+    )
+
+
+def skeleton_list() -> rx.Component:
+    """Skeleton rows shown during initial data load."""
+    return rx.box(
+        rx.vstack(
+            *[_skeleton_row() for _ in range(_SKELETON_ROW_COUNT)],
+            spacing="0",
+            width="100%",
+        ),
+        border_radius="14px",
+        border=CARD_BORDER,
+        background=CARD_BG,
+        overflow="hidden",
+        width="100%",
     )
 
 
@@ -321,20 +355,22 @@ def _empty_state() -> rx.Component:
     return rx.center(
         rx.vstack(
             rx.box(
-                rx.icon("search-x", size=28, color=white(0.18)),
+                rx.icon("search-x", size=28, color=TEXT_MUTED),
                 padding="1.25em",
                 border_radius="14px",
-                background=white(0.03),
-                border=f"1px solid {white(0.07)}",
+                background=CARD_BG,
+                border=CARD_BORDER,
                 display="flex",
                 align_items="center",
                 justify_content="center",
             ),
-            rx.text("No tickers found", size="4", weight="bold", color=white(0.45)),
+            rx.text(
+                "No tickers found", size="4", weight="medium", color=TEXT_SECONDARY
+            ),
             rx.text(
                 "Try adjusting your search or filters.",
                 size="2",
-                color=white(0.25),
+                color=TEXT_TERTIARY,
                 text_align="center",
             ),
             spacing="3",
@@ -347,25 +383,37 @@ def _empty_state() -> rx.Component:
 # ── Public export ──────────────────────────────────────────────────────────────
 
 
+_BOARD_H = "42em"
+
+
 def new_ticker_board() -> rx.Component:
-    return rx.box(
+    """Ticker board — skeleton → row list → empty state."""
+    return rx.cond(
+        TickersPageState.is_board_loading,
+        rx.box(skeleton_list(), height=_BOARD_H, overflow="hidden", width="100%"),
         rx.cond(
             TickerBoardState.get_all_tickers.length() > 0,
-            rx.scroll_area(
-                rx.vstack(
-                    rx.foreach(TickerBoardState.get_all_tickers, ticker_row),
-                    spacing="0",
-                    width="100%",
+            rx.box(
+                _header_row(),
+                rx.scroll_area(
+                    rx.vstack(
+                        rx.foreach(TickerBoardState.get_all_tickers, ticker_row),
+                        spacing="0",
+                        width="100%",
+                    ),
+                    scrollbars="vertical",
+                    type="hover",
+                    style={"flex": "1", "width": "100%"},
                 ),
-                scrollbars="vertical",
-                type="hover",
-                style={"height": "calc(100vh - 280px)", "width": "100%"},
+                border_radius="14px",
+                border=CARD_BORDER,
+                background=CARD_BG,
+                overflow="hidden",
+                width="100%",
+                height=_BOARD_H,
+                display="flex",
+                flex_direction="column",
             ),
             _empty_state(),
         ),
-        border_radius="14px",
-        border=f"1px solid {white(0.07)}",
-        background=white(0.025),
-        overflow="hidden",
-        width="100%",
     )

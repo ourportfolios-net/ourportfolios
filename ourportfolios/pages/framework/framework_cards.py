@@ -5,17 +5,15 @@ import reflex as rx
 from .state import FrameworkState
 from ...styles import (
     CARD_STYLE,
+    PILL_TOGGLE,
+    PILL_TOGGLE_ACTIVE,
+    accent_btn,
     white,
-    purple,
-    TEXT_PURPLE,
-    TEXT_ACCENT,
 )
 
 
 def _skel(w: str, h: str) -> rx.Component:
-    return rx.skeleton(
-        rx.box(width=w, height=h), loading=True, style={"border_radius": "6px"}
-    )
+    return rx.skeleton(rx.box(width=w, height=h), loading=True, border_radius="6px")
 
 
 def skeleton_card() -> rx.Component:
@@ -25,7 +23,7 @@ def skeleton_card() -> rx.Component:
                 rx.skeleton(
                     rx.box(width="31px", height="31px"),
                     loading=True,
-                    style={"border_radius": "8px"},
+                    border_radius="8px",
                 ),
                 rx.spacer(),
                 _skel("70px", "18px"),
@@ -69,39 +67,19 @@ def skeleton_card() -> rx.Component:
 def category_filter_button(category):
     is_active = FrameworkState.active_category == category.value
 
-    return rx.button(
-        category.label,
-        on_click=lambda: FrameworkState.set_active_category(category.value),
-        size="2",
-        style=rx.cond(
-            is_active,
-            {
-                "background": purple(0.18),
-                "border": f"1px solid {purple(0.5)}",
-                "border_radius": "999px",
-                "color": TEXT_PURPLE,
-                "font_weight": "600",
-                "font_size": "13px",
-                "cursor": "pointer",
-                "transition": "all 0.15s ease",
-                "padding": "0 16px",
-            },
-            {
-                "background": "transparent",
-                "border": f"1px solid {white(0.1)}",
-                "border_radius": "999px",
-                "color": white(0.5),
-                "font_weight": "500",
-                "font_size": "13px",
-                "cursor": "pointer",
-                "transition": "all 0.15s ease",
-                "padding": "0 16px",
-                "_hover": {
-                    "background": white(0.06),
-                    "color": white(0.85),
-                    "border_color": white(0.2),
-                },
-            },
+    return rx.cond(
+        is_active,
+        rx.button(
+            category.label,
+            on_click=lambda: FrameworkState.set_active_category(category.value),
+            size="2",
+            **PILL_TOGGLE_ACTIVE,
+        ),
+        rx.button(
+            category.label,
+            on_click=lambda: FrameworkState.set_active_category(category.value),
+            size="2",
+            **PILL_TOGGLE,
         ),
     )
 
@@ -125,11 +103,9 @@ def framework_card(framework):
                     variant="soft",
                     color_scheme="gray",
                     size="1",
-                    style={
-                        "border_radius": "6px",
-                        "font_size": "10px",
-                        "letter_spacing": "0.03em",
-                    },
+                    border_radius="6px",
+                    font_size="10px",
+                    letter_spacing="0.03em",
                 ),
                 width="100%",
                 align="center",
@@ -147,11 +123,11 @@ def framework_card(framework):
                     size="2",
                     color=white(0.38),
                     line_height="1.65",
+                    display="-webkit-box",
+                    overflow="hidden",
                     style={
-                        "display": "-webkit-box",
                         "-webkit-line-clamp": "3",
                         "-webkit-box-orient": "vertical",
-                        "overflow": "hidden",
                     },
                 ),
                 spacing="2",
@@ -179,14 +155,7 @@ def framework_card(framework):
                         align="start",
                     ),
                     rx.spacer(),
-                    rx.hstack(
-                        rx.text(
-                            "VIEW ASSETS", size="1", weight="bold", color=TEXT_ACCENT
-                        ),
-                        rx.icon("arrow-right", size=12, color=TEXT_ACCENT),
-                        spacing="1",
-                        align="center",
-                    ),
+                    accent_btn("View Framework"),
                     width="100%",
                     align="center",
                 ),
@@ -200,12 +169,10 @@ def framework_card(framework):
         on_click=lambda: FrameworkState.show_framework_dialog(framework),
         **CARD_STYLE,
         cursor="pointer",
-        style={
-            "transition": "all 0.15s ease",
-            "_hover": {
-                "background": white(0.045),
-                "border_color": white(0.13),
-                "transform": "translateY(-1px)",
-            },
+        transition="all 0.15s ease",
+        _hover={
+            "background": white(0.045),
+            "border_color": white(0.13),
+            "transform": "translateY(-1px)",
         },
     )
