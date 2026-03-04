@@ -253,7 +253,7 @@ class HomeState(rx.State):
 
     @rx.event
     def handle_compare(self):
-        return rx.redirect("/analyze/compare")
+        return rx.redirect("/tickers")
 
     @rx.event
     def handle_portfolio(self):

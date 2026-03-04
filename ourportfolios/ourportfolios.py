@@ -4,7 +4,6 @@ from ourportfolios.pages import (  # noqa: F401
     framework,
     ticker_analysis,
     industry_analysis,
-    analyze,
     tickers,
     home,
 )
