@@ -2,6 +2,115 @@
 
 <!-- version list -->
 
+## v0.12.0 (2026-03-04)
+
+### Bug Fixes
+
+- **compare-board**: Fix state management
+  ([`ccae9dc`](https://github.com/ourportfolios-net/ourportfolios/commit/ccae9dce2855ab3da76e210770f65c3eb8a9dd37))
+
+### Chores
+
+- Add breadcrumbs
+  ([`688f4f7`](https://github.com/ourportfolios-net/ourportfolios/commit/688f4f71cc136bf658a1b5c18ea6cae2fd2fd672))
+
+- First iteration of heatmap
+  ([`6b9c446`](https://github.com/ourportfolios-net/ourportfolios/commit/6b9c4467a414ab7e72ed0039fffbc9a7d9fc8f9e))
+
+- Fixate industry tags
+  ([`9f848af`](https://github.com/ourportfolios-net/ourportfolios/commit/9f848aff656de1b48adb84552326d7a520fa17a4))
+
+- Follow commit
+  ([`f3bb707`](https://github.com/ourportfolios-net/ourportfolios/commit/f3bb7079d325bd2244f0b70099b42d83fd315ee5))
+
+- Improve responsiveness
+  ([`3c72b76`](https://github.com/ourportfolios-net/ourportfolios/commit/3c72b762451c6f5ef11c9ae6a14a35b8c4ff5fab))
+
+- Move everything to /tickers
+  ([`9332624`](https://github.com/ourportfolios-net/ourportfolios/commit/9332624c5a3c7970feaeb59167742dd24f4457ea))
+
+- Overall rehaul of homepage
+  ([`eef3e02`](https://github.com/ourportfolios-net/ourportfolios/commit/eef3e02b8b615d3bf6fc8b858c46b4afd810ff60))
+
+- Prune /select and its components
+  ([`df64ac3`](https://github.com/ourportfolios-net/ourportfolios/commit/df64ac31e685ec019aae16188590e189941adbc1))
+
+- Prune hardcodes
+  ([`419f811`](https://github.com/ourportfolios-net/ourportfolios/commit/419f811943921c737127f27195913716b7f2549f))
+
+- Push all buttons to the corner
+  ([`ee5e3e0`](https://github.com/ourportfolios-net/ourportfolios/commit/ee5e3e0a7ef5e0d8a232afaefa9cff4c4ce9f2d8))
+
+- Redesign ticker board
+  ([`0d43a3a`](https://github.com/ourportfolios-net/ourportfolios/commit/0d43a3a959e2effc5021b035c0a6c1ea8e009471))
+
+- Remove /analyze
+  ([`8b23140`](https://github.com/ourportfolios-net/ourportfolios/commit/8b231404c64bafd6d16322dc4eb9bd60eff2a445))
+
+- Restyle buttons
+  ([`172fb62`](https://github.com/ourportfolios-net/ourportfolios/commit/172fb62cde40d860c5132bedb1c60cd866b46606))
+
+- Update layout to 75/25
+  ([`b5e065a`](https://github.com/ourportfolios-net/ourportfolios/commit/b5e065a1221282c55c57719445d38dbaf7a0b5b9))
+
+- Widen layout
+  ([`d32f203`](https://github.com/ourportfolios-net/ourportfolios/commit/d32f203bfd590f4e038b9e6fc8e414dfc90f3059))
+
+- **compare**: Rename to ticker board
+  ([`25f8c42`](https://github.com/ourportfolios-net/ourportfolios/commit/25f8c4245ff6b916a3e6ff6b9cdbba2bef4c6ae7))
+
+- **create-schema**: Remove global variables and dependencies on the scheduler
+  ([`4aa654c`](https://github.com/ourportfolios-net/ourportfolios/commit/4aa654c83de33faefbaf5c0c2c0466b4adb95cbe))
+
+- **deps**: Upgrade
+  ([`fe6aef4`](https://github.com/ourportfolios-net/ourportfolios/commit/fe6aef4ca44101595954555d1149830967d3112d))
+
+- **homepage**: Add skeleton
+  ([`9c47f25`](https://github.com/ourportfolios-net/ourportfolios/commit/9c47f255e9b3f17ecbd0438c945119fafe0a3a78))
+
+- **README**: Update
+  ([`d8fa558`](https://github.com/ourportfolios-net/ourportfolios/commit/d8fa55827d130b3fcabf7f5738b4801e3869f08e))
+
+- **ruff**: Comply with checks
+  ([`7cc9f0e`](https://github.com/ourportfolios-net/ourportfolios/commit/7cc9f0e2fb1cdbee934f4ddadb1af4cc189fba92))
+
+- **ruff**: Comply with checks
+  ([`650cb8d`](https://github.com/ourportfolios-net/ourportfolios/commit/650cb8d4a1d146de6f2084b5f34125f336a32b65))
+
+- **ticker-board**: Rename page to tickers
+  ([`b1e8192`](https://github.com/ourportfolios-net/ourportfolios/commit/b1e8192b77075e9a06f0a955d522996e86c59501))
+
+### Features
+
+- Add heatmap
+  ([`a68794b`](https://github.com/ourportfolios-net/ourportfolios/commit/a68794b4bdf49688299dbc4c8536aaf0845996f0))
+
+- Change icons and minor UI UX features
+  ([`cb14504`](https://github.com/ourportfolios-net/ourportfolios/commit/cb145049d11a67292c4bd960360218fbfb436f46))
+
+- Restore all functionality of comparison board
+  ([`a2f3947`](https://github.com/ourportfolios-net/ourportfolios/commit/a2f3947bf776998bdd651121bc3fa3749eca0442))
+
+- **tickers**: Improve state management
+  ([`5ba6d4d`](https://github.com/ourportfolios-net/ourportfolios/commit/5ba6d4d7ce0920a70d3e831fafc84662debd9c6b))
+
+### Performance Improvements
+
+- Improve loading speed
+  ([`bcf9ec0`](https://github.com/ourportfolios-net/ourportfolios/commit/bcf9ec0e86656f58c6cc70cdb0c11e84451ef241))
+
+### Refactoring
+
+- Prune repeated code blocks
+  ([`2a18691`](https://github.com/ourportfolios-net/ourportfolios/commit/2a1869187a1c9faeb004bc8baf07b4ec3c42cd8b))
+
+- Prune style blocks
+  ([`2b551c7`](https://github.com/ourportfolios-net/ourportfolios/commit/2b551c789b91566223230c455628f869bb038ae9))
+
+- Turn breadcrumbs to a component
+  ([`6e3cecc`](https://github.com/ourportfolios-net/ourportfolios/commit/6e3cecc76d3f0710708b26ee2808e3eb2a26a364))
+
+
 ## v0.11.0 (2026-02-23)
 
 ### Bug Fixes
