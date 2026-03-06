@@ -2,6 +2,22 @@
 
 <!-- version list -->
 
+## v0.13.0 (2026-03-06)
+
+### Chores
+
+- Replace missing engines
+  ([`01bd156`](https://github.com/ourportfolios-net/ourportfolios/commit/01bd156779b2c5f43ceac97f68b51ec86965c511))
+
+- **deps**: Remove unused dependencies for deployment
+  ([`40a3121`](https://github.com/ourportfolios-net/ourportfolios/commit/40a312184013a8c35bd48bbdd54c007129d176e5))
+
+### Features
+
+- Completely remove price_db from project
+  ([`9a7b7c4`](https://github.com/ourportfolios-net/ourportfolios/commit/9a7b7c44fbefd5bb1ee47682bcb61207daa6fa08))
+
+
 ## v0.12.0 (2026-03-04)
 
 ### Bug Fixes
