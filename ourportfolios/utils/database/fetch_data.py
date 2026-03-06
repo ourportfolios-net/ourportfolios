@@ -304,7 +304,7 @@ async def fetch_income_statement_async(
                 ORDER BY year DESC
             """)
 
-        async with price_engine.connect() as conn:
+        async with company_engine.connect() as conn:
             result = await conn.execute(query, {"symbol": ticker_symbol})
             rows = result.fetchall()
             df = pd.DataFrame(rows, columns=result.keys())
@@ -355,7 +355,7 @@ async def fetch_balance_sheet_async(
                 ORDER BY year DESC
             """)
 
-        async with price_engine.connect() as conn:
+        async with company_engine.connect() as conn:
             result = await conn.execute(query, {"symbol": ticker_symbol})
             rows = result.fetchall()
             df = pd.DataFrame(rows, columns=result.keys())
@@ -406,7 +406,7 @@ async def fetch_cash_flow_async(
                 ORDER BY year DESC
             """)
 
-        async with price_engine.connect() as conn:
+        async with company_engine.connect() as conn:
             result = await conn.execute(query, {"symbol": ticker_symbol})
             rows = result.fetchall()
             df = pd.DataFrame(rows, columns=result.keys())
