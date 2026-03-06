@@ -2,7 +2,7 @@
 
 SAP (Stock Analysis Platform) to help investors build their investment portfolios and developers build their work portfolios.
 
-Check OurPortfolios out at [ourportfolios.net](https://ourportfolios.net)
+Check OurPortfolios out at [ourportfolios-lime-moon.reflex.run](https://ourportfolios-lime-moon.reflex.run)
 
 ---
 
