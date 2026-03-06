@@ -17,11 +17,11 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
+from sqlalchemy.pool import NullPool
 from dotenv import load_dotenv
 
 load_dotenv()
 
-PRICE_DB_URI = os.getenv("PRICE_DB_URI")
 COMPANY_DB_URI = os.getenv("COMPANY_DB_URI")
 
 
@@ -58,48 +58,21 @@ def _clean_sync_pg(url: str | None) -> str:
     return url
 
 
-PRICE_DB_URI_ASYNC = _ensure_async_pg(PRICE_DB_URI)
 COMPANY_DB_URI_ASYNC = _ensure_async_pg(COMPANY_DB_URI)
 
-price_engine = create_async_engine(
-    PRICE_DB_URI_ASYNC,
-    pool_size=5,
-    max_overflow=10,
-    pool_timeout=30,
-    pool_recycle=600,
-    pool_pre_ping=True,
-    connect_args={
-        "server_settings": {"jit": "off"},
-        "timeout": 10,
-    },
-)
 company_engine = create_async_engine(
     COMPANY_DB_URI_ASYNC,
-    pool_size=5,
-    max_overflow=10,
-    pool_timeout=30,
-    pool_recycle=600,
-    pool_pre_ping=True,
+    poolclass=NullPool,
     connect_args={
         "server_settings": {"jit": "off"},
         "timeout": 10,
+        "statement_cache_size": 0,
     },
 )
 
 # Sync engines for pandas to_sql operations
-price_sync_engine = create_engine(
-    _clean_sync_pg(PRICE_DB_URI), connect_args={"sslmode": "require"}
-)
 company_sync_engine = create_engine(
     _clean_sync_pg(COMPANY_DB_URI), connect_args={"sslmode": "require"}
-)
-
-
-PriceSession = async_sessionmaker(
-    price_engine,
-    autocommit=False,
-    autoflush=False,
-    expire_on_commit=False,
 )
 
 CompanySession = async_sessionmaker(
@@ -108,27 +81,6 @@ CompanySession = async_sessionmaker(
     autoflush=False,
     expire_on_commit=False,
 )
-
-
-@asynccontextmanager
-async def get_price_session() -> AsyncIterator[AsyncSession]:
-    """Async context manager yielding a price database session.
-
-    Usage:
-        async with get_price_session() as session:
-            result = await session.execute(...)
-
-    Session is committed if the block exits normally, and rolled back on exception.
-    """
-    async with PriceSession() as session:
-        try:
-            yield session
-            await session.commit()
-        except Exception:
-            await session.rollback()
-            raise
-        finally:
-            await session.close()
 
 
 @asynccontextmanager

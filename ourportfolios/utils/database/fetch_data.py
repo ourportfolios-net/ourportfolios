@@ -7,8 +7,6 @@ from sqlalchemy import text
 from .database import (
     company_sync_engine,
     company_engine,
-    price_sync_engine,
-    price_engine,
 )
 
 
@@ -44,7 +42,7 @@ def fetch_income_statement(ticker_symbol: str, period: str = "year") -> pd.DataF
                 ORDER BY year DESC
             """)
 
-        with price_sync_engine.connect() as conn:
+        with company_sync_engine.connect() as conn:
             df = pd.read_sql(query, conn, params={"symbol": ticker_symbol})
 
         if df.empty:
@@ -94,7 +92,7 @@ def fetch_balance_sheet(ticker_symbol: str, period: str = "year") -> pd.DataFram
                 ORDER BY year DESC
             """)
 
-        with price_sync_engine.connect() as conn:
+        with company_sync_engine.connect() as conn:
             df = pd.read_sql(query, conn, params={"symbol": ticker_symbol})
 
         if df.empty:
@@ -144,7 +142,7 @@ def fetch_cash_flow(ticker_symbol: str, period: str = "year") -> pd.DataFrame:
                 ORDER BY year DESC
             """)
 
-        with price_sync_engine.connect() as conn:
+        with company_sync_engine.connect() as conn:
             df = pd.read_sql(query, conn, params={"symbol": ticker_symbol})
 
         if df.empty:
@@ -306,7 +304,7 @@ async def fetch_income_statement_async(
                 ORDER BY year DESC
             """)
 
-        async with price_engine.connect() as conn:
+        async with company_engine.connect() as conn:
             result = await conn.execute(query, {"symbol": ticker_symbol})
             rows = result.fetchall()
             df = pd.DataFrame(rows, columns=result.keys())
@@ -357,7 +355,7 @@ async def fetch_balance_sheet_async(
                 ORDER BY year DESC
             """)
 
-        async with price_engine.connect() as conn:
+        async with company_engine.connect() as conn:
             result = await conn.execute(query, {"symbol": ticker_symbol})
             rows = result.fetchall()
             df = pd.DataFrame(rows, columns=result.keys())
@@ -408,7 +406,7 @@ async def fetch_cash_flow_async(
                 ORDER BY year DESC
             """)
 
-        async with price_engine.connect() as conn:
+        async with company_engine.connect() as conn:
             result = await conn.execute(query, {"symbol": ticker_symbol})
             rows = result.fetchall()
             df = pd.DataFrame(rows, columns=result.keys())
