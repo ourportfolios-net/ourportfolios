@@ -7,14 +7,14 @@ from ...styles import white, CARD_BORDER
 from .state import State
 from .dialog import company_profile_dialog
 
-_CARD_RADIUS = "10px"
+_CARD_RADIUS = "0.625rem"
 
 
 def _skel(w: str, h: str) -> rx.Component:
     return rx.skeleton(
         rx.box(width=w, height=h),
         loading=True,
-        style={"border_radius": "6px"},
+        style={"border_radius": "0.375rem"},
     )
 
 
@@ -23,20 +23,20 @@ def name_card_skeleton():
         rx.vstack(
             rx.hstack(
                 rx.skeleton(
-                    rx.box(width="31px", height="31px"),
+                    rx.box(width="1.9375rem", height="1.9375rem"),
                     loading=True,
-                    style={"border_radius": "8px"},
+                    style={"border_radius": "0.5rem"},
                 ),
                 rx.spacer(),
-                _skel("70px", "18px"),
+                _skel("4.375rem", "1.125rem"),
                 width="100%",
                 align="center",
             ),
             rx.vstack(
-                _skel("55%", "36px"),
+                _skel("55%", "2.25rem"),
                 rx.hstack(
-                    _skel("60px", "22px"),
-                    _skel("80px", "22px"),
+                    _skel("3.75rem", "1.375rem"),
+                    _skel("5rem", "1.375rem"),
                     spacing="2",
                 ),
                 spacing="3",
@@ -56,7 +56,7 @@ def name_card_skeleton():
 def general_info_card_skeleton():
     return rx.box(
         rx.vstack(
-            *[_skel("90%", "14px") for _ in range(5)],
+            *[_skel("90%", "0.875rem") for _ in range(5)],
             spacing="2",
             width="100%",
         ),
@@ -107,7 +107,7 @@ def name_card():
                             style={
                                 "background": white(0.05),
                                 "border": f"1px solid {white(0.1)}",
-                                "border_radius": "8px",
+                                "border_radius": "0.5rem",
                                 "color": white(0.7),
                                 "cursor": "pointer",
                                 "transition": "all 0.15s ease",
@@ -127,14 +127,14 @@ def name_card():
                             variant="soft",
                             color_scheme="gray",
                             size="1",
-                            style={"border_radius": "6px"},
+                            style={"border_radius": "0.375rem"},
                         ),
                         rx.badge(
                             f"{overview.get('industry', '')}",
                             variant="soft",
                             color_scheme="violet",
                             size="1",
-                            style={"border_radius": "6px"},
+                            style={"border_radius": "0.375rem"},
                         ),
                         spacing="2",
                     ),

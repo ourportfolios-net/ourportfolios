@@ -13,7 +13,7 @@ def metric_badge(metric):
         variant="soft",
         color_scheme="gray",
         size="2",
-        border_radius="6px",
+        border_radius="0.375rem",
     )
 
 
@@ -91,7 +91,7 @@ def framework_dialog():
                             ),
                             display="flex",
                             flex_wrap="wrap",
-                            gap="8px",
+                            gap="0.5rem",
                         ),
                         spacing="2",
                         width="100%",
@@ -137,5 +137,5 @@ def framework_dialog():
         on_open_change=FrameworkState.handle_dialog_open,
         width="65vw",
         height="70vh",
-        max_width="900px",
+        max_width="56.25rem",
     )

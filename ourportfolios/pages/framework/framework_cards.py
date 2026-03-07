@@ -13,7 +13,9 @@ from ...styles import (
 
 
 def _skel(w: str, h: str) -> rx.Component:
-    return rx.skeleton(rx.box(width=w, height=h), loading=True, border_radius="6px")
+    return rx.skeleton(
+        rx.box(width=w, height=h), loading=True, border_radius="0.375rem"
+    )
 
 
 def skeleton_card() -> rx.Component:
@@ -21,20 +23,20 @@ def skeleton_card() -> rx.Component:
         rx.vstack(
             rx.hstack(
                 rx.skeleton(
-                    rx.box(width="31px", height="31px"),
+                    rx.box(width="1.9375rem", height="1.9375rem"),
                     loading=True,
-                    border_radius="8px",
+                    border_radius="0.5rem",
                 ),
                 rx.spacer(),
-                _skel("70px", "18px"),
+                _skel("4.375rem", "1.125rem"),
                 width="100%",
                 align="center",
             ),
             rx.vstack(
-                _skel("60%", "20px"),
-                _skel("100%", "14px"),
-                _skel("80%", "14px"),
-                _skel("90%", "14px"),
+                _skel("60%", "1.25rem"),
+                _skel("100%", "0.875rem"),
+                _skel("80%", "0.875rem"),
+                _skel("90%", "0.875rem"),
                 spacing="2",
                 width="100%",
             ),
@@ -43,13 +45,13 @@ def skeleton_card() -> rx.Component:
                 rx.box(height="1px", width="100%", background=white(0.05)),
                 rx.hstack(
                     rx.vstack(
-                        _skel("45px", "10px"),
-                        _skel("80px", "14px"),
+                        _skel("2.8125rem", "0.625rem"),
+                        _skel("5rem", "0.875rem"),
                         spacing="1",
                         align="start",
                     ),
                     rx.spacer(),
-                    _skel("90px", "14px"),
+                    _skel("5.625rem", "0.875rem"),
                     width="100%",
                     align="center",
                 ),
@@ -91,8 +93,8 @@ def framework_card(framework):
                 rx.box(
                     rx.icon("trending-up", size=15, color=white(0.5)),
                     background=white(0.06),
-                    border_radius="8px",
-                    padding="8px",
+                    border_radius="0.5rem",
+                    padding="0.5rem",
                     display="flex",
                     align_items="center",
                     justify_content="center",
@@ -103,8 +105,8 @@ def framework_card(framework):
                     variant="soft",
                     color_scheme="gray",
                     size="1",
-                    border_radius="6px",
-                    font_size="10px",
+                    border_radius="0.375rem",
+                    font_size="0.625rem",
                     letter_spacing="0.03em",
                 ),
                 width="100%",

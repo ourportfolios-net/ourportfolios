@@ -56,7 +56,7 @@ def _sparkline(stock: dict, metric_key: str, industry: str) -> rx.Component:
             height=34,
             margin={"top": 2, "right": 4, "left": 4, "bottom": 2},
         ),
-        rx.box(width="100%", height="34px"),
+        rx.box(width="100%", height="2.125rem"),
     )
 
 
@@ -75,7 +75,7 @@ def _metric_cell(stock: dict, metric_key: str, industry: str) -> rx.Component:
                 size="1",
                 weight=rx.cond(is_best, "bold", "regular"),
                 color=rx.cond(is_best, "rgba(52,211,153,0.9)", white(0.6)),
-                style={"white_space": "nowrap", "font_size": "11.5px"},
+                style={"white_space": "nowrap", "font_size": "0.72rem"},
             ),
             rx.cond(
                 TickersPageState.show_graphs,
@@ -116,14 +116,14 @@ def _ticker_card(stock: dict) -> rx.Component:
                             symbol,
                             weight="bold",
                             color="white",
-                            style={"font_size": "15px", "line_height": "1"},
+                            style={"font_size": "0.9375rem", "line_height": "1"},
                         ),
                         rx.text(
                             company_name,
                             color=TEXT_TERTIARY,
                             style={
                                 **TEXT_TRUNCATE,
-                                "font_size": "10px",
+                                "font_size": "0.625rem",
                                 "line_height": "1.3",
                                 "max_width": "7em",
                             },
@@ -150,7 +150,7 @@ def _ticker_card(stock: dict) -> rx.Component:
                     cursor="pointer",
                     on_click=TickersPageState.remove_stock_from_compare(symbol),
                     flex_shrink="0",
-                    padding="2px",
+                    padding="0.125rem",
                 ),
                 spacing="2",
                 align="center",
@@ -158,15 +158,15 @@ def _ticker_card(stock: dict) -> rx.Component:
             ),
             background=white(0.04),
             border=f"1px solid {white(0.07)}",
-            border_radius="8px",
+            border_radius="0.5rem",
             padding="0.55em 0.7em",
             width="calc(100% - 1em)",
             transition="all 0.18s ease",
             _hover={
                 "background": white(0.07),
                 "border_color": white(0.13),
-                "transform": "translateX(-3px)",
-                "box_shadow": "0 4px 16px rgba(0,0,0,0.35)",
+                "transform": "translateX(-0.1875rem)",
+                "box_shadow": "0 0.25rem 1rem rgba(0,0,0,0.35)",
             },
         ),
         width=_TICKER_W,
@@ -197,8 +197,8 @@ def _industry_row(industry: str) -> rx.Component:
                 color_scheme="gray",
                 size="2",
                 style={
-                    "border_radius": "5px",
-                    "font_size": "11px",
+                    "border_radius": "0.3125rem",
+                    "font_size": "0.6875rem",
                     "letter_spacing": "0.04em",
                 },
             ),
@@ -263,16 +263,16 @@ def _skeleton_metric_cell() -> rx.Component:
     return rx.box(
         rx.vstack(
             rx.skeleton(
-                height="12px",
-                width="48px",
-                border_radius="4px",
+                height="0.75rem",
+                width="3rem",
+                border_radius="0.25rem",
             ),
             rx.cond(
                 TickersPageState.show_graphs,
                 rx.skeleton(
-                    height="28px",
+                    height="1.75rem",
                     width="80%",
-                    border_radius="4px",
+                    border_radius="0.25rem",
                 ),
                 rx.fragment(),
             ),
@@ -302,8 +302,12 @@ def _skeleton_row(ticker: str) -> rx.Component:
             rx.box(
                 rx.hstack(
                     rx.vstack(
-                        rx.skeleton(height="13px", width="44px", border_radius="4px"),
-                        rx.skeleton(height="9px", width="68px", border_radius="4px"),
+                        rx.skeleton(
+                            height="0.8125rem", width="2.75rem", border_radius="0.25rem"
+                        ),
+                        rx.skeleton(
+                            height="0.5625rem", width="4.25rem", border_radius="0.25rem"
+                        ),
                         spacing="1",
                         align="start",
                     ),
@@ -321,7 +325,7 @@ def _skeleton_row(ticker: str) -> rx.Component:
                         cursor="pointer",
                         on_click=TickersPageState.remove_stock_from_compare(ticker),
                         flex_shrink="0",
-                        padding="2px",
+                        padding="0.125rem",
                     ),
                     spacing="2",
                     align="center",
@@ -329,7 +333,7 @@ def _skeleton_row(ticker: str) -> rx.Component:
                 ),
                 background=white(0.04),
                 border=f"1px solid {white(0.07)}",
-                border_radius="8px",
+                border_radius="0.5rem",
                 padding="0.55em 0.7em",
                 width="calc(100% - 1em)",
             ),
@@ -391,7 +395,7 @@ def compare_table() -> rx.Component:
                 justify_content="center",
                 background="rgba(9,9,9,0.75)",
                 z_index="10",
-                border_radius="13px",
+                border_radius="0.8125rem",
             ),
             rx.fragment(),
         ),
@@ -505,7 +509,7 @@ def compare_table() -> rx.Component:
         ),
         position="relative",
         width="100%",
-        border_radius="14px",
+        border_radius="0.875rem",
         border=f"1px solid {white(0.07)}",
         background=TABLE_BG,
         overflow="hidden",
@@ -518,7 +522,7 @@ def empty_compare_state() -> rx.Component:
             rx.box(
                 rx.icon("between_horizontal_start", size=32, color=white(0.2)),
                 padding="1.25em",
-                border_radius="14px",
+                border_radius="0.875rem",
                 background=white(0.035),
                 border=f"1px solid {white(0.07)}",
                 display="flex",
@@ -546,7 +550,7 @@ def empty_compare_state() -> rx.Component:
         ),
         height="24em",
         width="100%",
-        border_radius="14px",
+        border_radius="0.875rem",
         border=f"1px solid {white(0.07)}",
         background=white(0.025),
     )

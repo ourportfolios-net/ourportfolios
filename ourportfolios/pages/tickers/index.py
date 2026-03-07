@@ -40,8 +40,8 @@ def _toggle_btn(label: str, icon_name: str, mode: str) -> rx.Component:
         ),
         color=rx.cond(is_active, white(0.9), white(0.6)),
         font_weight=rx.cond(is_active, "600", "500"),
-        font_size="13px",
-        border_radius="8px",
+        font_size="0.8125rem",
+        border_radius="0.5rem",
         cursor="pointer",
         transition="all 0.15s ease",
     )
@@ -87,7 +87,7 @@ def toolbar_row():
     return rx.hstack(
         rx.box(board_toolbar(), style=overlay_style(_is_board)),
         rx.box(compare_toolbar(), style=overlay_style(_is_compare)),
-        rx.box(height="34px", flex="1"),
+        rx.box(height="2.125rem", flex="1"),
         width="100%",
         align="center",
         position="relative",
@@ -132,8 +132,8 @@ def index():
         rx.box(
             rx.box(
                 main_content(),
-                width="86vw",
-                max_width="1800px",
+                width="clamp(70vw, 86vw, 96vw)",
+                max_width="112.5rem",
                 margin="0 auto",
             ),
             width="100%",

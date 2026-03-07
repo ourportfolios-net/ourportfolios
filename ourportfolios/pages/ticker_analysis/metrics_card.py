@@ -8,7 +8,7 @@ from ...state.framework_state import GlobalFrameworkState
 from .state import State
 from .performance_cards import performance_cards
 
-_CARD_RADIUS = "10px"
+_CARD_RADIUS = "0.625rem"
 
 
 def key_metrics_card():
@@ -20,6 +20,7 @@ def key_metrics_card():
                     rx.tabs.list(
                         rx.tabs.trigger("Performance", value="performance"),
                         rx.tabs.trigger("Financial Statements", value="statement"),
+                        flex_shrink="0",
                     ),
                     rx.spacer(),
                     # Framework indicator inline with tabs
@@ -32,6 +33,7 @@ def key_metrics_card():
                                     GlobalFrameworkState.framework_display_name,
                                     size="2",
                                     weight="medium",
+                                    white_space="nowrap",
                                 ),
                                 rx.icon("external-link", size=11),
                                 spacing="2",
@@ -40,7 +42,7 @@ def key_metrics_card():
                                 style={
                                     "backgroundColor": purple(0.1),
                                     "border": f"1px solid {purple(0.3)}",
-                                    "borderRadius": "6px",
+                                    "borderRadius": "0.375rem",
                                     "color": TEXT_PURPLE,
                                     "transition": "all 0.15s ease",
                                     "_hover": {
@@ -58,6 +60,7 @@ def key_metrics_card():
                                 "No framework selected.",
                                 size="2",
                                 color=white(0.45),
+                                white_space="nowrap",
                             ),
                             rx.link(
                                 rx.hstack(
@@ -69,7 +72,7 @@ def key_metrics_card():
                                     style={
                                         "backgroundColor": purple(0.12),
                                         "border": f"1px solid {purple(0.35)}",
-                                        "borderRadius": "6px",
+                                        "borderRadius": "0.375rem",
                                         "color": TEXT_PURPLE,
                                         "transition": "all 0.15s ease",
                                         "_hover": {
@@ -94,7 +97,7 @@ def key_metrics_card():
                             ),
                             variant="soft",
                             size="1",
-                            style={"border_radius": "6px"},
+                            style={"border_radius": "0.375rem"},
                         ),
                         rx.switch(
                             checked=State.switch_value == "year",
@@ -107,15 +110,17 @@ def key_metrics_card():
                             ),
                             variant="soft",
                             size="1",
-                            style={"border_radius": "6px"},
+                            style={"border_radius": "0.375rem"},
                         ),
                         justify="center",
                         align="center",
                         spacing="2",
+                        flex_shrink="0",
                     ),
                     width="100%",
                     align="center",
                     spacing="3",
+                    style={"flexWrap": "wrap"},
                 ),
                 rx.tabs.content(
                     performance_cards(),
@@ -131,14 +136,14 @@ def key_metrics_card():
                                 *[
                                     rx.vstack(
                                         rx.skeleton(
-                                            rx.box(height="28px", width="180px"),
+                                            rx.box(height="1.75rem", width="11.25rem"),
                                             loading=True,
-                                            style={"border_radius": "6px"},
+                                            style={"border_radius": "0.375rem"},
                                         ),
                                         rx.skeleton(
-                                            rx.box(height="120px", width="100%"),
+                                            rx.box(height="7.5rem", width="100%"),
                                             loading=True,
-                                            style={"border_radius": "6px"},
+                                            style={"border_radius": "0.375rem"},
                                         ),
                                         spacing="2",
                                         width="100%",
@@ -185,4 +190,5 @@ def key_metrics_card():
         width="100%",
         min_width="0",
         max_width="100%",
+        overflow="hidden",
     )

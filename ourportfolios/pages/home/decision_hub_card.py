@@ -2,17 +2,19 @@ import reflex as rx
 from ...state.home_state import HomeState
 from ...styles import CARD_STYLE, white, blue
 
-_PREVIEW_H = "200px"
+_PREVIEW_H = "12.5rem"
 
 
 def _skel_box(w: str, h: str) -> rx.Component:
-    return rx.box(width=w, height=h, border_radius="4px", background=white(0.06))
+    return rx.box(width=w, height=h, border_radius="0.25rem", background=white(0.06))
 
 
 def _compare_col(color: str, is_hovered) -> rx.Component:
     return rx.box(
-        rx.box(width="56px", height="12px", border_radius="4px", background=color),
-        width=rx.cond(is_hovered, "56px", "0px"),
+        rx.box(
+            width="3.5rem", height="0.75rem", border_radius="0.25rem", background=color
+        ),
+        width=rx.cond(is_hovered, "3.5rem", "0px"),
         opacity=rx.cond(is_hovered, "1", "0"),
         overflow="hidden",
         transition="all 0.45s cubic-bezier(0.4, 0, 0.2, 1)",
@@ -22,7 +24,10 @@ def _compare_col(color: str, is_hovered) -> rx.Component:
 def _compare_row(val1_color: str, val2_color: str) -> rx.Component:
     return rx.hstack(
         rx.box(
-            width="56px", height="20px", border_radius="6px", background=white(0.06)
+            width="3.5rem",
+            height="1.25rem",
+            border_radius="0.375rem",
+            background=white(0.06),
         ),
         _compare_col(val1_color, HomeState.is_comparison_hovered),
         _compare_col(val2_color, HomeState.is_comparison_hovered),
@@ -30,7 +35,7 @@ def _compare_row(val1_color: str, val2_color: str) -> rx.Component:
         align="center",
         width="100%",
         padding="0.5rem 0.625rem",
-        border_radius="8px",
+        border_radius="0.5rem",
         background=white(0.02),
         border=f"1px solid {white(0.04)}",
     )
@@ -39,14 +44,14 @@ def _compare_row(val1_color: str, val2_color: str) -> rx.Component:
 def _comparison_preview() -> rx.Component:
     return rx.box(
         rx.vstack(
-            _skel_box("65px", "9px"),
+            _skel_box("4.0625rem", "0.5625rem"),
             _compare_row(blue(0.45), white(0.08)),
             _compare_row(white(0.08), blue(0.45)),
             spacing="2",
             width="100%",
         ),
         padding="0.75rem",
-        border_radius="10px",
+        border_radius="0.625rem",
         background=white(0.02),
         border=f"1px solid {white(0.04)}",
         width="100%",
@@ -99,8 +104,8 @@ def decision_hub_card(
                     rx.icon(icon, size=16, color=icon_color_val),
                     background=icon_bg,
                     border=f"1px solid {icon_border}",
-                    border_radius="10px",
-                    padding="9px",
+                    border_radius="0.625rem",
+                    padding="0.5625rem",
                     display="flex",
                     align_items="center",
                     justify_content="center",
@@ -117,7 +122,7 @@ def decision_hub_card(
                 rx.box(
                     width="100%",
                     height=_PREVIEW_H,
-                    border_radius="10px",
+                    border_radius="0.625rem",
                     background=white(0.02),
                     border=f"1px solid {white(0.04)}",
                 ),
@@ -128,7 +133,7 @@ def decision_hub_card(
                 rx.hstack(
                     rx.text(
                         button_text,
-                        font_size="11px",
+                        font_size="0.6875rem",
                         font_weight="600",
                         color=white(0.7),
                     ),
@@ -138,7 +143,7 @@ def decision_hub_card(
                 ),
                 width="auto",
                 padding="0.45rem 0.75rem",
-                border_radius="7px",
+                border_radius="0.4375rem",
                 background=white(0.03),
                 border=f"1px solid {white(0.07)}",
                 cursor="pointer",
@@ -168,7 +173,7 @@ def decision_hub_card(
         on_mouse_enter=HomeState.start_comparison_hover,
         on_mouse_leave=HomeState.end_comparison_hover,
         style={
-            "height": "420px",
+            "height": "26.25rem",
             "transition": "all 0.15s ease",
             "_hover": {
                 "background": white(0.045),

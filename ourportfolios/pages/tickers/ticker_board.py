@@ -99,14 +99,14 @@ def _compare_btn(symbol: str) -> rx.Component:
 # list so adding/removing a column only requires editing one place.
 
 _COLUMNS = [
-    ("Price", "current_price", "70px"),
-    ("Change", "pct_price_change", "75px"),
-    ("Volume", "accumulated_volume", "70px"),
-    ("Mkt Cap", "market_cap", "75px"),
+    ("Price", "current_price", "4.375rem"),
+    ("Change", "pct_price_change", "4.6875rem"),
+    ("Volume", "accumulated_volume", "4.375rem"),
+    ("Mkt Cap", "market_cap", "4.6875rem"),
 ]
 
 # Width reserved for the two trailing icon-buttons (cart + compare)
-_ACTIONS_WIDTH = "72px"
+_ACTIONS_WIDTH = "4.5rem"
 
 
 # ── Sort indicator ─────────────────────────────────────────────────────────────
@@ -209,8 +209,8 @@ def ticker_row(ticker: dict) -> rx.Component:
                                 variant="soft",
                                 color_scheme="gray",
                                 size="1",
-                                border_radius="6px",
-                                font_size="10px",
+                                border_radius="0.375rem",
+                                font_size="0.625rem",
                                 letter_spacing="0.03em",
                             ),
                             rx.fragment(),
@@ -226,7 +226,7 @@ def ticker_row(ticker: dict) -> rx.Component:
                             "white_space": "nowrap",
                             "overflow": "hidden",
                             "text_overflow": "ellipsis",
-                            "max_width": "400px",
+                            "max_width": "25rem",
                         },
                     ),
                     spacing="1",
@@ -241,25 +241,25 @@ def ticker_row(ticker: dict) -> rx.Component:
             rx.hstack(
                 rx.box(
                     rx.text(price, size="2", weight="medium", color=TEXT_SECONDARY),
-                    width="70px",
+                    width="4.375rem",
                     display="flex",
                     justify_content="flex-end",
                 ),
                 rx.box(
                     pct_change_badge(diff=pct),
-                    width="75px",
+                    width="4.6875rem",
                     display="flex",
                     justify_content="flex-end",
                 ),
                 rx.box(
                     _compact_number(volume),
-                    width="70px",
+                    width="4.375rem",
                     display="flex",
                     justify_content="flex-end",
                 ),
                 rx.box(
                     _compact_number(mktcap),
-                    width="75px",
+                    width="4.6875rem",
                     display="flex",
                     justify_content="flex-end",
                 ),
@@ -304,24 +304,28 @@ def ticker_row(ticker: dict) -> rx.Component:
 # ── Skeleton row ───────────────────────────────────────────────────────────────
 
 
-def _skel(w: str, h: str = "13px") -> rx.Component:
-    return rx.skeleton(rx.box(width=w, height=h), loading=True, border_radius="5px")
+def _skel(w: str, h: str = "0.8125rem") -> rx.Component:
+    return rx.skeleton(
+        rx.box(width=w, height=h), loading=True, border_radius="0.3125rem"
+    )
 
 
 def _skeleton_row() -> rx.Component:
     return rx.hstack(
         rx.vstack(
-            rx.hstack(_skel("80px", "20px"), _skel("40px", "18px"), spacing="2"),
-            _skel("200px", "13px"),
+            rx.hstack(
+                _skel("5rem", "1.25rem"), _skel("2.5rem", "1.125rem"), spacing="2"
+            ),
+            _skel("12.5rem", "0.8125rem"),
             spacing="2",
         ),
         rx.spacer(),
         rx.hstack(
-            _skel("50px", "16px"),
-            _skel("65px", "20px"),
-            _skel("55px", "14px"),
-            _skel("50px", "14px"),
-            _skel("32px", "32px"),
+            _skel("3.125rem", "1rem"),
+            _skel("4.0625rem", "1.25rem"),
+            _skel("3.4375rem", "0.875rem"),
+            _skel("3.125rem", "0.875rem"),
+            _skel("2rem", "2rem"),
             spacing="4",
             align="center",
         ),
@@ -340,7 +344,7 @@ def skeleton_list() -> rx.Component:
             spacing="0",
             width="100%",
         ),
-        border_radius="14px",
+        border_radius="0.875rem",
         border=CARD_BORDER,
         background=CARD_BG,
         overflow="hidden",
@@ -357,7 +361,7 @@ def _empty_state() -> rx.Component:
             rx.box(
                 rx.icon("search-x", size=28, color=TEXT_MUTED),
                 padding="1.25em",
-                border_radius="14px",
+                border_radius="0.875rem",
                 background=CARD_BG,
                 border=CARD_BORDER,
                 display="flex",
@@ -405,7 +409,7 @@ def new_ticker_board() -> rx.Component:
                     type="hover",
                     style={"flex": "1", "width": "100%"},
                 ),
-                border_radius="14px",
+                border_radius="0.875rem",
                 border=CARD_BORDER,
                 background=CARD_BG,
                 overflow="hidden",

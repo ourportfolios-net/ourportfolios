@@ -13,7 +13,7 @@ from ...styles import (
     accent_btn,
 )
 
-_TREEMAP_H = "620px"
+_TREEMAP_H = "38.75rem"
 
 _TILE_BG = "rgba(255, 255, 255, 0.03)"
 _TILE_BORDER = "1px solid rgba(255, 255, 255, 0.07)"
@@ -31,7 +31,7 @@ def _period_btn(label: str) -> rx.Component:
             color=rx.cond(active, TEXT_PRIMARY, TEXT_TERTIARY),
         ),
         padding="0.18rem 0.5rem",
-        border_radius="5px",
+        border_radius="0.3125rem",
         background=rx.cond(active, white(0.09), "transparent"),
         cursor="pointer",
         on_click=HeatmapState.set_period(label),
@@ -40,14 +40,14 @@ def _period_btn(label: str) -> rx.Component:
     )
 
 
-def _skel(w: str = "100%", h: str = "12px", r: str = "6px") -> rx.Component:
+def _skel(w: str = "100%", h: str = "0.75rem", r: str = "0.375rem") -> rx.Component:
     return rx.skeleton(rx.box(width=w, height=h), loading=True, border_radius=r)
 
 
 def vnindex_card() -> rx.Component:
     _shell = dict(
         padding="0.875rem 1rem",
-        border_radius="10px",
+        border_radius="0.625rem",
         background=CARD_BG,
         border=CARD_BORDER,
         width="100%",
@@ -112,14 +112,14 @@ def vnindex_card() -> rx.Component:
         # Skeleton
         rx.box(
             rx.vstack(
-                _skel("52px", "10px"),
+                _skel("3.25rem", "0.625rem"),
                 rx.hstack(
                     rx.vstack(
-                        _skel("88px", "28px", "6px"),
-                        _skel("56px", "18px", "8px"),
+                        _skel("5.5rem", "1.75rem", "0.375rem"),
+                        _skel("3.5rem", "1.125rem", "0.5rem"),
                         spacing="2",
                     ),
-                    _skel("140px", "70px", "6px"),
+                    _skel("8.75rem", "4.375rem", "0.375rem"),
                     spacing="3",
                     align="center",
                     width="100%",
@@ -226,7 +226,7 @@ def _ticker_subtile(t: TickerSubtile) -> rx.Component:
             justify_content="center",
             overflow="hidden",
             background=t.bg,
-            border_radius="6px",
+            border_radius="0.375rem",
             border=f"1px solid {_SUBTILE_BORDER}",
             transition="filter 0.12s ease",
             # Brightness-only hover — highlights without changing color meaning
@@ -278,13 +278,13 @@ def _industry_tile(tile: HeatmapTile) -> rx.Component:
             top="0",
             left="0",
             right="0",
-            height="30px",
+            height="1.875rem",
             display="flex",
             align_items="center",
-            padding="0 10px",
+            padding="0 0.625rem",
             z_index="10",
             border_bottom=f"1px solid {_SUBTILE_BORDER}",
-            border_radius="12px 12px 0 0",
+            border_radius="0.75rem 0.75rem 0 0",
         ),
         rx.foreach(tile.tickers, _ticker_subtile),
         position="absolute",
@@ -292,7 +292,7 @@ def _industry_tile(tile: HeatmapTile) -> rx.Component:
         top=f"calc({tile.y}% + 4px)",
         width=f"calc({tile.w}% - 8px)",
         height=f"calc({tile.h}% - 8px)",
-        border_radius="12px",
+        border_radius="0.75rem",
         border=_TILE_BORDER,
         background=tile.bg,
         overflow="hidden",
@@ -330,7 +330,7 @@ def _chip(c: HeatmapChip) -> rx.Component:
         ),
         href=c.url,
         padding="0.2rem 0.6rem",
-        border_radius="6px",
+        border_radius="0.375rem",
         background=_TILE_BG,
         border=_TILE_BORDER,
         flex_shrink="0",
@@ -361,23 +361,23 @@ def _treemap_skeleton() -> rx.Component:
     """Only shown on initial mount when tiles list is empty."""
     return rx.vstack(
         rx.hstack(
-            _skel("42%", "200px", "8px"),
-            _skel("35%", "200px", "8px"),
-            _skel("23%", "200px", "8px"),
+            _skel("42%", "12.5rem", "0.5rem"),
+            _skel("35%", "12.5rem", "0.5rem"),
+            _skel("23%", "12.5rem", "0.5rem"),
             spacing="2",
             width="100%",
         ),
         rx.hstack(
-            _skel("33%", "190px", "8px"),
-            _skel("33%", "190px", "8px"),
-            _skel("33%", "190px", "8px"),
+            _skel("33%", "11.875rem", "0.5rem"),
+            _skel("33%", "11.875rem", "0.5rem"),
+            _skel("33%", "11.875rem", "0.5rem"),
             spacing="2",
             width="100%",
         ),
         rx.hstack(
-            _skel("25%", "180px", "8px"),
-            _skel("38%", "180px", "8px"),
-            _skel("37%", "180px", "8px"),
+            _skel("25%", "11.25rem", "0.5rem"),
+            _skel("38%", "11.25rem", "0.5rem"),
+            _skel("37%", "11.25rem", "0.5rem"),
             spacing="2",
             width="100%",
         ),
@@ -398,7 +398,7 @@ def _treemap() -> rx.Component:
                 position="relative",
                 width="100%",
                 height=_TREEMAP_H,
-                border_radius="12px",
+                border_radius="0.75rem",
                 overflow="hidden",
             ),
             _chip_row(),
@@ -416,8 +416,8 @@ def market_overview_section() -> rx.Component:
             rx.hstack(
                 rx.hstack(
                     rx.box(
-                        width="5px",
-                        height="5px",
+                        width="0.3125rem",
+                        height="0.3125rem",
                         border_radius="50%",
                         background=purple(0.85),
                     ),
@@ -439,23 +439,24 @@ def market_overview_section() -> rx.Component:
                     _period_btn("1Y"),
                     spacing="0",
                     padding="0.16rem",
-                    border_radius="7px",
+                    border_radius="0.4375rem",
                     background=white(0.03),
                     border=f"1px solid {white(0.06)}",
                 ),
                 width="100%",
                 align="center",
             ),
-            rx.hstack(
+            rx.flex(
                 rx.vstack(
                     vnindex_card(),
                     spacing="3",
-                    width="210px",
+                    width=rx.breakpoints(initial="100%", md="13.125rem"),
                     flex_shrink="0",
                     align="start",
                 ),
                 rx.box(_treemap(), flex="1", min_width="0"),
-                spacing="3",
+                direction=rx.breakpoints(initial="column", md="row"),
+                gap="0.75rem",
                 width="100%",
                 align="start",
             ),

@@ -11,13 +11,13 @@ from ...styles import (
     icon_box,
 )
 
-_CARD_H = "68px"
-_PREVIEW_H = "200px"
+_CARD_H = "4.25rem"
+_PREVIEW_H = "12.5rem"
 
 
-def _skel(width: str, height: str = "11px") -> rx.Component:
+def _skel(width: str, height: str = "0.6875rem") -> rx.Component:
     return rx.box(
-        width=width, height=height, border_radius="4px", background=SKELETON_BG
+        width=width, height=height, border_radius="0.25rem", background=SKELETON_BG
     )
 
 
@@ -29,8 +29,8 @@ def _skeleton_row(icon_name: str, index: int) -> rx.Component:
                 rx.icon(icon_name, size=15, color=white(0.2)),
                 background=white(0.05),
                 border=f"1px solid {white(0.06)}",
-                border_radius="8px",
-                padding="7px",
+                border_radius="0.5rem",
+                padding="0.4375rem",
                 display="flex",
                 align_items="center",
                 justify_content="center",
@@ -39,8 +39,8 @@ def _skeleton_row(icon_name: str, index: int) -> rx.Component:
                 transition="opacity 0.3s ease",
             ),
             rx.vstack(
-                _skel("90px", "12px"),
-                _skel("100%", "20px"),
+                _skel("5.625rem", "0.75rem"),
+                _skel("100%", "1.25rem"),
                 spacing="2",
                 align="start",
                 flex="1",
@@ -53,7 +53,7 @@ def _skeleton_row(icon_name: str, index: int) -> rx.Component:
             width="100%",
         ),
         padding="0.625rem 0.75rem",
-        border_radius="9px",
+        border_radius="0.5625rem",
         background=white(0.02),
         border=f"1px solid {white(0.04)}",
         width="100%",
@@ -67,8 +67,8 @@ def _glass_row(icon_name: str, title: str, description: str) -> rx.Component:
             rx.icon(icon_name, size=15, color=white(0.55)),
             background=white(0.06),
             border=f"1px solid {white(0.08)}",
-            border_radius="8px",
-            padding="7px",
+            border_radius="0.5rem",
+            padding="0.4375rem",
             display="flex",
             align_items="center",
             justify_content="center",
@@ -93,7 +93,7 @@ def _glass_row(icon_name: str, title: str, description: str) -> rx.Component:
 def _framework_preview() -> rx.Component:
     return rx.box(
         rx.vstack(
-            _skel("60px", "9px"),
+            _skel("3.75rem", "0.5625rem"),
             rx.box(
                 rx.vstack(
                     _skeleton_row("shield", 0),
@@ -124,7 +124,7 @@ def _framework_preview() -> rx.Component:
                                 "Targets high-growth companies with expanding market share.",
                             ),
                             position="absolute",
-                            top=f"calc({_CARD_H} + 8px)",
+                            top=f"calc({_CARD_H} + 0.5rem)",
                             left="0",
                             right="0",
                             height=_CARD_H,
@@ -133,24 +133,24 @@ def _framework_preview() -> rx.Component:
                         top=rx.cond(
                             HomeState.framework_hover_index == 0,
                             "0",
-                            f"calc(-{_CARD_H} - 8px)",
+                            f"calc(-{_CARD_H} - 0.5rem)",
                         ),
                         left="0",
                         right="0",
-                        height=f"calc({_CARD_H} * 2 + 8px)",
+                        height=f"calc({_CARD_H} * 2 + 0.5rem)",
                         transition="top 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
                     ),
                     position="absolute",
                     top=rx.cond(
                         HomeState.framework_hover_index == 0,
                         "0",
-                        f"calc({_CARD_H} + 8px)",
+                        f"calc({_CARD_H} + 0.5rem)",
                     ),
                     left="0",
                     right="0",
                     height=_CARD_H,
                     background=white(0.05),
-                    border_radius="9px",
+                    border_radius="0.5625rem",
                     border=f"1px solid {white(0.1)}",
                     overflow="hidden",
                     transition="top 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
@@ -158,7 +158,7 @@ def _framework_preview() -> rx.Component:
                 ),
                 position="relative",
                 width="100%",
-                height=f"calc({_CARD_H} * 2 + 8px)",
+                height=f"calc({_CARD_H} * 2 + 0.5rem)",
             ),
             spacing="2",
             align="start",

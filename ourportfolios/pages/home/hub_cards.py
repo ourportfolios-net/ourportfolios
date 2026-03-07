@@ -11,11 +11,11 @@ from ...styles import (
     icon_box,
 )
 
-_PREVIEW_H = "200px"
+_PREVIEW_H = "12.5rem"
 
 
-def _skel(w: str, h: str = "9px") -> rx.Component:
-    return rx.box(width=w, height=h, border_radius="4px", background=SKELETON_BG)
+def _skel(w: str, h: str = "0.5625rem") -> rx.Component:
+    return rx.box(width=w, height=h, border_radius="0.25rem", background=SKELETON_BG)
 
 
 # ── Comparison preview ────────────────────────────────────────────────────────
@@ -23,8 +23,10 @@ def _skel(w: str, h: str = "9px") -> rx.Component:
 
 def _compare_col(color: str, is_hovered) -> rx.Component:
     return rx.box(
-        rx.box(width="56px", height="12px", border_radius="4px", background=color),
-        width=rx.cond(is_hovered, "56px", "0px"),
+        rx.box(
+            width="3.5rem", height="0.75rem", border_radius="0.25rem", background=color
+        ),
+        width=rx.cond(is_hovered, "3.5rem", "0px"),
         opacity=rx.cond(is_hovered, "1", "0"),
         overflow="hidden",
         transition="all 0.45s cubic-bezier(0.4, 0, 0.2, 1)",
@@ -34,7 +36,10 @@ def _compare_col(color: str, is_hovered) -> rx.Component:
 def _compare_row(col1: str, col2: str) -> rx.Component:
     return rx.hstack(
         rx.box(
-            width="56px", height="20px", border_radius="6px", background=white(0.06)
+            width="3.5rem",
+            height="1.25rem",
+            border_radius="0.375rem",
+            background=white(0.06),
         ),
         _compare_col(col1, HomeState.is_comparison_hovered),
         _compare_col(col2, HomeState.is_comparison_hovered),
@@ -42,7 +47,7 @@ def _compare_row(col1: str, col2: str) -> rx.Component:
         align="center",
         width="100%",
         padding="0.5rem 0.625rem",
-        border_radius="8px",
+        border_radius="0.5rem",
         background=white(0.02),
         border=f"1px solid {white(0.04)}",
     )
@@ -51,7 +56,7 @@ def _compare_row(col1: str, col2: str) -> rx.Component:
 def _comparison_preview() -> rx.Component:
     return rx.box(
         rx.vstack(
-            _skel("65px"),
+            _skel("4.0625rem"),
             _compare_row(blue(0.45), white(0.08)),
             _compare_row(white(0.08), blue(0.45)),
             spacing="2",
@@ -68,7 +73,10 @@ def _comparison_preview() -> rx.Component:
 def _perf_bar(hover_width: str, hover_color: str) -> rx.Component:
     return rx.hstack(
         rx.box(
-            width="30px", height="11px", border_radius="4px", background=white(0.06)
+            width="1.875rem",
+            height="0.6875rem",
+            border_radius="0.25rem",
+            background=white(0.06),
         ),
         rx.box(
             rx.box(
@@ -77,13 +85,13 @@ def _perf_bar(hover_width: str, hover_color: str) -> rx.Component:
                 background=rx.cond(
                     HomeState.is_portfolio_hovered, hover_color, white(0.08)
                 ),
-                border_radius="4px",
+                border_radius="0.25rem",
                 transition="all 0.7s cubic-bezier(0.34, 1.56, 0.64, 1)",
             ),
             width="100%",
-            height="11px",
+            height="0.6875rem",
             background=white(0.04),
-            border_radius="4px",
+            border_radius="0.25rem",
             overflow="hidden",
             flex="1",
         ),
@@ -96,7 +104,7 @@ def _perf_bar(hover_width: str, hover_color: str) -> rx.Component:
 def _portfolio_preview() -> rx.Component:
     return rx.box(
         rx.vstack(
-            _skel("60px"),
+            _skel("3.75rem"),
             rx.hstack(
                 rx.text(
                     HomeState.portfolio_value,

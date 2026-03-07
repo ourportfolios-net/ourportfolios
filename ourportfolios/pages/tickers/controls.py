@@ -8,8 +8,6 @@ from ...styles import (
     white,
     purple,
     TEXT_PURPLE,
-    TEXT_PRIMARY,
-    TEXT_TERTIARY,
     LABEL_STYLE,
     BTN_GHOST_SM,
     BTN_SECONDARY,
@@ -32,7 +30,7 @@ def _metric_slider(metric_tag: str, option: str):
                 metric_tag.upper(),
                 style={
                     **LABEL_STYLE,
-                    "font_size": "13px",
+                    "font_size": "0.8125rem",
                     "color": white(0.55),
                     "white_space": "nowrap",
                 },
@@ -96,7 +94,7 @@ def _metric_slider(metric_tag: str, option: str):
         width="100%",
         spacing="3",
         padding="0.75em 1em",
-        border_radius="10px",
+        border_radius="0.625rem",
         background=white(0.025),
         border=f"1px solid {white(0.07)}",
     )
@@ -122,7 +120,7 @@ def _metrics_filter(option: str = "F") -> rx.Component:
 def _categorical_filter():
     return rx.vstack(
         rx.vstack(
-            rx.text("EXCHANGE", style={**LABEL_STYLE, "font_size": "13px"}),
+            rx.text("EXCHANGE", style={**LABEL_STYLE, "font_size": "0.8125rem"}),
             rx.flex(
                 rx.foreach(
                     TickersPageState.exchange_filter.items(),
@@ -134,7 +132,7 @@ def _categorical_filter():
                         ),
                         size="3",
                         color_scheme="violet",
-                        style={"font_size": "15px"},
+                        style={"font_size": "0.9375rem"},
                     ),
                 ),
                 gap="1em",
@@ -143,7 +141,7 @@ def _categorical_filter():
             spacing="3",
         ),
         rx.vstack(
-            rx.text("INDUSTRY", style={**LABEL_STYLE, "font_size": "13px"}),
+            rx.text("INDUSTRY", style={**LABEL_STYLE, "font_size": "0.8125rem"}),
             rx.scroll_area(
                 rx.flex(
                     rx.foreach(
@@ -156,7 +154,7 @@ def _categorical_filter():
                             ),
                             size="3",
                             color_scheme="violet",
-                            style={"font_size": "15px"},
+                            style={"font_size": "0.9375rem"},
                         ),
                     ),
                     gap="1em",
@@ -243,7 +241,7 @@ def _selected_filter_chip(item: str, filter: str) -> rx.Component:
         ),
         spacing="2",
         align="center",
-        padding="0 10px",
+        padding="0 0.625rem",
         flex_shrink="0",
         style=CHIP_STYLE,
     )
@@ -267,10 +265,10 @@ def filter_button() -> rx.Component:
                     f"1px solid {purple(0.5)}",
                     f"1px solid {white(0.1)}",
                 ),
-                border_radius="8px",
+                border_radius="0.5rem",
                 color=rx.cond(_active, TEXT_PURPLE, white(0.6)),
                 font_weight=rx.cond(_active, "600", "500"),
-                font_size="13px",
+                font_size="0.8125rem",
                 cursor="pointer",
                 transition="all 0.15s ease",
             )
@@ -299,7 +297,7 @@ def filter_button() -> rx.Component:
             padding="0",
             style={
                 **MODAL_PANEL_STYLE,
-                "border_radius": "12px",
+                "border_radius": "0.75rem",
                 "position": "relative",
             },
             side="bottom",
@@ -376,9 +374,9 @@ def _active_filter_chips() -> rx.Component:
         ),
         direction="row",
         wrap="nowrap",
-        gap="8px",
+        gap="0.5rem",
         align="center",
-        height="34px",
+        height="2.125rem",
         align_items="center",
     )
 
@@ -405,7 +403,7 @@ def board_toolbar() -> rx.Component:
                 max_width="40em",
                 overflow_x="auto",
                 overflow_y="hidden",
-                height="34px",
+                height="2.125rem",
                 display="flex",
                 align_items="center",
                 flex_shrink="1",
@@ -496,12 +494,12 @@ def _compare_search_bar() -> rx.Component:
                     top="calc(100% + 0.4em)",
                     left="0",
                     z_index="200",
-                    border_radius="10px",
+                    border_radius="0.625rem",
                     border=f"1px solid {white(0.08)}",
                     background=MODAL_BG,
                     overflow="hidden",
-                    box_shadow="0 8px 32px rgba(0,0,0,0.6)",
-                    min_width="280px",
+                    box_shadow="0 0.5rem 2rem rgba(0,0,0,0.6)",
+                    min_width="17.5rem",
                 ),
                 rx.fragment(),
             ),
@@ -559,7 +557,7 @@ def _metric_category_card(category: str) -> rx.Component:
             width="100%",
         ),
         padding="0.75em 0.9em",
-        border_radius="10px",
+        border_radius="0.625rem",
         background=white(0.025),
         border=f"1px solid {white(0.07)}",
         style={
@@ -585,14 +583,16 @@ def _metrics_settings_dialog() -> rx.Component:
                     rx.text("Metric Settings", size="5", weight="bold", color="white"),
                     rx.spacer(),
                     rx.hstack(
-                        rx.text(
+                        rx.badge(
                             "Quarterly",
-                            size="2",
-                            color=rx.cond(
+                            color_scheme=rx.cond(
                                 TickersPageState.time_period == "quarter",
-                                TEXT_PRIMARY,
-                                TEXT_TERTIARY,
+                                "violet",
+                                "gray",
                             ),
+                            variant="soft",
+                            size="1",
+                            style={"border_radius": "0.375rem"},
                         ),
                         rx.switch(
                             checked=TickersPageState.time_period == "year",
@@ -600,14 +600,16 @@ def _metrics_settings_dialog() -> rx.Component:
                             size="2",
                             color_scheme="violet",
                         ),
-                        rx.text(
+                        rx.badge(
                             "Yearly",
-                            size="2",
-                            color=rx.cond(
+                            color_scheme=rx.cond(
                                 TickersPageState.time_period == "year",
-                                TEXT_PRIMARY,
-                                TEXT_TERTIARY,
+                                "violet",
+                                "gray",
                             ),
+                            variant="soft",
+                            size="1",
+                            style={"border_radius": "0.375rem"},
                         ),
                         spacing="2",
                         align="center",
@@ -648,7 +650,7 @@ def _metrics_settings_dialog() -> rx.Component:
                             _metric_category_card,
                         ),
                         display="grid",
-                        grid_template_columns="repeat(3, 1fr)",
+                        grid_template_columns="repeat(auto-fill, minmax(min(16rem, 100%), 1fr))",
                         gap="0.65em",
                         width="100%",
                     ),
@@ -677,7 +679,7 @@ def _metrics_settings_dialog() -> rx.Component:
                 width="100%",
             ),
             width="82vw",
-            max_width="1600px",
+            max_width="100rem",
             style=MODAL_PANEL_STYLE,
         ),
         open=TickersPageState.metrics_dialog_open,

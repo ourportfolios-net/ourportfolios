@@ -63,7 +63,7 @@ def cta_section() -> rx.Component:
                 width="100%",
                 padding="4rem",
                 background="rgba(255, 255, 255, 0.03)",
-                backdrop_filter="blur(24px)",
+                backdrop_filter="blur(1.5rem)",
                 border="1px solid rgba(255, 255, 255, 0.05)",
                 border_radius="3rem",
                 position="relative",

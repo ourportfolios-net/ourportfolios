@@ -30,8 +30,8 @@ def hero_section() -> rx.Component:
         ),
         rx.box(
             position="absolute",
-            width="1000px",
-            height="1000px",
+            width="62.5rem",
+            height="62.5rem",
             background="radial-gradient(circle, rgba(124, 58, 237, 0.04) 0%, rgba(124, 58, 237, 0) 70%)",
             pointer_events="none",
             z_index="0",
