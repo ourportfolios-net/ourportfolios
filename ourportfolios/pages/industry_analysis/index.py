@@ -28,7 +28,7 @@ def index():
                 rx.link(
                     rx.hstack(
                         rx.icon("chevron_left", size=22),
-                        rx.text("select", margin_top="-2px"),
+                        rx.text("select", margin_top="-0.125rem"),
                         spacing="0",
                     ),
                     href="/select",
@@ -43,12 +43,12 @@ def index():
                 rx.box(
                     rx.text("Industry landing page content goes here."),
                     width="100%",
-                    style={"maxWidth": "90vw", "margin": "0 auto"},
+                    style={"maxWidth": "clamp(70vw, 90vw, 96vw)", "margin": "0 auto"},
                 ),
                 width="100%",
                 padding="2em",
                 padding_top="5em",
-                style={"maxWidth": "90vw", "margin": "0 auto"},
+                style={"maxWidth": "clamp(70vw, 90vw, 96vw)", "margin": "0 auto"},
                 position="relative",
             ),
             drawer_button(),

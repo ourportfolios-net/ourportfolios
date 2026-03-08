@@ -5,7 +5,7 @@ from ...styles import white, CARD_BORDER
 from ...components.common_dialog import common_dialog
 from .state import State
 
-_CARD_RADIUS = "10px"
+_CARD_RADIUS = "0.625rem"
 
 
 def company_profile_dialog():
@@ -80,7 +80,7 @@ def company_profile_dialog():
             on_close=State.set_profile_dialog_open(False),
             width="90vw",
             height="85vh",
-            max_width="1200px",
+            max_width="75rem",
             show_close_button=True,
         ),
     )

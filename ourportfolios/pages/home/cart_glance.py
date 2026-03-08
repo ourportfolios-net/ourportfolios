@@ -44,7 +44,7 @@ def cart_glance_panel() -> rx.Component:
         rx.vstack(
             rx.text(
                 "Comparison Cart",
-                font_size="12px",
+                font_size="0.75rem",
                 font_weight="600",
                 letter_spacing="0.02em",
                 color=white(0.6),
@@ -57,7 +57,7 @@ def cart_glance_panel() -> rx.Component:
                     ),
                     spacing="2",
                     width="100%",
-                    max_height="400px",
+                    max_height="25rem",
                     overflow_y="auto",
                     scrollbar_width="thin",
                     scrollbar_color=f"{white(0.1)} transparent",
@@ -66,7 +66,7 @@ def cart_glance_panel() -> rx.Component:
                     rx.vstack(
                         rx.icon("package-open", size=24, color=white(0.15)),
                         rx.text(
-                            "No tickers in cart", font_size="12px", color=white(0.3)
+                            "No tickers in cart", font_size="0.75rem", color=white(0.3)
                         ),
                         spacing="2",
                         align="center",

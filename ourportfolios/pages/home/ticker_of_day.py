@@ -5,30 +5,30 @@ from ...components.cards import glass_card
 from ...styles import white
 
 
-def _skel(w: str = "100%", h: str = "12px", r: str = "6px") -> rx.Component:
+def _skel(w: str = "100%", h: str = "0.75rem", r: str = "0.375rem") -> rx.Component:
     return rx.skeleton(rx.box(width=w, height=h), loading=True, border_radius=r)
 
 
 def _ticker_skeleton() -> rx.Component:
     return glass_card(
         rx.vstack(
-            _skel("100px", "10px"),
+            _skel("6.25rem", "0.625rem"),
             rx.hstack(
                 rx.hstack(
-                    _skel("80px", "40px", "6px"),
-                    _skel("32px", "32px", "7px"),
+                    _skel("5rem", "2.5rem", "0.375rem"),
+                    _skel("2rem", "2rem", "0.4375rem"),
                     spacing="2",
                     align="center",
                 ),
                 rx.spacer(),
-                _skel("72px", "28px", "6px"),
+                _skel("4.5rem", "1.75rem", "0.375rem"),
                 width="100%",
                 align="end",
             ),
             rx.hstack(
-                _skel("120px", "10px"),
+                _skel("7.5rem", "0.625rem"),
                 rx.spacer(),
-                _skel("52px", "18px", "8px"),
+                _skel("3.25rem", "1.125rem", "0.5rem"),
                 width="100%",
                 align="center",
             ),
@@ -92,7 +92,7 @@ def _ticker_real():
                                 cursor="pointer",
                                 position="relative",
                                 z_index="10",
-                                border_radius="7px",
+                                border_radius="0.4375rem",
                             ),
                             spacing="2",
                             align="end",

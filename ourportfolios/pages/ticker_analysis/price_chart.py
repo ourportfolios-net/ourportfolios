@@ -6,12 +6,13 @@ from ...styles import white, purple, CARD_BORDER, TEXT_PURPLE
 from ...components.price_chart import PriceChartState
 from .state import State
 
-_CARD_RADIUS = "10px"
+_CARD_RADIUS = "0.625rem"
+_CHART_MIN_W = "20rem"
 
 _BTN_BASE = {
     "background": "transparent",
     "border": f"1px solid {white(0.07)}",
-    "border_radius": "8px",
+    "border_radius": "0.5rem",
     "color": white(0.5),
     "cursor": "pointer",
     "transition": "all 0.15s ease",
@@ -25,7 +26,7 @@ _BTN_BASE = {
 _BTN_ACTIVE = {
     "background": white(0.08),
     "border": f"1px solid {white(0.18)}",
-    "border_radius": "8px",
+    "border_radius": "0.5rem",
     "color": "white",
     "font_weight": "600",
     "cursor": "pointer",
@@ -37,8 +38,8 @@ def _ma_toggle(label: str, period_key: str):
     return rx.box(
         rx.hstack(
             rx.box(
-                width="8px",
-                height="8px",
+                width="0.5rem",
+                height="0.5rem",
                 border_radius="50%",
                 background=PriceChartState.ma_period[period_key],
                 flex_shrink="0",
@@ -48,7 +49,7 @@ def _ma_toggle(label: str, period_key: str):
             align="center",
         ),
         padding="0.25em 0.6em",
-        border_radius="6px",
+        border_radius="0.375rem",
         cursor="pointer",
         style=rx.cond(
             PriceChartState.selected_ma_period[period_key],
@@ -74,7 +75,7 @@ def _rsi_toggle():
     return rx.box(
         rx.text("RSI14", size="1", weight="medium"),
         padding="0.25em 0.6em",
-        border_radius="6px",
+        border_radius="0.375rem",
         cursor="pointer",
         style=rx.cond(
             PriceChartState.rsi_line,
@@ -101,7 +102,7 @@ def _chart_type_toggle():
         rx.box(
             rx.icon("chart-candlestick", size=14),
             padding="0.25em 0.5em",
-            border_radius="6px",
+            border_radius="0.375rem",
             cursor="pointer",
             display="flex",
             align_items="center",
@@ -126,7 +127,7 @@ def _chart_type_toggle():
         rx.box(
             rx.icon("chart-spline", size=14),
             padding="0.25em 0.5em",
-            border_radius="6px",
+            border_radius="0.375rem",
             cursor="pointer",
             display="flex",
             align_items="center",
@@ -152,7 +153,7 @@ def _chart_type_toggle():
         align="center",
         background=white(0.02),
         border=f"1px solid {white(0.06)}",
-        border_radius="8px",
+        border_radius="0.5rem",
         padding="0.2em 0.3em",
     )
 
@@ -170,13 +171,13 @@ def price_chart_card():
                     State.is_loading_company | (State.price_data.length() <= 1),
                     rx.box(
                         rx.skeleton(
-                            height="350px",
-                            width="calc(100% - 60px)",
-                            border_radius="8px",
+                            height="21.875rem",
+                            width="calc(100% - 3.75rem)",
+                            border_radius="0.5rem",
                         ),
                         position="absolute",
                         width="100%",
-                        height="350px",
+                        height="21.875rem",
                         z_index="1",
                         pointer_events="none",
                         top="0",
@@ -190,8 +191,8 @@ def price_chart_card():
                     key=State.render_key,
                 ),
                 width="100%",
-                height="350px",
-                max_height="350px",
+                height="21.875rem",
+                max_height="21.875rem",
                 overflow="hidden",
                 position="relative",
             ),
@@ -231,27 +232,30 @@ def price_chart_card():
                     ),
                     spacing="1",
                     align="center",
+                    flex_shrink="0",
                 ),
                 rx.spacer(),
                 # Right: inline indicator toggles
                 rx.hstack(
-                    rx.box(width="1px", height="16px", background=white(0.08)),
+                    rx.box(width="1px", height="1rem", background=white(0.08)),
                     # MA toggles
                     _ma_toggle("MA20", "20"),
                     _ma_toggle("MA50", "50"),
                     _ma_toggle("MA100", "100"),
                     _ma_toggle("MA200", "200"),
-                    rx.box(width="1px", height="16px", background=white(0.08)),
+                    rx.box(width="1px", height="1rem", background=white(0.08)),
                     _rsi_toggle(),
-                    rx.box(width="1px", height="16px", background=white(0.08)),
+                    rx.box(width="1px", height="1rem", background=white(0.08)),
                     # Chart type toggle
                     _chart_type_toggle(),
                     spacing="2",
                     align="center",
+                    style={"flexWrap": "wrap"},
                 ),
                 width="100%",
                 align="center",
                 padding_top="0.5em",
+                style={"flexWrap": "wrap"},
             ),
             spacing="0",
             width="100%",

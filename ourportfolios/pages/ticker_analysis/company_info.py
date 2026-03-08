@@ -4,14 +4,14 @@ import reflex as rx
 from ...styles import white, CARD_BORDER
 from .state import State
 
-_CARD_RADIUS = "10px"
+_CARD_RADIUS = "0.625rem"
 
 
 def _skel(w: str, h: str) -> rx.Component:
     return rx.skeleton(
         rx.box(width=w, height=h),
         loading=True,
-        style={"border_radius": "6px"},
+        style={"border_radius": "0.375rem"},
     )
 
 
@@ -20,9 +20,9 @@ def company_info_card_skeleton():
         rx.vstack(
             # Segmented control placeholder
             rx.hstack(
-                _skel("60px", "28px"),
-                _skel("60px", "28px"),
-                _skel("50px", "28px"),
+                _skel("3.75rem", "1.75rem"),
+                _skel("3.75rem", "1.75rem"),
+                _skel("3.125rem", "1.75rem"),
                 spacing="2",
                 width="100%",
                 justify="center",
@@ -30,7 +30,7 @@ def company_info_card_skeleton():
             # Pie chart placeholder
             rx.box(
                 rx.skeleton(
-                    rx.box(width="160px", height="160px"),
+                    rx.box(width="10rem", height="10rem"),
                     loading=True,
                     style={"border_radius": "50%"},
                 ),
@@ -45,9 +45,9 @@ def company_info_card_skeleton():
                 rx.vstack(
                     *[
                         rx.hstack(
-                            _skel("55%", "14px"),
+                            _skel("55%", "0.875rem"),
                             rx.spacer(),
-                            _skel("25%", "14px"),
+                            _skel("25%", "0.875rem"),
                             width="100%",
                             align="center",
                         )
@@ -58,7 +58,7 @@ def company_info_card_skeleton():
                 ),
                 background=white(0.02),
                 border=f"1px solid {white(0.05)}",
-                border_radius="8px",
+                border_radius="0.5rem",
                 padding="0.75rem",
                 width="100%",
             ),
@@ -71,7 +71,7 @@ def company_info_card_skeleton():
         padding="1.25rem",
         width="100%",
         flex="0.6",
-        min_width="0",
+        min_width="14rem",
         max_width="20em",
     )
 
@@ -140,7 +140,7 @@ def company_generic_info_card():
                                                     color_scheme="gray",
                                                     variant="surface",
                                                     high_contrast=True,
-                                                    style={"border_radius": "6px"},
+                                                    style={"border_radius": "0.375rem"},
                                                 ),
                                                 align="center",
                                                 justify="between",
@@ -161,7 +161,7 @@ def company_generic_info_card():
                             ),
                             background=white(0.02),
                             border=f"1px solid {white(0.05)}",
-                            border_radius="8px",
+                            border_radius="0.5rem",
                             padding="0.75rem",
                             width="100%",
                         ),
@@ -184,7 +184,7 @@ def company_generic_info_card():
                                             ),
                                             rx.badge(
                                                 f"{event['price_change_ratio']}%",
-                                                style={"border_radius": "6px"},
+                                                style={"border_radius": "0.375rem"},
                                             ),
                                             align="center",
                                         ),
@@ -196,7 +196,7 @@ def company_generic_info_card():
                                         ),
                                         background=white(0.02),
                                         border=f"1px solid {white(0.05)}",
-                                        border_radius="8px",
+                                        border_radius="0.5rem",
                                         padding="0.75rem",
                                         width="100%",
                                     ),
@@ -224,7 +224,7 @@ def company_generic_info_card():
                                                 ),
                                                 rx.badge(
                                                     f"{news['price_change_ratio']}%",
-                                                    style={"border_radius": "6px"},
+                                                    style={"border_radius": "0.375rem"},
                                                 ),
                                             ),
                                             align="center",
@@ -233,7 +233,7 @@ def company_generic_info_card():
                                         ),
                                         background=white(0.02),
                                         border=f"1px solid {white(0.05)}",
-                                        border_radius="8px",
+                                        border_radius="0.5rem",
                                         padding="0.75rem",
                                         width="100%",
                                     ),
@@ -256,7 +256,7 @@ def company_generic_info_card():
             padding="1.25rem",
             width="100%",
             flex="0.6",
-            min_width="0",
+            min_width="14rem",
             max_width="20em",
             style={"height": "100%"},
         ),

@@ -9,7 +9,7 @@ def _nav_link(label: str, href: str) -> rx.Component:
     return rx.link(
         label,
         href=href,
-        font_size="14px",
+        font_size="0.875rem",
         font_weight="400",
         color="rgba(255, 255, 255, 0.5)",
         text_decoration="none",
@@ -31,13 +31,13 @@ def _dropdown_item(icon: str, label: str, description: str, href: str) -> rx.Com
             rx.vstack(
                 rx.text(
                     label,
-                    font_size="14px",
+                    font_size="0.875rem",
                     font_weight="500",
                     color="white",
                 ),
                 rx.text(
                     description,
-                    font_size="12px",
+                    font_size="0.75rem",
                     color="rgba(255, 255, 255, 0.45)",
                     line_height="1.4",
                 ),
@@ -45,8 +45,8 @@ def _dropdown_item(icon: str, label: str, description: str, href: str) -> rx.Com
             ),
             spacing="3",
             align="start",
-            padding="10px 12px",
-            border_radius="8px",
+            padding="0.625rem 0.75rem",
+            border_radius="0.5rem",
             _hover={"background": "rgba(255, 255, 255, 0.06)"},
             transition="background 0.15s",
             width="100%",
@@ -64,7 +64,7 @@ def _nav_dropdown(label: str, content: rx.Component) -> rx.Component:
             rx.hstack(
                 rx.text(
                     label,
-                    font_size="14px",
+                    font_size="0.875rem",
                     font_weight="400",
                 ),
                 rx.icon(
@@ -86,11 +86,11 @@ def _nav_dropdown(label: str, content: rx.Component) -> rx.Component:
             side_offset=32,
             overflow="visible",
             background="rgba(17, 17, 19, 0.95)",
-            backdrop_filter="blur(24px)",
+            backdrop_filter="blur(1.5rem)",
             border=f"1px solid {rx.color('gray', 5)}",
-            border_radius="12px",
-            padding="8px",
-            box_shadow="0 16px 48px rgba(0, 0, 0, 0.45)",
+            border_radius="0.75rem",
+            padding="0.5rem",
+            box_shadow="0 1rem 3rem rgba(0, 0, 0, 0.45)",
         ),
         open_delay=80,
         close_delay=200,
@@ -118,7 +118,7 @@ def _analyze_dropdown() -> rx.Component:
             href="/tickers",
         ),
         spacing="1",
-        width="280px",
+        width="17.5rem",
     )
 
 
@@ -137,7 +137,7 @@ def _about_dropdown() -> rx.Component:
             href="/about",
         ),
         spacing="1",
-        width="280px",
+        width="17.5rem",
     )
 
 
@@ -146,12 +146,19 @@ def navbar() -> rx.Component:
     bar = rx.box(
         rx.hstack(
             rx.hstack(
-                rx.text(
-                    "ourportfolios",
-                    font_size="1.25rem",
-                    font_weight="600",
-                    letter_spacing="-0.02em",
-                    user_select="none",
+                rx.link(
+                    rx.text(
+                        "ourportfolios",
+                        font_size="1.25rem",
+                        font_weight="600",
+                        letter_spacing="-0.02em",
+                        user_select="none",
+                        flex_shrink="0",
+                    ),
+                    href="/home",
+                    text_decoration="none",
+                    color="inherit",
+                    _hover={"cursor": "pointer", "text_decoration": "none", "color": "inherit"},
                 ),
                 _nav_link("Frameworks", "/framework"),
                 _nav_link("Portfolio", "/portfolio-management"),
@@ -159,12 +166,14 @@ def navbar() -> rx.Component:
                 _nav_dropdown("About", _about_dropdown()),
                 spacing="6",
                 align="center",
+                style={"flexWrap": "wrap"},
             ),
             search_bar(),
             align="center",
             justify="between",
             width="100%",
             padding_x="2rem",
+            style={"flexWrap": "wrap", "gap": "0.75rem"},
         ),
         position="fixed",
         top="0",
@@ -172,7 +181,7 @@ def navbar() -> rx.Component:
         z_index="50",
         padding_y="1rem",
         background="rgba(10, 10, 10, 0.4)",
-        backdrop_filter="blur(32px)",
+        backdrop_filter="blur(2rem)",
         border_bottom="1px solid rgba(255, 255, 255, 0.05)",
     )
 

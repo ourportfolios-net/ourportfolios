@@ -134,8 +134,6 @@ function useTilt() {
 
 // ================================================
 // 1. TRANSPARENCY CARD
-// Opaque → semi-transparent on hover, revealing
-// stylized "source code" lines underneath.
 // ================================================
 
 const codeLines = [
@@ -166,16 +164,12 @@ const TransparencyCard = ({ className = "", style = {} }) => {
         resetTilt();
       }}
     >
-      {/* Background overlay – partially transparent by default, fades more on hover */}
       <motion.div
         style={bgOverlay}
-        animate={{
-          opacity: isHovered ? 0.12 : 0.55,
-        }}
-        transition={{ duration: 0.55, ease: [0.25, 0.4, 0.4, 1] }}
+        animate={{ opacity: isHovered ? 0.12 : 0.55 }}
+        transition={{ duration: 0.3, ease: [0.25, 0.4, 0.4, 1] }}
       />
 
-      {/* Source code pattern (visible when transparent) */}
       <div
         style={{
           position: "absolute",
@@ -202,7 +196,6 @@ const TransparencyCard = ({ className = "", style = {} }) => {
         ))}
       </div>
 
-      {/* Grid overlay for extra texture */}
       <div
         style={{
           position: "absolute",
@@ -217,7 +210,6 @@ const TransparencyCard = ({ className = "", style = {} }) => {
 
       <CursorBorderGlow mousePos={mousePos} isHovered={isHovered} />
 
-      {/* Content */}
       <div
         style={{
           ...contentLayer,
@@ -233,10 +225,8 @@ const TransparencyCard = ({ className = "", style = {} }) => {
           </svg>
         </div>
 
-        {/* Spacer pushes heading to true bottom */}
         <div style={{ flex: 1 }} />
 
-        {/* Subtext right-aligned, above heading */}
         <motion.p
           style={{
             ...subtextStyle,
@@ -249,7 +239,7 @@ const TransparencyCard = ({ className = "", style = {} }) => {
               ? "rgba(255, 255, 255, 0.85)"
               : "rgba(255, 255, 255, 0.5)",
           }}
-          transition={{ duration: 0.55, ease: [0.25, 0.4, 0.4, 1] }}
+          transition={{ duration: 0.3, ease: [0.25, 0.4, 0.4, 1] }}
         >
           Open-source. All sources publicly verifiable.
         </motion.p>
@@ -261,8 +251,6 @@ const TransparencyCard = ({ className = "", style = {} }) => {
 
 // ================================================
 // 2. FOCUSED CARD
-// Dense wall of financial terms. On hover,
-// everything blurs except the key phrase.
 // ================================================
 
 const FocusedCard = ({ className = "", style = {} }) => {
@@ -306,7 +294,6 @@ const FocusedCard = ({ className = "", style = {} }) => {
         </div>
 
         <div>
-          {/* Dense inline text with embedded key phrase */}
           <div
             style={{
               fontSize: "0.6rem",
@@ -316,20 +303,18 @@ const FocusedCard = ({ className = "", style = {} }) => {
               marginBottom: "0.5rem",
             }}
           >
-            {/* Noise text – before key phrase */}
             <motion.span
               style={{ color: "rgba(255,255,255,0.25)" }}
               animate={{
-                filter: isHovered ? "blur(2.5px)" : "blur(1px)",
-                opacity: isHovered ? 0.15 : 0.35,
+                filter: isHovered ? "blur(2.5px)" : "blur(0px)",
+                opacity: isHovered ? 0.15 : 0.55,
               }}
-              transition={{ duration: 0.45 }}
+              transition={{ duration: 0.3 }}
             >
               Market analysis · Portfolio tracking · Risk assessment · Stock
               screening · Benchmark comparison ·{" "}
             </motion.span>
 
-            {/* KEY PHRASE – visible by default, glows brighter on hover */}
             <motion.span
               style={{
                 fontWeight: 500,
@@ -346,19 +331,18 @@ const FocusedCard = ({ className = "", style = {} }) => {
                   ? "0 0 20px rgba(255, 255, 255, 0.4), 0 0 40px rgba(255, 255, 255, 0.15)"
                   : "0 0 10px rgba(255, 255, 255, 0.1)",
               }}
-              transition={{ duration: 0.35, delay: isHovered ? 0.08 : 0 }}
+              transition={{ duration: 0.25, delay: isHovered ? 0.05 : 0 }}
             >
               One framework, zero clutter
             </motion.span>
 
-            {/* Noise text – after key phrase */}
             <motion.span
               style={{ color: "rgba(255,255,255,0.25)" }}
               animate={{
-                filter: isHovered ? "blur(2.5px)" : "blur(1px)",
-                opacity: isHovered ? 0.15 : 0.35,
+                filter: isHovered ? "blur(2.5px)" : "blur(0px)",
+                opacity: isHovered ? 0.15 : 0.55,
               }}
-              transition={{ duration: 0.45 }}
+              transition={{ duration: 0.3 }}
             >
               {" "}
               · Technical indicators · Sector analysis · Dividend yields ·
@@ -375,8 +359,6 @@ const FocusedCard = ({ className = "", style = {} }) => {
 
 // ================================================
 // 3. CONCISENESS CARD
-// Content scrolls up on hover with a mini
-// scrollbar indicator. "All within a single scroll."
 // ================================================
 
 const ConcisenessCard = ({ className = "", style = {} }) => {
@@ -399,7 +381,6 @@ const ConcisenessCard = ({ className = "", style = {} }) => {
       <div style={bgOverlay} />
       <CursorBorderGlow mousePos={mousePos} isHovered={isHovered} />
 
-      {/* Mini scrollbar track – partially scrolled by default */}
       <div
         style={{
           position: "absolute",
@@ -426,11 +407,10 @@ const ConcisenessCard = ({ className = "", style = {} }) => {
               ? "rgba(124, 58, 237, 0.4)"
               : "rgba(255, 255, 255, 0.2)",
           }}
-          transition={{ duration: 0.55, ease: [0.25, 0.4, 0.4, 1] }}
+          transition={{ duration: 0.3, ease: [0.25, 0.4, 0.4, 1] }}
         />
       </div>
 
-      {/* Content – overflows, shifts up on hover */}
       <div
         style={{
           ...contentLayer,
@@ -440,7 +420,6 @@ const ConcisenessCard = ({ className = "", style = {} }) => {
           flexDirection: "column",
         }}
       >
-        {/* Icon stays at top */}
         <div style={iconBoxStyle}>
           <svg {...iconSvgProps}>
             <polyline points="4 14 10 14 10 20" />
@@ -450,13 +429,11 @@ const ConcisenessCard = ({ className = "", style = {} }) => {
           </svg>
         </div>
 
-        {/* Flexible spacer */}
         <div style={{ flex: 1 }} />
 
-        {/* Bottom: heading with subtext, scrolls up on hover */}
         <motion.div
           animate={{ y: isHovered ? -8 : 0 }}
-          transition={{ duration: 0.55, ease: [0.25, 0.4, 0.4, 1] }}
+          transition={{ duration: 0.3, ease: [0.25, 0.4, 0.4, 1] }}
         >
           <motion.p
             style={{
@@ -470,7 +447,7 @@ const ConcisenessCard = ({ className = "", style = {} }) => {
                 ? "rgba(255, 255, 255, 0.85)"
                 : "rgba(255, 255, 255, 0.5)",
             }}
-            transition={{ duration: 0.55, ease: [0.25, 0.4, 0.4, 1] }}
+            transition={{ duration: 0.3, ease: [0.25, 0.4, 0.4, 1] }}
           >
             Everything within
             <br />a single scroll.
@@ -484,8 +461,6 @@ const ConcisenessCard = ({ className = "", style = {} }) => {
 
 // ================================================
 // 4. RELIABILITY CARD
-// Verification items with self-drawing checkmarks.
-// Sequential animation on hover.
 // ================================================
 
 const verifyItems = [
@@ -503,7 +478,6 @@ const VerifyItem = ({ label, hoverLabel, delay, isHovered }) => (
       height: "1.4rem",
     }}
   >
-    {/* Status indicator container */}
     <div
       style={{
         width: "16px",
@@ -512,7 +486,6 @@ const VerifyItem = ({ label, hoverLabel, delay, isHovered }) => (
         flexShrink: 0,
       }}
     >
-      {/* Default circle – hidden by default (checkmarks shown instead) */}
       <motion.div
         style={{
           position: "absolute",
@@ -520,14 +493,10 @@ const VerifyItem = ({ label, hoverLabel, delay, isHovered }) => (
           borderRadius: "50%",
           border: "1.5px solid rgba(255, 255, 255, 0.12)",
         }}
-        animate={{
-          opacity: 0,
-          scale: 0.5,
-        }}
+        animate={{ opacity: 0, scale: 0.5 }}
         transition={{ duration: 0.2 }}
       />
 
-      {/* Checkmark SVG – visible by default, brightens on hover */}
       <motion.svg
         width="16"
         height="16"
@@ -542,12 +511,9 @@ const VerifyItem = ({ label, hoverLabel, delay, isHovered }) => (
           d="M5 12l5 5L20 7"
           stroke="#4ade80"
           initial={{ pathLength: 1, opacity: 0.5 }}
-          animate={{
-            pathLength: 1,
-            opacity: isHovered ? 1 : 0.5,
-          }}
+          animate={{ pathLength: 1, opacity: isHovered ? 1 : 0.5 }}
           transition={{
-            duration: 0.35,
+            duration: 0.2,
             delay: isHovered ? delay * 0.5 : 0,
             ease: "easeOut",
           }}
@@ -555,7 +521,6 @@ const VerifyItem = ({ label, hoverLabel, delay, isHovered }) => (
       </motion.svg>
     </div>
 
-    {/* Label – visible by default, brightens on hover */}
     <div style={{ position: "relative", display: "inline-flex" }}>
       <motion.span
         style={{
@@ -625,7 +590,6 @@ const ReliabilityCard = ({ className = "", style = {} }) => {
           justifyContent: "space-between",
         }}
       >
-        {/* Shield icon */}
         <div style={iconBoxStyle}>
           <svg {...iconSvgProps}>
             <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
@@ -633,7 +597,6 @@ const ReliabilityCard = ({ className = "", style = {} }) => {
           </svg>
         </div>
 
-        {/* Verification items */}
         <div
           style={{
             display: "flex",
@@ -653,7 +616,6 @@ const ReliabilityCard = ({ className = "", style = {} }) => {
           ))}
         </div>
 
-        {/* Heading */}
         <div style={{ marginTop: "auto", paddingTop: "0.5rem" }}>
           <h3 style={headingStyle}>Reliability</h3>
         </div>
@@ -664,54 +626,7 @@ const ReliabilityCard = ({ className = "", style = {} }) => {
 
 // ================================================
 // 5. INSTRUCTIVENESS CARD
-// Floating concept badges appear on hover with
-// staggered animation. Knowledge radiating out.
 // ================================================
-
-const concepts = [
-  { text: "P/E", top: "18%", left: "28%", delay: 0 },
-  { text: "DCF", top: "12%", left: "52%", delay: 0.06 },
-  { text: "ROI", top: "22%", left: "72%", delay: 0.1 },
-  { text: "EPS", top: "35%", left: "20%", delay: 0.14 },
-  { text: "WACC", top: "30%", left: "44%", delay: 0.18 },
-  { text: "CAGR", top: "38%", left: "65%", delay: 0.22 },
-  { text: "Beta", top: "15%", left: "38%", delay: 0.08 },
-  { text: "Alpha", top: "32%", left: "82%", delay: 0.26 },
-];
-
-const ConceptBadge = ({ text, top, left, delay, isHovered }) => (
-  <motion.div
-    style={{
-      position: "absolute",
-      top,
-      left,
-      background: isHovered
-        ? "rgba(124, 58, 237, 0.15)"
-        : "rgba(124, 58, 237, 0.06)",
-      border: `1px solid ${isHovered ? "rgba(124, 58, 237, 0.25)" : "rgba(124, 58, 237, 0.1)"}`,
-      borderRadius: "0.5rem",
-      padding: "0.2rem 0.65rem",
-      fontSize: "0.68rem",
-      fontWeight: 500,
-      fontFamily: "var(--default-font-family, inherit)",
-      color: "rgba(255, 255, 255, 0.65)",
-      whiteSpace: "nowrap",
-      pointerEvents: "none",
-    }}
-    animate={{
-      opacity: isHovered ? 1 : 0.5,
-      y: 0,
-      scale: isHovered ? 1.05 : 1,
-    }}
-    transition={{
-      duration: 0.35,
-      delay: isHovered ? delay * 0.5 : 0,
-      ease: "easeOut",
-    }}
-  >
-    {text}
-  </motion.div>
-);
 
 const InstructivenessCard = ({ className = "", style = {} }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -733,46 +648,15 @@ const InstructivenessCard = ({ className = "", style = {} }) => {
       <div style={bgOverlay} />
       <CursorBorderGlow mousePos={mousePos} isHovered={isHovered} />
 
-      {/* Floating concept badges */}
-      {concepts.map((c) => (
-        <ConceptBadge
-          key={c.text}
-          text={c.text}
-          top={c.top}
-          left={c.left}
-          delay={c.delay}
-          isHovered={isHovered}
-        />
-      ))}
-
-      {/* Subtle radial glow behind icon on hover */}
-      <motion.div
-        style={{
-          position: "absolute",
-          top: "0.5rem",
-          left: "0.5rem",
-          width: "8rem",
-          height: "8rem",
-          borderRadius: "50%",
-          background:
-            "radial-gradient(circle, rgba(124, 58, 237, 0.12) 0%, transparent 70%)",
-          pointerEvents: "none",
-          zIndex: 0,
-        }}
-        animate={{ opacity: isHovered ? 1 : 0.4, scale: isHovered ? 1.2 : 1 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-      />
-
       <div
         style={{
           ...contentLayer,
-          padding: "2rem",
+          padding: "1.5rem",
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
         }}
       >
-        {/* Graduation cap icon */}
         <div style={iconBoxStyle}>
           <svg {...iconSvgProps}>
             <path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z" />
@@ -783,13 +667,17 @@ const InstructivenessCard = ({ className = "", style = {} }) => {
 
         <div>
           <motion.p
-            style={{ ...subtextStyle, marginBottom: "0.25rem" }}
+            style={{
+              ...subtextStyle,
+              marginBottom: "0.5rem",
+              maxWidth: "100%",
+            }}
             animate={{
               color: isHovered
                 ? "rgba(255, 255, 255, 0.65)"
                 : "rgba(255, 255, 255, 0.4)",
             }}
-            transition={{ duration: 0.4, delay: isHovered ? 0.15 : 0 }}
+            transition={{ duration: 0.22 }}
           >
             Built to educate, not to sell. By helping investors with their
             investment portfolios, we're also building our own professional

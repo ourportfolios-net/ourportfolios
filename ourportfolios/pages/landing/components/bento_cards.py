@@ -8,7 +8,6 @@ class TransparencyCard(rx.Component):
 
     library = "$/public/BentoCards"
     tag = "TransparencyCard"
-    lib_dependencies: list[str] = ["motion@11.15.0"]
 
 
 class FocusedCard(rx.Component):
@@ -16,7 +15,6 @@ class FocusedCard(rx.Component):
 
     library = "$/public/BentoCards"
     tag = "FocusedCard"
-    lib_dependencies: list[str] = ["motion@11.15.0"]
 
 
 class ConcisenessCard(rx.Component):
@@ -24,7 +22,6 @@ class ConcisenessCard(rx.Component):
 
     library = "$/public/BentoCards"
     tag = "ConcisenessCard"
-    lib_dependencies: list[str] = ["motion@11.15.0"]
 
 
 class ReliabilityCard(rx.Component):
@@ -32,7 +29,6 @@ class ReliabilityCard(rx.Component):
 
     library = "$/public/BentoCards"
     tag = "ReliabilityCard"
-    lib_dependencies: list[str] = ["motion@11.15.0"]
 
 
 class InstructivenessCard(rx.Component):
@@ -40,7 +36,6 @@ class InstructivenessCard(rx.Component):
 
     library = "$/public/BentoCards"
     tag = "InstructivenessCard"
-    lib_dependencies: list[str] = ["motion@11.15.0"]
 
 
 def transparency_card(**props) -> rx.Component:

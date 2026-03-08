@@ -81,9 +81,9 @@ def preview_table(data, idx, show_skeleton=False):
 
     if show_skeleton:
         table_content = rx.skeleton(
-            height="200px",
+            height="12.5rem",
             width="43em",
-            border_radius="8px",
+            border_radius="0.5rem",
         )
     else:
         table_content = rx.cond(
@@ -167,7 +167,7 @@ def expanded_dialog(data, idx):
                 ),
                 size="2",
                 variant="surface",
-                font_size="12px",
+                font_size="0.75rem",
             ),
             height="67vh",
             width="90vw",

@@ -39,8 +39,7 @@ def toolbar():
         rx.hstack(
             rx.foreach(FrameworkState.categories, category_filter_button),
             spacing="2",
-            wrap="nowrap",
-            flex_shrink="0",
+            wrap="wrap",
         ),
         rx.spacer(),
         # Search + Add — right side
@@ -51,7 +50,7 @@ def toolbar():
                     size=14,
                     color="rgba(255,255,255,0.25)",
                     position="absolute",
-                    left="10px",
+                    left="0.625rem",
                     top="50%",
                     transform="translateY(-50%)",
                     pointer_events="none",
@@ -63,10 +62,10 @@ def toolbar():
                     size="2",
                     background="rgba(255,255,255,0.04)",
                     border="1px solid rgba(255,255,255,0.08)",
-                    border_radius="8px",
+                    border_radius="0.5rem",
                     color="white",
                     padding_left="2rem",
-                    width="280px",
+                    width="17.5rem",
                     _placeholder={"color": "rgba(255,255,255,0.22)"},
                     _focus={
                         "border_color": "rgba(139,92,246,0.4)",
@@ -84,7 +83,7 @@ def toolbar():
                 size="2",
                 background="rgba(255,255,255,0.05)",
                 border="1px solid rgba(255,255,255,0.1)",
-                border_radius="8px",
+                border_radius="0.5rem",
                 color="rgba(255,255,255,0.7)",
                 font_weight="500",
                 cursor="pointer",
@@ -101,6 +100,7 @@ def toolbar():
         ),
         width="100%",
         align="center",
+        style={"flexWrap": "wrap", "gap": "0.75rem"},
     )
 
 
@@ -109,7 +109,7 @@ def skeleton_grid() -> rx.Component:
     return rx.box(
         *[skeleton_card() for _ in range(6)],
         display="grid",
-        grid_template_columns="repeat(auto-fill, minmax(360px, 1fr))",
+        grid_template_columns="repeat(auto-fill, minmax(22.5rem, 1fr))",
         gap="1rem",
         width="100%",
     )
@@ -125,7 +125,7 @@ def frameworks_grid():
             rx.box(
                 rx.foreach(FrameworkState.frameworks, framework_card),
                 display="grid",
-                grid_template_columns="repeat(auto-fill, minmax(360px, 1fr))",
+                grid_template_columns="repeat(auto-fill, minmax(22.5rem, 1fr))",
                 gap="1rem",
                 width="100%",
             ),
@@ -153,8 +153,8 @@ def index() -> rx.Component:
         rx.center(
             rx.box(
                 main_content(),
-                width="90vw",
-                max_width="1800px",
+                width="clamp(70vw, 90vw, 96vw)",
+                max_width="112.5rem",
             ),
             width="100%",
             padding="2em",

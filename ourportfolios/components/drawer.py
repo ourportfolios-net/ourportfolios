@@ -49,7 +49,7 @@ def _cart_items_list():
     )
     return rx.cond(
         CartState.should_scroll,
-        rx.scroll_area(items_vstack, height="400px", width="100%"),
+        rx.scroll_area(items_vstack, height="25rem", width="100%"),
         items_vstack,
     )
 
@@ -86,8 +86,8 @@ def cart_drawer_content():
                                 variant="solid",
                                 on_click=CartState.toggle_cart,
                                 position="fixed",
-                                bottom="20px",
-                                right="20px",
+                                bottom="1.25rem",
+                                right="1.25rem",
                                 z_index="1000",
                             ),
                             href="/analyze/compare",
@@ -103,7 +103,7 @@ def cart_drawer_content():
             width="100%",
             padding="2em",
             border_radius="1em",
-            backdrop_filter="blur(14px)",
+            backdrop_filter="blur(0.875rem)",
             background="rgba(20, 20, 20, 0.7)",
         ),
         width="28em",

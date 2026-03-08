@@ -9,10 +9,10 @@ _GLASS_HOVER_BORDER = "rgba(255, 255, 255, 0.13)"
 
 def glass_card(*children, **props) -> rx.Component:
     padding = props.pop("padding", "1rem")
-    border_radius = props.pop("border_radius", "14px")
+    border_radius = props.pop("border_radius", "0.875rem")
     background = props.pop("background", _GLASS_BG)
     border = props.pop("border", _GLASS_BORDER)
-    backdrop_filter = props.pop("backdrop_filter", "blur(12px)")
+    backdrop_filter = props.pop("backdrop_filter", "blur(0.75rem)")
     _hover = props.pop(
         "_hover",
         {

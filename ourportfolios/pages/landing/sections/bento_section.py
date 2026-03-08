@@ -86,7 +86,6 @@ def bento_section() -> rx.Component:
                     ),
                     align="center",
                     max_width="28rem",
-                    min_width="28rem",
                 ),
                 delay=0.2,
             ),

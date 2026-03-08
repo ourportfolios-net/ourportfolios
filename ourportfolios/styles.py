@@ -58,8 +58,8 @@ TOOLTIP_CURSOR = {"fill": white(0.06)}
 TOOLTIP_CONTENT_STYLE = {
     "backgroundColor": "rgba(14, 14, 18, 0.95)",
     "border": f"1px solid {white(0.08)}",
-    "borderRadius": "8px",
-    "padding": "6px 10px",
+    "borderRadius": "0.5rem",
+    "padding": "0.375rem 0.625rem",
 }
 TOOLTIP_WRAPPER_STYLE = {"zIndex": "9999"}
 
@@ -68,7 +68,7 @@ TOOLTIP_WRAPPER_STYLE = {"zIndex": "9999"}
 
 ERROR_COLOR = "rgba(255, 100, 100, 0.8)"
 ERROR_BORDER = "1px solid rgba(255, 80, 80, 0.5)"
-ERROR_SHADOW = "0 0 0 3px rgba(255, 80, 80, 0.08)"
+ERROR_SHADOW = "0 0 0 0.1875rem rgba(255, 80, 80, 0.08)"
 DELETE_HOVER = "rgba(236, 93, 94, 0.85)"
 
 
@@ -112,9 +112,9 @@ TABLE_BG = "#0d0d0d"
 CARD_STYLE = {
     "background": CARD_BG,
     "border": CARD_BORDER,
-    "border_radius": "14px",
+    "border_radius": "0.875rem",
     "padding": "1.5rem",
-    "min_height": "240px",
+    "min_height": "15rem",
 }
 
 # Standard hover applied to ALL cards (hub cards, glass cards, framework card)
@@ -133,12 +133,12 @@ HUB_CARD_STYLE = {
     **CARD_HOVER_STYLE,
     "position": "relative",
     "overflow": "hidden",
-    "height": "420px",
+    "min_height": "26.25rem",
 }
 
 SURFACE_CARD_STYLE = {
     "padding": "0.75rem",
-    "border_radius": "10px",
+    "border_radius": "0.625rem",
     "background": SURFACE_BG,
     "border": SURFACE_BORDER,
     "width": "100%",
@@ -147,7 +147,7 @@ SURFACE_CARD_STYLE = {
 # Preview box inside hub cards
 PREVIEW_BOX_STYLE = {
     "padding": "0.75rem",
-    "border_radius": "10px",
+    "border_radius": "0.625rem",
     "background": white(0.02),
     "border": f"1px solid {white(0.04)}",
     "width": "100%",
@@ -160,13 +160,13 @@ PREVIEW_BOX_STYLE = {
 INPUT_STYLE = {
     "background": white(0.04),
     "border": f"1px solid {white(0.08)}",
-    "border_radius": "10px",
+    "border_radius": "0.625rem",
     "color": "white",
     "width": "100%",
     "_placeholder": {"color": white(0.2)},
     "_focus": {
         "border_color": purple(0.4),
-        "box_shadow": f"0 0 0 3px {purple(0.07)}",
+        "box_shadow": f"0 0 0 0.1875rem {purple(0.07)}",
         "outline": "none",
     },
 }
@@ -174,14 +174,14 @@ INPUT_STYLE = {
 SELECT_STYLE = {
     "background": white(0.04),
     "border": f"1px solid {white(0.08)}",
-    "border_radius": "10px",
+    "border_radius": "0.625rem",
     "color": "white",
     "width": "100%",
     "cursor": "pointer",
 }
 
 LABEL_STYLE = {
-    "font_size": "10px",
+    "font_size": "0.625rem",
     "font_weight": "700",
     "color": white(0.35),
     "letter_spacing": "0.08em",
@@ -190,7 +190,7 @@ LABEL_STYLE = {
 
 SEARCH_ICON_STYLE = {
     "position": "absolute",
-    "left": "10px",
+    "left": "0.625rem",
     "top": "50%",
     "transform": "translateY(-50%)",
     "pointer_events": "none",
@@ -199,7 +199,7 @@ SEARCH_ICON_STYLE = {
 SEARCH_INPUT_STYLE = {
     **INPUT_STYLE,
     "padding_left": "2rem",
-    "width": "280px",
+    "width": "clamp(12rem, 18vw, 20rem)",
 }
 
 
@@ -208,7 +208,7 @@ SEARCH_INPUT_STYLE = {
 BTN_PURPLE = {
     "background": purple(0.15),
     "border": f"1px solid {purple(0.35)}",
-    "border_radius": "9px",
+    "border_radius": "0.5625rem",
     "color": TEXT_PURPLE,
     "font_weight": "600",
     "cursor": "pointer",
@@ -216,20 +216,20 @@ BTN_PURPLE = {
     "transition": "all 0.15s ease",
 }
 
-BTN_PURPLE_SM = {**BTN_PURPLE, "border_radius": "7px"}
+BTN_PURPLE_SM = {**BTN_PURPLE, "border_radius": "0.4375rem"}
 
 BTN_GHOST = {
     "background": white(0.04),
     "border": f"1px solid {white(0.08)}",
-    "border_radius": "9px",
+    "border_radius": "0.5625rem",
     "color": white(0.45),
     "cursor": "pointer",
     "_hover": {"background": white(0.07), "color": "white"},
     "transition": "all 0.15s ease",
 }
 
-BTN_GHOST_SM = {**BTN_GHOST, "border_radius": "7px"}
-BTN_GHOST_XS = {**BTN_GHOST, "border_radius": "6px"}
+BTN_GHOST_SM = {**BTN_GHOST, "border_radius": "0.4375rem"}
+BTN_GHOST_XS = {**BTN_GHOST, "border_radius": "0.375rem"}
 
 BTN_COMPARE = {
     **BTN_GHOST_XS,
@@ -245,10 +245,10 @@ BTN_COMPARE = {
 BTN_SECONDARY = {
     "background": white(0.05),
     "border": f"1px solid {white(0.1)}",
-    "border_radius": "8px",
+    "border_radius": "0.5rem",
     "color": white(0.6),
     "font_weight": "500",
-    "font_size": "13px",
+    "font_size": "0.8125rem",
     "cursor": "pointer",
     "transition": "all 0.15s ease",
     "_hover": {
@@ -282,10 +282,10 @@ BTN_VIEW_INACTIVE = {
 BTN_FILTER_ACTIVE = {
     "background": purple(0.18),
     "border": f"1px solid {purple(0.5)}",
-    "border_radius": "8px",
+    "border_radius": "0.5rem",
     "color": TEXT_PURPLE,
     "font_weight": "600",
-    "font_size": "13px",
+    "font_size": "0.8125rem",
     "cursor": "pointer",
     "transition": "all 0.15s ease",
     "_hover": {"background": purple(0.28)},
@@ -295,7 +295,7 @@ BTN_FILTER_ACTIVE = {
 PILL_TOGGLE = {
     "background": white(0.03),
     "border": f"1px solid {white(0.06)}",
-    "border_radius": "6px",
+    "border_radius": "0.375rem",
     "color": white(0.35),
     "cursor": "pointer",
     "transition": "all 0.15s ease",
@@ -305,17 +305,17 @@ PILL_TOGGLE = {
 PILL_TOGGLE_ACTIVE = {
     "background": white(0.1),
     "border": f"1px solid {white(0.18)}",
-    "border_radius": "6px",
+    "border_radius": "0.375rem",
     "color": "white",
     "cursor": "pointer",
     "transition": "all 0.15s ease",
 }
 
 CHIP_STYLE = {
-    "border_radius": "6px",
+    "border_radius": "0.375rem",
     "background": white(0.05),
     "border": f"1px solid {white(0.1)}",
-    "height": "28px",
+    "height": "1.75rem",
     "transition": "all 0.15s ease",
     "_hover": {"background": white(0.09), "border_color": white(0.18)},
 }
@@ -323,7 +323,7 @@ CHIP_STYLE = {
 MODAL_PANEL_STYLE = {
     "background": MODAL_BG,
     "border": f"1px solid {white(0.08)}",
-    "border_radius": "14px",
+    "border_radius": "0.875rem",
 }
 
 FLEX_COL_FILL = {
@@ -358,7 +358,7 @@ def accent_btn(
         padding="0.35em 0.75em",
         background=white(0.04),
         border=f"1px solid {white(0.09)}",
-        border_radius="8px",
+        border_radius="0.5rem",
         transition="all 0.15s ease",
         _hover={"background": white(0.09), "border_color": white(0.2)},
         cursor="pointer",
@@ -415,8 +415,8 @@ def icon_box(icon_name: str, color: str = "purple", size: int = 16) -> rx.Compon
         rx.icon(icon_name, size=size, color=icon_color_val),
         background=bg,
         border=f"1px solid {border}",
-        border_radius="10px",
-        padding="9px",
+        border_radius="0.625rem",
+        padding="0.5625rem",
         display="flex",
         align_items="center",
         justify_content="center",
@@ -425,7 +425,7 @@ def icon_box(icon_name: str, color: str = "purple", size: int = 16) -> rx.Compon
 
 
 def icon_box_style(
-    color: str = "purple", size: str = "40px", radius: str = "10px"
+    color: str = "purple", size: str = "2.5rem", radius: str = "0.625rem"
 ) -> dict:
     """Returns a style dict for cases where a component helper isn't suitable."""
     bg, border, _ = _ICON_COLORS.get(color, _ICON_COLORS["purple"])
@@ -456,17 +456,17 @@ def glow_orb_style(color: str = "purple") -> dict:
         "position": "absolute",
         "right": "-2rem",
         "top": "-2rem",
-        "width": "130px",
-        "height": "130px",
+        "width": "8rem",
+        "height": "8rem",
         "background": colors.get(color, colors["purple"]),
-        "filter": "blur(50px)",
+        "filter": "blur(3rem)",
         "border_radius": "9999px",
         "pointer_events": "none",
     }
 
 
 def skeleton_box_style(
-    width: str, height: str, radius: str = "4px", opacity: float = 0.06
+    width: str, height: str, radius: str = "0.25rem", opacity: float = 0.06
 ) -> dict:
     return {
         "width": width,
@@ -492,7 +492,7 @@ def overlay_style(is_active) -> dict:
 
 LANDING_CARD = {
     "background": "transparent",
-    "backdrop_filter": "blur(20px)",
+    "backdrop_filter": "blur(1.25rem)",
     "border": f"1px solid {white(0.07)}",
     "border_radius": "1.5rem",
     "display": "flex",

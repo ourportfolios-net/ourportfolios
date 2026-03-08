@@ -12,16 +12,16 @@ import gsap from "gsap";
 export const Card = forwardRef(
   (
     { customClass, children, style: userStyle = {}, className, ...rest },
-    ref
+    ref,
   ) => {
     const baseStyle = {
       position: "absolute",
       transformStyle: "preserve-3d",
       backfaceVisibility: "hidden",
-      borderRadius: "1.5rem",
+      borderRadius: "0.875rem",
       overflow: "visible",
       boxShadow:
-        "0 40px 80px -24px rgba(0,0,0,0.6), 0 20px 40px -20px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.03)",
+        "0 20px 50px -16px rgba(0,0,0,0.5), 0 8px 20px -10px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.07)",
       ...userStyle,
     };
 
@@ -37,10 +37,8 @@ export const Card = forwardRef(
           style={{
             position: "absolute",
             inset: 0,
-            background: "rgba(22,22,28,0.8)",
-            backdropFilter: "blur(18px)",
-            WebkitBackdropFilter: "blur(18px)",
-            borderRadius: "1.5rem",
+            background: "rgb(22,22,28)",
+            borderRadius: "0.875rem",
             boxShadow: "inset 0 1px 0 rgba(255,255,255,0.02)",
             pointerEvents: "none",
             zIndex: 1,
@@ -60,7 +58,7 @@ export const Card = forwardRef(
         </div>
       </div>
     );
-  }
+  },
 );
 Card.displayName = "Card";
 
@@ -119,7 +117,7 @@ const CardSwap = ({
   const refs = useMemo(
     () => childArr.map(() => React.createRef()),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [childArr.length]
+    [childArr.length],
   );
 
   const order = useRef(Array.from({ length: childArr.length }, (_, i) => i));
@@ -134,8 +132,8 @@ const CardSwap = ({
       placeNow(
         r.current,
         makeSlot(i, cardDistance, verticalDistance, total),
-        skewAmount
-      )
+        skewAmount,
+      ),
     );
 
     const swap = () => {
@@ -167,7 +165,7 @@ const CardSwap = ({
             duration: config.durMove,
             ease: config.ease,
           },
-          `promote+=${i * 0.15}`
+          `promote+=${i * 0.15}`,
         );
       });
 
@@ -175,7 +173,7 @@ const CardSwap = ({
         refs.length - 1,
         cardDistance,
         verticalDistance,
-        refs.length
+        refs.length,
       );
       tl.addLabel("return", `promote+=${config.durMove * config.returnDelay}`);
       tl.call(
@@ -183,7 +181,7 @@ const CardSwap = ({
           gsap.set(elFront, { zIndex: backSlot.zIndex });
         },
         undefined,
-        "return"
+        "return",
       );
       tl.to(
         elFront,
@@ -195,7 +193,7 @@ const CardSwap = ({
           duration: config.durReturn,
           ease: config.ease,
         },
-        "return"
+        "return",
       );
 
       tl.call(() => {
@@ -239,7 +237,7 @@ const CardSwap = ({
             onCardClick?.(i);
           },
         })
-      : child
+      : child,
   );
 
   return (

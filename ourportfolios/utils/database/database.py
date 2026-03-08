@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
+from sqlalchemy.pool import NullPool
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -63,26 +64,20 @@ COMPANY_DB_URI_ASYNC = _ensure_async_pg(COMPANY_DB_URI)
 
 price_engine = create_async_engine(
     PRICE_DB_URI_ASYNC,
-    pool_size=5,
-    max_overflow=10,
-    pool_timeout=30,
-    pool_recycle=600,
-    pool_pre_ping=True,
+    poolclass=NullPool,
     connect_args={
         "server_settings": {"jit": "off"},
         "timeout": 10,
+        "statement_cache_size": 0,
     },
 )
 company_engine = create_async_engine(
     COMPANY_DB_URI_ASYNC,
-    pool_size=5,
-    max_overflow=10,
-    pool_timeout=30,
-    pool_recycle=600,
-    pool_pre_ping=True,
+    poolclass=NullPool,
     connect_args={
         "server_settings": {"jit": "off"},
         "timeout": 10,
+        "statement_cache_size": 0,
     },
 )
 

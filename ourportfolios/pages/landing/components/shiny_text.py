@@ -13,9 +13,6 @@ class ShinyText(rx.Component):
     tag = "ShinyText"
     is_default = True
 
-    # Specify the npm dependency
-    lib_dependencies: list[str] = ["motion@11.15.0"]
-
     # Component props
     text: rx.Var[str]
     disabled: rx.Var[bool] = False
