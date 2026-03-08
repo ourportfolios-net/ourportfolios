@@ -146,13 +146,19 @@ def navbar() -> rx.Component:
     bar = rx.box(
         rx.hstack(
             rx.hstack(
-                rx.text(
-                    "ourportfolios",
-                    font_size="1.25rem",
-                    font_weight="600",
-                    letter_spacing="-0.02em",
-                    user_select="none",
-                    flex_shrink="0",
+                rx.link(
+                    rx.text(
+                        "ourportfolios",
+                        font_size="1.25rem",
+                        font_weight="600",
+                        letter_spacing="-0.02em",
+                        user_select="none",
+                        flex_shrink="0",
+                    ),
+                    href="/home",
+                    text_decoration="none",
+                    color="inherit",
+                    _hover={"cursor": "pointer", "text_decoration": "none", "color": "inherit"},
                 ),
                 _nav_link("Frameworks", "/framework"),
                 _nav_link("Portfolio", "/portfolio-management"),
