@@ -2,6 +2,34 @@
 
 <!-- version list -->
 
+## v0.14.0 (2026-03-08)
+
+### Chores
+
+- Add responsiveness across the board
+  ([`d5f4d90`](https://github.com/ourportfolios-net/ourportfolios/commit/d5f4d90fa704a02703e6790a9665d65a84e214cb))
+
+- Change cursor interactivity on buttons
+  ([`e78e4b2`](https://github.com/ourportfolios-net/ourportfolios/commit/e78e4b2a98b429daab9de00a2febcbe7e85b622c))
+
+- Increase transition speed
+  ([`d90e1e8`](https://github.com/ourportfolios-net/ourportfolios/commit/d90e1e88566f25eb9db612e91a55ff74832b9f0b))
+
+- Update readme
+  ([`2a5441d`](https://github.com/ourportfolios-net/ourportfolios/commit/2a5441dd30565cffe6440bcd51bea28d0960be65))
+
+- **bento**: Improve responsiveness
+  ([`edddef7`](https://github.com/ourportfolios-net/ourportfolios/commit/edddef78cde2f6f085771def4751417e2d03dbce))
+
+- **navbar**: Add link to logo
+  ([`ffedc32`](https://github.com/ourportfolios-net/ourportfolios/commit/ffedc328e01adadbc17121616eeb16aa6996bc0e))
+
+### Features
+
+- Use nullpool for a more stable connection
+  ([`7ac39da`](https://github.com/ourportfolios-net/ourportfolios/commit/7ac39dad17c0eb91ebc77f2dcfe08c75787aa3f8))
+
+
 ## v0.13.0 (2026-03-06)
 
 ### Chores
