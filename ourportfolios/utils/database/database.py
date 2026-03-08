@@ -68,6 +68,7 @@ price_engine = create_async_engine(
     connect_args={
         "server_settings": {"jit": "off"},
         "timeout": 10,
+        "statement_cache_size": 0,
     },
 )
 company_engine = create_async_engine(
@@ -76,6 +77,7 @@ company_engine = create_async_engine(
     connect_args={
         "server_settings": {"jit": "off"},
         "timeout": 10,
+        "statement_cache_size": 0,
     },
 )
 

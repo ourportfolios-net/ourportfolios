@@ -8,7 +8,6 @@ class ScrollRevealComponent(rx.Component):
 
     library = "$/public/ScrollReveal"
     tag = "ScrollReveal"
-    lib_dependencies: list[str] = ["motion@11.15.0"]
 
     blur_amount: rx.Var[int] = 10
     initial_opacity: rx.Var[float] = 0.4

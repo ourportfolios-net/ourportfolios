@@ -1,5 +1,4 @@
 import { useRef, useEffect, useState } from "react";
-import { motion } from "motion/react";
 
 const ScrollReveal = ({
   children,
@@ -34,22 +33,22 @@ const ScrollReveal = ({
     return () => observer.disconnect();
   }, [threshold, triggerOnce]);
 
+  const ease = "cubic-bezier(0.25, 0.4, 0.4, 1)";
+  const t = `opacity ${duration}s ${ease} ${delay}s, filter ${duration}s ${ease} ${delay}s, transform ${duration}s ${ease} ${delay}s`;
+
   return (
     <div ref={ref} className={className} style={{ width: "100%", ...style }}>
-      <motion.div
-        style={{ width: "100%" }}
-        initial={{
-          opacity: initialOpacity,
-          filter: `blur(${blurAmount}px)`,
-          scale: initialScale,
+      <div
+        style={{
+          width: "100%",
+          opacity: isInView ? 1 : initialOpacity,
+          filter: isInView ? "blur(0px)" : `blur(${blurAmount}px)`,
+          transform: isInView ? "scale(1)" : `scale(${initialScale})`,
+          transition: t,
         }}
-        animate={
-          isInView ? { opacity: 1, filter: "blur(0px)", scale: 1 } : undefined
-        }
-        transition={{ duration, delay, ease: [0.25, 0.4, 0.4, 1] }}
       >
         {children}
-      </motion.div>
+      </div>
     </div>
   );
 };
