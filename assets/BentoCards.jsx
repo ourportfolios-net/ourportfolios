@@ -1,10 +1,9 @@
 import { useState, useRef, useCallback } from "react";
+import { motion } from "motion/react";
 
 // ================================================
 // Shared styles & utilities
 // ================================================
-
-const EASE = "cubic-bezier(0.2, 0.6, 0.3, 1)";
 
 const cardBase = {
   position: "relative",
@@ -16,28 +15,16 @@ const cardBase = {
   clipPath: "inset(-10px)",
   transformStyle: "preserve-3d",
   backfaceVisibility: "hidden",
+  transition: "all 0s cubic-bezier(0.4, 0, 0.2, 1)",
   cursor: "default",
-  willChange: "transform",
 };
 
-// Overlay WITH backdrop-filter (only for TransparencyCard where opacity animates)
-const bgOverlayBlur = {
+const bgOverlay = {
   position: "absolute",
   inset: 0,
   background: "rgba(22, 22, 28, 0.97)",
   backdropFilter: "blur(18px)",
   WebkitBackdropFilter: "blur(18px)",
-  borderRadius: "1.5rem",
-  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.02)",
-  pointerEvents: "none",
-  zIndex: 1,
-};
-
-// Opaque overlay WITHOUT backdrop-filter (no compositing cost)
-const bgOverlay = {
-  position: "absolute",
-  inset: 0,
-  background: "rgb(22, 22, 28)",
   borderRadius: "1.5rem",
   boxShadow: "inset 0 1px 0 rgba(255,255,255,0.02)",
   pointerEvents: "none",
@@ -90,65 +77,59 @@ const iconSvgProps = {
   strokeLinejoin: "round",
 };
 
-// Cursor-tracking border glow — uses CSS custom properties set by onMouseMove
-// Always rendered; visibility controlled via opacity (no mount/unmount cost)
-const CursorBorderGlow = ({ isHovered }) => (
-  <div
-    style={{
-      position: "absolute",
-      inset: 0,
-      borderRadius: "1.5rem",
-      padding: "1px",
-      background:
-        "radial-gradient(circle 200px at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,0.3), rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.03) 100%)",
-      WebkitMask:
-        "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
-      WebkitMaskComposite: "xor",
-      maskComposite: "exclude",
-      pointerEvents: "none",
-      zIndex: 2,
-      opacity: isHovered ? 1 : 0,
-      transition: "opacity 0.2s",
-    }}
-  />
-);
+// Cursor-tracking border glow
+const CursorBorderGlow = ({ mousePos, isHovered }) => {
+  if (!isHovered) return null;
+  const { x, y } = mousePos;
+  return (
+    <motion.div
+      style={{
+        position: "absolute",
+        inset: 0,
+        borderRadius: "1.5rem",
+        padding: "1px",
+        background: `radial-gradient(circle 200px at ${x}px ${y}px, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.03) 100%)`,
+        WebkitMask:
+          "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+        WebkitMaskComposite: "xor",
+        maskComposite: "exclude",
+        pointerEvents: "none",
+        zIndex: 2,
+      }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+    />
+  );
+};
 
-// Direct DOM manipulation for tilt + CSS custom property updates (zero re-renders)
-function useCardInteraction() {
+// Tilt + mouse position hook
+function useTilt() {
   const cardRef = useRef(null);
-  const [isHovered, setIsHovered] = useState(false);
+  const [tiltStyle, setTiltStyle] = useState({});
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
-  const onMouseMove = useCallback((e) => {
-    const el = cardRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
+  const handleMouseMove = useCallback((e) => {
+    if (!cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    // Update CSS custom properties for CursorBorderGlow position
-    el.style.setProperty("--mx", x + "px");
-    el.style.setProperty("--my", y + "px");
-    // Apply tilt transform directly to DOM (no React state → no re-render)
-    const rx = ((y - rect.height / 2) / (rect.height / 2)) * -3;
-    const ry = ((x - rect.width / 2) / (rect.width / 2)) * 3;
-    el.style.transform = `perspective(1200px) rotateX(${rx}deg) rotateY(${ry}deg)`;
+    setMousePos({ x, y });
+    const rotateX = ((y - rect.height / 2) / (rect.height / 2)) * -3;
+    const rotateY = ((x - rect.width / 2) / (rect.width / 2)) * 3;
+    setTiltStyle({
+      transform: `perspective(1200px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`,
+    });
   }, []);
 
-  const onMouseEnter = useCallback(() => {
-    setIsHovered(true);
-    const el = cardRef.current;
-    if (el) el.style.transition = "transform 0.05s linear";
+  const resetTilt = useCallback(() => {
+    setTiltStyle({
+      transform: "perspective(1200px) rotateX(0deg) rotateY(0deg)",
+    });
   }, []);
 
-  const onMouseLeave = useCallback(() => {
-    setIsHovered(false);
-    const el = cardRef.current;
-    if (el) {
-      el.style.transition = `transform 0.4s ${EASE}`;
-      el.style.transform = "";
-    }
-  }, []);
-
-  return { cardRef, isHovered, onMouseMove, onMouseEnter, onMouseLeave };
+  return { cardRef, tiltStyle, handleMouseMove, resetTilt, mousePos };
 }
 
 // ================================================
@@ -167,28 +148,28 @@ const codeLines = [
 ];
 
 const TransparencyCard = ({ className = "", style = {} }) => {
-  const { cardRef, isHovered, onMouseMove, onMouseEnter, onMouseLeave } =
-    useCardInteraction();
+  const [isHovered, setIsHovered] = useState(false);
+  const { cardRef, tiltStyle, handleMouseMove, resetTilt, mousePos } =
+    useTilt();
 
   return (
-    <div
+    <motion.div
       ref={cardRef}
       className={className}
-      style={{ ...cardBase, ...style }}
-      onMouseMove={onMouseMove}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
+      style={{ ...cardBase, ...tiltStyle, ...style }}
+      onMouseMove={handleMouseMove}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => {
+        setIsHovered(false);
+        resetTilt();
+      }}
     >
-      {/* Background overlay — transparency animates on hover */}
-      <div
-        style={{
-          ...bgOverlayBlur,
-          opacity: isHovered ? 0.12 : 0.55,
-          transition: `opacity 0.45s ${EASE}`,
-        }}
+      <motion.div
+        style={bgOverlay}
+        animate={{ opacity: isHovered ? 0.12 : 0.55 }}
+        transition={{ duration: 0.3, ease: [0.25, 0.4, 0.4, 1] }}
       />
 
-      {/* Source code pattern (visible when transparent) */}
       <div
         style={{
           position: "absolute",
@@ -215,7 +196,6 @@ const TransparencyCard = ({ className = "", style = {} }) => {
         ))}
       </div>
 
-      {/* Grid texture */}
       <div
         style={{
           position: "absolute",
@@ -228,7 +208,7 @@ const TransparencyCard = ({ className = "", style = {} }) => {
         }}
       />
 
-      <CursorBorderGlow isHovered={isHovered} />
+      <CursorBorderGlow mousePos={mousePos} isHovered={isHovered} />
 
       <div
         style={{
@@ -247,23 +227,25 @@ const TransparencyCard = ({ className = "", style = {} }) => {
 
         <div style={{ flex: 1 }} />
 
-        <p
+        <motion.p
           style={{
             ...subtextStyle,
             textAlign: "right",
             marginBottom: "0.75rem",
+          }}
+          animate={{
             opacity: isHovered ? 0.95 : 0.55,
             color: isHovered
               ? "rgba(255, 255, 255, 0.85)"
               : "rgba(255, 255, 255, 0.5)",
-            transition: `opacity 0.45s ${EASE}, color 0.45s ${EASE}`,
           }}
+          transition={{ duration: 0.3, ease: [0.25, 0.4, 0.4, 1] }}
         >
           Open-source. All sources publicly verifiable.
-        </p>
-        <h3 style={headingStyle}>Transparency</h3>
+        </motion.p>
+        <h3 style={{ ...headingStyle }}>Transparency</h3>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
@@ -272,20 +254,24 @@ const TransparencyCard = ({ className = "", style = {} }) => {
 // ================================================
 
 const FocusedCard = ({ className = "", style = {} }) => {
-  const { cardRef, isHovered, onMouseMove, onMouseEnter, onMouseLeave } =
-    useCardInteraction();
+  const [isHovered, setIsHovered] = useState(false);
+  const { cardRef, tiltStyle, handleMouseMove, resetTilt, mousePos } =
+    useTilt();
 
   return (
-    <div
+    <motion.div
       ref={cardRef}
       className={className}
-      style={{ ...cardBase, ...style }}
-      onMouseMove={onMouseMove}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
+      style={{ ...cardBase, ...tiltStyle, ...style }}
+      onMouseMove={handleMouseMove}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => {
+        setIsHovered(false);
+        resetTilt();
+      }}
     >
       <div style={bgOverlay} />
-      <CursorBorderGlow isHovered={isHovered} />
+      <CursorBorderGlow mousePos={mousePos} isHovered={isHovered} />
 
       <div
         style={{
@@ -317,58 +303,57 @@ const FocusedCard = ({ className = "", style = {} }) => {
               marginBottom: "0.5rem",
             }}
           >
-            {/* Noise text — before */}
-            <span
-              style={{
-                color: "rgba(255,255,255,0.25)",
-                filter: isHovered ? "blur(2.5px)" : "blur(1px)",
-                opacity: isHovered ? 0.15 : 0.35,
-                transition: "filter 0.35s, opacity 0.35s",
+            <motion.span
+              style={{ color: "rgba(255,255,255,0.25)" }}
+              animate={{
+                filter: isHovered ? "blur(2.5px)" : "blur(0px)",
+                opacity: isHovered ? 0.15 : 0.55,
               }}
+              transition={{ duration: 0.3 }}
             >
               Market analysis · Portfolio tracking · Risk assessment · Stock
               screening · Benchmark comparison ·{" "}
-            </span>
+            </motion.span>
 
-            {/* KEY PHRASE */}
-            <span
+            <motion.span
               style={{
                 fontWeight: 500,
                 display: "inline",
                 position: "relative",
                 zIndex: 1,
                 whiteSpace: "nowrap",
+              }}
+              animate={{
                 color: isHovered
                   ? "rgba(255, 255, 255, 0.95)"
                   : "rgba(255, 255, 255, 0.65)",
                 textShadow: isHovered
                   ? "0 0 20px rgba(255, 255, 255, 0.4), 0 0 40px rgba(255, 255, 255, 0.15)"
                   : "0 0 10px rgba(255, 255, 255, 0.1)",
-                transition: `color 0.28s ease-out ${isHovered ? "0.06s" : "0s"}, text-shadow 0.28s ease-out ${isHovered ? "0.06s" : "0s"}`,
               }}
+              transition={{ duration: 0.25, delay: isHovered ? 0.05 : 0 }}
             >
               One framework, zero clutter
-            </span>
+            </motion.span>
 
-            {/* Noise text — after */}
-            <span
-              style={{
-                color: "rgba(255,255,255,0.25)",
-                filter: isHovered ? "blur(2.5px)" : "blur(1px)",
-                opacity: isHovered ? 0.15 : 0.35,
-                transition: "filter 0.35s, opacity 0.35s",
+            <motion.span
+              style={{ color: "rgba(255,255,255,0.25)" }}
+              animate={{
+                filter: isHovered ? "blur(2.5px)" : "blur(0px)",
+                opacity: isHovered ? 0.15 : 0.55,
               }}
+              transition={{ duration: 0.3 }}
             >
               {" "}
               · Technical indicators · Sector analysis · Dividend yields ·
               Earnings reports · Asset allocation
-            </span>
+            </motion.span>
           </div>
 
           <h3 style={headingStyle}>Focused</h3>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
@@ -377,22 +362,25 @@ const FocusedCard = ({ className = "", style = {} }) => {
 // ================================================
 
 const ConcisenessCard = ({ className = "", style = {} }) => {
-  const { cardRef, isHovered, onMouseMove, onMouseEnter, onMouseLeave } =
-    useCardInteraction();
+  const [isHovered, setIsHovered] = useState(false);
+  const { cardRef, tiltStyle, handleMouseMove, resetTilt, mousePos } =
+    useTilt();
 
   return (
-    <div
+    <motion.div
       ref={cardRef}
       className={className}
-      style={{ ...cardBase, ...style }}
-      onMouseMove={onMouseMove}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
+      style={{ ...cardBase, ...tiltStyle, ...style }}
+      onMouseMove={handleMouseMove}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => {
+        setIsHovered(false);
+        resetTilt();
+      }}
     >
       <div style={bgOverlay} />
-      <CursorBorderGlow isHovered={isHovered} />
+      <CursorBorderGlow mousePos={mousePos} isHovered={isHovered} />
 
-      {/* Mini scrollbar track */}
       <div
         style={{
           position: "absolute",
@@ -406,17 +394,20 @@ const ConcisenessCard = ({ className = "", style = {} }) => {
           overflow: "hidden",
         }}
       >
-        <div
+        <motion.div
           style={{
             width: "3px",
             height: "30%",
+            background: "rgba(255, 255, 255, 0.15)",
             borderRadius: "1.5px",
+          }}
+          animate={{
+            y: isHovered ? "233%" : "100%",
             background: isHovered
               ? "rgba(124, 58, 237, 0.4)"
               : "rgba(255, 255, 255, 0.2)",
-            transform: isHovered ? "translateY(233%)" : "translateY(100%)",
-            transition: `transform 0.45s ${EASE}, background 0.45s ${EASE}`,
           }}
+          transition={{ duration: 0.3, ease: [0.25, 0.4, 0.4, 1] }}
         />
       </div>
 
@@ -440,31 +431,31 @@ const ConcisenessCard = ({ className = "", style = {} }) => {
 
         <div style={{ flex: 1 }} />
 
-        <div
-          style={{
-            transform: isHovered ? "translateY(-8px)" : "translateY(0)",
-            transition: `transform 0.45s ${EASE}`,
-          }}
+        <motion.div
+          animate={{ y: isHovered ? -8 : 0 }}
+          transition={{ duration: 0.3, ease: [0.25, 0.4, 0.4, 1] }}
         >
-          <p
+          <motion.p
             style={{
               ...subtextStyle,
               textAlign: "right",
               marginBottom: "0.75rem",
+            }}
+            animate={{
               opacity: isHovered ? 0.95 : 0.55,
               color: isHovered
                 ? "rgba(255, 255, 255, 0.85)"
                 : "rgba(255, 255, 255, 0.5)",
-              transition: `opacity 0.45s ${EASE}, color 0.45s ${EASE}`,
             }}
+            transition={{ duration: 0.3, ease: [0.25, 0.4, 0.4, 1] }}
           >
             Everything within
             <br />a single scroll.
-          </p>
+          </motion.p>
           <h3 style={headingStyle}>Conciseness</h3>
-        </div>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
@@ -474,8 +465,8 @@ const ConcisenessCard = ({ className = "", style = {} }) => {
 
 const verifyItems = [
   { label: "Data", hoverLabel: "VNStock", delay: 0 },
-  { label: "Frameworks", delay: 0.12 },
-  { label: "Results", delay: 0.24 },
+  { label: "Frameworks", delay: 0.18 },
+  { label: "Results", delay: 0.36 },
 ];
 
 const VerifyItem = ({ label, hoverLabel, delay, isHovered }) => (
@@ -495,7 +486,18 @@ const VerifyItem = ({ label, hoverLabel, delay, isHovered }) => (
         flexShrink: 0,
       }}
     >
-      <svg
+      <motion.div
+        style={{
+          position: "absolute",
+          inset: 0,
+          borderRadius: "50%",
+          border: "1.5px solid rgba(255, 255, 255, 0.12)",
+        }}
+        animate={{ opacity: 0, scale: 0.5 }}
+        transition={{ duration: 0.2 }}
+      />
+
+      <motion.svg
         width="16"
         height="16"
         viewBox="0 0 24 24"
@@ -505,68 +507,79 @@ const VerifyItem = ({ label, hoverLabel, delay, isHovered }) => (
         strokeLinejoin="round"
         style={{ position: "absolute", inset: 0 }}
       >
-        <path
+        <motion.path
           d="M5 12l5 5L20 7"
           stroke="#4ade80"
-          style={{
-            opacity: isHovered ? 1 : 0.5,
-            transition: `opacity 0.28s ease-out ${isHovered ? delay * 0.5 : 0}s`,
+          initial={{ pathLength: 1, opacity: 0.5 }}
+          animate={{ pathLength: 1, opacity: isHovered ? 1 : 0.5 }}
+          transition={{
+            duration: 0.2,
+            delay: isHovered ? delay * 0.5 : 0,
+            ease: "easeOut",
           }}
         />
-      </svg>
+      </motion.svg>
     </div>
 
     <div style={{ position: "relative", display: "inline-flex" }}>
-      <span
+      <motion.span
         style={{
           fontSize: "0.72rem",
           fontFamily: "var(--default-font-family, inherit)",
+        }}
+        animate={{
           color: isHovered
             ? "rgba(255, 255, 255, 0.7)"
             : "rgba(255, 255, 255, 0.4)",
           opacity: hoverLabel && isHovered ? 0 : 1,
-          transition: `color 0.25s ease-out ${isHovered ? delay : 0}s, opacity 0.25s ease-out ${isHovered ? delay : 0}s`,
         }}
+        transition={{ duration: 0.3, delay: isHovered ? delay : 0 }}
       >
         {label}
-      </span>
+      </motion.span>
       {hoverLabel && (
-        <span
+        <motion.span
           style={{
             fontSize: "0.72rem",
             fontFamily: "var(--default-font-family, inherit)",
             position: "absolute",
             left: 0,
             top: 0,
+          }}
+          animate={{
             color: isHovered
               ? "rgba(255, 255, 255, 0.7)"
               : "rgba(255, 255, 255, 0.4)",
             opacity: isHovered ? 1 : 0,
-            transition: `color 0.25s ease-out ${isHovered ? delay : 0}s, opacity 0.25s ease-out ${isHovered ? delay : 0}s`,
           }}
+          transition={{ duration: 0.3, delay: isHovered ? delay : 0 }}
         >
           {hoverLabel}
-        </span>
+        </motion.span>
       )}
     </div>
   </div>
 );
 
 const ReliabilityCard = ({ className = "", style = {} }) => {
-  const { cardRef, isHovered, onMouseMove, onMouseEnter, onMouseLeave } =
-    useCardInteraction();
+  const [isHovered, setIsHovered] = useState(false);
+  const { cardRef, tiltStyle, handleMouseMove, resetTilt, mousePos } =
+    useTilt();
 
   return (
-    <div
+    <motion.div
       ref={cardRef}
       className={className}
-      style={{ ...cardBase, ...style }}
-      onMouseMove={onMouseMove}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
+      style={{ ...cardBase, ...tiltStyle, ...style }}
+      onMouseMove={handleMouseMove}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => {
+        setIsHovered(false);
+        resetTilt();
+      }}
     >
       <div style={bgOverlay} />
-      <CursorBorderGlow isHovered={isHovered} />
+      <CursorBorderGlow mousePos={mousePos} isHovered={isHovered} />
 
       <div
         style={{
@@ -607,7 +620,7 @@ const ReliabilityCard = ({ className = "", style = {} }) => {
           <h3 style={headingStyle}>Reliability</h3>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
@@ -615,94 +628,30 @@ const ReliabilityCard = ({ className = "", style = {} }) => {
 // 5. INSTRUCTIVENESS CARD
 // ================================================
 
-const concepts = [
-  { text: "P/E", top: "18%", left: "28%", delay: 0 },
-  { text: "DCF", top: "12%", left: "52%", delay: 0.04 },
-  { text: "ROI", top: "22%", left: "72%", delay: 0.07 },
-  { text: "EPS", top: "35%", left: "20%", delay: 0.1 },
-  { text: "WACC", top: "30%", left: "44%", delay: 0.13 },
-  { text: "CAGR", top: "38%", left: "65%", delay: 0.16 },
-  { text: "Beta", top: "15%", left: "38%", delay: 0.06 },
-  { text: "Alpha", top: "32%", left: "82%", delay: 0.19 },
-];
-
-const ConceptBadge = ({ text, top, left, delay, isHovered }) => (
-  <div
-    style={{
-      position: "absolute",
-      top,
-      left,
-      background: isHovered
-        ? "rgba(124, 58, 237, 0.15)"
-        : "rgba(124, 58, 237, 0.06)",
-      border: `1px solid ${isHovered ? "rgba(124, 58, 237, 0.25)" : "rgba(124, 58, 237, 0.1)"}`,
-      borderRadius: "0.5rem",
-      padding: "0.2rem 0.65rem",
-      fontSize: "0.68rem",
-      fontWeight: 500,
-      fontFamily: "var(--default-font-family, inherit)",
-      color: "rgba(255, 255, 255, 0.65)",
-      whiteSpace: "nowrap",
-      pointerEvents: "none",
-      opacity: isHovered ? 1 : 0.5,
-      transform: isHovered ? "scale(1.05)" : "scale(1)",
-      transition: `opacity 0.28s ease-out ${isHovered ? delay * 0.5 : 0}s, transform 0.28s ease-out ${isHovered ? delay * 0.5 : 0}s, background 0.28s ease-out, border-color 0.28s ease-out`,
-    }}
-  >
-    {text}
-  </div>
-);
-
 const InstructivenessCard = ({ className = "", style = {} }) => {
-  const { cardRef, isHovered, onMouseMove, onMouseEnter, onMouseLeave } =
-    useCardInteraction();
+  const [isHovered, setIsHovered] = useState(false);
+  const { cardRef, tiltStyle, handleMouseMove, resetTilt, mousePos } =
+    useTilt();
 
   return (
-    <div
+    <motion.div
       ref={cardRef}
       className={className}
-      style={{ ...cardBase, ...style }}
-      onMouseMove={onMouseMove}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
+      style={{ ...cardBase, ...tiltStyle, ...style }}
+      onMouseMove={handleMouseMove}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => {
+        setIsHovered(false);
+        resetTilt();
+      }}
     >
       <div style={bgOverlay} />
-      <CursorBorderGlow isHovered={isHovered} />
-
-      {concepts.map((c) => (
-        <ConceptBadge
-          key={c.text}
-          text={c.text}
-          top={c.top}
-          left={c.left}
-          delay={c.delay}
-          isHovered={isHovered}
-        />
-      ))}
-
-      {/* Subtle radial glow */}
-      <div
-        style={{
-          position: "absolute",
-          top: "0.5rem",
-          left: "0.5rem",
-          width: "8rem",
-          height: "8rem",
-          borderRadius: "50%",
-          background:
-            "radial-gradient(circle, rgba(124, 58, 237, 0.12) 0%, transparent 70%)",
-          pointerEvents: "none",
-          zIndex: 0,
-          opacity: isHovered ? 1 : 0.4,
-          transform: isHovered ? "scale(1.2)" : "scale(1)",
-          transition: "opacity 0.4s ease-out, transform 0.4s ease-out",
-        }}
-      />
+      <CursorBorderGlow mousePos={mousePos} isHovered={isHovered} />
 
       <div
         style={{
           ...contentLayer,
-          padding: "2rem",
+          padding: "1.5rem",
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
@@ -717,24 +666,27 @@ const InstructivenessCard = ({ className = "", style = {} }) => {
         </div>
 
         <div>
-          <p
+          <motion.p
             style={{
               ...subtextStyle,
-              marginBottom: "0.25rem",
+              marginBottom: "0.5rem",
+              maxWidth: "100%",
+            }}
+            animate={{
               color: isHovered
                 ? "rgba(255, 255, 255, 0.65)"
                 : "rgba(255, 255, 255, 0.4)",
-              transition: `color 0.32s ease-out ${isHovered ? "0.1s" : "0s"}`,
             }}
+            transition={{ duration: 0.22 }}
           >
             Built to educate, not to sell. By helping investors with their
             investment portfolios, we're also building our own professional
             portfolio.
-          </p>
+          </motion.p>
           <h3 style={headingStyle}>Instructiveness</h3>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
