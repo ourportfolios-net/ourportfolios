@@ -9,6 +9,7 @@ from ...styles import (
     TEXT_TERTIARY,
     TEXT_MUTED,
     ERROR_COLOR,
+    overlay_style,
 )
 from .components import _label, _input, _divider_with_text, _google_button, auth_card
 
@@ -403,39 +404,32 @@ def login() -> rx.Component:
             rx.box(
                 _bg(),
                 _guest_card(),
-                rx.center(
-                    # Stacking box — sized to the card (27rem), relative so absolute child positions correctly
-                    rx.box(
-                        # Register card — in normal flow, anchors container height
-                        rx.box(
-                            auth_card(_register_form()),
-                            opacity=rx.cond(is_login, "0", "1"),
-                            transform=rx.cond(
-                                is_login, "translateY(16px)", "translateY(0)"
-                            ),
-                            transition="opacity 0.35s cubic-bezier(0.4,0,0.2,1), transform 0.35s cubic-bezier(0.4,0,0.2,1)",
-                            pointer_events=rx.cond(is_login, "none", "auto"),
-                            visibility=rx.cond(is_login, "hidden", "visible"),
-                        ),
-                        # Login card — absolute, overlaid on top
-                        rx.box(
-                            auth_card(_login_form()),
-                            position="absolute",
-                            top="0",
-                            left="0",
-                            opacity=rx.cond(is_login, "1", "0"),
-                            transform=rx.cond(
-                                is_login, "translateY(0)", "translateY(-16px)"
-                            ),
-                            transition="opacity 0.35s cubic-bezier(0.4,0,0.2,1), transform 0.35s cubic-bezier(0.4,0,0.2,1)",
-                            pointer_events=rx.cond(is_login, "auto", "none"),
-                        ),
-                        position="relative",
-                    ),
-                    width="100%",
-                    min_height="100vh",
-                    padding_y="3rem",
+                # Register card layer — centers itself in the viewport
+                rx.box(
+                    auth_card(_register_form()),
+                    position="absolute",
+                    inset="0",
+                    display="flex",
+                    align_items="center",
+                    justify_content="center",
+                    opacity=rx.cond(is_login, "0", "1"),
+                    pointer_events=rx.cond(is_login, "none", "auto"),
+                    transition="opacity 0.15s ease",
                 ),
+                # Login card layer — centers itself in the viewport
+                rx.box(
+                    auth_card(_login_form()),
+                    position="absolute",
+                    inset="0",
+                    display="flex",
+                    align_items="center",
+                    justify_content="center",
+                    opacity=rx.cond(is_login, "1", "0"),
+                    pointer_events=rx.cond(is_login, "auto", "none"),
+                    transition="opacity 0.15s ease",
+                ),
+                position="relative",
+                min_height="100vh",
             ),
             rx.fragment(),
         ),
