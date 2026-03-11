@@ -78,7 +78,7 @@ def company_profile_dialog():
             content=dialog_content,
             is_open=State.profile_dialog_open,
             on_close=State.set_profile_dialog_open(False),
-            width="90vw",
+            width="86vw",
             height="85vh",
             max_width="75rem",
             show_close_button=True,
