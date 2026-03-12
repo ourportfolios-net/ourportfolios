@@ -22,7 +22,7 @@ def search_bar():
                 width="100%",
                 background="rgba(255, 255, 255, 0.05)",
                 border=f"1px solid {rx.color('gray', 6)}",
-                border_radius="0.75rem",
+                border_radius="0.5rem",
                 _focus={
                     "background": "rgba(255, 255, 255, 0.08)",
                     "border_color": rx.color("accent", 8),
@@ -38,7 +38,7 @@ def search_bar():
                     rx.flex(
                         rx.scroll_area(
                             rx.foreach(
-                                SearchBarState.get_suggest_ticker,
+                                SearchBarState.suggest_tickers,
                                 lambda ticker_value: suggestion_card(
                                     value=ticker_value
                                 ),
