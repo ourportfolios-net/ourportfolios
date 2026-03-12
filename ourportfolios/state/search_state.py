@@ -22,10 +22,12 @@ class SearchBarState(rx.State):
     outstanding_tickers: dict[str, Any] = {}
     ticker_list: list[dict[str, Any]] = []
     comparison_suggestions: list[dict[str, Any]] = []
+    suggest_tickers: list[dict[str, Any]] = []
 
     @rx.event
     def set_query(self, text: str = "") -> None:
         self.search_query = text
+        return SearchBarState.fetch_suggest_tickers
 
     @rx.event(background=True)
     async def set_comparison_query(self, text: str = "") -> None:
@@ -60,23 +62,30 @@ class SearchBarState(rx.State):
         self.empty_state_display_suggestion = False
         self.comparison_suggestions = []
 
-    @rx.var
-    async def get_suggest_ticker(self) -> list[dict[str, Any]]:
-        if not self.display_suggestion:
-            return []
-        if not self.search_query:
-            return self.ticker_list
-        result = await self._fetch_by_prefix(self.search_query)
+    @rx.event(background=True)
+    async def fetch_suggest_tickers(self) -> None:
+        async with self:
+            if not self.display_suggestion:
+                self.suggest_tickers = []
+                return
+            query = self.search_query
+            if not query:
+                self.suggest_tickers = list(self.ticker_list)
+                return
+        result = await self._fetch_by_prefix(query)
         if not result:
-            result = await self._fetch_by_permutations(self.search_query)
+            result = await self._fetch_by_permutations(query)
         if not result:
-            result = await self._fetch_by_prefix(self.search_query[0])
-        return result
+            result = await self._fetch_by_prefix(query[0])
+        async with self:
+            self.suggest_tickers = result
 
     @rx.event
     def set_display_suggestions(self, state: bool):
         yield time.sleep(0.2)
         self.display_suggestion = state
+        if state:
+            return SearchBarState.fetch_suggest_tickers
 
     @rx.event
     def set_empty_state_display_suggestions(self, state: bool):
@@ -119,11 +128,34 @@ class SearchBarState(rx.State):
             print(f"Database error in _fetch_tickers: {e}")
             return []
 
+    _load_state_task: asyncio.Task | None = None
+
     @rx.event(background=True)
     async def load_state(self) -> None:
-        while True:
-            rows = await self._fetch_tickers()
-            async with self:
-                self.ticker_list = rows
-                self.outstanding_tickers = {item["symbol"]: 1 for item in rows[:3]}
-            await asyncio.sleep(60)
+        # Prevent duplicate background loops
+        if self._load_state_task is not None and not self._load_state_task.done():
+            return
+
+        async def _load_loop() -> None:
+            while True:
+                try:
+                    rows = await self._fetch_tickers()
+                    async with self:
+                        self.ticker_list = rows
+                        self.outstanding_tickers = {
+                            item["symbol"]: 1 for item in rows[:3]
+                        }
+                except asyncio.CancelledError:
+                    return
+                except Exception as e:
+                    print(f"Error in load_state: {e}")
+                try:
+                    await asyncio.sleep(60)
+                except asyncio.CancelledError:
+                    return
+
+        self._load_state_task = asyncio.create_task(_load_loop())
+
+    def __del__(self) -> None:
+        if self._load_state_task is not None and not self._load_state_task.done():
+            self._load_state_task.cancel()
