@@ -13,6 +13,11 @@ from ..utils.database.models import PriceORM, OverviewORM
 
 _TickerSelect = Select[tuple[str, float | None, float | None, str | None]]
 
+# Module-level dict tracking background load tasks per client token.
+# asyncio.Task cannot be stored as a Reflex state field, and self is
+# immutable outside `async with self` in background tasks.
+_load_tasks: dict[str, asyncio.Task] = {}
+
 
 class SearchBarState(rx.State):
     search_query: str = ""
@@ -128,34 +133,35 @@ class SearchBarState(rx.State):
             print(f"Database error in _fetch_tickers: {e}")
             return []
 
-    _load_state_task: asyncio.Task | None = None
-
     @rx.event(background=True)
     async def load_state(self) -> None:
-        # Prevent duplicate background loops
-        if self._load_state_task is not None and not self._load_state_task.done():
+        async with self:
+            token = self.router.session.client_token
+
+        # Prevent duplicate background loops for this client
+        existing = _load_tasks.get(token)
+        if existing is not None and not existing.done():
             return
 
         async def _load_loop() -> None:
-            while True:
-                try:
-                    rows = await self._fetch_tickers()
-                    async with self:
-                        self.ticker_list = rows
-                        self.outstanding_tickers = {
-                            item["symbol"]: 1 for item in rows[:3]
-                        }
-                except asyncio.CancelledError:
-                    return
-                except Exception as e:
-                    print(f"Error in load_state: {e}")
-                try:
-                    await asyncio.sleep(60)
-                except asyncio.CancelledError:
-                    return
+            try:
+                while True:
+                    try:
+                        rows = await self._fetch_tickers()
+                        async with self:
+                            self.ticker_list = rows
+                            self.outstanding_tickers = {
+                                item["symbol"]: 1 for item in rows[:3]
+                            }
+                    except asyncio.CancelledError:
+                        return
+                    except Exception as e:
+                        print(f"Error in load_state: {e}")
+                    try:
+                        await asyncio.sleep(60)
+                    except asyncio.CancelledError:
+                        return
+            finally:
+                _load_tasks.pop(token, None)
 
-        self._load_state_task = asyncio.create_task(_load_loop())
-
-    def __del__(self) -> None:
-        if self._load_state_task is not None and not self._load_state_task.done():
-            self._load_state_task.cancel()
+        _load_tasks[token] = asyncio.create_task(_load_loop())
