@@ -20,15 +20,13 @@ def _nav_link(label: str, href: str) -> rx.Component:
 
 
 def _locked_nav_link(label: str) -> rx.Component:
-    return rx.link(
-        rx.hstack(
-            rx.text(label, font_size="0.875rem", color=white(0.2)),
-            rx.icon("lock", size=10, color=white(0.15)),
-            spacing="1",
-            align="center",
-        ),
-        href="/auth",
-        text_decoration="none",
+    return rx.hstack(
+        rx.text(label, font_size="0.875rem", color=white(0.2)),
+        rx.icon("lock", size=10, color=white(0.15)),
+        spacing="1",
+        align="center",
+        on_click=AuthState.redirect_to_login_from_current_page,
+        cursor="pointer",
         title="Sign in to access",
         _hover={"opacity": "0.6"},
         transition="opacity 0.15s",
@@ -128,9 +126,6 @@ def _about_dropdown() -> rx.Component:
     )
 
 
-# ── Auth-gated nav links ──────────────────────────────────────────────────────
-
-
 def _framework_link() -> rx.Component:
     return rx.cond(
         AuthState.is_authenticated,
@@ -147,39 +142,29 @@ def _portfolio_link() -> rx.Component:
     )
 
 
-# ── User menu (rx.dropdown_menu — click-stable) ───────────────────────────────
-
-_MENU_STYLE = dict(
-    background="rgba(13, 13, 15, 0.98)",
-    backdrop_filter="blur(1.5rem)",
-    border=f"1px solid {white(0.08)}",
-    border_radius="0.625rem",
-    padding="0.35rem",
-    box_shadow="0 0.875rem 2.5rem rgba(0,0,0,0.6)",
-    min_width="13rem",
-    side="bottom",
-    align="end",
-    side_offset=10,
-)
+# ── User menu ─────────────────────────────────────────────────────────────────
 
 
-def _dm_item(
+def _menu_item(
     icon: str, label: str, href: str = "", on_click=None, danger: bool = False
 ) -> rx.Component:
-    fg = "rgba(239,68,68,0.75)" if danger else white(0.55)
+    fg = "rgba(239,68,68,0.75)" if danger else white(0.6)
     hover_bg = "rgba(239,68,68,0.07)" if danger else white(0.05)
     click_handler = rx.redirect(href) if href else on_click
-    return rx.dropdown_menu.item(
+    return rx.box(
         rx.hstack(
             rx.icon(icon, size=13, color=fg, flex_shrink="0"),
-            rx.text(label, size="2", color=fg),
+            rx.text(label, size="2", weight="medium", color=fg),
             spacing="2",
             align="center",
         ),
         on_click=click_handler,
-        _hover={"background": hover_bg},
+        padding="0.45rem 0.6rem",
+        border_radius="0.4375rem",
         cursor="pointer",
-        border_radius="0.4rem",
+        transition="background 0.12s",
+        _hover={"background": hover_bg},
+        width="100%",
     )
 
 
@@ -208,31 +193,89 @@ def _user_square() -> rx.Component:
     )
 
 
+def _logout_and_refresh() -> rx.Component:
+    """
+    Sign out then redirect to the current page so on_load fires again.
+    AuthState.logout must clear is_authenticated. The redirect causes
+    require_account to run and forward unauthenticated users to /auth.
+
+    Wire this in your AuthState.logout event:
+        yield AuthState.logout        # clears session
+        yield rx.redirect(self.router.page.path)  # refreshes current page
+    """
+    return _menu_item("log-out", "Sign out", on_click=AuthState.logout, danger=True)
+
+
 def _user_menu() -> rx.Component:
     return rx.dropdown_menu.root(
-        rx.dropdown_menu.trigger(_user_square()),
+        rx.dropdown_menu.trigger(_user_square(), as_child=True),
         rx.dropdown_menu.content(
+            # Header: display name primary, email secondary
             rx.box(
-                rx.text(
-                    AuthState.user_email,
-                    size="1",
-                    color=white(0.28),
-                    style={
-                        "whiteSpace": "nowrap",
-                        "overflow": "hidden",
-                        "textOverflow": "ellipsis",
-                        "maxWidth": "11rem",
-                    },
+                rx.vstack(
+                    rx.text(
+                        rx.cond(
+                            AuthState.user_display_name != "",
+                            AuthState.user_display_name,
+                            AuthState.user_email,
+                        ),
+                        size="2",
+                        weight="medium",
+                        color=white(0.85),
+                        style={
+                            "whiteSpace": "nowrap",
+                            "overflow": "hidden",
+                            "textOverflow": "ellipsis",
+                            "maxWidth": "12rem",
+                        },
+                    ),
+                    rx.cond(
+                        AuthState.user_display_name != "",
+                        rx.text(
+                            AuthState.user_email,
+                            size="1",
+                            color=white(0.3),
+                            style={
+                                "whiteSpace": "nowrap",
+                                "overflow": "hidden",
+                                "textOverflow": "ellipsis",
+                                "maxWidth": "12rem",
+                            },
+                        ),
+                        rx.fragment(),
+                    ),
+                    spacing="0",
+                    align="start",
+                    width="100%",
                 ),
-                padding="0.15rem 0.5rem 0.4rem",
+                padding="0.55rem 0.6rem 0.6rem",
             ),
-            rx.dropdown_menu.separator(),
-            _dm_item("user", "Account", href="/account"),
-            _dm_item("settings", "Settings", href="/settings"),
-            rx.dropdown_menu.separator(),
-            _dm_item("log-out", "Sign out", on_click=AuthState.logout, danger=True),
-            **_MENU_STYLE,
+            rx.box(
+                height="1px",
+                background=white(0.07),
+                margin_x="0.4rem",
+                margin_bottom="0.25rem",
+            ),
+            _menu_item("user", "Account", href="/account"),
+            rx.box(
+                height="1px",
+                background=white(0.07),
+                margin_x="0.4rem",
+                margin_y="0.25rem",
+            ),
+            _logout_and_refresh(),
+            background="rgba(13, 13, 15, 0.97)",
+            backdrop_filter="blur(1.5rem)",
+            border=f"1px solid {white(0.08)}",
+            border_radius="0.75rem",
+            padding="0.3rem",
+            box_shadow="0 1rem 2.5rem rgba(0,0,0,0.55)",
+            min_width="13.5rem",
+            side="bottom",
+            align="end",
+            side_offset=10,
         ),
+        modal=False,
     )
 
 
@@ -253,11 +296,7 @@ def _auth_section() -> rx.Component:
         href="/auth",
         text_decoration="none",
     )
-    return rx.cond(
-        AuthState.is_authenticated,
-        _user_menu(),
-        login_btn,  # both guest and unauthenticated see Login
-    )
+    return rx.cond(AuthState.is_authenticated, _user_menu(), login_btn)
 
 
 # ── Navbar ────────────────────────────────────────────────────────────────────
