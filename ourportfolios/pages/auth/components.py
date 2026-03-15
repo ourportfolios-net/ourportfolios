@@ -4,7 +4,6 @@ import reflex as rx
 from ...state.auth_state import AuthState
 from ...styles import (
     white,
-    purple,
     CARD_BG,
     CARD_BORDER,
     INPUT_STYLE,

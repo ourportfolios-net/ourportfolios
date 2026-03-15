@@ -9,11 +9,9 @@ from ...styles import (
     TEXT_TERTIARY,
     TEXT_MUTED,
     ERROR_COLOR,
-    overlay_style,
 )
 from .components import _label, _input, _divider_with_text, _google_button, auth_card
 
-_LINK = {"transition": "color 0.15s ease", "text_decoration_color": "inherit"}
 
 # ── Session check screen ──────────────────────────────────────────────────────
 
@@ -47,24 +45,26 @@ def _inline_link(label: str, on_click) -> rx.Component:
         label,
         size="1",
         color=white(0.5),
-        text_decoration="underline",
+        text_decoration="none",
         cursor="pointer",
-        transition="color 0.15s ease",
-        _hover={"color": "white"},
+        transition="color 0.15s ease, text-decoration 0.15s ease",
+        _hover={"color": "white", "text_decoration": "underline"},
         on_click=on_click,
         display="inline",
     )
 
 
-def _plain_link(label: str, href: str) -> rx.Component:
-    return rx.link(
+def _plain_link(label: str, on_click) -> rx.Component:
+    return rx.text(
         label,
-        href=href,
         size="1",
         color=white(0.5),
-        text_decoration="underline",
-        transition="color 0.15s ease",
-        _hover={"color": "white"},
+        text_decoration="none",
+        cursor="pointer",
+        transition="color 0.15s ease, text-decoration 0.15s ease",
+        _hover={"color": "white", "text_decoration": "underline"},
+        on_click=on_click,
+        display="inline",
     )
 
 
@@ -95,13 +95,144 @@ def _action_btn(label: str, on_click, loading, loading_label: str) -> rx.Compone
     )
 
 
-# ── Spacer keeps both forms the same height ───────────────────────────────────
-# Login has fewer fields than register. We pad login at the bottom so the card
-# never changes height when toggling modes.
-_FORM_SPACER = rx.fragment()  # removed — same width is enough, no height padding needed
+# ── Forgot password modal ─────────────────────────────────────────────────────
+
+
+def _forgot_password_modal() -> rx.Component:
+    return rx.cond(
+        AuthState.forgot_open,
+        rx.box(
+            # Full-viewport backdrop — must be a sibling of the dialog, not a parent
+            rx.box(
+                position="fixed",
+                inset="0",
+                background="rgba(0, 0, 0, 0.75)",
+                backdrop_filter="blur(2px)",
+                z_index="200",
+                on_click=AuthState.close_forgot,
+            ),
+            # Dialog — sits above backdrop
+            rx.box(
+                rx.vstack(
+                    # Header row
+                    rx.hstack(
+                        rx.text(
+                            "Reset password",
+                            font_size="1.0625rem",
+                            weight="bold",
+                            color=TEXT_PRIMARY,
+                            letter_spacing="-0.02em",
+                        ),
+                        rx.spacer(),
+                        rx.box(
+                            rx.icon("x", size=14, color=white(0.35)),
+                            cursor="pointer",
+                            padding="0.2rem",
+                            border_radius="0.35rem",
+                            transition="background 0.1s",
+                            _hover={"background": white(0.08)},
+                            on_click=AuthState.close_forgot,
+                        ),
+                        width="100%",
+                        align="center",
+                    ),
+                    # Sent state
+                    rx.cond(
+                        AuthState.forgot_sent,
+                        rx.vstack(
+                            rx.hstack(
+                                rx.icon("circle-check", size=15, color=white(0.4)),
+                                rx.text(
+                                    "Reset link sent",
+                                    size="2",
+                                    weight="medium",
+                                    color=white(0.6),
+                                ),
+                                spacing="2",
+                                align="center",
+                                padding="0.6rem 0.875rem",
+                                background=white(0.04),
+                                border=f"1px solid {white(0.09)}",
+                                border_radius="0.625rem",
+                                width="100%",
+                                justify="center",
+                            ),
+                            rx.text(
+                                "Check your inbox — if that address is registered you'll get the link shortly.",
+                                size="1",
+                                color=white(0.35),
+                                line_height="1.65",
+                                text_align="center",
+                            ),
+                            _action_btn(
+                                "Done",
+                                AuthState.close_forgot,
+                                False,
+                                "",
+                            ),
+                            spacing="3",
+                            width="100%",
+                            align="center",
+                        ),
+                        # Input state
+                        rx.vstack(
+                            rx.text(
+                                "We'll send a reset link to your email address.",
+                                size="1",
+                                color=white(0.35),
+                                line_height="1.6",
+                            ),
+                            rx.vstack(
+                                _label("Email"),
+                                _input(
+                                    "you@example.com",
+                                    AuthState.forgot_email,
+                                    AuthState.set_forgot_email,
+                                    "email",
+                                ),
+                                spacing="0",
+                                width="100%",
+                                align="start",
+                            ),
+                            rx.cond(
+                                AuthState.forgot_error != "",
+                                rx.text(
+                                    AuthState.forgot_error, size="1", color=ERROR_COLOR
+                                ),
+                                rx.text(" ", size="1"),
+                            ),
+                            _action_btn(
+                                "Send reset link",
+                                AuthState.handle_forgot_password,
+                                AuthState.forgot_loading,
+                                "Sending…",
+                            ),
+                            spacing="3",
+                            width="100%",
+                        ),
+                    ),
+                    spacing="4",
+                    width="100%",
+                ),
+                position="fixed",
+                top="50%",
+                left="50%",
+                transform="translate(-50%, -50%)",
+                z_index="201",
+                background="#0e0e0e",
+                border=f"1px solid {white(0.1)}",
+                border_radius="1rem",
+                padding="1.5rem",
+                width="22rem",
+            ),
+        ),
+        rx.fragment(),
+    )
 
 
 # ── Login form ────────────────────────────────────────────────────────────────
+
+_FORM_SPACER = rx.fragment()
 
 
 def _login_form() -> rx.Component:
@@ -125,7 +256,6 @@ def _login_form() -> rx.Component:
             width="100%",
         ),
         rx.box(height="0.25rem"),
-        # Spacer replaces the full-name field present in register
         _FORM_SPACER,
         rx.vstack(
             _label("Email"),
@@ -144,7 +274,7 @@ def _login_form() -> rx.Component:
                     letter_spacing="0.08em",
                 ),
                 rx.spacer(),
-                _plain_link("Forgot password?", "#"),
+                _plain_link("Forgot password?", AuthState.open_forgot),
                 width="100%",
                 align="center",
                 margin_bottom="0.4rem",
@@ -154,11 +284,10 @@ def _login_form() -> rx.Component:
             width="100%",
             align="start",
         ),
-        # Error OR empty hint line — keeps height stable
         rx.cond(
             AuthState.error != "",
             rx.text(AuthState.error, size="1", color=ERROR_COLOR),
-            rx.text(" ", size="1"),  # invisible placeholder
+            rx.text(" ", size="1"),
         ),
         _action_btn(
             "Sign in", AuthState.handle_login, AuthState.loading, "Signing in…"
@@ -168,6 +297,14 @@ def _login_form() -> rx.Component:
         rx.hstack(
             rx.text("Don't have an account?", size="1", color=TEXT_MUTED),
             _inline_link("Create one", AuthState.set_mode_register),
+            spacing="2",
+            align="center",
+            justify="center",
+            width="100%",
+        ),
+        rx.hstack(
+            rx.text("Only trying things out?", size="1", color=TEXT_MUTED),
+            _inline_link("Be ourguest", AuthState.continue_as_guest),
             spacing="2",
             align="center",
             justify="center",
@@ -279,94 +416,11 @@ def _register_form() -> rx.Component:
     )
 
 
-# ── Guest card — fixed position, right side ───────────────────────────────────
-
-
-def _guest_card() -> rx.Component:
-    return rx.box(
-        rx.vstack(
-            rx.box(
-                rx.icon("user-x", size=18, color=white(0.35)),
-                padding="0.55rem",
-                background=white(0.05),
-                border=f"1px solid {white(0.1)}",
-                border_radius="0.5rem",
-                display="inline-flex",
-            ),
-            rx.vstack(
-                rx.text("Guest access", size="2", weight="medium", color=white(0.5)),
-                rx.text(
-                    "No saved data, no frameworks, no history. You'll lose everything when you close the tab.",
-                    size="1",
-                    color=white(0.32),
-                    line_height="1.7",
-                ),
-                spacing="1",
-                align="start",
-            ),
-            rx.spacer(),
-            rx.box(
-                rx.hstack(
-                    rx.text(
-                        "Be ourguest!", size="1", weight="medium", color=white(0.6)
-                    ),
-                    rx.icon("arrow-right", size=12, color=white(0.4)),
-                    spacing="1",
-                    align="center",
-                ),
-                padding="0.4rem 0.9rem",
-                background=white(0.04),
-                border=f"1px solid {white(0.09)}",
-                border_radius="0.5rem",
-                display="inline-flex",
-                align_self="flex-end",
-                position="relative",
-                z_index="2",
-                cursor="pointer",
-                transition="background 0.15s, border-color 0.15s",
-                _hover={"background": white(0.09), "border_color": white(0.22)},
-                on_click=AuthState.continue_as_guest,
-            ),
-            spacing="4",
-            align="start",
-            width="100%",
-            height="100%",
-        ),
-        # Full-card click overlay — same pattern as select_framework_card
-        rx.box(
-            position="absolute",
-            top="0",
-            left="0",
-            width="100%",
-            height="100%",
-            z_index="1",
-            cursor="pointer",
-            on_click=AuthState.continue_as_guest,
-        ),
-        position="fixed",
-        top="50%",
-        left="calc(50% + 17rem)",
-        transform="translateY(-50%)",
-        background=white(0.04),
-        border=f"1px solid {white(0.1)}",
-        border_radius="1rem",
-        padding="1.5rem",
-        width="14rem",
-        height="18rem",
-        z_index="10",
-        cursor="pointer",
-        transition="background 0.15s, border-color 0.15s",
-        _hover={"background": white(0.07), "border_color": white(0.18)},
-        overflow="hidden",
-    )
-
-
 # ── Background ────────────────────────────────────────────────────────────────
 
 
 def _bg() -> rx.Component:
     return rx.box(
-        # Top-center purple glow
         rx.box(
             position="absolute",
             top="-8rem",
@@ -394,17 +448,14 @@ def _bg() -> rx.Component:
 def login() -> rx.Component:
     is_login = AuthState.auth_mode == "login"
 
-    # Both full cards in the DOM — the whole card slides + fades in/out.
-    # Register card sits in normal flow to anchor the center container height.
-    # Login card is absolute on top.
     return rx.box(
         rx.cond(~AuthState.session_checked, session_check_screen(), rx.fragment()),
         rx.cond(
             AuthState.session_checked,
             rx.box(
                 _bg(),
-                _guest_card(),
-                # Register card layer — centers itself in the viewport
+                _forgot_password_modal(),
+                # Register card layer
                 rx.box(
                     auth_card(_register_form()),
                     position="absolute",
@@ -416,7 +467,7 @@ def login() -> rx.Component:
                     pointer_events=rx.cond(is_login, "none", "auto"),
                     transition="opacity 0.15s ease",
                 ),
-                # Login card layer — centers itself in the viewport
+                # Login card layer
                 rx.box(
                     auth_card(_login_form()),
                     position="absolute",
