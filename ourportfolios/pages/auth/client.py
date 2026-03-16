@@ -1,5 +1,5 @@
 """
-Place at: ourportfolios/state/client.py
+Place at: ourportfolios/auth_config.py  (or wherever your project imports from)
 """
 
 import os
@@ -21,13 +21,20 @@ def get_supabase():
     global _client
     if _client is None:
         try:
-            from supabase import create_client
+            from supabase import create_client, ClientOptions
         except ImportError:
             raise RuntimeError(
                 "SUPABASE_URL and SUPABASE_ANON_KEY are set but 'supabase' is not installed.\n"
-                "Run: pip install -r requirements-auth.txt"
+                "Run: pip install supabase"
             )
-        _client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
+        # PKCE is the default in supabase-py but we set it explicitly.
+        # The singleton retains the code_verifier in memory between the
+        # sign_in_with_oauth call and the exchange_code_for_session call.
+        _client = create_client(
+            SUPABASE_URL,
+            SUPABASE_ANON_KEY,
+            options=ClientOptions(flow_type="pkce"),
+        )
     return _client
 
 

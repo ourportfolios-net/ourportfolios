@@ -4,6 +4,8 @@ import reflex as rx
 
 from ...components.navbar import navbar
 from ...components.breadcrumb import breadcrumb
+from ...components.auth_guard import page_guard
+from ...state.auth_state import AuthState
 
 from .state import FrameworkState
 from .framework_cards import category_filter_button, framework_card, skeleton_card
@@ -12,7 +14,6 @@ from .add_framework_dialog import add_framework_dialog, add_metric_selector
 
 
 def page_header():
-    """Page header"""
     return rx.vstack(
         breadcrumb("/framework", tail_label="Frameworks"),
         rx.heading(
@@ -33,16 +34,13 @@ def page_header():
 
 
 def toolbar():
-    """Filters + search + add all on one row"""
     return rx.hstack(
-        # Category filters — left side
         rx.hstack(
             rx.foreach(FrameworkState.categories, category_filter_button),
             spacing="2",
             wrap="wrap",
         ),
         rx.spacer(),
-        # Search + Add — right side
         rx.hstack(
             rx.box(
                 rx.icon(
@@ -105,7 +103,6 @@ def toolbar():
 
 
 def skeleton_grid() -> rx.Component:
-    """Grid of skeleton cards shown while loading."""
     return rx.box(
         *[skeleton_card() for _ in range(6)],
         display="grid",
@@ -116,7 +113,6 @@ def skeleton_grid() -> rx.Component:
 
 
 def frameworks_grid():
-    """Grid of framework cards"""
     return rx.cond(
         FrameworkState.loading_frameworks,
         skeleton_grid(),
@@ -135,7 +131,6 @@ def frameworks_grid():
 
 
 def main_content():
-    """Main content area"""
     return rx.vstack(
         page_header(),
         rx.box(height="1px", width="100%", background="rgba(255,255,255,0.06)"),
@@ -146,8 +141,7 @@ def main_content():
     )
 
 
-@rx.page(route="/framework", on_load=[FrameworkState.on_mount])
-def index() -> rx.Component:
+def _page_body() -> rx.Component:
     return rx.box(
         navbar(),
         rx.center(
@@ -164,6 +158,20 @@ def index() -> rx.Component:
         framework_dialog(),
         add_framework_dialog(),
         add_metric_selector(),
+        background="#090909",
+        color="white",
+        min_height="100vh",
+        width="100%",
+    )
+
+
+@rx.page(
+    route="/framework",
+    on_load=[AuthState.require_auth, FrameworkState.on_mount],
+)
+def index() -> rx.Component:
+    return rx.box(
+        page_guard(_page_body()),
         on_unmount=FrameworkState.on_unmount,
         background="#090909",
         color="white",

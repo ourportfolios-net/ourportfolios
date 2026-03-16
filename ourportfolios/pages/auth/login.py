@@ -102,7 +102,6 @@ def _forgot_password_modal() -> rx.Component:
     return rx.cond(
         AuthState.forgot_open,
         rx.box(
-            # Full-viewport backdrop — must be a sibling of the dialog, not a parent
             rx.box(
                 position="fixed",
                 inset="0",
@@ -111,10 +110,8 @@ def _forgot_password_modal() -> rx.Component:
                 z_index="200",
                 on_click=AuthState.close_forgot,
             ),
-            # Dialog — sits above backdrop
             rx.box(
                 rx.vstack(
-                    # Header row
                     rx.hstack(
                         rx.text(
                             "Reset password",
@@ -136,7 +133,6 @@ def _forgot_password_modal() -> rx.Component:
                         width="100%",
                         align="center",
                     ),
-                    # Sent state
                     rx.cond(
                         AuthState.forgot_sent,
                         rx.vstack(
@@ -164,17 +160,11 @@ def _forgot_password_modal() -> rx.Component:
                                 line_height="1.65",
                                 text_align="center",
                             ),
-                            _action_btn(
-                                "Done",
-                                AuthState.close_forgot,
-                                False,
-                                "",
-                            ),
+                            _action_btn("Done", AuthState.close_forgot, False, ""),
                             spacing="3",
                             width="100%",
                             align="center",
                         ),
-                        # Input state
                         rx.vstack(
                             rx.text(
                                 "We'll send a reset link to your email address.",
@@ -230,9 +220,23 @@ def _forgot_password_modal() -> rx.Component:
     )
 
 
-# ── Login form ────────────────────────────────────────────────────────────────
+# ── Shared input style (matches components.py _INPUT) ─────────────────────────
 
-_FORM_SPACER = rx.fragment()
+_INPUT_STYLE = dict(
+    font_size="0.9375rem",
+    height="3rem",
+    padding="0 0.9rem",
+    background="rgba(255,255,255,0.04)",
+    border="1px solid rgba(255,255,255,0.08)",
+    border_radius="0.625rem",
+    color="white",
+    width="100%",
+    _placeholder={"color": "rgba(255,255,255,0.22)"},
+    _focus={"border_color": "rgba(139,92,246,0.4)", "outline": "none"},
+)
+
+
+# ── Login form ────────────────────────────────────────────────────────────────
 
 
 def _login_form() -> rx.Component:
@@ -256,7 +260,6 @@ def _login_form() -> rx.Component:
             width="100%",
         ),
         rx.box(height="0.25rem"),
-        _FORM_SPACER,
         rx.vstack(
             _label("Email"),
             _input("you@example.com", AuthState.email, AuthState.set_email, "email"),
@@ -279,7 +282,18 @@ def _login_form() -> rx.Component:
                 align="center",
                 margin_bottom="0.4rem",
             ),
-            _input("••••••••", AuthState.password, AuthState.set_password, "password"),
+            rx.input(
+                placeholder="••••••••",
+                value=AuthState.password,
+                on_change=AuthState.set_password,
+                on_key_down=AuthState.handle_login_on_enter,
+                type="password",
+                custom_attrs={
+                    "autocomplete": "current-password",
+                    "name": "op_password_pas",
+                },
+                **_INPUT_STYLE,
+            ),
             spacing="0",
             width="100%",
             align="start",
@@ -369,11 +383,17 @@ def _register_form() -> rx.Component:
             ),
             rx.vstack(
                 _label("Confirm"),
-                _input(
-                    "Repeat",
-                    AuthState.confirm_password,
-                    AuthState.set_confirm_password,
-                    "password",
+                rx.input(
+                    placeholder="Repeat",
+                    value=AuthState.confirm_password,
+                    on_change=AuthState.set_confirm_password,
+                    on_key_down=AuthState.handle_register_on_enter,
+                    type="password",
+                    custom_attrs={
+                        "autocomplete": "new-password",
+                        "name": "op_password_rep",
+                    },
+                    **_INPUT_STYLE,
                 ),
                 spacing="0",
                 width="100%",
@@ -455,7 +475,6 @@ def login() -> rx.Component:
             rx.box(
                 _bg(),
                 _forgot_password_modal(),
-                # Register card layer
                 rx.box(
                     auth_card(_register_form()),
                     position="absolute",
@@ -467,7 +486,6 @@ def login() -> rx.Component:
                     pointer_events=rx.cond(is_login, "none", "auto"),
                     transition="opacity 0.15s ease",
                 ),
-                # Login card layer
                 rx.box(
                     auth_card(_login_form()),
                     position="absolute",

@@ -19,13 +19,13 @@ def _nav_link(label: str, href: str) -> rx.Component:
     )
 
 
-def _locked_nav_link(label: str) -> rx.Component:
+def _locked_nav_link(label: str, href: str) -> rx.Component:
     return rx.hstack(
         rx.text(label, font_size="0.875rem", color=white(0.2)),
         rx.icon("lock", size=10, color=white(0.15)),
         spacing="1",
         align="center",
-        on_click=AuthState.redirect_to_login_from_current_page,
+        on_click=AuthState.redirect_to_login_with_destination(href),
         cursor="pointer",
         title="Sign in to access",
         _hover={"opacity": "0.6"},
@@ -130,7 +130,7 @@ def _framework_link() -> rx.Component:
     return rx.cond(
         AuthState.is_authenticated,
         _nav_link("Frameworks", "/framework"),
-        _locked_nav_link("Frameworks"),
+        _locked_nav_link("Frameworks", "/framework"),
     )
 
 
@@ -138,7 +138,7 @@ def _portfolio_link() -> rx.Component:
     return rx.cond(
         AuthState.is_authenticated,
         _nav_link("Portfolio", "/portfolio-management"),
-        _locked_nav_link("Portfolio"),
+        _locked_nav_link("Portfolio", "/portfolio-management"),
     )
 
 
@@ -193,24 +193,10 @@ def _user_square() -> rx.Component:
     )
 
 
-def _logout_and_refresh() -> rx.Component:
-    """
-    Sign out then redirect to the current page so on_load fires again.
-    AuthState.logout must clear is_authenticated. The redirect causes
-    require_account to run and forward unauthenticated users to /auth.
-
-    Wire this in your AuthState.logout event:
-        yield AuthState.logout        # clears session
-        yield rx.redirect(self.router.page.path)  # refreshes current page
-    """
-    return _menu_item("log-out", "Sign out", on_click=AuthState.logout, danger=True)
-
-
 def _user_menu() -> rx.Component:
     return rx.dropdown_menu.root(
         rx.dropdown_menu.trigger(_user_square(), as_child=True),
         rx.dropdown_menu.content(
-            # Header: display name primary, email secondary
             rx.box(
                 rx.vstack(
                     rx.text(
@@ -263,7 +249,7 @@ def _user_menu() -> rx.Component:
                 margin_x="0.4rem",
                 margin_y="0.25rem",
             ),
-            _logout_and_refresh(),
+            _menu_item("log-out", "Sign out", on_click=AuthState.logout, danger=True),
             background="rgba(13, 13, 15, 0.97)",
             backdrop_filter="blur(1.5rem)",
             border=f"1px solid {white(0.08)}",
@@ -280,21 +266,18 @@ def _user_menu() -> rx.Component:
 
 
 def _auth_section() -> rx.Component:
-    login_btn = rx.link(
-        rx.box(
-            rx.text(
-                "Login", font_size="0.8125rem", font_weight="500", color=white(0.55)
-            ),
-            padding="0.35rem 0.85rem",
-            border_radius="0.5rem",
-            background=white(0.04),
-            border=f"1px solid {white(0.09)}",
-            cursor="pointer",
-            transition="background 0.15s, border-color 0.15s",
-            _hover={"background": white(0.08), "border_color": white(0.17)},
-        ),
-        href="/auth",
-        text_decoration="none",
+    # Use on_click instead of href so the current page is saved before
+    # redirecting — the user will land back here after signing in.
+    login_btn = rx.box(
+        rx.text("Login", font_size="0.8125rem", font_weight="500", color=white(0.55)),
+        on_click=AuthState.redirect_to_login_from_current_page,
+        padding="0.35rem 0.85rem",
+        border_radius="0.5rem",
+        background=white(0.04),
+        border=f"1px solid {white(0.09)}",
+        cursor="pointer",
+        transition="background 0.15s, border-color 0.15s",
+        _hover={"background": white(0.08), "border_color": white(0.17)},
     )
     return rx.cond(AuthState.is_authenticated, _user_menu(), login_btn)
 
