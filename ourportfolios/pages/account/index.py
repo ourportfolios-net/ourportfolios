@@ -2,17 +2,14 @@
 
 import reflex as rx
 from ...components.navbar import navbar
+from ...components.auth_guard import page_guard
 from ...state.auth_state import AuthState
 from .state import AccountState
 from .components import account_layout
 from ...styles import TEXT_PRIMARY, TEXT_MUTED, PAGE_BG
 
 
-@rx.page(
-    route="/account",
-    on_load=[AuthState.require_account, AccountState.load_account],
-)
-def index() -> rx.Component:
+def _page_body() -> rx.Component:
     return rx.box(
         navbar(),
         rx.box(
@@ -44,3 +41,11 @@ def index() -> rx.Component:
         color="white",
         min_height="100vh",
     )
+
+
+@rx.page(
+    route="/account",
+    on_load=[AuthState.require_auth, AccountState.load_account],
+)
+def index() -> rx.Component:
+    return page_guard(_page_body(), bg=PAGE_BG)

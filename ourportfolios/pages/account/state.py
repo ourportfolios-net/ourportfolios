@@ -4,21 +4,30 @@ import reflex as rx
 from ...state.auth_state import AuthState
 
 EXPERIENCE_OPTIONS = ["Beginner", "Experienced"]
+DEFAULT_PERIOD_OPTIONS = ["1D", "1W", "1M", "3M", "1Y", "ALL"]
+
+_TOAST = dict(position="bottom-right", duration=4000)
 
 
 class AccountState(rx.State):
     active_tab: str = "profile"
 
+    # ── Profile ───────────────────────────────────────────────────────────────
     display_name: str = ""
-    experience_level: str = "Beginner"
-
     _orig_name: str = ""
-    _orig_exp: str = "Beginner"
 
+    # ── Preferences ───────────────────────────────────────────────────────────
+    experience_level: str = "Beginner"
+    default_chart_period: str = "1M"
+    _orig_exp: str = "Beginner"
+    _orig_period: str = "1M"
+
+    # ── Save feedback ─────────────────────────────────────────────────────────
     save_msg: str = ""
     save_error: str = ""
     loading_save: bool = False
 
+    # ── Password dialog ───────────────────────────────────────────────────────
     password_dialog_open: bool = False
     old_password: str = ""
     new_password: str = ""
@@ -27,11 +36,25 @@ class AccountState(rx.State):
     password_msg: str = ""
     loading_password: bool = False
 
+    # ── Delete dialog ─────────────────────────────────────────────────────────
+    delete_dialog_open: bool = False
+    delete_confirm_text: str = ""
+    delete_error: str = ""
+    loading_delete: bool = False
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # Computed
+    # ─────────────────────────────────────────────────────────────────────────
+
     @rx.var
-    def is_dirty(self) -> bool:
+    def profile_dirty(self) -> bool:
+        return self.display_name != self._orig_name
+
+    @rx.var
+    def prefs_dirty(self) -> bool:
         return (
-            self.display_name != self._orig_name
-            or self.experience_level != self._orig_exp
+            self.experience_level != self._orig_exp
+            or self.default_chart_period != self._orig_period
         )
 
     # ── Setters ───────────────────────────────────────────────────────────────
@@ -53,6 +76,14 @@ class AccountState(rx.State):
         self.experience_level = v
         self.save_msg = ""
         self.save_error = ""
+
+    @rx.event
+    def set_default_chart_period(self, v: str):
+        self.default_chart_period = v
+        self.save_msg = ""
+        self.save_error = ""
+
+    # ── Password dialog setters ───────────────────────────────────────────────
 
     @rx.event
     def set_old_password(self, v: str):
@@ -86,6 +117,27 @@ class AccountState(rx.State):
     def set_password_dialog_open(self, v: bool):
         self.password_dialog_open = v
 
+    # ── Delete dialog setters ─────────────────────────────────────────────────
+
+    @rx.event
+    def open_delete_dialog(self):
+        self.delete_dialog_open = True
+        self.delete_confirm_text = ""
+        self.delete_error = ""
+
+    @rx.event
+    def close_delete_dialog(self):
+        self.delete_dialog_open = False
+
+    @rx.event
+    def set_delete_dialog_open(self, v: bool):
+        self.delete_dialog_open = v
+
+    @rx.event
+    def set_delete_confirm_text(self, v: str):
+        self.delete_confirm_text = v
+        self.delete_error = ""
+
     # ── Load ──────────────────────────────────────────────────────────────────
 
     @rx.event
@@ -108,31 +160,30 @@ class AccountState(rx.State):
         try:
             name = self.display_name.strip()
 
-            # ── IMPORTANT ────────────────────────────────────────────────────
-            # Wire your Supabase client here so the change persists across
-            # page refreshes. Without this the in-memory update will be lost.
-            #
+            # Wire Supabase here:
             # from ...utils.supabase import supabase
             # result = supabase.auth.update_user({
             #     "data": {
             #         "full_name": name,
             #         "experience_level": self.experience_level,
+            #         "default_chart_period": self.default_chart_period,
             #     }
             # })
             # if result.user is None:
             #     raise Exception("Update failed.")
-            # ─────────────────────────────────────────────────────────────────
 
-            # Reflect immediately in AuthState (in-memory only until Supabase wired)
             auth = await self.get_state(AuthState)
             auth.user_display_name = name
 
             self.display_name = name
             self._orig_name = name
             self._orig_exp = self.experience_level
+            self._orig_period = self.default_chart_period
             self.save_msg = "Saved."
+            yield rx.toast.success("Profile updated.", **_TOAST)
         except Exception as e:
             self.save_error = str(e)
+            yield rx.toast.error(f"Failed to save: {e}", **_TOAST)
         finally:
             self.loading_save = False
 
@@ -149,6 +200,7 @@ class AccountState(rx.State):
         if self.new_password != self.confirm_password:
             self.password_error = "Passwords do not match."
             return
+
         self.loading_password = True
         self.password_error = ""
         try:
@@ -158,7 +210,30 @@ class AccountState(rx.State):
             self.new_password = ""
             self.confirm_password = ""
             self.password_dialog_open = False
+            yield rx.toast.success("Password changed successfully.", **_TOAST)
         except Exception as e:
             self.password_error = str(e)
+            yield rx.toast.error(f"Failed to change password: {e}", **_TOAST)
         finally:
             self.loading_password = False
+
+    # ── Delete account ────────────────────────────────────────────────────────
+
+    @rx.event
+    async def confirm_delete_account(self):
+        if self.delete_confirm_text != "DELETE":
+            self.delete_error = 'Type "DELETE" to confirm.'
+            return
+
+        self.loading_delete = True
+        self.delete_error = ""
+        try:
+            # TODO: supabase.auth.admin.delete_user(user_id)
+            self.delete_dialog_open = False
+            yield rx.redirect("/")
+            yield rx.toast.info("Your account has been deleted.", **_TOAST)
+        except Exception as e:
+            self.delete_error = str(e)
+            yield rx.toast.error(f"Failed to delete account: {e}", **_TOAST)
+        finally:
+            self.loading_delete = False
