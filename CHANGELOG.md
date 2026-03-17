@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v0.15.1 (2026-03-17)
+
+### Bug Fixes
+
+- Add motion to frontend for deployment
+  ([`c846e9d`](https://github.com/ourportfolios-net/ourportfolios/commit/c846e9dd92af172fe451c46f5d1be3993e87a337))
+
+### Chores
+
+- **deps**: Upgrade
+  ([`4afa389`](https://github.com/ourportfolios-net/ourportfolios/commit/4afa3893c4740135ed230372954b61963c0bb68d))
+
+
 ## v0.15.0 (2026-03-17)
 
 ### Bug Fixes
