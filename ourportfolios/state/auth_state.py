@@ -13,7 +13,7 @@ _BLOCKED_DESTINATIONS = frozenset(
 _AUTH_ONLY_PREFIXES = (
     "/framework",
     "/portfolio",
-    "/account",
+    "/settings",
 )
 
 

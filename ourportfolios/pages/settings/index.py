@@ -1,11 +1,11 @@
-"""Place at: ourportfolios/pages/account/index.py"""
+"""Place at: ourportfolios/pages/settings/index.py"""
 
 import reflex as rx
 from ...components.navbar import navbar
 from ...components.auth_guard import page_guard
 from ...state.auth_state import AuthState
-from .state import AccountState
-from .components import account_layout
+from .state import SettingsState
+from .components import settings_layout
 from ...styles import TEXT_PRIMARY, TEXT_MUTED, PAGE_BG
 
 
@@ -30,7 +30,7 @@ def _page_body() -> rx.Component:
                 align="start",
                 margin_bottom="2rem",
             ),
-            account_layout(),
+            settings_layout(),
             max_width="56rem",
             width="100%",
             margin="0 auto",
@@ -44,8 +44,8 @@ def _page_body() -> rx.Component:
 
 
 @rx.page(
-    route="/account",
-    on_load=[AuthState.require_auth, AccountState.load_account],
+    route="/settings",
+    on_load=[AuthState.require_auth, SettingsState.load_settings],
 )
 def index() -> rx.Component:
     return page_guard(_page_body(), bg=PAGE_BG)

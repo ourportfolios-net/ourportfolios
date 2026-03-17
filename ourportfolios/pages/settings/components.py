@@ -1,7 +1,7 @@
-"""Place at: ourportfolios/pages/account/components.py"""
+"""Place at: ourportfolios/pages/settings/components.py"""
 
 import reflex as rx
-from .state import AccountState, DEFAULT_PERIOD_OPTIONS
+from .state import SettingsState, DEFAULT_PERIOD_OPTIONS
 from ...state.auth_state import AuthState
 from ...components.common_dialog import common_dialog
 from ...components.category_toggle_card import category_toggle_card
@@ -118,7 +118,7 @@ def _password_action_btn() -> rx.Component:
         cursor="pointer",
         transition="color 0.15s ease, text-decoration 0.15s ease",
         _hover={"color": "white", "text_decoration": "underline"},
-        on_click=AccountState.open_password_dialog,
+        on_click=SettingsState.open_password_dialog,
         display="inline",
     )
 
@@ -242,8 +242,8 @@ def _password_dialog() -> rx.Component:
             _dialog_label("Current password"),
             rx.input(
                 placeholder="Current password",
-                value=AccountState.old_password,
-                on_change=AccountState.set_old_password,
+                value=SettingsState.old_password,
+                on_change=SettingsState.set_old_password,
                 type="password",
                 custom_attrs={
                     **password_input_attrs,
@@ -260,8 +260,8 @@ def _password_dialog() -> rx.Component:
                 _dialog_label("New password"),
                 rx.input(
                     placeholder="At least 8 characters",
-                    value=AccountState.new_password,
-                    on_change=AccountState.set_new_password,
+                    value=SettingsState.new_password,
+                    on_change=SettingsState.set_new_password,
                     type="password",
                     custom_attrs={
                         **password_input_attrs,
@@ -277,8 +277,8 @@ def _password_dialog() -> rx.Component:
                 _dialog_label("Confirm new password"),
                 rx.input(
                     placeholder="Repeat your new password",
-                    value=AccountState.confirm_password,
-                    on_change=AccountState.set_confirm_password,
+                    value=SettingsState.confirm_password,
+                    on_change=SettingsState.set_confirm_password,
                     type="password",
                     custom_attrs={
                         **password_input_attrs,
@@ -294,16 +294,16 @@ def _password_dialog() -> rx.Component:
             width="100%",
         ),
         rx.cond(
-            AccountState.password_error != "",
-            _feedback(AccountState.password_error, is_error=True),
+            SettingsState.password_error != "",
+            _feedback(SettingsState.password_error, is_error=True),
             rx.fragment(),
         ),
         rx.hstack(
-            _ghost_btn("Cancel", on_click=AccountState.close_password_dialog),
+            _ghost_btn("Cancel", on_click=SettingsState.close_password_dialog),
             _loading_btn(
                 "Update password",
-                on_click=AccountState.save_password,
-                loading_var=AccountState.loading_password,
+                on_click=SettingsState.save_password,
+                loading_var=SettingsState.loading_password,
             ),
             spacing="2",
             justify="end",
@@ -315,9 +315,9 @@ def _password_dialog() -> rx.Component:
 
     return common_dialog(
         content=content,
-        is_open=AccountState.password_dialog_open,
-        on_close=AccountState.close_password_dialog,
-        on_open_change=AccountState.set_password_dialog_open,
+        is_open=SettingsState.password_dialog_open,
+        on_close=SettingsState.close_password_dialog,
+        on_open_change=SettingsState.set_password_dialog_open,
         title="Change password",
         title_size="5",
         width="90vw",
@@ -341,7 +341,7 @@ def _delete_dialog() -> rx.Component:
             rx.hstack(
                 rx.text("Type", size="2", color=white(0.58)),
                 rx.text(
-                    AccountState.delete_confirmation_token,
+                    SettingsState.delete_confirmation_token,
                     size="2",
                     font_weight="700",
                     font_family="monospace",
@@ -355,9 +355,9 @@ def _delete_dialog() -> rx.Component:
                 flex_wrap="wrap",
             ),
             rx.input(
-                placeholder=AccountState.delete_confirmation_token,
-                value=AccountState.delete_confirm_text,
-                on_change=AccountState.set_delete_confirm_text,
+                placeholder=SettingsState.delete_confirmation_token,
+                value=SettingsState.delete_confirm_text,
+                on_change=SettingsState.set_delete_confirm_text,
                 **{
                     **_input_dialog_style(),
                     "_placeholder": {"color": white(0.35)},
@@ -368,16 +368,16 @@ def _delete_dialog() -> rx.Component:
             align="start",
         ),
         rx.cond(
-            AccountState.delete_error != "",
-            _feedback(AccountState.delete_error, is_error=True),
+            SettingsState.delete_error != "",
+            _feedback(SettingsState.delete_error, is_error=True),
             rx.fragment(),
         ),
         _divider(),
         rx.hstack(
-            _ghost_btn("Cancel", on_click=AccountState.close_delete_dialog),
+            _ghost_btn("Cancel", on_click=SettingsState.close_delete_dialog),
             rx.box(
                 rx.cond(
-                    AccountState.loading_delete,
+                    SettingsState.loading_delete,
                     rx.hstack(
                         rx.spinner(size="1"),
                         rx.text("Deleting…", size="2", color=red(0.6)),
@@ -388,7 +388,7 @@ def _delete_dialog() -> rx.Component:
                         "Delete account", size="2", font_weight="500", color=red(0.8)
                     ),
                 ),
-                on_click=AccountState.confirm_delete_account,
+                on_click=SettingsState.confirm_delete_account,
                 height="2.125rem",
                 padding="0 0.875rem",
                 background=red(0.07),
@@ -411,9 +411,9 @@ def _delete_dialog() -> rx.Component:
 
     return common_dialog(
         content=content,
-        is_open=AccountState.delete_dialog_open,
-        on_close=AccountState.close_delete_dialog,
-        on_open_change=AccountState.set_delete_dialog_open,
+        is_open=SettingsState.delete_dialog_open,
+        on_close=SettingsState.close_delete_dialog,
+        on_open_change=SettingsState.set_delete_dialog_open,
         title="Delete account",
         title_size="5",
         width="90vw",
@@ -435,15 +435,15 @@ def profile_panel() -> rx.Component:
                                 rx.vstack(
                                     rx.text("Display name", size="1", color=TEXT_MUTED),
                                     rx.cond(
-                                        AccountState.display_name_editing,
+                                        SettingsState.display_name_editing,
                                         rx.input(
-                                            value=AccountState.display_name_draft,
-                                            on_change=AccountState.set_display_name_draft,
+                                            value=SettingsState.display_name_draft,
+                                            on_change=SettingsState.set_display_name_draft,
                                             **_input_compact_style(),
                                             max_width="20rem",
                                         ),
                                         rx.text(
-                                            AccountState.display_name,
+                                            SettingsState.display_name,
                                             size="3",
                                             color=TEXT_PRIMARY,
                                             font_weight="500",
@@ -458,21 +458,21 @@ def profile_panel() -> rx.Component:
                             ),
                             rx.spacer(),
                             rx.cond(
-                                AccountState.display_name_editing,
+                                SettingsState.display_name_editing,
                                 rx.hstack(
                                     _edit_link(
-                                        "Cancel", AccountState.cancel_display_name_edit
+                                        "Cancel", SettingsState.cancel_display_name_edit
                                     ),
                                     _loading_btn(
                                         "Save",
-                                        on_click=AccountState.save_display_name,
-                                        loading_var=AccountState.loading_save,
+                                        on_click=SettingsState.save_display_name,
+                                        loading_var=SettingsState.loading_save,
                                     ),
                                     spacing="3",
                                     align="center",
                                 ),
                                 _edit_link(
-                                    "Edit", AccountState.start_display_name_edit
+                                    "Edit", SettingsState.start_display_name_edit
                                 ),
                             ),
                             align="center",
@@ -533,11 +533,11 @@ def profile_panel() -> rx.Component:
         ),
         rx.box(
             rx.cond(
-                AccountState.save_msg != "",
-                _feedback(AccountState.save_msg),
+                SettingsState.save_msg != "",
+                _feedback(SettingsState.save_msg),
                 rx.cond(
-                    AccountState.save_error != "",
-                    _feedback(AccountState.save_error, is_error=True),
+                    SettingsState.save_error != "",
+                    _feedback(SettingsState.save_error, is_error=True),
                     rx.fragment(),
                 ),
             ),
@@ -569,7 +569,7 @@ def delete_card() -> rx.Component:
             ),
             rx.box(
                 rx.text("Delete account", size="2", font_weight="500", color=red(0.75)),
-                on_click=AccountState.open_delete_dialog,
+                on_click=SettingsState.open_delete_dialog,
                 height="2.125rem",
                 padding="0 0.875rem",
                 background=red(0.05),
@@ -595,12 +595,12 @@ def delete_card() -> rx.Component:
 
 
 def _exp_card(label: str, description: str) -> rx.Component:
-    is_active = AccountState.experience_level == label
+    is_active = SettingsState.experience_level == label
     return category_toggle_card(
         title=label,
         checked=is_active,
-        on_change=lambda checked: AccountState.set_experience_level(label),
-        on_click=AccountState.set_experience_level(label),
+        on_change=lambda checked: SettingsState.set_experience_level(label),
+        on_click=SettingsState.set_experience_level(label),
         body=rx.text(
             description,
             size="2",
@@ -615,7 +615,7 @@ def _exp_card(label: str, description: str) -> rx.Component:
 
 
 def _period_btn(period: str) -> rx.Component:
-    is_active = AccountState.default_chart_period == period
+    is_active = SettingsState.default_chart_period == period
     return rx.box(
         rx.text(
             period,
@@ -623,7 +623,7 @@ def _period_btn(period: str) -> rx.Component:
             font_weight=rx.cond(is_active, "600", "400"),
             color=rx.cond(is_active, TEXT_PRIMARY, TEXT_MUTED),
         ),
-        on_click=AccountState.set_default_chart_period(period),
+        on_click=SettingsState.set_default_chart_period(period),
         height="1.625rem",
         padding="0 0.5625rem",
         border_radius="0.3125rem",
@@ -722,13 +722,13 @@ def preferences_panel() -> rx.Component:
         ),
         rx.hstack(
             rx.cond(
-                AccountState.save_msg != "",
-                _feedback(AccountState.save_msg),
+                SettingsState.save_msg != "",
+                _feedback(SettingsState.save_msg),
                 rx.cond(
-                    AccountState.save_error != "",
-                    _feedback(AccountState.save_error, is_error=True),
+                    SettingsState.save_error != "",
+                    _feedback(SettingsState.save_error, is_error=True),
                     rx.cond(
-                        AccountState.prefs_dirty,
+                        SettingsState.prefs_dirty,
                         rx.text("Unsaved changes", size="2", color=TEXT_MUTED),
                         rx.fragment(),
                     ),
@@ -737,8 +737,8 @@ def preferences_panel() -> rx.Component:
             rx.spacer(),
             _loading_btn(
                 "Save changes",
-                on_click=AccountState.save_all,
-                loading_var=AccountState.loading_save,
+                on_click=SettingsState.save_all,
+                loading_var=SettingsState.loading_save,
             ),
             align="center",
             width="100%",
@@ -751,7 +751,7 @@ def preferences_panel() -> rx.Component:
 
 
 def _nav_item(tab: str, icon_name: str, label: str) -> rx.Component:
-    is_active = AccountState.active_tab == tab
+    is_active = SettingsState.active_tab == tab
     return rx.box(
         rx.hstack(
             rx.icon(
@@ -766,7 +766,7 @@ def _nav_item(tab: str, icon_name: str, label: str) -> rx.Component:
             spacing="3",
             align="center",
         ),
-        on_click=AccountState.set_active_tab(tab),
+        on_click=SettingsState.set_active_tab(tab),
         padding="0.5rem 0.75rem",
         border_radius="0.5rem",
         background=rx.cond(is_active, white(0.05), "transparent"),
@@ -792,17 +792,17 @@ def sidebar() -> rx.Component:
 # ── Main layout ───────────────────────────────────────────────────────────────
 
 
-def account_layout() -> rx.Component:
+def settings_layout() -> rx.Component:
     return rx.hstack(
         sidebar(),
         rx.box(
             rx.cond(
-                AccountState.active_tab == "profile",
+                SettingsState.active_tab == "profile",
                 rx.vstack(profile_panel(), delete_card(), spacing="3", width="100%"),
                 rx.fragment(),
             ),
             rx.cond(
-                AccountState.active_tab == "preferences",
+                SettingsState.active_tab == "preferences",
                 preferences_panel(),
                 rx.fragment(),
             ),

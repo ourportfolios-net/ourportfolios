@@ -1,4 +1,4 @@
-"""Place at: ourportfolios/pages/account/state.py"""
+"""Place at: ourportfolios/pages/settings/state.py"""
 
 import reflex as rx
 from ...state.auth_state import AuthState
@@ -9,7 +9,7 @@ DEFAULT_PERIOD_OPTIONS = ["1D", "1W", "1M", "3M", "1Y", "ALL"]
 _TOAST = dict(position="bottom-right", duration=4000)
 
 
-class AccountState(rx.State):
+class SettingsState(rx.State):
     active_tab: str = "profile"
 
     # ── Profile ───────────────────────────────────────────────────────────────
@@ -169,7 +169,7 @@ class AccountState(rx.State):
     # ── Load ──────────────────────────────────────────────────────────────────
 
     @rx.event
-    async def load_account(self):
+    async def load_settings(self):
         auth = await self.get_state(AuthState)
         if not auth.is_authenticated:
             yield rx.redirect("/")
