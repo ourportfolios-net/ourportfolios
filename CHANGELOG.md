@@ -2,6 +2,77 @@
 
 <!-- version list -->
 
+## v0.15.0 (2026-03-17)
+
+### Bug Fixes
+
+- Remove memory leaks
+  ([`a734a6d`](https://github.com/ourportfolios-net/ourportfolios/commit/a734a6d0f8ac07812e77c0d7bab3291fc648afcc))
+
+- Revoke memory leaks from search state
+  ([`57bba1b`](https://github.com/ourportfolios-net/ourportfolios/commit/57bba1b6273b5342203373739ff199049c3dd718))
+
+### Chores
+
+- Center login form
+  ([`ab303d8`](https://github.com/ourportfolios-net/ourportfolios/commit/ab303d86e2219fa93ac14659a6daab46d659b138))
+
+- Refine vnidex chart
+  ([`1509523`](https://github.com/ourportfolios-net/ourportfolios/commit/15095238b3e801f9e950fa7429f31a7d7b18f318))
+
+- Round corners
+  ([`1ec6224`](https://github.com/ourportfolios-net/ourportfolios/commit/1ec6224299feab55d427126b00655f2a96299ada))
+
+- **account**: Redesign
+  ([`55f0f2b`](https://github.com/ourportfolios-net/ourportfolios/commit/55f0f2b7c3f94e44b6ca865aec1e364d8af6d522))
+
+- **accounts**: Update looks
+  ([`3ca1402`](https://github.com/ourportfolios-net/ourportfolios/commit/3ca1402e9ddb702516f3f2a8ae85166fca1244b3))
+
+- **navbar**: Rework auth links
+  ([`fbec262`](https://github.com/ourportfolios-net/ourportfolios/commit/fbec2627fed2f585ee24990dcc3ec7db577b64bc))
+
+- **ruff**: Comply with checks
+  ([`2136c0b`](https://github.com/ourportfolios-net/ourportfolios/commit/2136c0bea6c8cf10f0b5cc0ec0744bdc1231096d))
+
+- **ticker_analysis**: Make graphs a premium feature
+  ([`b9aa3ad`](https://github.com/ourportfolios-net/ourportfolios/commit/b9aa3ad2f44bf1f0ed8bcbaedc0d9fca464ecf22))
+
+### Features
+
+- Add auth guard to protected pages
+  ([`37f8bde`](https://github.com/ourportfolios-net/ourportfolios/commit/37f8bde2c328053dff8a5d34fc9072cba95518ef))
+
+- Add dynamic imports to main page module
+  ([`e54f4cc`](https://github.com/ourportfolios-net/ourportfolios/commit/e54f4cc7947aa74130eea69bbb210f1fa265830b))
+
+- Add frequency period
+  ([`a515556`](https://github.com/ourportfolios-net/ourportfolios/commit/a5155565733c7c5666647e2166e17aca3c40d7a2))
+
+- Add login form
+  ([`d157177`](https://github.com/ourportfolios-net/ourportfolios/commit/d157177fb3d2250ed3f421778a93de2d9bf2c3c5))
+
+- Change to settings
+  ([`0447f39`](https://github.com/ourportfolios-net/ourportfolios/commit/0447f39287b5c10ad1a77fb75e8724a976fa68bf))
+
+- **account**: Change name to settings
+  ([`d61e754`](https://github.com/ourportfolios-net/ourportfolios/commit/d61e75479020b5436bac6456fbb8aaee306dd5ca))
+
+- **auth**: Add refresh token handling
+  ([`6fa82bf`](https://github.com/ourportfolios-net/ourportfolios/commit/6fa82bfbbc71ce224fad953fb1c7abc9336303a2))
+
+- **page**: Add /account
+  ([`c884f8d`](https://github.com/ourportfolios-net/ourportfolios/commit/c884f8dfc5ad39782ec387cf3f6784ad1d3ecddd))
+
+- **ratio**: Maintain ratio upon zooms for all pages
+  ([`61db3b6`](https://github.com/ourportfolios-net/ourportfolios/commit/61db3b6616f9f34f593a683ccb09be7c7c13aaba))
+
+### Refactoring
+
+- Remove redundant loading screen
+  ([`a4c25d3`](https://github.com/ourportfolios-net/ourportfolios/commit/a4c25d39bdd65fb9343f7104f1e84f8b42608dd5))
+
+
 ## v0.14.0 (2026-03-08)
 
 ### Chores
