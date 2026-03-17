@@ -132,8 +132,8 @@ def index():
         rx.box(
             rx.box(
                 main_content(),
-                width="clamp(70vw, 86vw, 96vw)",
-                max_width="112.5rem",
+                width="86vw",
+                max_width="90rem",
                 margin="0 auto",
             ),
             width="100%",

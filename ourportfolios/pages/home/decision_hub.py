@@ -9,7 +9,10 @@ def decision_hub_section() -> rx.Component:
         compare_assets_card(),
         manage_portfolio_card(),
         display="grid",
-        grid_template_columns="repeat(auto-fill, minmax(min(18rem, 100%), 1fr))",
+        grid_template_columns=rx.breakpoints(
+            initial="1fr",
+            sm="repeat(3, minmax(0, 1fr))",
+        ),
         gap="1.25rem",
         width="100%",
     )

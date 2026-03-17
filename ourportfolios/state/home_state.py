@@ -187,24 +187,29 @@ class HomeState(rx.State):
         start_change = self._base_portfolio_change
         end_change = self._target_portfolio_change
 
-        for i in range(steps + 1):
-            async with self:
-                if not self.is_portfolio_hovered:
+        try:
+            for i in range(steps + 1):
+                async with self:
+                    if not self.is_portfolio_hovered:
+                        return
+                    t = i / steps
+                    eased_t = 1 - (1 - t) ** 4
+                    current_val = start_value + (end_value - start_value) * eased_t
+                    current_chg = start_change + (end_change - start_change) * eased_t
+                    self._current_portfolio_value = current_val
+                    self._current_portfolio_change = current_chg
+                    self.portfolio_value = f"${current_val:,.2f}"
+                    self.portfolio_change = f"+{current_chg:.1f}%"
+                if i < steps:
+                    await asyncio.sleep(step_duration)
+        except asyncio.CancelledError:
+            raise
+        finally:
+            try:
+                async with self:
                     self._animation_running = False
-                    return
-                t = i / steps
-                eased_t = 1 - (1 - t) ** 4
-                current_val = start_value + (end_value - start_value) * eased_t
-                current_chg = start_change + (end_change - start_change) * eased_t
-                self._current_portfolio_value = current_val
-                self._current_portfolio_change = current_chg
-                self.portfolio_value = f"${current_val:,.2f}"
-                self.portfolio_change = f"+{current_chg:.1f}%"
-            if i < steps:
-                await asyncio.sleep(step_duration)
-
-        async with self:
-            self._animation_running = False
+            except Exception:
+                pass
 
     @rx.event(background=True)
     async def end_portfolio_hover(self) -> None:
@@ -224,24 +229,29 @@ class HomeState(rx.State):
         end_value = self._base_portfolio_value
         end_change = self._base_portfolio_change
 
-        for i in range(steps + 1):
-            async with self:
-                if self.is_portfolio_hovered:
+        try:
+            for i in range(steps + 1):
+                async with self:
+                    if self.is_portfolio_hovered:
+                        return
+                    t = i / steps
+                    eased_t = 1 - (1 - t) ** 4
+                    current_val = start_value + (end_value - start_value) * eased_t
+                    current_chg = start_change + (end_change - start_change) * eased_t
+                    self._current_portfolio_value = current_val
+                    self._current_portfolio_change = current_chg
+                    self.portfolio_value = f"${current_val:,.2f}"
+                    self.portfolio_change = f"+{current_chg:.1f}%"
+                if i < steps:
+                    await asyncio.sleep(step_duration)
+        except asyncio.CancelledError:
+            raise
+        finally:
+            try:
+                async with self:
                     self._animation_running = False
-                    return
-                t = i / steps
-                eased_t = 1 - (1 - t) ** 4
-                current_val = start_value + (end_value - start_value) * eased_t
-                current_chg = start_change + (end_change - start_change) * eased_t
-                self._current_portfolio_value = current_val
-                self._current_portfolio_change = current_chg
-                self.portfolio_value = f"${current_val:,.2f}"
-                self.portfolio_change = f"+{current_chg:.1f}%"
-            if i < steps:
-                await asyncio.sleep(step_duration)
-
-        async with self:
-            self._animation_running = False
+            except Exception:
+                pass
 
     @rx.event
     def start_comparison_hover(self) -> None:

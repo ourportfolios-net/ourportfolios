@@ -13,6 +13,11 @@ from ..utils.database.models import PriceORM, OverviewORM
 
 _TickerSelect = Select[tuple[str, float | None, float | None, str | None]]
 
+# Module-level dict tracking background load tasks per client token.
+# asyncio.Task cannot be stored as a Reflex state field, and self is
+# immutable outside `async with self` in background tasks.
+_load_tasks: dict[str, asyncio.Task] = {}
+
 
 class SearchBarState(rx.State):
     search_query: str = ""
@@ -22,10 +27,12 @@ class SearchBarState(rx.State):
     outstanding_tickers: dict[str, Any] = {}
     ticker_list: list[dict[str, Any]] = []
     comparison_suggestions: list[dict[str, Any]] = []
+    suggest_tickers: list[dict[str, Any]] = []
 
     @rx.event
     def set_query(self, text: str = "") -> None:
         self.search_query = text
+        return SearchBarState.fetch_suggest_tickers
 
     @rx.event(background=True)
     async def set_comparison_query(self, text: str = "") -> None:
@@ -60,23 +67,30 @@ class SearchBarState(rx.State):
         self.empty_state_display_suggestion = False
         self.comparison_suggestions = []
 
-    @rx.var
-    async def get_suggest_ticker(self) -> list[dict[str, Any]]:
-        if not self.display_suggestion:
-            return []
-        if not self.search_query:
-            return self.ticker_list
-        result = await self._fetch_by_prefix(self.search_query)
+    @rx.event(background=True)
+    async def fetch_suggest_tickers(self) -> None:
+        async with self:
+            if not self.display_suggestion:
+                self.suggest_tickers = []
+                return
+            query = self.search_query
+            if not query:
+                self.suggest_tickers = list(self.ticker_list)
+                return
+        result = await self._fetch_by_prefix(query)
         if not result:
-            result = await self._fetch_by_permutations(self.search_query)
+            result = await self._fetch_by_permutations(query)
         if not result:
-            result = await self._fetch_by_prefix(self.search_query[0])
-        return result
+            result = await self._fetch_by_prefix(query[0])
+        async with self:
+            self.suggest_tickers = result
 
     @rx.event
     def set_display_suggestions(self, state: bool):
         yield time.sleep(0.2)
         self.display_suggestion = state
+        if state:
+            return SearchBarState.fetch_suggest_tickers
 
     @rx.event
     def set_empty_state_display_suggestions(self, state: bool):
@@ -121,9 +135,33 @@ class SearchBarState(rx.State):
 
     @rx.event(background=True)
     async def load_state(self) -> None:
-        while True:
-            rows = await self._fetch_tickers()
-            async with self:
-                self.ticker_list = rows
-                self.outstanding_tickers = {item["symbol"]: 1 for item in rows[:3]}
-            await asyncio.sleep(60)
+        async with self:
+            token = self.router.session.client_token
+
+        # Prevent duplicate background loops for this client
+        existing = _load_tasks.get(token)
+        if existing is not None and not existing.done():
+            return
+
+        async def _load_loop() -> None:
+            try:
+                while True:
+                    try:
+                        rows = await self._fetch_tickers()
+                        async with self:
+                            self.ticker_list = rows
+                            self.outstanding_tickers = {
+                                item["symbol"]: 1 for item in rows[:3]
+                            }
+                    except asyncio.CancelledError:
+                        return
+                    except Exception as e:
+                        print(f"Error in load_state: {e}")
+                    try:
+                        await asyncio.sleep(60)
+                    except asyncio.CancelledError:
+                        return
+            finally:
+                _load_tasks.pop(token, None)
+
+        _load_tasks[token] = asyncio.create_task(_load_loop())

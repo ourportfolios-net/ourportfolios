@@ -91,7 +91,7 @@ def hero_section() -> rx.Component:
                             transition="all 0.2s",
                             cursor="pointer",
                         ),
-                        href="/home",
+                        href="/auth",
                     ),
                     rx.link(
                         badge_button(

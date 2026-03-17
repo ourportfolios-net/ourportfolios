@@ -10,26 +10,30 @@ _CARD_RADIUS = "0.625rem"
 _CHART_MIN_W = "20rem"
 
 _BTN_BASE = {
-    "background": "transparent",
-    "border": f"1px solid {white(0.07)}",
+    "background": white(0.05),
+    "border": f"1px solid {white(0.1)}",
     "border_radius": "0.5rem",
-    "color": white(0.5),
+    "color": white(0.6),
+    "font_weight": "500",
+    "font_size": "0.8125rem",
     "cursor": "pointer",
     "transition": "all 0.15s ease",
     "_hover": {
-        "background": white(0.05),
-        "color": white(0.85),
+        "background": white(0.08),
+        "color": white(0.9),
         "border_color": white(0.15),
     },
 }
 
 _BTN_ACTIVE = {
-    "background": white(0.08),
+    "background": white(0.09),
     "border": f"1px solid {white(0.18)}",
     "border_radius": "0.5rem",
-    "color": "white",
+    "color": white(0.9),
     "font_weight": "600",
+    "font_size": "0.8125rem",
     "cursor": "pointer",
+    "transition": "all 0.15s ease",
 }
 
 
@@ -204,31 +208,82 @@ def price_chart_card():
                         "1D",
                         size="2",
                         on_click=PriceChartState.set_interval("1D"),
-                        style=rx.cond(
+                        background=rx.cond(
                             PriceChartState.selected_interval == "1D",
-                            _BTN_ACTIVE,
-                            _BTN_BASE,
+                            white(0.09),
+                            white(0.05),
                         ),
+                        border=rx.cond(
+                            PriceChartState.selected_interval == "1D",
+                            f"1px solid {white(0.18)}",
+                            f"1px solid {white(0.1)}",
+                        ),
+                        color=rx.cond(
+                            PriceChartState.selected_interval == "1D",
+                            white(0.9),
+                            white(0.6),
+                        ),
+                        font_weight=rx.cond(
+                            PriceChartState.selected_interval == "1D", "600", "500"
+                        ),
+                        font_size="0.8125rem",
+                        border_radius="0.5rem",
+                        cursor="pointer",
+                        transition="all 0.15s ease",
                     ),
                     rx.button(
                         "1W",
                         size="2",
                         on_click=PriceChartState.set_interval("1W"),
-                        style=rx.cond(
+                        background=rx.cond(
                             PriceChartState.selected_interval == "1W",
-                            _BTN_ACTIVE,
-                            _BTN_BASE,
+                            white(0.09),
+                            white(0.05),
                         ),
+                        border=rx.cond(
+                            PriceChartState.selected_interval == "1W",
+                            f"1px solid {white(0.18)}",
+                            f"1px solid {white(0.1)}",
+                        ),
+                        color=rx.cond(
+                            PriceChartState.selected_interval == "1W",
+                            white(0.9),
+                            white(0.6),
+                        ),
+                        font_weight=rx.cond(
+                            PriceChartState.selected_interval == "1W", "600", "500"
+                        ),
+                        font_size="0.8125rem",
+                        border_radius="0.5rem",
+                        cursor="pointer",
+                        transition="all 0.15s ease",
                     ),
                     rx.button(
                         "1M",
                         size="2",
                         on_click=PriceChartState.set_interval("1M"),
-                        style=rx.cond(
+                        background=rx.cond(
                             PriceChartState.selected_interval == "1M",
-                            _BTN_ACTIVE,
-                            _BTN_BASE,
+                            white(0.09),
+                            white(0.05),
                         ),
+                        border=rx.cond(
+                            PriceChartState.selected_interval == "1M",
+                            f"1px solid {white(0.18)}",
+                            f"1px solid {white(0.1)}",
+                        ),
+                        color=rx.cond(
+                            PriceChartState.selected_interval == "1M",
+                            white(0.9),
+                            white(0.6),
+                        ),
+                        font_weight=rx.cond(
+                            PriceChartState.selected_interval == "1M", "600", "500"
+                        ),
+                        font_size="0.8125rem",
+                        border_radius="0.5rem",
+                        cursor="pointer",
+                        transition="all 0.15s ease",
                     ),
                     spacing="1",
                     align="center",
