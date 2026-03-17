@@ -10,8 +10,8 @@ def index() -> rx.Component:
         navbar(),
         rx.box(
             page_body(),
-            width="clamp(70vw, 86vw, 96vw)",
-            max_width="112.5rem",
+            width="86vw",
+            max_width="90rem",
             margin="0 auto",
             padding_y="2rem",
         ),

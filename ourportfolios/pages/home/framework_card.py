@@ -3,10 +3,12 @@ from ...state.home_state import HomeState
 from ...state.framework_state import GlobalFrameworkState
 from ...components.cards import glass_card
 from ...styles import (
-    HUB_CARD_STYLE,
     PREVIEW_BOX_STYLE,
     SKELETON_BG,
+    CARD_BG,
+    CARD_BORDER,
     white,
+    purple,
     accent_btn,
     icon_box,
 )
@@ -14,10 +16,26 @@ from ...styles import (
 _CARD_H = "4.25rem"
 _PREVIEW_H = "12.5rem"
 
+_HUB_CARD = {
+    "background": CARD_BG,
+    "border": CARD_BORDER,
+    "border_radius": "0.875rem",
+    "padding": "1.5rem",
+    "position": "relative",
+    "overflow": "hidden",
+    "width": "100%",
+    "transition": "all 0.15s ease",
+    "_hover": {
+        "background": white(0.055),
+        "border_color": white(0.13),
+        "transform": "translateY(-1px)",
+    },
+}
+
 
 def _skel(width: str, height: str = "0.6875rem") -> rx.Component:
     return rx.box(
-        width=width, height=height, border_radius="0.25rem", background=SKELETON_BG
+        width=width, height=height, border_radius="0.25rem", background=white(0.06)
     )
 
 
@@ -102,7 +120,6 @@ def _framework_preview() -> rx.Component:
                     align="start",
                     width="100%",
                 ),
-                # Sliding highlight overlay
                 rx.box(
                     rx.box(
                         rx.box(
@@ -169,9 +186,6 @@ def _framework_preview() -> rx.Component:
     )
 
 
-# ── Select Framework (hub card) ───────────────────────────────────────────────
-
-
 def select_framework_card() -> rx.Component:
     return rx.box(
         rx.vstack(
@@ -206,7 +220,6 @@ def select_framework_card() -> rx.Component:
             width="100%",
             height="100%",
         ),
-        # Full-card overlay — below button
         rx.box(
             position="absolute",
             top="0",
@@ -217,13 +230,10 @@ def select_framework_card() -> rx.Component:
             cursor="pointer",
             on_click=rx.redirect("/framework"),
         ),
-        **HUB_CARD_STYLE,
+        **_HUB_CARD,
         on_mouse_enter=HomeState.start_framework_hover,
         on_mouse_leave=HomeState.stop_framework_hover,
     )
-
-
-# ── Selected Framework (sidebar card) ────────────────────────────────────────
 
 
 def selected_framework_card():

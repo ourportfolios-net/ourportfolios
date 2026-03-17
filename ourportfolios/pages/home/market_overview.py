@@ -24,7 +24,7 @@ _SUBTILE_BORDER = "rgba(255, 255, 255, 0.05)"
 _PERIOD_OPTIONS = ["1D", "1W", "1M"]
 
 _CHART_W = 90
-_CHART_H = 48
+_CHART_H = 52
 
 
 def _period_btn(label: str) -> rx.Component:
@@ -60,8 +60,6 @@ def vnindex_card() -> rx.Component:
         box_sizing="border-box",
     )
 
-    # Chart wrapper: exactly _CHART_W × _CHART_H so recharts' internal SVG and
-    # the DOM element have the same bounding box — fixes the hover-dot offset.
     chart_wrapper = rx.box(
         rx.recharts.area_chart(
             rx.recharts.area(
@@ -80,8 +78,6 @@ def vnindex_card() -> rx.Component:
             height=_CHART_H,
             margin={"top": 4, "right": 4, "bottom": 4, "left": 0},
         ),
-        # Wrapper must be the SAME pixel size as the chart so the SVG's
-        # internal coordinate system and the DOM hit-test area are identical.
         width=f"{_CHART_W}px",
         height=f"{_CHART_H}px",
         flex_shrink="0",
@@ -120,7 +116,7 @@ def vnindex_card() -> rx.Component:
                         spacing="1",
                         align="end",
                     ),
-                    spacing="2",
+                    spacing="0",
                     align="start",
                     flex_shrink="0",
                 ),
@@ -131,7 +127,6 @@ def vnindex_card() -> rx.Component:
             ),
             **_shell,
         ),
-        # Skeleton
         rx.box(
             rx.hstack(
                 rx.vstack(
@@ -410,7 +405,6 @@ def _treemap() -> rx.Component:
 def market_overview_section() -> rx.Component:
     return glass_card(
         rx.vstack(
-            # ── Header: matches other card headers ────────────────────────────
             rx.hstack(
                 rx.text(
                     "Market Overview",
@@ -420,7 +414,6 @@ def market_overview_section() -> rx.Component:
                     letter_spacing="-0.01em",
                 ),
                 rx.spacer(),
-                # Period toggle
                 rx.hstack(
                     *[_period_btn(p) for p in _PERIOD_OPTIONS],
                     spacing="0",
@@ -432,7 +425,6 @@ def market_overview_section() -> rx.Component:
                 width="100%",
                 align="center",
             ),
-            # ── Body ──────────────────────────────────────────────────────────
             rx.flex(
                 rx.vstack(
                     vnindex_card(),

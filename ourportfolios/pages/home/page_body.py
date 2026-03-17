@@ -8,7 +8,6 @@ from .decision_hub import decision_hub_section
 
 def page_body() -> rx.Component:
     return rx.flex(
-        # Left column — 75%
         rx.box(
             rx.vstack(
                 market_overview_section(),
@@ -16,9 +15,8 @@ def page_body() -> rx.Component:
                 spacing="5",
                 width="100%",
             ),
-            width=rx.breakpoints(initial="100%", lg="75%"),
+            width=rx.breakpoints(initial="100%", lg="74%"),
         ),
-        # Right column — 25%
         rx.box(
             rx.vstack(
                 ticker_of_the_day_card(),
@@ -27,10 +25,11 @@ def page_body() -> rx.Component:
                 spacing="5",
                 width="100%",
             ),
-            width=rx.breakpoints(initial="100%", lg="25%"),
+            width=rx.breakpoints(initial="100%", lg="24%"),
             margin_top=rx.breakpoints(initial="1.5rem", lg="0"),
         ),
-        direction=rx.breakpoints(initial="column", lg="row"),
-        gap=rx.breakpoints(initial="0", lg="2rem"),
+        justify="between",
+        align="start",
         width="100%",
+        direction=rx.breakpoints(initial="column", lg="row"),
     )

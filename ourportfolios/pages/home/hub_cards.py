@@ -1,9 +1,10 @@
 import reflex as rx
 from ...state.home_state import HomeState
 from ...styles import (
-    HUB_CARD_STYLE,
     PREVIEW_BOX_STYLE,
     SKELETON_BG,
+    CARD_BG,
+    CARD_BORDER,
     white,
     blue,
     green,
@@ -13,12 +14,25 @@ from ...styles import (
 
 _PREVIEW_H = "12.5rem"
 
+_HUB_CARD = {
+    "background": CARD_BG,
+    "border": CARD_BORDER,
+    "border_radius": "0.875rem",
+    "padding": "1.5rem",
+    "position": "relative",
+    "overflow": "hidden",
+    "width": "100%",
+    "transition": "all 0.15s ease",
+    "_hover": {
+        "background": white(0.055),
+        "border_color": white(0.13),
+        "transform": "translateY(-1px)",
+    },
+}
+
 
 def _skel(w: str, h: str = "0.5625rem") -> rx.Component:
     return rx.box(width=w, height=h, border_radius="0.25rem", background=SKELETON_BG)
-
-
-# ── Comparison preview ────────────────────────────────────────────────────────
 
 
 def _compare_col(color: str, is_hovered) -> rx.Component:
@@ -65,9 +79,6 @@ def _comparison_preview() -> rx.Component:
         **PREVIEW_BOX_STYLE,
         height=_PREVIEW_H,
     )
-
-
-# ── Portfolio preview ─────────────────────────────────────────────────────────
 
 
 def _perf_bar(hover_width: str, hover_color: str) -> rx.Component:
@@ -139,9 +150,6 @@ def _portfolio_preview() -> rx.Component:
     )
 
 
-# ── Shared card shell ─────────────────────────────────────────────────────────
-
-
 def _hub_card(
     title: str,
     description: str,
@@ -186,7 +194,6 @@ def _hub_card(
             width="100%",
             height="100%",
         ),
-        # Full-card click overlay — below button (z_index 0 < button z_index 2)
         rx.box(
             position="absolute",
             top="0",
@@ -197,13 +204,10 @@ def _hub_card(
             cursor="pointer",
             on_click=on_click,
         ),
-        **HUB_CARD_STYLE,
+        **_HUB_CARD,
         on_mouse_enter=on_hover_enter,
         on_mouse_leave=on_hover_leave,
     )
-
-
-# ── Public cards ──────────────────────────────────────────────────────────────
 
 
 def compare_assets_card() -> rx.Component:
