@@ -4,6 +4,7 @@ import reflex as rx
 
 from .state import TickersPageState
 from ...state import SearchBarState
+from ...components.category_toggle_card import category_toggle_card
 from ...styles import (
     white,
     purple,
@@ -510,61 +511,34 @@ def _compare_search_bar() -> rx.Component:
 
 
 def _metric_category_card(category: str) -> rx.Component:
-    return rx.box(
-        rx.vstack(
-            rx.hstack(
-                rx.text(category, size="5", weight="bold", color=white(0.92)),
-                rx.spacer(),
-                rx.checkbox(
-                    checked=TickersPageState.category_selection_state[category],
-                    on_change=lambda checked: TickersPageState.toggle_category(
-                        category
+    return category_toggle_card(
+        title=category,
+        checked=TickersPageState.category_selection_state[category],
+        on_change=lambda checked: TickersPageState.toggle_category(category),
+        body=rx.box(
+            rx.foreach(
+                TickersPageState.all_metrics[category],
+                lambda metric: rx.hstack(
+                    rx.checkbox(
+                        checked=TickersPageState.metric_selection_state[metric],
+                        on_change=lambda checked: TickersPageState.toggle_metric(metric),
+                        size="1",
+                        color_scheme="violet",
                     ),
-                    size="2",
-                    color_scheme="violet",
-                ),
-                width="100%",
-                align="center",
-            ),
-            rx.box(
-                rx.foreach(
-                    TickersPageState.all_metrics[category],
-                    lambda metric: rx.hstack(
-                        rx.checkbox(
-                            checked=TickersPageState.metric_selection_state[metric],
-                            on_change=lambda checked: TickersPageState.toggle_metric(
-                                metric
-                            ),
-                            size="1",
-                            color_scheme="violet",
-                        ),
-                        rx.text(
-                            TickersPageState.metric_labels[metric],
-                            size="2",
-                            color=white(0.65),
-                        ),
-                        spacing="2",
-                        align="center",
+                    rx.text(
+                        TickersPageState.metric_labels[metric],
+                        size="2",
+                        color=white(0.65),
                     ),
+                    spacing="2",
+                    align="center",
                 ),
-                display="grid",
-                grid_template_columns="1fr 1fr",
-                gap="0.45em 1em",
-                width="100%",
             ),
-            spacing="2",
-            align="start",
+            display="grid",
+            grid_template_columns="1fr 1fr",
+            gap="0.45em 1em",
             width="100%",
         ),
-        padding="0.75em 0.9em",
-        border_radius="0.625rem",
-        background=white(0.025),
-        border=f"1px solid {white(0.07)}",
-        style={
-            "transition": "all 0.15s ease",
-            "_hover": {"background": white(0.035), "border_color": white(0.12)},
-        },
-        width="100%",
     )
 
 

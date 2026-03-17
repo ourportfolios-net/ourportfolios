@@ -15,6 +15,8 @@ class AccountState(rx.State):
     # ── Profile ───────────────────────────────────────────────────────────────
     display_name: str = ""
     _orig_name: str = ""
+    display_name_editing: bool = False
+    display_name_draft: str = ""
 
     # ── Preferences ───────────────────────────────────────────────────────────
     experience_level: str = "Beginner"
@@ -57,6 +59,13 @@ class AccountState(rx.State):
             or self.default_chart_period != self._orig_period
         )
 
+    @rx.var
+    def delete_confirmation_token(self) -> str:
+        base = (self.display_name or "").strip().upper().replace(" ", "_")
+        if not base:
+            base = "ACCOUNT"
+        return f"{base}_DELETE"
+
     # ── Setters ───────────────────────────────────────────────────────────────
 
     @rx.event
@@ -69,6 +78,25 @@ class AccountState(rx.State):
     def set_display_name(self, v: str):
         self.display_name = v
         self.save_msg = ""
+        self.save_error = ""
+
+    @rx.event
+    def set_display_name_draft(self, v: str):
+        self.display_name_draft = v
+        self.save_msg = ""
+        self.save_error = ""
+
+    @rx.event
+    def start_display_name_edit(self):
+        self.display_name_draft = self.display_name
+        self.display_name_editing = True
+        self.save_msg = ""
+        self.save_error = ""
+
+    @rx.event
+    def cancel_display_name_edit(self):
+        self.display_name_draft = self.display_name
+        self.display_name_editing = False
         self.save_error = ""
 
     @rx.event
@@ -148,7 +176,32 @@ class AccountState(rx.State):
             return
         name = auth.user_display_name or ""
         self.display_name = name
+        self.display_name_draft = name
+        self.display_name_editing = False
         self._orig_name = name
+
+    @rx.event
+    async def save_display_name(self):
+        self.loading_save = True
+        self.save_msg = ""
+        self.save_error = ""
+        try:
+            name = self.display_name_draft.strip()
+
+            auth = await self.get_state(AuthState)
+            auth.user_display_name = name
+
+            self.display_name = name
+            self.display_name_draft = name
+            self._orig_name = name
+            self.display_name_editing = False
+            self.save_msg = "Saved"
+            yield rx.toast.success("Display name updated.", **_TOAST)
+        except Exception as e:
+            self.save_error = str(e)
+            yield rx.toast.error(f"Failed to save: {e}", **_TOAST)
+        finally:
+            self.loading_save = False
 
     # ── Save ──────────────────────────────────────────────────────────────────
 
@@ -179,7 +232,7 @@ class AccountState(rx.State):
             self._orig_name = name
             self._orig_exp = self.experience_level
             self._orig_period = self.default_chart_period
-            self.save_msg = "Saved."
+            self.save_msg = "Saved"
             yield rx.toast.success("Profile updated.", **_TOAST)
         except Exception as e:
             self.save_error = str(e)
@@ -221,8 +274,9 @@ class AccountState(rx.State):
 
     @rx.event
     async def confirm_delete_account(self):
-        if self.delete_confirm_text != "DELETE":
-            self.delete_error = 'Type "DELETE" to confirm.'
+        entered = self.delete_confirm_text.strip().upper().replace(" ", "_")
+        if entered != self.delete_confirmation_token:
+            self.delete_error = f'Type "{self.delete_confirmation_token}" to confirm.'
             return
 
         self.loading_delete = True
