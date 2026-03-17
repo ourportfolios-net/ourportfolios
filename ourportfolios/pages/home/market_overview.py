@@ -2,6 +2,7 @@ import reflex as rx
 
 from ...state.home_state import HomeState
 from ...state.heatmap import HeatmapState, HeatmapTile, HeatmapChip, TickerSubtile
+from ...state.prefs_state import PrefsState
 from ...components.cards import glass_card
 from ...styles import (
     white,
@@ -19,6 +20,9 @@ _TILE_BG = "rgba(255, 255, 255, 0.03)"
 _TILE_BORDER = "1px solid rgba(255, 255, 255, 0.07)"
 _TILE_HOVER_BORDER = "rgba(255, 255, 255, 0.20)"
 _SUBTILE_BORDER = "rgba(255, 255, 255, 0.05)"
+
+# Only the 3 supported periods
+_PERIOD_OPTIONS = ["1D", "1W", "1M"]
 
 
 def _period_btn(label: str) -> rx.Component:
@@ -109,7 +113,6 @@ def vnindex_card() -> rx.Component:
             ),
             **_shell,
         ),
-        # Skeleton
         rx.box(
             rx.vstack(
                 _skel("3.25rem", "0.625rem"),
@@ -131,11 +134,6 @@ def vnindex_card() -> rx.Component:
             **_shell,
         ),
     )
-
-
-# ── Ticker subtile ──────────────────────────────────────────────────────────────
-# Hover: brightness only — no bg or border change.
-# This gives a clean "lit up" feel without altering the color meaning.
 
 
 def _ticker_content(t: TickerSubtile) -> rx.Component:
@@ -229,7 +227,6 @@ def _ticker_subtile(t: TickerSubtile) -> rx.Component:
             border_radius="0.375rem",
             border=f"1px solid {_SUBTILE_BORDER}",
             transition="filter 0.12s ease",
-            # Brightness-only hover — highlights without changing color meaning
             _hover={"filter": "brightness(1.22)"},
         ),
         href=t.url,
@@ -241,10 +238,6 @@ def _ticker_subtile(t: TickerSubtile) -> rx.Component:
         z_index="2",
         text_decoration="none",
     )
-
-
-# ── Industry tile ──────────────────────────────────────────────────────────────
-# Hover: border brightens sharply + inset ring. No movement, no bg change.
 
 
 def _industry_tile(tile: HeatmapTile) -> rx.Component:
@@ -305,9 +298,6 @@ def _industry_tile(tile: HeatmapTile) -> rx.Component:
     )
 
 
-# ── Chip row ──────────────────────────────────────────────────────────────────
-
-
 def _chip(c: HeatmapChip) -> rx.Component:
     return rx.link(
         rx.hstack(
@@ -345,11 +335,7 @@ def _chip_row() -> rx.Component:
     return rx.cond(
         HeatmapState.chips,
         rx.box(
-            rx.hstack(
-                rx.foreach(HeatmapState.chips, _chip),
-                spacing="2",
-                wrap="wrap",
-            ),
+            rx.hstack(rx.foreach(HeatmapState.chips, _chip), spacing="2", wrap="wrap"),
             padding_top="0.625rem",
             width="100%",
         ),
@@ -358,7 +344,6 @@ def _chip_row() -> rx.Component:
 
 
 def _treemap_skeleton() -> rx.Component:
-    """Only shown on initial mount when tiles list is empty."""
     return rx.vstack(
         rx.hstack(
             _skel("42%", "12.5rem", "0.5rem"),
@@ -391,7 +376,6 @@ def _treemap_skeleton() -> rx.Component:
 def _treemap() -> rx.Component:
     return rx.cond(
         HeatmapState.tiles,
-        # Has data — tiles update in-place on period change, no flash
         rx.vstack(
             rx.box(
                 rx.foreach(HeatmapState.tiles, _industry_tile),
@@ -405,7 +389,6 @@ def _treemap() -> rx.Component:
             spacing="0",
             width="100%",
         ),
-        # Empty — initial mount skeleton only
         _treemap_skeleton(),
     )
 
@@ -433,10 +416,7 @@ def market_overview_section() -> rx.Component:
                 ),
                 rx.spacer(),
                 rx.hstack(
-                    _period_btn("1D"),
-                    _period_btn("1W"),
-                    _period_btn("1M"),
-                    _period_btn("1Y"),
+                    *[_period_btn(p) for p in _PERIOD_OPTIONS],
                     spacing="0",
                     padding="0.16rem",
                     border_radius="0.4375rem",
@@ -467,5 +447,6 @@ def market_overview_section() -> rx.Component:
         padding="1.25rem 1.5rem",
         width="100%",
         _hover={},
-        on_mount=HeatmapState.load_heatmap_data,
+        # Load prefs first so selected_period is set before heatmap data arrives
+        on_mount=[PrefsState.apply_to_heatmap, HeatmapState.load_heatmap_data],
     )

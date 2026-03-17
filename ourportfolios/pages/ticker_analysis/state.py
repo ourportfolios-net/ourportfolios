@@ -6,6 +6,7 @@ import reflex as rx
 from typing import Any, Optional, TYPE_CHECKING
 
 from ...state.framework_state import GlobalFrameworkState
+from ...state.prefs_state import PrefsState
 from ...components.price_chart import PriceChartState
 from ...utils.database.fetch_data import fetch_company_data, fetch_price_data_async
 from ...utils.preprocessing.financial_statements import get_transformed_dataframes
@@ -23,7 +24,6 @@ class State(SessionIsolatedStateMixin, rx.State):
     switch_value: str = "year"
     company_control: str = "shares"
 
-    # Track which ticker the current data belongs to
     _data_ticker: str = ""
 
     profile_dialog_open: bool = False
@@ -44,7 +44,6 @@ class State(SessionIsolatedStateMixin, rx.State):
         else:
             self.company_control = value
 
-    # Data storage
     overview_df: pd.DataFrame = pd.DataFrame()
     profile_df: pd.DataFrame = pd.DataFrame()
     shareholders_df: pd.DataFrame = pd.DataFrame()
@@ -73,7 +72,6 @@ class State(SessionIsolatedStateMixin, rx.State):
     ]
     selected_margin_metric: str = "gross_margin"
 
-    # Session isolation flags
     _is_mounted: bool = True
     _data_loaded: bool = False
     _last_framework_id: Optional[int] = None
@@ -101,14 +99,11 @@ class State(SessionIsolatedStateMixin, rx.State):
         return self._is_loading_price
 
     def on_mount(self):
-        """Initialize session and trigger background data loading."""
         super().on_mount()
-        # Always force reload on every mount — handles page revisits and refreshes
         self._data_loaded = False
         return State.auto_load_data
 
     def on_unmount(self):
-        """Clean up state when page is unmounted."""
         self._is_mounted = False
         super().on_unmount()
 
@@ -148,7 +143,6 @@ class State(SessionIsolatedStateMixin, rx.State):
 
             ticker = self.ticker
 
-            # Always reset and reload — _data_loaded is set False on every mount
             self._current_ticker = ticker
             self._data_loaded = False
             self._data_ticker = ""
@@ -176,14 +170,21 @@ class State(SessionIsolatedStateMixin, rx.State):
             self._is_loading_financial = True
             self._is_loading_price = True
 
-        # Load company + price data
+            # Set the chart interval from user prefs BEFORE load_state runs.
+            # load_state calls self._resample(df_daily, self.selected_interval),
+            # so we only need selected_interval set on PriceChartState — no need
+            # to yield set_interval (which would wastefully trigger render_price_chart
+            # while df_daily is still empty).
+            prefs = await self.get_state(PrefsState)
+            price_chart = await self.get_state(PriceChartState)
+            price_chart.selected_interval = prefs.default_chart_period or "1M"
+
         await self.load_company_data()
 
         async with self:
             if not self.is_mounted():
                 return
 
-        # Load financial data
         await self.load_transformed_dataframes()
 
         async with self:
@@ -191,7 +192,6 @@ class State(SessionIsolatedStateMixin, rx.State):
                 return
             ticker_for_chart = ticker
 
-        # Always yield chart reload — this re-runs the JS initialization
         yield PriceChartState.load_state(ticker_for_chart)
 
         async with self:
@@ -215,7 +215,6 @@ class State(SessionIsolatedStateMixin, rx.State):
     @rx.event
     @session_isolated
     async def load_company_data(self):
-        """Load company metadata and price data from database."""
         async with self:
             ticker = self.ticker
 
@@ -328,7 +327,6 @@ class State(SessionIsolatedStateMixin, rx.State):
     @rx.event
     @session_isolated
     async def load_transformed_dataframes(self):
-        """Load financial data — always fetches fresh, no cache guard."""
         ticker = self.ticker
         if not self.is_mounted():
             return
@@ -371,7 +369,6 @@ class State(SessionIsolatedStateMixin, rx.State):
                 self.error_financial = str(e)
             return
 
-        # Process categorized ratios with framework awareness
         async with self:
             global_state = await self.get_state(GlobalFrameworkState)
             current_framework_id = global_state.selected_framework_id
@@ -440,7 +437,6 @@ class State(SessionIsolatedStateMixin, rx.State):
     @rx.event
     @session_isolated
     async def reload_for_framework_change(self):
-        """Force reload when framework changes."""
         async with self:
             self.transformed_dataframes = {}
             self.available_metrics_by_category = {}
@@ -454,7 +450,6 @@ class State(SessionIsolatedStateMixin, rx.State):
 
     @rx.var(cache=True)
     def get_chart_data_for_category(self) -> dict[str, list[dict[str, Any]]]:
-        """Get chart data for all categories."""
         chart_data = {}
         categorized_ratios = self.transformed_dataframes.get("categorized_ratios", {})
 

@@ -3,15 +3,15 @@
 import reflex as rx
 from ...auth_config import get_supabase, AUTH_AVAILABLE
 from ...state.auth_state import AuthState
+from ...state.prefs_state import PrefsState
 
 EXPERIENCE_OPTIONS = ["Beginner", "Experienced"]
-DEFAULT_PERIOD_OPTIONS = ["1D", "1W", "1M", "3M", "1Y", "ALL"]
+DEFAULT_PERIOD_OPTIONS = ["1D", "1W", "1M"]
 
 _TOAST = dict(position="bottom-right", duration=4000)
 
 
 def _restore_session(auth) -> None:
-    """Restore this user's session on the Supabase singleton before update_user."""
     supabase = get_supabase()
     supabase.auth.set_session(auth.auth_token, auth.auth_refresh_token)
 
@@ -202,8 +202,12 @@ class SettingsState(rx.State):
 
             meta = user.user_metadata or {}
             name = meta.get("full_name") or auth.user_display_name or ""
+
+            # Clamp stored period to the 3 valid options
+            raw_period = meta.get("default_chart_period", "1M")
+            period = raw_period if raw_period in DEFAULT_PERIOD_OPTIONS else "1M"
+
             exp = meta.get("experience_level", "Beginner")
-            period = meta.get("default_chart_period", "1M")
 
             self.display_name = name
             self.display_name_draft = name
@@ -215,6 +219,11 @@ class SettingsState(rx.State):
             self._orig_period = period
 
             auth.user_display_name = name
+
+            # Keep PrefsState in sync
+            prefs = await self.get_state(PrefsState)
+            prefs.experience_level = exp
+            prefs.default_chart_period = period
 
         except Exception as e:
             self.save_error = str(e)
@@ -284,6 +293,13 @@ class SettingsState(rx.State):
 
             self._orig_exp = self.experience_level
             self._orig_period = self.default_chart_period
+
+            # Push to PrefsState immediately so other pages reflect it
+            # without needing a reload
+            prefs = await self.get_state(PrefsState)
+            prefs.experience_level = self.experience_level
+            prefs.default_chart_period = self.default_chart_period
+
             self.save_msg = "Saved"
             yield rx.toast.success("Preferences saved.", **_TOAST)
         except Exception as e:
@@ -316,9 +332,6 @@ class SettingsState(rx.State):
             if AUTH_AVAILABLE:
                 supabase = get_supabase()
 
-                # Verify old password — sign_in_with_password also establishes
-                # the session on the singleton so the subsequent update_user is
-                # authenticated correctly without needing set_session.
                 verify = supabase.auth.sign_in_with_password(
                     {"email": auth.user_email, "password": self.old_password}
                 )
@@ -326,7 +339,6 @@ class SettingsState(rx.State):
                     self.password_error = "Current password is incorrect."
                     return
 
-                # Store the fresh tokens from re-auth
                 if verify.session:
                     auth.auth_token = verify.session.access_token
                     auth.auth_refresh_token = (
@@ -373,8 +385,6 @@ class SettingsState(rx.State):
 
             if AUTH_AVAILABLE:
                 supabase = get_supabase()
-                # Requires service role key on the client.
-                # If using anon key only, replace with a Supabase Edge Function.
                 supabase.auth.admin.delete_user(auth.user_id)
                 supabase.auth.sign_out()
 
