@@ -4,11 +4,9 @@ from ...state.framework_state import GlobalFrameworkState
 from ...components.cards import glass_card
 from ...styles import (
     PREVIEW_BOX_STYLE,
-    SKELETON_BG,
     CARD_BG,
     CARD_BORDER,
     white,
-    purple,
     accent_btn,
     icon_box,
 )
