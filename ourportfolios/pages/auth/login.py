@@ -10,39 +10,20 @@ from ...styles import (
     TEXT_MUTED,
     ERROR_COLOR,
 )
-from .components import _label, _input, _divider_with_text, _google_button, auth_card
+from .components import (
+    label,
+    text_input,
+    divider_with_text,
+    google_button,
+    auth_card,
+    session_check_screen,
+    INPUT_OVERRIDE,
+)
 
 
-# ── Session check screen ──────────────────────────────────────────────────────
-
-
-def session_check_screen() -> rx.Component:
-    return rx.box(
-        rx.text(
-            "ourportfolios",
-            font_size="1rem",
-            font_weight="600",
-            letter_spacing="-0.02em",
-            color=white(0.18),
-            position="fixed",
-            bottom="1.5rem",
-            right="1.75rem",
-            user_select="none",
-        ),
-        position="fixed",
-        inset="0",
-        background="#090909",
-        z_index="9999",
-        overflow="hidden",
-    )
-
-
-# ── Link primitives ───────────────────────────────────────────────────────────
-
-
-def _inline_link(label: str, on_click) -> rx.Component:
+def _inline_link(label_text: str, on_click) -> rx.Component:
     return rx.text(
-        label,
+        label_text,
         size="1",
         color=white(0.5),
         text_decoration="none",
@@ -54,21 +35,7 @@ def _inline_link(label: str, on_click) -> rx.Component:
     )
 
 
-def _plain_link(label: str, on_click) -> rx.Component:
-    return rx.text(
-        label,
-        size="1",
-        color=white(0.5),
-        text_decoration="none",
-        cursor="pointer",
-        transition="color 0.15s ease, text-decoration 0.15s ease",
-        _hover={"color": "white", "text_decoration": "underline"},
-        on_click=on_click,
-        display="inline",
-    )
-
-
-def _action_btn(label: str, on_click, loading, loading_label: str) -> rx.Component:
+def _action_btn(label_text: str, on_click, loading, loading_label: str) -> rx.Component:
     return rx.box(
         rx.cond(
             loading,
@@ -78,7 +45,7 @@ def _action_btn(label: str, on_click, loading, loading_label: str) -> rx.Compone
                 spacing="2",
                 align="center",
             ),
-            rx.text(label, size="2", weight="medium", color=TEXT_PRIMARY),
+            rx.text(label_text, size="2", weight="medium", color=TEXT_PRIMARY),
         ),
         width="100%",
         height="3rem",
@@ -93,9 +60,6 @@ def _action_btn(label: str, on_click, loading, loading_label: str) -> rx.Compone
         align_items="center",
         justify_content="center",
     )
-
-
-# ── Forgot password modal ─────────────────────────────────────────────────────
 
 
 def _forgot_password_modal() -> rx.Component:
@@ -173,8 +137,8 @@ def _forgot_password_modal() -> rx.Component:
                                 line_height="1.6",
                             ),
                             rx.vstack(
-                                _label("Email"),
-                                _input(
+                                label("Email"),
+                                text_input(
                                     "you@example.com",
                                     AuthState.forgot_email,
                                     AuthState.set_forgot_email,
@@ -220,25 +184,6 @@ def _forgot_password_modal() -> rx.Component:
     )
 
 
-# ── Shared input style (matches components.py _INPUT) ─────────────────────────
-
-_INPUT_STYLE = dict(
-    font_size="0.9375rem",
-    height="3rem",
-    padding="0 0.9rem",
-    background="rgba(255,255,255,0.04)",
-    border="1px solid rgba(255,255,255,0.08)",
-    border_radius="0.625rem",
-    color="white",
-    width="100%",
-    _placeholder={"color": "rgba(255,255,255,0.22)"},
-    _focus={"border_color": "rgba(139,92,246,0.4)", "outline": "none"},
-)
-
-
-# ── Login form ────────────────────────────────────────────────────────────────
-
-
 def _login_form() -> rx.Component:
     return rx.vstack(
         rx.vstack(
@@ -261,8 +206,10 @@ def _login_form() -> rx.Component:
         ),
         rx.box(height="0.25rem"),
         rx.vstack(
-            _label("Email"),
-            _input("you@example.com", AuthState.email, AuthState.set_email, "email"),
+            label("Email"),
+            text_input(
+                "you@example.com", AuthState.email, AuthState.set_email, "email"
+            ),
             spacing="0",
             width="100%",
             align="start",
@@ -277,7 +224,7 @@ def _login_form() -> rx.Component:
                     letter_spacing="0.08em",
                 ),
                 rx.spacer(),
-                _plain_link("Forgot password?", AuthState.open_forgot),
+                _inline_link("Forgot password?", AuthState.open_forgot),
                 width="100%",
                 align="center",
                 margin_bottom="0.4rem",
@@ -292,7 +239,7 @@ def _login_form() -> rx.Component:
                     "autocomplete": "current-password",
                     "name": "op_password_pas",
                 },
-                **_INPUT_STYLE,
+                **INPUT_OVERRIDE,
             ),
             spacing="0",
             width="100%",
@@ -306,8 +253,8 @@ def _login_form() -> rx.Component:
         _action_btn(
             "Sign in", AuthState.handle_login, AuthState.loading, "Signing in…"
         ),
-        _divider_with_text("or"),
-        _google_button(),
+        divider_with_text("or"),
+        google_button(),
         rx.hstack(
             rx.text("Don't have an account?", size="1", color=TEXT_MUTED),
             _inline_link("Create one", AuthState.set_mode_register),
@@ -328,9 +275,6 @@ def _login_form() -> rx.Component:
         width="100%",
         align="start",
     )
-
-
-# ── Register form ─────────────────────────────────────────────────────────────
 
 
 def _register_form() -> rx.Component:
@@ -355,23 +299,25 @@ def _register_form() -> rx.Component:
         ),
         rx.box(height="0.25rem"),
         rx.vstack(
-            _label("Full name"),
-            _input("Your name", AuthState.full_name, AuthState.set_full_name),
+            label("Full name"),
+            text_input("Your name", AuthState.full_name, AuthState.set_full_name),
             spacing="0",
             width="100%",
             align="start",
         ),
         rx.vstack(
-            _label("Email"),
-            _input("you@example.com", AuthState.email, AuthState.set_email, "email"),
+            label("Email"),
+            text_input(
+                "you@example.com", AuthState.email, AuthState.set_email, "email"
+            ),
             spacing="0",
             width="100%",
             align="start",
         ),
         rx.hstack(
             rx.vstack(
-                _label("Password"),
-                _input(
+                label("Password"),
+                text_input(
                     "Min. 8 chars",
                     AuthState.password,
                     AuthState.set_password,
@@ -382,7 +328,7 @@ def _register_form() -> rx.Component:
                 align="start",
             ),
             rx.vstack(
-                _label("Confirm"),
+                label("Confirm"),
                 rx.input(
                     placeholder="Repeat",
                     value=AuthState.confirm_password,
@@ -393,7 +339,7 @@ def _register_form() -> rx.Component:
                         "autocomplete": "new-password",
                         "name": "op_password_rep",
                     },
-                    **_INPUT_STYLE,
+                    **INPUT_OVERRIDE,
                 ),
                 spacing="0",
                 width="100%",
@@ -413,8 +359,8 @@ def _register_form() -> rx.Component:
             AuthState.loading,
             "Creating account…",
         ),
-        _divider_with_text("or"),
-        _google_button(),
+        divider_with_text("or"),
+        google_button(),
         rx.text(
             "By creating an account you agree to our terms of service and privacy policy.",
             size="1",
@@ -436,9 +382,6 @@ def _register_form() -> rx.Component:
     )
 
 
-# ── Background ────────────────────────────────────────────────────────────────
-
-
 def _bg() -> rx.Component:
     return rx.box(
         rx.box(
@@ -457,9 +400,6 @@ def _bg() -> rx.Component:
         overflow="hidden",
         z_index="0",
     )
-
-
-# ── Page ──────────────────────────────────────────────────────────────────────
 
 
 @rx.page(route="/auth", on_load=AuthState.check_existing_session)

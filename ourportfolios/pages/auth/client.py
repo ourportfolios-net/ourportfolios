@@ -25,7 +25,6 @@ def get_supabase():
         except ImportError:
             raise RuntimeError(
                 "SUPABASE_URL and SUPABASE_ANON_KEY are set but 'supabase' is not installed.\n"
-                "Run: pip install supabase"
             )
         # PKCE is the default in supabase-py but we set it explicitly.
         # The singleton retains the code_verifier in memory between the

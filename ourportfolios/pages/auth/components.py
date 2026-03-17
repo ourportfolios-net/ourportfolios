@@ -11,7 +11,7 @@ from ...styles import (
     TEXT_MUTED,
 )
 
-_INPUT = {
+INPUT_OVERRIDE = {
     **INPUT_STYLE,
     "font_size": "0.9375rem",
     "height": "3rem",
@@ -19,16 +19,34 @@ _INPUT = {
 }
 
 
-def _label(text: str) -> rx.Component:
+def session_check_screen() -> rx.Component:
+    return rx.box(
+        rx.text(
+            "ourportfolios",
+            font_size="1.25rem",
+            font_weight="600",
+            letter_spacing="-0.02em",
+            color=white(0.18),
+            position="fixed",
+            bottom="1.5rem",
+            right="1.75rem",
+            user_select="none",
+        ),
+        position="fixed",
+        inset="0",
+        background="#090909",
+        z_index="9999",
+        overflow="hidden",
+    )
+
+
+def label(text: str) -> rx.Component:
     return rx.box(rx.text(text, **LABEL_STYLE), margin_bottom="0.4rem")
 
 
-def _input(
+def text_input(
     placeholder: str, value, on_change, field_type: str = "text"
 ) -> rx.Component:
-    # "chrome-off" is an unrecognized value Chrome can't map to a credential type,
-    # unlike "off" which it ignores. Combined with a non-standard name it breaks
-    # Chrome's autofill heuristics without affecting Reflex's type system.
     ac = "new-password" if field_type == "password" else "chrome-off"
     return rx.input(
         placeholder=placeholder,
@@ -39,11 +57,11 @@ def _input(
             "autocomplete": ac,
             "name": f"op_{field_type}_{placeholder[:3].lower().replace(' ', '_')}",
         },
-        **_INPUT,
+        **INPUT_OVERRIDE,
     )
 
 
-def _divider_with_text(text: str) -> rx.Component:
+def divider_with_text(text: str) -> rx.Component:
     return rx.hstack(
         rx.box(flex="1", height="1px", background=white(0.07)),
         rx.text(
@@ -55,7 +73,7 @@ def _divider_with_text(text: str) -> rx.Component:
     )
 
 
-def _google_button() -> rx.Component:
+def google_button() -> rx.Component:
     return rx.box(
         rx.hstack(
             rx.html(
@@ -90,7 +108,6 @@ def _google_button() -> rx.Component:
 
 
 def auth_card(*children, **props) -> rx.Component:
-    """Card with fixed width so login/register never resize when toggling."""
     return rx.box(
         *children,
         background=CARD_BG,
