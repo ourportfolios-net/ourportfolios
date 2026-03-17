@@ -242,7 +242,7 @@ def _user_menu() -> rx.Component:
                 margin_x="0.4rem",
                 margin_bottom="0.25rem",
             ),
-            _menu_item("user", "Settings", href="/settings"),
+            _menu_item("settings", "Settings", href="/settings"),
             rx.box(
                 height="1px",
                 background=white(0.07),

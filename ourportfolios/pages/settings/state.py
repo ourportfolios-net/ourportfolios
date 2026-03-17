@@ -1,12 +1,19 @@
 """Place at: ourportfolios/pages/settings/state.py"""
 
 import reflex as rx
+from ...auth_config import get_supabase, AUTH_AVAILABLE
 from ...state.auth_state import AuthState
 
 EXPERIENCE_OPTIONS = ["Beginner", "Experienced"]
 DEFAULT_PERIOD_OPTIONS = ["1D", "1W", "1M", "3M", "1Y", "ALL"]
 
 _TOAST = dict(position="bottom-right", duration=4000)
+
+
+def _restore_session(auth) -> None:
+    """Restore this user's session on the Supabase singleton before update_user."""
+    supabase = get_supabase()
+    supabase.auth.set_session(auth.auth_token, auth.auth_refresh_token)
 
 
 class SettingsState(rx.State):
@@ -166,7 +173,9 @@ class SettingsState(rx.State):
         self.delete_confirm_text = v
         self.delete_error = ""
 
-    # ── Load ──────────────────────────────────────────────────────────────────
+    # ─────────────────────────────────────────────────────────────────────────
+    # Load
+    # ─────────────────────────────────────────────────────────────────────────
 
     @rx.event
     async def load_settings(self):
@@ -174,11 +183,45 @@ class SettingsState(rx.State):
         if not auth.is_authenticated:
             yield rx.redirect("/")
             return
-        name = auth.user_display_name or ""
-        self.display_name = name
-        self.display_name_draft = name
-        self.display_name_editing = False
-        self._orig_name = name
+
+        if not AUTH_AVAILABLE:
+            name = auth.user_display_name or ""
+            self.display_name = name
+            self.display_name_draft = name
+            self._orig_name = name
+            self.display_name_editing = False
+            return
+
+        try:
+            supabase = get_supabase()
+            result = supabase.auth.get_user(auth.auth_token)
+            user = result.user
+            if user is None:
+                yield rx.redirect("/")
+                return
+
+            meta = user.user_metadata or {}
+            name = meta.get("full_name") or auth.user_display_name or ""
+            exp = meta.get("experience_level", "Beginner")
+            period = meta.get("default_chart_period", "1M")
+
+            self.display_name = name
+            self.display_name_draft = name
+            self.display_name_editing = False
+            self._orig_name = name
+            self.experience_level = exp
+            self._orig_exp = exp
+            self.default_chart_period = period
+            self._orig_period = period
+
+            auth.user_display_name = name
+
+        except Exception as e:
+            self.save_error = str(e)
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # Save display name
+    # ─────────────────────────────────────────────────────────────────────────
 
     @rx.event
     async def save_display_name(self):
@@ -187,10 +230,20 @@ class SettingsState(rx.State):
         self.save_error = ""
         try:
             name = self.display_name_draft.strip()
+            if not name:
+                self.save_error = "Display name cannot be empty."
+                return
 
             auth = await self.get_state(AuthState)
-            auth.user_display_name = name
 
+            if AUTH_AVAILABLE:
+                _restore_session(auth)
+                supabase = get_supabase()
+                result = supabase.auth.update_user({"data": {"full_name": name}})
+                if result.user is None:
+                    raise Exception("Update failed — Supabase returned no user.")
+
+            auth.user_display_name = name
             self.display_name = name
             self.display_name_draft = name
             self._orig_name = name
@@ -203,7 +256,9 @@ class SettingsState(rx.State):
         finally:
             self.loading_save = False
 
-    # ── Save ──────────────────────────────────────────────────────────────────
+    # ─────────────────────────────────────────────────────────────────────────
+    # Save preferences
+    # ─────────────────────────────────────────────────────────────────────────
 
     @rx.event
     async def save_all(self):
@@ -211,36 +266,35 @@ class SettingsState(rx.State):
         self.save_msg = ""
         self.save_error = ""
         try:
-            name = self.display_name.strip()
-
-            # Wire Supabase here:
-            # from ...utils.supabase import supabase
-            # result = supabase.auth.update_user({
-            #     "data": {
-            #         "full_name": name,
-            #         "experience_level": self.experience_level,
-            #         "default_chart_period": self.default_chart_period,
-            #     }
-            # })
-            # if result.user is None:
-            #     raise Exception("Update failed.")
-
             auth = await self.get_state(AuthState)
-            auth.user_display_name = name
 
-            self.display_name = name
-            self._orig_name = name
+            if AUTH_AVAILABLE:
+                _restore_session(auth)
+                supabase = get_supabase()
+                result = supabase.auth.update_user(
+                    {
+                        "data": {
+                            "experience_level": self.experience_level,
+                            "default_chart_period": self.default_chart_period,
+                        }
+                    }
+                )
+                if result.user is None:
+                    raise Exception("Update failed — Supabase returned no user.")
+
             self._orig_exp = self.experience_level
             self._orig_period = self.default_chart_period
             self.save_msg = "Saved"
-            yield rx.toast.success("Profile updated.", **_TOAST)
+            yield rx.toast.success("Preferences saved.", **_TOAST)
         except Exception as e:
             self.save_error = str(e)
             yield rx.toast.error(f"Failed to save: {e}", **_TOAST)
         finally:
             self.loading_save = False
 
-    # ── Password ──────────────────────────────────────────────────────────────
+    # ─────────────────────────────────────────────────────────────────────────
+    # Password change
+    # ─────────────────────────────────────────────────────────────────────────
 
     @rx.event
     async def save_password(self):
@@ -257,20 +311,53 @@ class SettingsState(rx.State):
         self.loading_password = True
         self.password_error = ""
         try:
-            # TODO: supabase.auth.update_user({"password": self.new_password})
-            self.password_msg = "Password updated."
+            auth = await self.get_state(AuthState)
+
+            if AUTH_AVAILABLE:
+                supabase = get_supabase()
+
+                # Verify old password — sign_in_with_password also establishes
+                # the session on the singleton so the subsequent update_user is
+                # authenticated correctly without needing set_session.
+                verify = supabase.auth.sign_in_with_password(
+                    {"email": auth.user_email, "password": self.old_password}
+                )
+                if verify.user is None:
+                    self.password_error = "Current password is incorrect."
+                    return
+
+                # Store the fresh tokens from re-auth
+                if verify.session:
+                    auth.auth_token = verify.session.access_token
+                    auth.auth_refresh_token = (
+                        verify.session.refresh_token or auth.auth_refresh_token
+                    )
+
+                result = supabase.auth.update_user({"password": self.new_password})
+                if result.user is None:
+                    raise Exception(
+                        "Password update failed — Supabase returned no user."
+                    )
+
             self.old_password = ""
             self.new_password = ""
             self.confirm_password = ""
             self.password_dialog_open = False
+            self.password_msg = "Password updated."
             yield rx.toast.success("Password changed successfully.", **_TOAST)
         except Exception as e:
-            self.password_error = str(e)
-            yield rx.toast.error(f"Failed to change password: {e}", **_TOAST)
+            msg = str(e)
+            if any(k in msg.lower() for k in ("invalid", "credentials", "wrong")):
+                self.password_error = "Current password is incorrect."
+            else:
+                self.password_error = msg
+            yield rx.toast.error("Failed to change password.", **_TOAST)
         finally:
             self.loading_password = False
 
-    # ── Delete account ────────────────────────────────────────────────────────
+    # ─────────────────────────────────────────────────────────────────────────
+    # Delete account
+    # ─────────────────────────────────────────────────────────────────────────
 
     @rx.event
     async def confirm_delete_account(self):
@@ -282,7 +369,23 @@ class SettingsState(rx.State):
         self.loading_delete = True
         self.delete_error = ""
         try:
-            # TODO: supabase.auth.admin.delete_user(user_id)
+            auth = await self.get_state(AuthState)
+
+            if AUTH_AVAILABLE:
+                supabase = get_supabase()
+                # Requires service role key on the client.
+                # If using anon key only, replace with a Supabase Edge Function.
+                supabase.auth.admin.delete_user(auth.user_id)
+                supabase.auth.sign_out()
+
+            auth.auth_token = ""
+            auth.auth_refresh_token = ""
+            auth.user_id = ""
+            auth.user_email = ""
+            auth.user_display_name = ""
+            auth.is_authenticated = False
+            auth.is_guest = True
+
             self.delete_dialog_open = False
             yield rx.redirect("/")
             yield rx.toast.info("Your account has been deleted.", **_TOAST)

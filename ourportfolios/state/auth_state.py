@@ -45,6 +45,13 @@ class AuthState(rx.State):
         max_age=3600,
         path="/",
     )
+    auth_refresh_token: str = rx.Cookie(
+        name="auth_refresh_token",
+        secure=True,
+        same_site="lax",
+        max_age=604800,  # 7 days — matches Supabase default refresh token expiry
+        path="/",
+    )
     intended_route: str = rx.Cookie(
         name="intended_route",
         secure=False,
@@ -160,7 +167,7 @@ class AuthState(rx.State):
     # Internal helpers
     # ─────────────────────────────────────────────────────────────────────────
 
-    def _store_session(self, user) -> None:
+    def _store_session(self, user, session=None) -> None:
         self.user_id = str(user.id)
         self.user_email = user.email or ""
         self.user_display_name = (
@@ -170,9 +177,13 @@ class AuthState(rx.State):
         )
         self.is_authenticated = True
         self.is_guest = False
+        if session:
+            self.auth_token = session.access_token
+            self.auth_refresh_token = session.refresh_token or ""
 
     def _clear_session(self) -> None:
         self.auth_token = ""
+        self.auth_refresh_token = ""
         self.user_id = ""
         self.user_email = ""
         self.user_display_name = ""
@@ -193,17 +204,9 @@ class AuthState(rx.State):
         return destination
 
     def _parse_code_from_url(self) -> str:
-        """
-        Extract ?code= from the current URL.
-        router.url replaces the deprecated router.page in Reflex 0.8.1+.
-        router.url.query_parameters is a dict of query string params.
-        Values may be a list (parse_qs style) or a plain string depending
-        on the Reflex version, so we handle both.
-        """
         try:
             params = self.router.url.query_parameters
             value = params.get("code", "")
-            # Handle parse_qs-style list values
             if isinstance(value, list):
                 return value[0] if value else ""
             return value or ""
@@ -351,8 +354,7 @@ class AuthState(rx.State):
                 {"email": self.email, "password": self.password}
             )
             if response.session:
-                self.auth_token = response.session.access_token
-                self._store_session(response.user)
+                self._store_session(response.user, response.session)
                 self._clear_form()
                 name = self.user_display_name or response.user.email or "back"
                 destination = self._consume_intended_route()
@@ -392,8 +394,7 @@ class AuthState(rx.State):
             )
             if response.user:
                 if response.session:
-                    self.auth_token = response.session.access_token
-                    self._store_session(response.user)
+                    self._store_session(response.user, response.session)
                     self._clear_form()
                     destination = self._consume_intended_route()
                     return [
@@ -454,8 +455,7 @@ class AuthState(rx.State):
             supabase = get_supabase()
             response = supabase.auth.exchange_code_for_session({"auth_code": code})
             if response.session:
-                self.auth_token = response.session.access_token
-                self._store_session(response.user)
+                self._store_session(response.user, response.session)
                 destination = self._consume_intended_route()
                 return [
                     rx.redirect(destination),
