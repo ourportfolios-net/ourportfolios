@@ -49,12 +49,19 @@ class AuthState(rx.State):
         name="auth_refresh_token",
         secure=True,
         same_site="lax",
-        max_age=604800,  # 7 days — matches Supabase default refresh token expiry
+        max_age=604800,
         path="/",
     )
     intended_route: str = rx.Cookie(
         name="intended_route",
         secure=False,
+        same_site="lax",
+        max_age=300,
+        path="/",
+    )
+    pkce_verifier: str = rx.Cookie(
+        name="pkce_verifier",
+        secure=True,
         same_site="lax",
         max_age=300,
         path="/",
@@ -203,10 +210,10 @@ class AuthState(rx.State):
         self.intended_route = ""
         return destination
 
-    def _parse_code_from_url(self) -> str:
+    def _parse_url_param(self, key: str) -> str:
         try:
-            params = self.router.url.query_parameters
-            value = params.get("code", "")
+            params = self.router.page.params
+            value = params.get(key, "")
             if isinstance(value, list):
                 return value[0] if value else ""
             return value or ""
@@ -432,6 +439,9 @@ class AuthState(rx.State):
                     "options": {"redirect_to": oauth_redirect_url()},
                 }
             )
+            # Persist PKCE code_verifier in a cookie so it survives the redirect
+            if hasattr(response, "code_verifier") and response.code_verifier:
+                self.pkce_verifier = response.code_verifier
             if response.url:
                 return rx.redirect(response.url)
         except Exception as e:
@@ -440,10 +450,46 @@ class AuthState(rx.State):
 
     @rx.event
     async def handle_oauth_callback(self):
+        """Handles both OAuth/Google (code + verifier) and email confirmation (token_hash + type)."""
         if not AUTH_AVAILABLE:
             return rx.redirect("/home")
 
-        code = self._parse_code_from_url()
+        # -- Email confirmation flow (token_hash + type) -----------------------
+        token_hash = self._parse_url_param("token_hash")
+        token_type = self._parse_url_param("type")
+
+        if token_hash and token_type:
+            try:
+                supabase = get_supabase()
+                response = supabase.auth.verify_otp(
+                    {"token_hash": token_hash, "type": token_type}
+                )
+                if response.session:
+                    self._store_session(response.user, response.session)
+                    destination = self._consume_intended_route()
+                    return [
+                        rx.redirect(destination),
+                        rx.toast.success(
+                            f"Email confirmed! Welcome, {self.user_display_name or self.user_email}!",
+                            **_TOAST,
+                        ),
+                    ]
+                else:
+                    return [
+                        rx.redirect("/auth"),
+                        rx.toast.error(
+                            "Confirmation failed. Please try again.", **_TOAST
+                        ),
+                    ]
+            except Exception as e:
+                self.error = str(e)
+                return [
+                    rx.redirect("/auth"),
+                    rx.toast.error(f"Confirmation failed: {e}", **_TOAST),
+                ]
+
+        # -- OAuth / Google flow (code + stored verifier) ----------------------
+        code = self._parse_url_param("code")
 
         if not code:
             return [
@@ -453,7 +499,14 @@ class AuthState(rx.State):
 
         try:
             supabase = get_supabase()
-            response = supabase.auth.exchange_code_for_session({"auth_code": code})
+            verifier = self.pkce_verifier
+            self.pkce_verifier = ""  # consume it
+
+            exchange_payload = {"auth_code": code}
+            if verifier:
+                exchange_payload["code_verifier"] = verifier
+
+            response = supabase.auth.exchange_code_for_session(exchange_payload)
             if response.session:
                 self._store_session(response.user, response.session)
                 destination = self._consume_intended_route()
