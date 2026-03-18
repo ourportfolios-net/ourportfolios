@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v0.15.2 (2026-03-18)
+
+### Bug Fixes
+
+- Support pkce
+  ([`906c5ba`](https://github.com/ourportfolios-net/ourportfolios/commit/906c5ba7a24f4693665928e1e150c469ed46dd88))
+
+### Chores
+
+- Squash domains to /auth
+  ([`1dcc1e4`](https://github.com/ourportfolios-net/ourportfolios/commit/1dcc1e49246397b08c360e60209d3d18395c751c))
+
+
 ## v0.15.1 (2026-03-17)
 
 ### Bug Fixes
