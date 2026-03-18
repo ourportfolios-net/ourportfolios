@@ -247,7 +247,24 @@ def _login_form() -> rx.Component:
         ),
         rx.cond(
             AuthState.error != "",
-            rx.text(AuthState.error, size="1", color=ERROR_COLOR),
+            rx.vstack(
+                rx.text(AuthState.error, size="1", color=ERROR_COLOR),
+                rx.cond(
+                    AuthState.show_resend,
+                    rx.text(
+                        "Resend confirmation email",
+                        size="1",
+                        color=white(0.5),
+                        text_decoration="underline",
+                        cursor="pointer",
+                        _hover={"color": "white"},
+                        on_click=AuthState.resend_confirmation,
+                    ),
+                    rx.fragment(),
+                ),
+                spacing="1",
+                align="start",
+            ),
             rx.text(" ", size="1"),
         ),
         _action_btn(
@@ -403,8 +420,6 @@ def _bg() -> rx.Component:
 
 
 @rx.page(route="/auth", on_load=AuthState.check_existing_session)
-@rx.page(route="/login", on_load=AuthState.check_existing_session)
-@rx.page(route="/register", on_load=AuthState.check_existing_session)
 def login() -> rx.Component:
     is_login = AuthState.auth_mode == "login"
 

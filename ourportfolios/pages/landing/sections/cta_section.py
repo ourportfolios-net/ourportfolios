@@ -43,7 +43,7 @@ def cta_section() -> rx.Component:
                                 transition="all 0.2s",
                                 cursor="pointer",
                             ),
-                            href="/login",
+                            href="/auth",
                         ),
                         rx.link(
                             badge_button(

@@ -2,19 +2,30 @@
 Place at: ourportfolios/state/auth_state.py
 """
 
+import secrets
+import hashlib
+import base64
+import httpx
 import reflex as rx
 
-from ..auth_config import AUTH_AVAILABLE, get_supabase, oauth_redirect_url
-
-_BLOCKED_DESTINATIONS = frozenset(
-    {"/auth", "/login", "/register", "/auth/callback", "/loading"}
+from ..auth_config import (
+    AUTH_AVAILABLE,
+    get_supabase,
+    oauth_redirect_url,
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY,
 )
+
+_BLOCKED_DESTINATIONS = frozenset({"/auth", "/auth/callback", "/loading"})
 
 _AUTH_ONLY_PREFIXES = (
     "/framework",
     "/portfolio",
     "/settings",
 )
+
+# Server-side PKCE store: nonce -> verifier
+_pkce_store: dict[str, str] = {}
 
 
 def _safe_destination(route: str) -> str:
@@ -33,6 +44,16 @@ def _is_auth_only(path: str) -> bool:
     return False
 
 
+def _generate_pkce() -> tuple[str, str]:
+    verifier = base64.urlsafe_b64encode(secrets.token_bytes(32)).rstrip(b"=").decode()
+    challenge = (
+        base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest())
+        .rstrip(b"=")
+        .decode()
+    )
+    return verifier, challenge
+
+
 _TOAST = dict(position="bottom-right", duration=4000)
 
 
@@ -49,7 +70,7 @@ class AuthState(rx.State):
         name="auth_refresh_token",
         secure=True,
         same_site="lax",
-        max_age=604800,  # 7 days — matches Supabase default refresh token expiry
+        max_age=604800,
         path="/",
     )
     intended_route: str = rx.Cookie(
@@ -79,6 +100,11 @@ class AuthState(rx.State):
     full_name: str = ""
     error: str = ""
     loading: bool = False
+
+    # ── Resend confirmation ───────────────────────────────────────────────────
+    show_resend: bool = False
+    resend_loading: bool = False
+    resend_sent: bool = False
 
     # ── Forgot password ───────────────────────────────────────────────────────
     forgot_open: bool = False
@@ -203,10 +229,10 @@ class AuthState(rx.State):
         self.intended_route = ""
         return destination
 
-    def _parse_code_from_url(self) -> str:
+    def _parse_url_param(self, key: str) -> str:
         try:
-            params = self.router.url.query_parameters
-            value = params.get("code", "")
+            params = self.router.page.params
+            value = params.get(key, "")
             if isinstance(value, list):
                 return value[0] if value else ""
             return value or ""
@@ -234,7 +260,7 @@ class AuthState(rx.State):
     @rx.event
     async def check_existing_session(self):
         self.session_checked = False
-        self.auth_mode = "register" if "/register" in self.router.url.path else "login"
+        self.auth_mode = "login"
 
         if not AUTH_AVAILABLE:
             self.session_checked = True
@@ -295,8 +321,6 @@ class AuthState(rx.State):
         self.intended_route = self.router.url.path
         return rx.redirect("/auth")
 
-    # ── Backward-compat aliases ───────────────────────────────────────────────
-
     @rx.event
     async def require_account(self):
         async for update in self.require_auth():
@@ -348,6 +372,7 @@ class AuthState(rx.State):
 
         self.loading = True
         self.error = ""
+        self.show_resend = False
         try:
             supabase = get_supabase()
             response = supabase.auth.sign_in_with_password(
@@ -366,8 +391,13 @@ class AuthState(rx.State):
                 self.error = "Invalid credentials."
                 return rx.toast.error("Invalid email or password.", **_TOAST)
         except Exception as e:
-            self.error = str(e)
-            return rx.toast.error(f"Sign in failed: {e}", **_TOAST)
+            msg = str(e).lower()
+            if "email not confirmed" in msg:
+                self.show_resend = True
+                self.error = "Please confirm your email before signing in."
+            else:
+                self.error = str(e)
+                return rx.toast.error(f"Sign in failed: {e}", **_TOAST)
         finally:
             self.loading = False
 
@@ -390,7 +420,11 @@ class AuthState(rx.State):
         try:
             supabase = get_supabase()
             response = supabase.auth.sign_up(
-                {"email": self.email, "password": self.password}
+                {
+                    "email": self.email,
+                    "password": self.password,
+                    "options": {"email_redirect_to": oauth_redirect_url()},
+                }
             )
             if response.user:
                 if response.session:
@@ -404,7 +438,7 @@ class AuthState(rx.State):
                 else:
                     self._clear_form()
                     return [
-                        rx.redirect("/login?registered=1"),
+                        rx.redirect("/auth"),
                         rx.toast.info(
                             "Check your email to confirm your account.", **_TOAST
                         ),
@@ -421,41 +455,128 @@ class AuthState(rx.State):
             self.loading = False
 
     @rx.event
+    async def resend_confirmation(self):
+        if not self.email:
+            self.error = "Enter your email above first."
+            return
+        self.resend_loading = True
+        try:
+            supabase = get_supabase()
+            supabase.auth.resend({"type": "signup", "email": self.email})
+            self.resend_sent = True
+            self.show_resend = False
+            return rx.toast.success(
+                "Confirmation email resent. Check your inbox.", **_TOAST
+            )
+        except Exception as e:
+            self.error = str(e)
+            return rx.toast.error(f"Failed to resend: {e}", **_TOAST)
+        finally:
+            self.resend_loading = False
+
+    @rx.event
     async def handle_google_login(self):
         if not AUTH_AVAILABLE:
             return
         try:
-            supabase = get_supabase()
-            response = supabase.auth.sign_in_with_oauth(
+            verifier, challenge = _generate_pkce()
+            nonce = secrets.token_urlsafe(16)
+            _pkce_store[nonce] = verifier
+
+            import urllib.parse
+
+            callback_with_nonce = f"{oauth_redirect_url()}?nonce={nonce}"
+            params = urllib.parse.urlencode(
                 {
                     "provider": "google",
-                    "options": {"redirect_to": oauth_redirect_url()},
+                    "redirect_to": callback_with_nonce,
+                    "code_challenge": challenge,
+                    "code_challenge_method": "S256",
                 }
             )
-            if response.url:
-                return rx.redirect(response.url)
+            url = f"{SUPABASE_URL}/auth/v1/authorize?{params}"
+            return rx.redirect(url)
         except Exception as e:
             self.error = str(e)
             return rx.toast.error(f"Google sign in failed: {e}", **_TOAST)
 
     @rx.event
     async def handle_oauth_callback(self):
+        """
+        Two cases:
+        1. Google OAuth (PKCE): ?code=...&nonce=...
+        2. Email confirmation via {{ .ConfirmationURL }}: no params,
+           Supabase already confirmed server-side — just redirect to login.
+        """
         if not AUTH_AVAILABLE:
             return rx.redirect("/home")
 
-        code = self._parse_code_from_url()
-
-        if not code:
+        # -- Email confirmation (token_hash + type as query params) -----------
+        # Supabase sends these when email_redirect_to is set on sign_up.
+        token_hash = self._parse_url_param("token_hash")
+        token_type = self._parse_url_param("type")
+        if token_hash and token_type:
+            try:
+                supabase = get_supabase()
+                response = supabase.auth.verify_otp(
+                    {"token_hash": token_hash, "type": token_type}
+                )
+                if response.session:
+                    self._store_session(response.user, response.session)
+                    destination = self._consume_intended_route()
+                    return [
+                        rx.redirect(destination),
+                        rx.toast.success(
+                            f"Email confirmed! Welcome, {self.user_display_name or self.user_email}!",
+                            **_TOAST,
+                        ),
+                    ]
+            except Exception as e:
+                self.error = str(e)
             return [
                 rx.redirect("/auth"),
-                rx.toast.error("Sign in failed. Please try again.", **_TOAST),
+                rx.toast.error(
+                    "Confirmation link expired. Please request a new one.", **_TOAST
+                ),
             ]
 
-        try:
-            supabase = get_supabase()
-            response = supabase.auth.exchange_code_for_session({"auth_code": code})
-            if response.session:
-                self._store_session(response.user, response.session)
+        # -- Google OAuth PKCE ------------------------------------------------
+        code = self._parse_url_param("code")
+        nonce = self._parse_url_param("nonce")
+        if code and nonce:
+            verifier = _pkce_store.pop(nonce, "")
+            if not verifier:
+                return [
+                    rx.redirect("/auth"),
+                    rx.toast.warning("Sign in timed out. Please try again.", **_TOAST),
+                ]
+            try:
+                async with httpx.AsyncClient() as client:
+                    resp = await client.post(
+                        f"{SUPABASE_URL}/auth/v1/token?grant_type=pkce",
+                        json={"auth_code": code, "code_verifier": verifier},
+                        headers={
+                            "apikey": SUPABASE_ANON_KEY,
+                            "Content-Type": "application/json",
+                        },
+                    )
+                data = resp.json()
+                if "error" in data:
+                    raise Exception(data.get("error_description", data["error"]))
+
+                access_token = data.get("access_token", "")
+                refresh_token = data.get("refresh_token", "")
+                if not access_token:
+                    raise Exception("No access token returned.")
+
+                supabase = get_supabase()
+                user_response = supabase.auth.get_user(access_token)
+                if not user_response or not user_response.user:
+                    raise Exception("Could not retrieve user.")
+
+                self.auth_token = access_token
+                self.auth_refresh_token = refresh_token
+                self._store_session(user_response.user)
                 destination = self._consume_intended_route()
                 return [
                     rx.redirect(destination),
@@ -464,18 +585,19 @@ class AuthState(rx.State):
                         **_TOAST,
                     ),
                 ]
-            else:
-                self.error = "OAuth exchange returned no session."
+            except Exception as e:
+                self.error = str(e)
                 return [
                     rx.redirect("/auth"),
-                    rx.toast.error("Sign in failed. Please try again.", **_TOAST),
+                    rx.toast.error(f"Sign in failed: {e}", **_TOAST),
                 ]
-        except Exception as e:
-            self.error = str(e)
-            return [
-                rx.redirect("/auth"),
-                rx.toast.error(f"Sign in failed: {e}", **_TOAST),
-            ]
+
+        # -- Email confirmation via {{ .ConfirmationURL }} --------------------
+        # Supabase confirmed the email before redirecting here. Just send to login.
+        return [
+            rx.redirect("/auth"),
+            rx.toast.success("Email confirmed! Please sign in.", **_TOAST),
+        ]
 
     @rx.event
     async def logout(self):
