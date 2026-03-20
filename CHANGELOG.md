@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v0.15.3 (2026-03-20)
+
+### Bug Fixes
+
+- **login**: Fix autocompletion logic
+  ([`3e58d66`](https://github.com/ourportfolios-net/ourportfolios/commit/3e58d6656ba7a129a83d08e3e3e3b8e65f21f7da))
+
+### Chores
+
+- **ruff**: Comply with checks
+  ([`12f7d09`](https://github.com/ourportfolios-net/ourportfolios/commit/12f7d0977ff8a7dadc824f4b6edbc56564b42866))
+
+
 ## v0.15.2 (2026-03-18)
 
 ### Bug Fixes
