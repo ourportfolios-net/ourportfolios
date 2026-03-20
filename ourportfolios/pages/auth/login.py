@@ -143,6 +143,7 @@ def _forgot_password_modal() -> rx.Component:
                                     AuthState.forgot_email,
                                     AuthState.set_forgot_email,
                                     "email",
+                                    auto_complete=False,
                                 ),
                                 spacing="0",
                                 width="100%",
@@ -208,7 +209,11 @@ def _login_form() -> rx.Component:
         rx.vstack(
             label("Email"),
             text_input(
-                "you@example.com", AuthState.email, AuthState.set_email, "email"
+                "you@example.com",
+                AuthState.email,
+                AuthState.set_email,
+                "email",
+                auto_complete=True,
             ),
             spacing="0",
             width="100%",
@@ -217,11 +222,10 @@ def _login_form() -> rx.Component:
         rx.vstack(
             rx.hstack(
                 rx.text(
-                    "PASSWORD",
-                    font_size="0.625rem",
-                    font_weight="700",
-                    color=white(0.35),
-                    letter_spacing="0.08em",
+                    "Password",
+                    size="1",
+                    color=white(0.5),
+                    weight="medium",
                 ),
                 rx.spacer(),
                 _inline_link("Forgot password?", AuthState.open_forgot),
@@ -235,10 +239,7 @@ def _login_form() -> rx.Component:
                 on_change=AuthState.set_password,
                 on_key_down=AuthState.handle_login_on_enter,
                 type="password",
-                custom_attrs={
-                    "autocomplete": "current-password",
-                    "name": "op_password_pas",
-                },
+                auto_complete=True,
                 **INPUT_OVERRIDE,
             ),
             spacing="0",
@@ -317,7 +318,13 @@ def _register_form() -> rx.Component:
         rx.box(height="0.25rem"),
         rx.vstack(
             label("Full name"),
-            text_input("Your name", AuthState.full_name, AuthState.set_full_name),
+            text_input(
+                "Your name",
+                AuthState.full_name,
+                AuthState.set_full_name,
+                "text",
+                auto_complete=False,
+            ),
             spacing="0",
             width="100%",
             align="start",
@@ -325,7 +332,11 @@ def _register_form() -> rx.Component:
         rx.vstack(
             label("Email"),
             text_input(
-                "you@example.com", AuthState.email, AuthState.set_email, "email"
+                "you@example.com",
+                AuthState.email,
+                AuthState.set_email,
+                "email",
+                auto_complete=False,
             ),
             spacing="0",
             width="100%",
@@ -334,11 +345,13 @@ def _register_form() -> rx.Component:
         rx.hstack(
             rx.vstack(
                 label("Password"),
-                text_input(
-                    "Min. 8 chars",
-                    AuthState.password,
-                    AuthState.set_password,
-                    "password",
+                rx.input(
+                    placeholder="Min. 8 chars",
+                    value=AuthState.password,
+                    on_change=AuthState.set_password,
+                    type="password",
+                    auto_complete=False,
+                    **INPUT_OVERRIDE,
                 ),
                 spacing="0",
                 width="100%",
@@ -352,10 +365,7 @@ def _register_form() -> rx.Component:
                     on_change=AuthState.set_confirm_password,
                     on_key_down=AuthState.handle_register_on_enter,
                     type="password",
-                    custom_attrs={
-                        "autocomplete": "new-password",
-                        "name": "op_password_rep",
-                    },
+                    auto_complete=False,
                     **INPUT_OVERRIDE,
                 ),
                 spacing="0",

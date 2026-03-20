@@ -41,22 +41,25 @@ def session_check_screen() -> rx.Component:
 
 
 def label(text: str) -> rx.Component:
-    return rx.box(rx.text(text, **LABEL_STYLE), margin_bottom="0.4rem")
+    return rx.box(
+        rx.text(text, size="1", color=white(0.5), weight="medium"),
+        margin_bottom="0.4rem",
+    )
 
 
 def text_input(
-    placeholder: str, value, on_change, field_type: str = "text"
+    placeholder: str,
+    value,
+    on_change,
+    field_type: str = "text",
+    auto_complete: bool = False,
 ) -> rx.Component:
-    ac = "new-password" if field_type == "password" else "chrome-off"
     return rx.input(
         placeholder=placeholder,
         value=value,
         on_change=on_change,
         type=field_type,
-        custom_attrs={
-            "autocomplete": ac,
-            "name": f"op_{field_type}_{placeholder[:3].lower().replace(' ', '_')}",
-        },
+        auto_complete=auto_complete,
         **INPUT_OVERRIDE,
     )
 

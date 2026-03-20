@@ -129,11 +129,19 @@ class AuthState(rx.State):
     @rx.event
     def set_mode_login(self):
         self.auth_mode = "login"
+        self.email = ""
+        self.password = ""
+        self.confirm_password = ""
+        self.full_name = ""
         self.error = ""
 
     @rx.event
     def set_mode_register(self):
         self.auth_mode = "register"
+        self.email = ""
+        self.password = ""
+        self.confirm_password = ""
+        self.full_name = ""
         self.error = ""
 
     @rx.event
