@@ -173,12 +173,12 @@ def create_tickers_schema(schema_name: str, engine: Engine) -> tuple[MetaData, d
     with engine.connect() as conn:
         conn.execute(sa_text(f"CREATE SCHEMA IF NOT EXISTS {schema_name}"))
         conn.commit()
-    print("[schema] ✓ Schema created")
+    print("[schema] Schema created")
 
     metadata.create_all(engine, checkfirst=True)
     table_names = ", ".join(t.name for t in metadata.sorted_tables)
-    print(f"[schema] ✓ Tables: {table_names}")
-    print("[schema] ✓ Indexes: idx_price_history_symbol, idx_price_history_date_brin")
+    print(f"[schema] Tables: {table_names}")
+    print("[schema] Indexes: idx_price_history_symbol, idx_price_history_date_brin")
     print("[schema] Done")
 
     return metadata, tables
