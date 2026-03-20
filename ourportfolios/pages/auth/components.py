@@ -7,7 +7,6 @@ from ...styles import (
     CARD_BG,
     CARD_BORDER,
     INPUT_STYLE,
-    LABEL_STYLE,
     TEXT_MUTED,
 )
 
