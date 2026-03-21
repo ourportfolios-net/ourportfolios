@@ -24,9 +24,6 @@ _AUTH_ONLY_PREFIXES = (
     "/settings",
 )
 
-# Server-side PKCE store: nonce -> verifier
-_pkce_store: dict[str, str] = {}
-
 
 def _safe_destination(route: str) -> str:
     if not route:
@@ -80,6 +77,15 @@ class AuthState(rx.State):
         max_age=300,
         path="/",
     )
+    # PKCE verifier stored in a short-lived cookie so it survives redirects
+    # across server restarts and multiple workers
+    _pkce_verifier: str = rx.Cookie(
+        name="pkce_verifier",
+        secure=True,
+        same_site="lax",
+        max_age=300,
+        path="/",
+    )
 
     # ── Session ───────────────────────────────────────────────────────────────
     user_id: str = ""
@@ -112,6 +118,13 @@ class AuthState(rx.State):
     forgot_error: str = ""
     forgot_loading: bool = False
     forgot_sent: bool = False
+
+    # ── Reset password (after clicking email link) ────────────────────────────
+    reset_new_password: str = ""
+    reset_confirm_password: str = ""
+    reset_error: str = ""
+    reset_loading: bool = False
+    reset_done: bool = False
 
     # ─────────────────────────────────────────────────────────────────────────
     # Computed
@@ -166,6 +179,18 @@ class AuthState(rx.State):
     @rx.event
     def set_user_display_name(self, value: str):
         self.user_display_name = value
+
+    # ── Reset password setters ────────────────────────────────────────────────
+
+    @rx.event
+    def set_reset_new_password(self, value: str):
+        self.reset_new_password = value
+        self.reset_error = ""
+
+    @rx.event
+    def set_reset_confirm_password(self, value: str):
+        self.reset_confirm_password = value
+        self.reset_error = ""
 
     # ── Enter-key submit helpers ──────────────────────────────────────────────
 
@@ -488,16 +513,14 @@ class AuthState(rx.State):
             return
         try:
             verifier, challenge = _generate_pkce()
-            nonce = secrets.token_urlsafe(16)
-            _pkce_store[nonce] = verifier
+            self._pkce_verifier = verifier
 
             import urllib.parse
 
-            callback_with_nonce = f"{oauth_redirect_url()}?nonce={nonce}"
             params = urllib.parse.urlencode(
                 {
                     "provider": "google",
-                    "redirect_to": callback_with_nonce,
+                    "redirect_to": oauth_redirect_url(),
                     "code_challenge": challenge,
                     "code_challenge_method": "S256",
                 }
@@ -510,17 +533,9 @@ class AuthState(rx.State):
 
     @rx.event
     async def handle_oauth_callback(self):
-        """
-        Two cases:
-        1. Google OAuth (PKCE): ?code=...&nonce=...
-        2. Email confirmation via {{ .ConfirmationURL }}: no params,
-           Supabase already confirmed server-side — just redirect to login.
-        """
         if not AUTH_AVAILABLE:
             return rx.redirect("/home")
 
-        # -- Email confirmation (token_hash + type as query params) -----------
-        # Supabase sends these when email_redirect_to is set on sign_up.
         token_hash = self._parse_url_param("token_hash")
         token_type = self._parse_url_param("type")
         if token_hash and token_type:
@@ -531,6 +546,8 @@ class AuthState(rx.State):
                 )
                 if response.session:
                     self._store_session(response.user, response.session)
+                    if token_type == "recovery":
+                        return rx.redirect("/auth/reset-callback")
                     destination = self._consume_intended_route()
                     return [
                         rx.redirect(destination),
@@ -548,11 +565,10 @@ class AuthState(rx.State):
                 ),
             ]
 
-        # -- Google OAuth PKCE ------------------------------------------------
         code = self._parse_url_param("code")
-        nonce = self._parse_url_param("nonce")
-        if code and nonce:
-            verifier = _pkce_store.pop(nonce, "")
+        if code:
+            verifier = self._pkce_verifier
+            self._pkce_verifier = ""
             if not verifier:
                 return [
                     rx.redirect("/auth"),
@@ -600,8 +616,6 @@ class AuthState(rx.State):
                     rx.toast.error(f"Sign in failed: {e}", **_TOAST),
                 ]
 
-        # -- Email confirmation via {{ .ConfirmationURL }} --------------------
-        # Supabase confirmed the email before redirecting here. Just send to login.
         return [
             rx.redirect("/auth"),
             rx.toast.success("Email confirmed! Please sign in.", **_TOAST),
@@ -644,3 +658,59 @@ class AuthState(rx.State):
             self.forgot_error = str(e)
         finally:
             self.forgot_loading = False
+
+    # ── Reset password ────────────────────────────────────────────────────────
+
+    @rx.event
+    async def handle_reset_callback(self):
+        """Dedicated callback for password reset emails — no ambiguity with email confirmation."""
+        if not AUTH_AVAILABLE:
+            return rx.redirect("/auth/reset-password")
+
+        token_hash = self._parse_url_param("token_hash")
+        if not token_hash:
+            return [
+                rx.redirect("/auth"),
+                rx.toast.error("Invalid or expired reset link.", **_TOAST),
+            ]
+
+        try:
+            supabase = get_supabase()
+            response = supabase.auth.verify_otp(
+                {"token_hash": token_hash, "type": "recovery"}
+            )
+            if response.session:
+                self._store_session(response.user, response.session)
+                return rx.redirect("/auth/reset-password")
+        except Exception:
+            pass
+
+        return [
+            rx.redirect("/auth"),
+            rx.toast.error("Reset link expired. Please request a new one.", **_TOAST),
+        ]
+
+    @rx.event
+    async def handle_reset_password(self):
+        if self.reset_new_password != self.reset_confirm_password:
+            self.reset_error = "Passwords do not match."
+            return
+
+        if len(self.reset_new_password) < 8:
+            self.reset_error = "Password must be at least 8 characters."
+            return
+
+        self.reset_loading = True
+        self.reset_error = ""
+        try:
+            supabase = get_supabase()
+            supabase.auth.update_user({"password": self.reset_new_password})
+            self.reset_done = True
+            self.reset_new_password = ""
+            self.reset_confirm_password = ""
+            return rx.toast.success("Password updated! Please sign in.", **_TOAST)
+        except Exception as e:
+            self.reset_error = str(e)
+            return rx.toast.error(f"Failed to update password: {e}", **_TOAST)
+        finally:
+            self.reset_loading = False

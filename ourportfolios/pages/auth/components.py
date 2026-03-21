@@ -4,10 +4,13 @@ import reflex as rx
 from ...state.auth_state import AuthState
 from ...styles import (
     white,
+    purple,
     CARD_BG,
     CARD_BORDER,
     INPUT_STYLE,
+    TEXT_PRIMARY,
     TEXT_MUTED,
+    PAGE_BG,
 )
 
 INPUT_OVERRIDE = {
@@ -16,6 +19,9 @@ INPUT_OVERRIDE = {
     "height": "3rem",
     "padding": "0 0.9rem",
 }
+
+
+# ── Primitives ────────────────────────────────────────────────────────────────
 
 
 def session_check_screen() -> rx.Component:
@@ -33,7 +39,7 @@ def session_check_screen() -> rx.Component:
         ),
         position="fixed",
         inset="0",
-        background="#090909",
+        background=PAGE_BG,
         z_index="9999",
         overflow="hidden",
     )
@@ -60,6 +66,33 @@ def text_input(
         type=field_type,
         auto_complete=auto_complete,
         **INPUT_OVERRIDE,
+    )
+
+
+def action_btn(label_text: str, on_click, loading, loading_label: str) -> rx.Component:
+    return rx.box(
+        rx.cond(
+            loading,
+            rx.hstack(
+                rx.spinner(size="1"),
+                rx.text(loading_label, size="2", color=TEXT_MUTED),
+                spacing="2",
+                align="center",
+            ),
+            rx.text(label_text, size="2", weight="medium", color=TEXT_PRIMARY),
+        ),
+        width="100%",
+        height="3rem",
+        background=white(0.08),
+        border=f"1px solid {white(0.14)}",
+        border_radius="0.625rem",
+        cursor="pointer",
+        transition="background 0.15s, border-color 0.15s",
+        _hover={"background": white(0.13), "border_color": white(0.22)},
+        on_click=on_click,
+        display="flex",
+        align_items="center",
+        justify_content="center",
     )
 
 
@@ -118,5 +151,56 @@ def auth_card(*children, **props) -> rx.Component:
         padding="2rem",
         width="27rem",
         flex_shrink="0",
+        **props,
+    )
+
+
+# ── Shared layout pieces ──────────────────────────────────────────────────────
+
+
+def auth_bg() -> rx.Component:
+    """Purple glow orb — shared by all auth pages."""
+    return rx.box(
+        rx.box(
+            position="absolute",
+            top="-8rem",
+            left="50%",
+            transform="translateX(-50%)",
+            width="50rem",
+            height="32rem",
+            background=f"radial-gradient(ellipse at 50% 0%, {purple(0.18)} 0%, transparent 65%)",
+            pointer_events="none",
+        ),
+        position="absolute",
+        inset="0",
+        pointer_events="none",
+        overflow="hidden",
+        z_index="0",
+    )
+
+
+def auth_page_shell(*children) -> rx.Component:
+    """Outer page wrapper — dark bg, centered content."""
+    return rx.box(
+        auth_bg(),
+        *children,
+        position="relative",
+        background=PAGE_BG,
+        color="white",
+        min_height="100vh",
+        width="100%",
+        overflow_x="hidden",
+    )
+
+
+def auth_centered(*children, **props) -> rx.Component:
+    """Absolutely centered card slot."""
+    return rx.box(
+        *children,
+        position="absolute",
+        inset="0",
+        display="flex",
+        align_items="center",
+        justify_content="center",
         **props,
     )
