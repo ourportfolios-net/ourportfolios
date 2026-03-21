@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v0.15.4 (2026-03-21)
+
+### Bug Fixes
+
+- Add missing reset password page
+  ([`9c4c3bf`](https://github.com/ourportfolios-net/ourportfolios/commit/9c4c3bf4918d7b69a880cd57752e3b4988ec7455))
+
+### Chores
+
+- **ruff**: Comply with checks
+  ([`ea3cb2f`](https://github.com/ourportfolios-net/ourportfolios/commit/ea3cb2f362bab0b4254d9d3c59343cb156b2f3d6))
+
+
 ## v0.15.3 (2026-03-20)
 
 ### Bug Fixes
