@@ -682,7 +682,7 @@ class AuthState(rx.State):
             if response.session:
                 self._store_session(response.user, response.session)
                 return rx.redirect("/auth/reset-password")
-        except Exception as e:
+        except Exception:
             pass
 
         return [

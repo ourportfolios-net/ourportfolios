@@ -2,7 +2,7 @@
 
 import reflex as rx
 from ...state.auth_state import AuthState
-from ...styles import white, TEXT_PRIMARY, TEXT_TERTIARY, TEXT_MUTED, ERROR_COLOR
+from ...styles import white, TEXT_PRIMARY, TEXT_TERTIARY, ERROR_COLOR
 from .components import (
     label,
     action_btn,
