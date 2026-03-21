@@ -4,18 +4,21 @@ import reflex as rx
 from ...state.auth_state import AuthState
 from ...styles import (
     white,
-    purple,
     TEXT_PRIMARY,
     TEXT_TERTIARY,
     TEXT_MUTED,
     ERROR_COLOR,
 )
+from ...components.common_dialog import common_dialog
 from .components import (
     label,
     text_input,
+    action_btn,
     divider_with_text,
     google_button,
     auth_card,
+    auth_page_shell,
+    auth_centered,
     session_check_screen,
     INPUT_OVERRIDE,
 )
@@ -26,7 +29,6 @@ def _inline_link(label_text: str, on_click) -> rx.Component:
         label_text,
         size="1",
         color=white(0.5),
-        text_decoration="none",
         cursor="pointer",
         transition="color 0.15s ease, text-decoration 0.15s ease",
         _hover={"color": "white", "text_decoration": "underline"},
@@ -35,153 +37,91 @@ def _inline_link(label_text: str, on_click) -> rx.Component:
     )
 
 
-def _action_btn(label_text: str, on_click, loading, loading_label: str) -> rx.Component:
-    return rx.box(
-        rx.cond(
-            loading,
+def _footer_row(prompt: str, link_text: str, on_click) -> rx.Component:
+    return rx.hstack(
+        rx.text(prompt, size="1", color=TEXT_MUTED),
+        _inline_link(link_text, on_click),
+        spacing="2",
+        align="center",
+        justify="center",
+        width="100%",
+    )
+
+
+def _forgot_password_content() -> rx.Component:
+    return rx.cond(
+        AuthState.forgot_sent,
+        rx.vstack(
             rx.hstack(
-                rx.spinner(size="1"),
-                rx.text(loading_label, size="2", color=TEXT_MUTED),
+                rx.icon("circle-check", size=15, color=white(0.4)),
+                rx.text("Reset link sent", size="2", weight="medium", color=white(0.6)),
                 spacing="2",
                 align="center",
+                padding="0.6rem 0.875rem",
+                background=white(0.04),
+                border=f"1px solid {white(0.09)}",
+                border_radius="0.625rem",
+                width="100%",
+                justify="center",
             ),
-            rx.text(label_text, size="2", weight="medium", color=TEXT_PRIMARY),
+            rx.text(
+                "Check your inbox — if that address is registered you'll get the link shortly.",
+                size="1",
+                color=white(0.35),
+                line_height="1.65",
+                text_align="center",
+            ),
+            action_btn("Done", AuthState.close_forgot, False, ""),
+            spacing="3",
+            width="100%",
+            align="center",
         ),
-        width="100%",
-        height="3rem",
-        background=white(0.08),
-        border=f"1px solid {white(0.14)}",
-        border_radius="0.625rem",
-        cursor="pointer",
-        transition="background 0.15s, border-color 0.15s",
-        _hover={"background": white(0.13), "border_color": white(0.22)},
-        on_click=on_click,
-        display="flex",
-        align_items="center",
-        justify_content="center",
+        rx.vstack(
+            rx.text(
+                "We'll send a reset link to your email address.",
+                size="1",
+                color=white(0.35),
+                line_height="1.6",
+            ),
+            rx.vstack(
+                label("Email"),
+                text_input(
+                    "you@example.com",
+                    AuthState.forgot_email,
+                    AuthState.set_forgot_email,
+                    "email",
+                    auto_complete=False,
+                ),
+                spacing="0",
+                width="100%",
+                align="start",
+            ),
+            rx.cond(
+                AuthState.forgot_error != "",
+                rx.text(AuthState.forgot_error, size="1", color=ERROR_COLOR),
+                rx.text(" ", size="1"),
+            ),
+            action_btn(
+                "Send reset link",
+                AuthState.handle_forgot_password,
+                AuthState.forgot_loading,
+                "Sending…",
+            ),
+            spacing="3",
+            width="100%",
+        ),
     )
 
 
 def _forgot_password_modal() -> rx.Component:
-    return rx.cond(
-        AuthState.forgot_open,
-        rx.box(
-            rx.box(
-                position="fixed",
-                inset="0",
-                background="rgba(0, 0, 0, 0.75)",
-                backdrop_filter="blur(2px)",
-                z_index="200",
-                on_click=AuthState.close_forgot,
-            ),
-            rx.box(
-                rx.vstack(
-                    rx.hstack(
-                        rx.text(
-                            "Reset password",
-                            font_size="1.0625rem",
-                            weight="bold",
-                            color=TEXT_PRIMARY,
-                            letter_spacing="-0.02em",
-                        ),
-                        rx.spacer(),
-                        rx.box(
-                            rx.icon("x", size=14, color=white(0.35)),
-                            cursor="pointer",
-                            padding="0.2rem",
-                            border_radius="0.35rem",
-                            transition="background 0.1s",
-                            _hover={"background": white(0.08)},
-                            on_click=AuthState.close_forgot,
-                        ),
-                        width="100%",
-                        align="center",
-                    ),
-                    rx.cond(
-                        AuthState.forgot_sent,
-                        rx.vstack(
-                            rx.hstack(
-                                rx.icon("circle-check", size=15, color=white(0.4)),
-                                rx.text(
-                                    "Reset link sent",
-                                    size="2",
-                                    weight="medium",
-                                    color=white(0.6),
-                                ),
-                                spacing="2",
-                                align="center",
-                                padding="0.6rem 0.875rem",
-                                background=white(0.04),
-                                border=f"1px solid {white(0.09)}",
-                                border_radius="0.625rem",
-                                width="100%",
-                                justify="center",
-                            ),
-                            rx.text(
-                                "Check your inbox — if that address is registered you'll get the link shortly.",
-                                size="1",
-                                color=white(0.35),
-                                line_height="1.65",
-                                text_align="center",
-                            ),
-                            _action_btn("Done", AuthState.close_forgot, False, ""),
-                            spacing="3",
-                            width="100%",
-                            align="center",
-                        ),
-                        rx.vstack(
-                            rx.text(
-                                "We'll send a reset link to your email address.",
-                                size="1",
-                                color=white(0.35),
-                                line_height="1.6",
-                            ),
-                            rx.vstack(
-                                label("Email"),
-                                text_input(
-                                    "you@example.com",
-                                    AuthState.forgot_email,
-                                    AuthState.set_forgot_email,
-                                    "email",
-                                    auto_complete=False,
-                                ),
-                                spacing="0",
-                                width="100%",
-                                align="start",
-                            ),
-                            rx.cond(
-                                AuthState.forgot_error != "",
-                                rx.text(
-                                    AuthState.forgot_error, size="1", color=ERROR_COLOR
-                                ),
-                                rx.text(" ", size="1"),
-                            ),
-                            _action_btn(
-                                "Send reset link",
-                                AuthState.handle_forgot_password,
-                                AuthState.forgot_loading,
-                                "Sending…",
-                            ),
-                            spacing="3",
-                            width="100%",
-                        ),
-                    ),
-                    spacing="4",
-                    width="100%",
-                ),
-                position="fixed",
-                top="50%",
-                left="50%",
-                transform="translate(-50%, -50%)",
-                z_index="201",
-                background="#0e0e0e",
-                border=f"1px solid {white(0.1)}",
-                border_radius="1rem",
-                padding="1.5rem",
-                width="22rem",
-            ),
-        ),
-        rx.fragment(),
+    return common_dialog(
+        content=_forgot_password_content(),
+        is_open=AuthState.forgot_open,
+        on_close=AuthState.close_forgot,
+        title="Reset password",
+        width="22rem",
+        height="auto",
+        padding="1.5rem",
     )
 
 
@@ -221,12 +161,7 @@ def _login_form() -> rx.Component:
         ),
         rx.vstack(
             rx.hstack(
-                rx.text(
-                    "Password",
-                    size="1",
-                    color=white(0.5),
-                    weight="medium",
-                ),
+                rx.text("Password", size="1", color=white(0.5), weight="medium"),
                 rx.spacer(),
                 _inline_link("Forgot password?", AuthState.open_forgot),
                 width="100%",
@@ -268,26 +203,14 @@ def _login_form() -> rx.Component:
             ),
             rx.text(" ", size="1"),
         ),
-        _action_btn(
-            "Sign in", AuthState.handle_login, AuthState.loading, "Signing in…"
-        ),
+        action_btn("Sign in", AuthState.handle_login, AuthState.loading, "Signing in…"),
         divider_with_text("or"),
         google_button(),
-        rx.hstack(
-            rx.text("Don't have an account?", size="1", color=TEXT_MUTED),
-            _inline_link("Create one", AuthState.set_mode_register),
-            spacing="2",
-            align="center",
-            justify="center",
-            width="100%",
+        _footer_row(
+            "Don't have an account?", "Create one", AuthState.set_mode_register
         ),
-        rx.hstack(
-            rx.text("Only trying things out?", size="1", color=TEXT_MUTED),
-            _inline_link("Be ourguest", AuthState.continue_as_guest),
-            spacing="2",
-            align="center",
-            justify="center",
-            width="100%",
+        _footer_row(
+            "Only trying things out?", "Be ourguest", AuthState.continue_as_guest
         ),
         spacing="4",
         width="100%",
@@ -380,7 +303,7 @@ def _register_form() -> rx.Component:
             rx.text(AuthState.error, size="1", color=ERROR_COLOR),
             rx.text("At least 8 characters.", size="1", color=TEXT_MUTED),
         ),
-        _action_btn(
+        action_btn(
             "Create account",
             AuthState.handle_register,
             AuthState.loading,
@@ -395,37 +318,10 @@ def _register_form() -> rx.Component:
             text_align="center",
             line_height="1.6",
         ),
-        rx.hstack(
-            rx.text("Already have an account?", size="1", color=TEXT_MUTED),
-            _inline_link("Sign in", AuthState.set_mode_login),
-            spacing="2",
-            align="center",
-            justify="center",
-            width="100%",
-        ),
+        _footer_row("Already have an account?", "Sign in", AuthState.set_mode_login),
         spacing="4",
         width="100%",
         align="start",
-    )
-
-
-def _bg() -> rx.Component:
-    return rx.box(
-        rx.box(
-            position="absolute",
-            top="-8rem",
-            left="50%",
-            transform="translateX(-50%)",
-            width="50rem",
-            height="32rem",
-            background=f"radial-gradient(ellipse at 50% 0%, {purple(0.18)} 0%, transparent 65%)",
-            pointer_events="none",
-        ),
-        position="absolute",
-        inset="0",
-        pointer_events="none",
-        overflow="hidden",
-        z_index="0",
     )
 
 
@@ -437,40 +333,24 @@ def login() -> rx.Component:
         rx.cond(~AuthState.session_checked, session_check_screen(), rx.fragment()),
         rx.cond(
             AuthState.session_checked,
-            rx.box(
-                _bg(),
+            auth_page_shell(
                 _forgot_password_modal(),
-                rx.box(
+                auth_centered(
                     auth_card(_register_form()),
-                    position="absolute",
-                    inset="0",
-                    display="flex",
-                    align_items="center",
-                    justify_content="center",
                     opacity=rx.cond(is_login, "0", "1"),
                     pointer_events=rx.cond(is_login, "none", "auto"),
                     transition="opacity 0.15s ease",
                 ),
-                rx.box(
+                auth_centered(
                     auth_card(_login_form()),
-                    position="absolute",
-                    inset="0",
-                    display="flex",
-                    align_items="center",
-                    justify_content="center",
                     opacity=rx.cond(is_login, "1", "0"),
                     pointer_events=rx.cond(is_login, "auto", "none"),
                     transition="opacity 0.15s ease",
                 ),
-                position="relative",
-                min_height="100vh",
             ),
             rx.fragment(),
         ),
         position="relative",
-        background="#090909",
-        color="white",
         min_height="100vh",
         width="100%",
-        overflow_x="hidden",
     )
