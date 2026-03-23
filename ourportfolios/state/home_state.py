@@ -3,9 +3,50 @@
 import asyncio
 import traceback
 import reflex as rx
-from sqlalchemy import select, func, desc
+from sqlalchemy import (
+    Table,
+    Column,
+    String,
+    Float,
+    MetaData,
+    select,
+    func,
+    desc,
+)
 from ..utils.database.database import get_company_session
 from ..utils.database.models import VNIndexORM, PriceORM, OverviewORM, ProfileORM
+
+_market_meta = MetaData(schema="market")
+
+
+def _change_table(name: str) -> Table:
+    return Table(
+        name,
+        _market_meta,
+        Column("symbol", String),
+        Column("pct_change", Float),
+        Column("market_cap", Float),
+        Column("industry", String),
+    )
+
+
+_CHANGE_TABLES = {
+    "1W": _change_table("weekly_changes"),
+    "1M": _change_table("monthly_changes"),
+    "1Q": _change_table("quarterly_changes"),
+    "1Y": _change_table("yearly_changes"),
+}
+
+_PERIOD_LABEL = {
+    "1D": "Day",
+    "1W": "Week",
+    "1M": "Month",
+    "1Q": "Quarter",
+    "1Y": "Year",
+}
+
+_profile = ProfileORM.__table__
+_price = PriceORM.__table__
 
 
 class HomeState(rx.State):
@@ -25,6 +66,7 @@ class HomeState(rx.State):
     vnindex_chart_data: list[dict] = []
     vnindex_value: str = ""
     vnindex_change: str = ""
+    vnindex_pct_change: str = ""
     vnindex_is_positive: bool = True
 
     _base_portfolio_value: float = 142590.22
@@ -42,6 +84,7 @@ class HomeState(rx.State):
     ticker_of_day_industry: str = ""
     ticker_of_day_price: str = ""
     ticker_of_day_change: str = ""
+    ticker_period_label: str = "Day"
 
     @rx.event(background=True)
     async def load_vnindex_data(self) -> None:
@@ -60,19 +103,19 @@ class HomeState(rx.State):
             previous_close: float = rows[0].close or 0.0
             current_value: float = rows[-1].close or 0.0
             change: float = current_value - previous_close
-            sign = "+" if change >= 0 else ""
+            sign = "+" if change >= 0 else "-"
 
             chart_data: list[dict] = []
             today_rows = rows[1:]
 
             if today_rows:
-                close_values: list[float] = [r.close or 0.0 for r in today_rows]
-                min_val: float = min(close_values)
-                max_val: float = max(close_values)
+                close_values = [r.close or 0.0 for r in today_rows]
+                min_val = min(close_values)
+                max_val = max(close_values)
 
                 for row in today_rows:
-                    row_close: float = row.close or 0.0
-                    normalized: float = (
+                    row_close = row.close or 0.0
+                    normalized = (
                         (row_close - min_val) / (max_val - min_val)
                         if max_val > min_val
                         else 0.5
@@ -87,6 +130,8 @@ class HomeState(rx.State):
             async with self:
                 self.vnindex_value = f"{current_value:,.2f}"
                 self.vnindex_change = f"{sign}{abs(change):.2f}"
+                pct = (change / previous_close * 100) if previous_close else 0.0
+                self.vnindex_pct_change = f"{sign}{abs(pct):.2f}%"
                 self.vnindex_is_positive = bool(change >= 0)
                 self.vnindex_chart_data = chart_data
 
@@ -98,60 +143,87 @@ class HomeState(rx.State):
                 self.vnindex_change = "N/A"
 
     @rx.event(background=True)
-    async def load_ticker_of_day(self) -> None:
+    async def load_ticker_for_period(self, period: str = "1D") -> None:
+        label = _PERIOD_LABEL.get(period, "Day")
         try:
             async with get_company_session() as session:
-                score = (
-                    PriceORM.accumulated_volume * func.abs(PriceORM.pct_price_change)
-                ).label("score")
-                stmt = (
-                    select(
-                        PriceORM.symbol,
-                        PriceORM.pct_price_change,
-                        PriceORM.accumulated_volume,
-                        PriceORM.current_price,
-                        OverviewORM.industry,
-                        ProfileORM.company_name,
-                        score,
+                if period == "1D":
+                    score = (
+                        PriceORM.accumulated_volume
+                        * func.abs(PriceORM.pct_price_change)
+                    ).label("score")
+                    stmt = (
+                        select(
+                            PriceORM.symbol,
+                            PriceORM.pct_price_change.label("pct_change"),
+                            PriceORM.current_price,
+                            OverviewORM.industry,
+                            ProfileORM.company_name,
+                            score,
+                        )
+                        .join(OverviewORM, PriceORM.symbol == OverviewORM.symbol)
+                        .join(ProfileORM, PriceORM.symbol == ProfileORM.symbol)
+                        .where(PriceORM.pct_price_change > 0)
+                        .order_by(desc(score))
+                        .limit(1)
                     )
-                    .join(OverviewORM, PriceORM.symbol == OverviewORM.symbol)
-                    .join(ProfileORM, PriceORM.symbol == ProfileORM.symbol)
-                    .where(PriceORM.pct_price_change > 0)
-                    .order_by(desc(score))
-                    .limit(1)
-                )
+                else:
+                    ct = _CHANGE_TABLES[period]
+                    score = (ct.c.market_cap * func.abs(ct.c.pct_change)).label("score")
+                    stmt = (
+                        select(
+                            ct.c.symbol,
+                            ct.c.pct_change,
+                            _price.c.current_price,
+                            ct.c.industry,
+                            _profile.c.company_name,
+                            score,
+                        )
+                        .join(_profile, ct.c.symbol == _profile.c.symbol)
+                        .join(_price, ct.c.symbol == _price.c.symbol)
+                        .where(ct.c.pct_change > 0)
+                        .order_by(desc(score))
+                        .limit(1)
+                    )
+
                 result = await session.execute(stmt)
                 row = result.mappings().first()
 
             if row is not None:
-                price: float = row["current_price"] or 0.0
-                pct: float = row["pct_price_change"] or 0.0
+                price = float(row["current_price"] or 0.0)
+                pct = float(row["pct_change"] or 0.0)
                 async with self:
                     self.ticker_of_day_symbol = row["symbol"] or ""
                     self.ticker_of_day_name = row["company_name"] or ""
                     self.ticker_of_day_industry = row["industry"] or "N/A"
                     self.ticker_of_day_price = f"{price:,.2f}"
                     self.ticker_of_day_change = f"+{pct:.2f}%"
+                    self.ticker_period_label = label
             else:
                 async with self:
                     self.ticker_of_day_symbol = "N/A"
                     self.ticker_of_day_name = "No data available"
                     self.ticker_of_day_industry = ""
-                    self.ticker_of_day_price = "$0.00"
+                    self.ticker_of_day_price = "0.00"
                     self.ticker_of_day_change = "+0.00%"
+                    self.ticker_period_label = label
 
         except Exception as e:
-            print(f"Error loading ticker of the day: {e}")
+            print(f"Error loading ticker for period {period}: {e}")
             traceback.print_exc()
             async with self:
                 self.ticker_of_day_symbol = "N/A"
                 self.ticker_of_day_name = "Error loading data"
                 self.ticker_of_day_industry = ""
-                self.ticker_of_day_price = "$0.00"
+                self.ticker_of_day_price = "0.00"
                 self.ticker_of_day_change = "+0.00%"
+                self.ticker_period_label = label
 
     def on_mount(self):
-        return [HomeState.load_vnindex_data, HomeState.load_ticker_of_day]
+        return [
+            HomeState.load_vnindex_data,
+            HomeState.load_ticker_for_period("1D"),
+        ]
 
     def on_unmount(self):
         pass

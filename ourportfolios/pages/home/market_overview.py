@@ -4,11 +4,9 @@ from ...state.home_state import HomeState
 from ...state.heatmap import HeatmapState, HeatmapTile, HeatmapChip, TickerSubtile
 from ...state.prefs_state import PrefsState
 from ...components.cards import glass_card
+from ...components.mini_chart_card import mini_chart_card
 from ...styles import (
     white,
-    purple,
-    CARD_BG,
-    CARD_BORDER,
     TEXT_PRIMARY,
     TEXT_TERTIARY,
     accent_btn,
@@ -21,10 +19,7 @@ _TILE_BORDER = "1px solid rgba(255, 255, 255, 0.07)"
 _TILE_HOVER_BORDER = "rgba(255, 255, 255, 0.20)"
 _SUBTILE_BORDER = "rgba(255, 255, 255, 0.05)"
 
-_PERIOD_OPTIONS = ["1D", "1W", "1M"]
-
-_CHART_W = 90
-_CHART_H = 52
+_PERIOD_OPTIONS = ["1D", "1W", "1M", "1Q", "1Y"]
 
 
 def _period_btn(label: str) -> rx.Component:
@@ -40,7 +35,10 @@ def _period_btn(label: str) -> rx.Component:
         border_radius="0.3125rem",
         background=rx.cond(active, white(0.09), "transparent"),
         cursor="pointer",
-        on_click=HeatmapState.set_period(label),
+        on_click=[
+            HeatmapState.set_period(label),
+            HomeState.load_ticker_for_period(label),
+        ],
         _hover={"background": white(0.05)},
         transition="background 0.12s ease",
     )
@@ -51,97 +49,13 @@ def _skel(w: str = "100%", h: str = "0.75rem", r: str = "0.375rem") -> rx.Compon
 
 
 def vnindex_card() -> rx.Component:
-    _shell = dict(
-        padding="0.625rem 0.875rem",
-        border_radius="0.625rem",
-        background=CARD_BG,
-        border=CARD_BORDER,
-        width="100%",
-        box_sizing="border-box",
-    )
-
-    chart_wrapper = rx.box(
-        rx.recharts.area_chart(
-            rx.recharts.area(
-                data_key="normalized_close",
-                stroke=purple(0.85),
-                fill=purple(0.12),
-                stroke_width=1.8,
-                dot=False,
-                active_dot={"r": 4, "fill": purple(1.0), "strokeWidth": 0},
-                is_animation_active=False,
-            ),
-            rx.recharts.x_axis(data_key="name", hide=True),
-            rx.recharts.y_axis(domain=[0, 1], hide=True),
-            data=HomeState.vnindex_chart_data,
-            width=_CHART_W,
-            height=_CHART_H,
-            margin={"top": 4, "right": 4, "bottom": 4, "left": 0},
-        ),
-        width=f"{_CHART_W}px",
-        height=f"{_CHART_H}px",
-        flex_shrink="0",
-        overflow="hidden",
-    )
-
-    return rx.cond(
-        HomeState.vnindex_value,
-        rx.box(
-            rx.hstack(
-                rx.vstack(
-                    rx.text(
-                        "VNIndex",
-                        size="1",
-                        weight="medium",
-                        color=TEXT_TERTIARY,
-                        margin_bottom="0.375rem",
-                    ),
-                    rx.vstack(
-                        rx.text(
-                            HomeState.vnindex_value,
-                            size="5",
-                            weight="bold",
-                            color=TEXT_PRIMARY,
-                            letter_spacing="-0.02em",
-                            line_height="1",
-                        ),
-                        rx.badge(
-                            HomeState.vnindex_change,
-                            color_scheme=rx.cond(
-                                HomeState.vnindex_is_positive, "green", "red"
-                            ),
-                            variant="soft",
-                            size="1",
-                        ),
-                        spacing="1",
-                        align="end",
-                    ),
-                    spacing="0",
-                    align="start",
-                    flex_shrink="0",
-                ),
-                rx.spacer(),
-                chart_wrapper,
-                align="center",
-                width="100%",
-            ),
-            **_shell,
-        ),
-        rx.box(
-            rx.hstack(
-                rx.vstack(
-                    _skel("3.25rem", "0.625rem"),
-                    _skel("5.5rem", "1.5rem", "0.375rem"),
-                    _skel("3.5rem", "1rem", "0.5rem"),
-                    spacing="1",
-                ),
-                rx.spacer(),
-                _skel(f"{_CHART_W}px", f"{_CHART_H}px", "0.375rem"),
-                align="center",
-                width="100%",
-            ),
-            **_shell,
-        ),
+    return mini_chart_card(
+        label="VNIndex",
+        value=HomeState.vnindex_value,
+        abs_change=HomeState.vnindex_change,
+        pct_change=HomeState.vnindex_pct_change,
+        is_positive=HomeState.vnindex_is_positive,
+        chart_data=HomeState.vnindex_chart_data,
     )
 
 
@@ -240,10 +154,10 @@ def _ticker_subtile(t: TickerSubtile) -> rx.Component:
         ),
         href=t.url,
         position="absolute",
-        left=f"calc({t.x}% + 3px)",
-        top=f"calc({t.y}% + 3px)",
-        width=f"calc({t.w}% - 6px)",
-        height=f"calc({t.h}% - 6px)",
+        left=f"calc({t.x}% + 2px)",
+        top=f"calc({t.y}% + 2px)",
+        width=f"calc({t.w}% - 4px)",
+        height=f"calc({t.h}% - 4px)",
         z_index="2",
         text_decoration="none",
     )
@@ -446,5 +360,5 @@ def market_overview_section() -> rx.Component:
         padding="1.25rem 1.5rem",
         width="100%",
         _hover={},
-        on_mount=[PrefsState.apply_to_heatmap, HeatmapState.load_heatmap_data],
+        on_mount=PrefsState.apply_to_heatmap,
     )
