@@ -40,8 +40,6 @@ _PERIOD_LABEL = {
     "1Y": "Year",
 }
 
-_INDICES_ORDER = ["VNIndex", "S&P500", "VIX", "Gold", "Oil"]
-
 _profile = ProfileORM.__table__
 _price = PriceORM.__table__
 
@@ -60,14 +58,12 @@ class HomeState(rx.State):
         {"period": "Q4", "value": 16},
     ]
 
-    # VNIndex (kept for backward compat with existing components)
     vnindex_chart_data: list[dict] = []
     vnindex_value: str = ""
     vnindex_change: str = ""
     vnindex_pct_change: str = ""
     vnindex_is_positive: bool = True
 
-    # Macro indices grid
     indices: list[dict] = []
 
     _base_portfolio_value: float = 142590.22
@@ -86,10 +82,6 @@ class HomeState(rx.State):
     ticker_of_day_price: str = ""
     ticker_of_day_change: str = ""
     ticker_period_label: str = "Day"
-
-    # -------------------------------------------------------------------------
-    # Loaders
-    # -------------------------------------------------------------------------
 
     @rx.event(background=True)
     async def load_vnindex_data(self) -> None:
@@ -141,7 +133,6 @@ class HomeState(rx.State):
                 self.vnindex_chart_data = chart_data
 
         except Exception as e:
-            print(f"[vnindex] Error loading data: {e}")
             traceback.print_exc()
             async with self:
                 self.vnindex_value = "N/A"
@@ -151,6 +142,11 @@ class HomeState(rx.State):
     async def load_indices_data(self) -> None:
         try:
             async with get_company_session() as session:
+                lookup_res = await session.execute(
+                    sa_text("SELECT index_name FROM market.indices_lookup")
+                )
+                dynamic_order = [row[0] for row in lookup_res.fetchall()]
+
                 result = await session.execute(
                     sa_text("""
                     SELECT l.index_name, i.time, i.close
@@ -166,9 +162,9 @@ class HomeState(rx.State):
                 grouped[row["index_name"]].append(row)
 
             built = []
-            for name in _INDICES_ORDER:
+            for name in dynamic_order:
                 series = grouped.get(name)
-                if not series:
+                if not series or len(series) < 2:
                     continue
 
                 prev_close = float(series[0]["close"] or 0.0)
@@ -209,8 +205,7 @@ class HomeState(rx.State):
             async with self:
                 self.indices = built
 
-        except Exception as e:
-            print(f"[indices] Error loading data: {e}")
+        except Exception:
             traceback.print_exc()
 
     @rx.event(background=True)

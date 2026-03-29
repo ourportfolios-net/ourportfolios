@@ -15,8 +15,8 @@ Usage:
 import reflex as rx
 from ..styles import purple, CARD_BG, CARD_BORDER, TEXT_TERTIARY
 
-_CHART_W = 86
-_CHART_H = 50
+_CHART_W = 80
+_CHART_H = 52
 
 _SHELL = dict(
     padding="0.625rem 0.875rem",
@@ -73,7 +73,7 @@ def mini_chart_card(
                 stroke=stroke_pos,
                 fill=fill_pos,
                 stroke_width=2.2,
-                width="100%",  # Chart fills the box
+                width="100%",
                 active_dot={"r": 4, "strokeWidth": 0},
                 is_animation_active=False,
             ),
@@ -82,7 +82,6 @@ def mini_chart_card(
             data=chart_data,
             width=chart_w,
             height=chart_h,
-            margin={"top": 4, "right": 4, "bottom": 4, "left": 0},
         ),
         width=f"{chart_w}px",
         height=f"{chart_h}px",
@@ -118,6 +117,7 @@ def mini_chart_card(
                 align="center",
                 justify="between",
                 width="100%",
+                spacing="0",
             ),
             **_SHELL,
         ),

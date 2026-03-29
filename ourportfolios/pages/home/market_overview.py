@@ -4,7 +4,7 @@ from ...state.home_state import HomeState
 from ...state.heatmap import HeatmapState, HeatmapTile, HeatmapChip, TickerSubtile
 from ...state.prefs_state import PrefsState
 from ...components.cards import glass_card
-from ...components.mini_chart_card import mini_chart_card
+from ...components.indices_grid import indices_grid
 from ...styles import (
     white,
     TEXT_PRIMARY,
@@ -46,17 +46,6 @@ def _period_btn(label: str) -> rx.Component:
 
 def _skel(w: str = "100%", h: str = "0.75rem", r: str = "0.375rem") -> rx.Component:
     return rx.skeleton(rx.box(width=w, height=h), loading=True, border_radius=r)
-
-
-def vnindex_card() -> rx.Component:
-    return mini_chart_card(
-        label="VNIndex",
-        value=HomeState.vnindex_value,
-        abs_change=HomeState.vnindex_change,
-        pct_change=HomeState.vnindex_pct_change,
-        is_positive=HomeState.vnindex_is_positive,
-        chart_data=HomeState.vnindex_chart_data,
-    )
 
 
 def _ticker_content(t: TickerSubtile) -> rx.Component:
@@ -339,17 +328,14 @@ def market_overview_section() -> rx.Component:
                 width="100%",
                 align="center",
             ),
-            rx.flex(
-                rx.vstack(
-                    vnindex_card(),
-                    spacing="3",
-                    width=rx.breakpoints(initial="100%", md="13.125rem"),
-                    flex_shrink="0",
-                    align="start",
+            rx.hstack(
+                indices_grid(),
+                rx.box(
+                    _treemap(),
+                    flex="1",
+                    min_width="0",
                 ),
-                rx.box(_treemap(), flex="1", min_width="0"),
-                direction=rx.breakpoints(initial="column", md="row"),
-                gap="0.75rem",
+                spacing="4",
                 width="100%",
                 align="start",
             ),
