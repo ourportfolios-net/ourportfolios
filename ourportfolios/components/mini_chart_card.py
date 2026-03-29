@@ -23,7 +23,6 @@ _SHELL = dict(
     border_radius="0.625rem",
     background=CARD_BG,
     border=CARD_BORDER,
-    width="100%",
     box_sizing="border-box",
 )
 
@@ -73,8 +72,8 @@ def mini_chart_card(
                 data_key=data_key,
                 stroke=stroke_pos,
                 fill=fill_pos,
-                stroke_width=1.8,
-                dot=False,
+                stroke_width=2.2,
+                width="100%",  # Chart fills the box
                 active_dot={"r": 4, "strokeWidth": 0},
                 is_animation_active=False,
             ),
@@ -91,60 +90,37 @@ def mini_chart_card(
         overflow="hidden",
     )
 
-    loaded = rx.box(
-        rx.hstack(
-            rx.vstack(
-                rx.text(
-                    label,
-                    size="1",
-                    weight="medium",
-                    color=TEXT_TERTIARY,
-                    margin_bottom="0.25rem",
-                ),
-                rx.text(
-                    value,
-                    size="6",
-                    weight="bold",
-                    color="white",
-                    letter_spacing="-0.01em",
-                    line_height="1",
-                ),
-                rx.hstack(
-                    rx.badge(
-                        abs_change,
-                        color_scheme=badge_scheme,
-                        variant="soft",
-                        size="1",
-                        style={"font_size": "0.63rem", "padding": "0.1rem 0.35rem"},
+    loaded = (
+        rx.box(
+            rx.hstack(
+                rx.vstack(
+                    rx.text(label, size="1", weight="medium", color=TEXT_TERTIARY),
+                    rx.text(value, size="5", weight="bold", color="white"),
+                    rx.hstack(
+                        rx.badge(
+                            abs_change,
+                            color_scheme=badge_scheme,
+                            variant="soft",
+                            size="1",
+                        ),
+                        rx.badge(
+                            pct_change,
+                            color_scheme=badge_scheme,
+                            variant="soft",
+                            size="1",
+                        ),
+                        spacing="1",
                     ),
-                    rx.badge(
-                        pct_change,
-                        color_scheme=badge_scheme,
-                        variant="soft",
-                        size="1",
-                        style={"font_size": "0.63rem", "padding": "0.1rem 0.35rem"},
-                    ),
-                    spacing="1",
-                    align="center",
-                    margin_top="0.2rem",
+                    spacing="0",
+                    align="start",
                 ),
-                spacing="0",
-                align="start",
-                flex_shrink="0",
-            ),
-            rx.box(
                 chart,
-                display="flex",
-                align_items="center",
-                justify_content="center",
-                flex="1",
-                min_width="0",
-                padding_x="0.5rem",
+                align="center",
+                justify="between",
+                width="100%",
             ),
-            align="center",
-            width="100%",
+            **_SHELL,
         ),
-        **_SHELL,
     )
 
     skeleton = rx.box(

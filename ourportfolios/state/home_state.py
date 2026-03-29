@@ -2,17 +2,12 @@
 
 import asyncio
 import traceback
+from collections import defaultdict
+
 import reflex as rx
-from sqlalchemy import (
-    Table,
-    Column,
-    String,
-    Float,
-    MetaData,
-    select,
-    func,
-    desc,
-)
+from sqlalchemy import Table, Column, String, Float, MetaData, select, func, desc
+from sqlalchemy import text as sa_text
+
 from ..utils.database.database import get_company_session
 from ..utils.database.models import VNIndexORM, PriceORM, OverviewORM, ProfileORM
 
@@ -45,6 +40,8 @@ _PERIOD_LABEL = {
     "1Y": "Year",
 }
 
+_INDICES_ORDER = ["VNIndex", "S&P500", "VIX", "Gold", "Oil"]
+
 _profile = ProfileORM.__table__
 _price = PriceORM.__table__
 
@@ -63,11 +60,15 @@ class HomeState(rx.State):
         {"period": "Q4", "value": 16},
     ]
 
+    # VNIndex (kept for backward compat with existing components)
     vnindex_chart_data: list[dict] = []
     vnindex_value: str = ""
     vnindex_change: str = ""
     vnindex_pct_change: str = ""
     vnindex_is_positive: bool = True
+
+    # Macro indices grid
+    indices: list[dict] = []
 
     _base_portfolio_value: float = 142590.22
     _target_portfolio_value: float = 148719.73
@@ -85,6 +86,10 @@ class HomeState(rx.State):
     ticker_of_day_price: str = ""
     ticker_of_day_change: str = ""
     ticker_period_label: str = "Day"
+
+    # -------------------------------------------------------------------------
+    # Loaders
+    # -------------------------------------------------------------------------
 
     @rx.event(background=True)
     async def load_vnindex_data(self) -> None:
@@ -105,8 +110,8 @@ class HomeState(rx.State):
             change: float = current_value - previous_close
             sign = "+" if change >= 0 else "-"
 
-            chart_data: list[dict] = []
             today_rows = rows[1:]
+            chart_data: list[dict] = []
 
             if today_rows:
                 close_values = [r.close or 0.0 for r in today_rows]
@@ -136,11 +141,77 @@ class HomeState(rx.State):
                 self.vnindex_chart_data = chart_data
 
         except Exception as e:
-            print(f"Error loading VNINDEX data: {e}")
+            print(f"[vnindex] Error loading data: {e}")
             traceback.print_exc()
             async with self:
                 self.vnindex_value = "N/A"
                 self.vnindex_change = "N/A"
+
+    @rx.event(background=True)
+    async def load_indices_data(self) -> None:
+        try:
+            async with get_company_session() as session:
+                result = await session.execute(
+                    sa_text("""
+                    SELECT l.index_name, i.time, i.close
+                    FROM market.indices i
+                    JOIN market.indices_lookup l ON i.index_id = l.index_id
+                    ORDER BY l.index_name, i.time
+                """)
+                )
+                rows = result.mappings().all()
+
+            grouped: dict[str, list] = defaultdict(list)
+            for row in rows:
+                grouped[row["index_name"]].append(row)
+
+            built = []
+            for name in _INDICES_ORDER:
+                series = grouped.get(name)
+                if not series:
+                    continue
+
+                prev_close = float(series[0]["close"] or 0.0)
+                current = float(series[-1]["close"] or 0.0)
+                today = series[1:]
+
+                change = current - prev_close
+                pct = (change / prev_close * 100) if prev_close else 0.0
+                is_positive = change >= 0
+                sign = "+" if is_positive else ""
+
+                closes = [float(r["close"] or 0.0) for r in today]
+                min_v = min(closes, default=0.0)
+                max_v = max(closes, default=0.0)
+                span = max_v - min_v
+
+                chart_data = [
+                    {
+                        "name": r["time"].strftime("%H:%M"),
+                        "normalized_close": (float(r["close"]) - min_v) / span
+                        if span
+                        else 0.5,
+                    }
+                    for r in today
+                ]
+
+                built.append(
+                    {
+                        "label": name,
+                        "value": f"{current:,.2f}",
+                        "abs_change": f"{sign}{abs(change):.2f}",
+                        "pct_change": f"{sign}{abs(pct):.2f}%",
+                        "is_positive": is_positive,
+                        "chart_data": chart_data,
+                    }
+                )
+
+            async with self:
+                self.indices = built
+
+        except Exception as e:
+            print(f"[indices] Error loading data: {e}")
+            traceback.print_exc()
 
     @rx.event(background=True)
     async def load_ticker_for_period(self, period: str = "1D") -> None:
@@ -209,7 +280,7 @@ class HomeState(rx.State):
                     self.ticker_period_label = label
 
         except Exception as e:
-            print(f"Error loading ticker for period {period}: {e}")
+            print(f"[ticker_of_day] Error loading period {period}: {e}")
             traceback.print_exc()
             async with self:
                 self.ticker_of_day_symbol = "N/A"
@@ -219,19 +290,40 @@ class HomeState(rx.State):
                 self.ticker_of_day_change = "+0.00%"
                 self.ticker_period_label = label
 
+    # -------------------------------------------------------------------------
+    # Lifecycle
+    # -------------------------------------------------------------------------
+
     def on_mount(self):
         return [
             HomeState.load_vnindex_data,
+            HomeState.load_indices_data,
             HomeState.load_ticker_for_period("1D"),
         ]
 
     def on_unmount(self):
         pass
 
+    # -------------------------------------------------------------------------
+    # Navigation
+    # -------------------------------------------------------------------------
+
     @rx.event
     def navigate_to_ticker_of_day(self):
         if self.ticker_of_day_symbol and self.ticker_of_day_symbol != "N/A":
             return rx.redirect(f"/tickers/{self.ticker_of_day_symbol}")
+
+    @rx.event
+    def handle_compare(self):
+        return rx.redirect("/tickers")
+
+    @rx.event
+    def handle_portfolio(self):
+        return rx.redirect("/portfolio")
+
+    # -------------------------------------------------------------------------
+    # Hover interactions
+    # -------------------------------------------------------------------------
 
     @rx.event
     def start_framework_hover(self) -> None:
@@ -332,11 +424,3 @@ class HomeState(rx.State):
     @rx.event
     def end_comparison_hover(self) -> None:
         self.is_comparison_hovered = False
-
-    @rx.event
-    def handle_compare(self):
-        return rx.redirect("/tickers")
-
-    @rx.event
-    def handle_portfolio(self):
-        return rx.redirect("/portfolio")
