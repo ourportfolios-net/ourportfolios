@@ -174,7 +174,7 @@ class HomeState(rx.State):
                 change = current - prev_close
                 pct = (change / prev_close * 100) if prev_close else 0.0
                 is_positive = change >= 0
-                sign = "+" if is_positive else ""
+                sign = "+" if is_positive else "-"
 
                 closes = [float(r["close"] or 0.0) for r in today]
                 min_v = min(closes, default=0.0)
