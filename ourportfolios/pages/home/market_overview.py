@@ -11,6 +11,7 @@ from ...styles import (
     TEXT_TERTIARY,
     accent_btn,
 )
+from .refresh_countdown import refresh_countdown_ring
 
 _TREEMAP_H = "38.75rem"
 
@@ -309,12 +310,18 @@ def market_overview_section() -> rx.Component:
     return glass_card(
         rx.vstack(
             rx.hstack(
-                rx.text(
-                    "Market Overview",
-                    size="3",
-                    weight="bold",
-                    color=TEXT_PRIMARY,
-                    letter_spacing="-0.01em",
+                # Countdown ring + title grouped on the left
+                rx.hstack(
+                    refresh_countdown_ring(),
+                    rx.text(
+                        "Market Overview",
+                        size="3",
+                        weight="bold",
+                        color=TEXT_PRIMARY,
+                        letter_spacing="-0.01em",
+                    ),
+                    spacing="2",
+                    align="center",
                 ),
                 rx.spacer(),
                 rx.hstack(

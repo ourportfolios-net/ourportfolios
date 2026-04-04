@@ -1,6 +1,8 @@
 """Home page state management."""
 
 import asyncio
+from datetime import datetime, timedelta
+from math import ceil
 import traceback
 from collections import defaultdict
 
@@ -12,6 +14,9 @@ from ..utils.database.database import get_company_session
 from ..utils.database.models import VNIndexORM, PriceORM, OverviewORM, ProfileORM
 
 _market_meta = MetaData(schema="market")
+
+# ── Refresh interval (seconds) ─────────────────────────────────────────────
+_REFRESH_INTERVAL: int = 1800  # 30 minutes
 
 
 def _change_table(name: str) -> Table:
@@ -42,6 +47,25 @@ _PERIOD_LABEL = {
 
 _profile = ProfileORM.__table__
 _price = PriceORM.__table__
+
+
+def _secs_to_next_boundary() -> int:
+    """Seconds until the next HH:00 or HH:30 cron boundary."""
+    now = datetime.now()
+    elapsed_in_slot = (now.minute % 30) * 60 + now.second
+    return max(1, _REFRESH_INTERVAL - elapsed_in_slot)
+
+
+def _next_refresh_boundary(now: datetime) -> datetime:
+    next_slot_minute = 30 if now.minute < 30 else 0
+    boundary = now.replace(minute=next_slot_minute, second=0, microsecond=0)
+    if boundary <= now:
+        boundary += timedelta(hours=1)
+    return boundary
+
+
+_INITIAL_REFRESH_SECONDS = _secs_to_next_boundary()
+_COUNTDOWN_RING_CIRC = 54.85
 
 
 class HomeState(rx.State):
@@ -82,6 +106,76 @@ class HomeState(rx.State):
     ticker_of_day_price: str = ""
     ticker_of_day_change: str = ""
     ticker_period_label: str = "Day"
+
+    # ── Refresh countdown ───────────────────────────────────────────────────
+    _refresh_running: bool = False
+    _refresh_boundary: str = ""
+    refresh_countdown_seconds: int = _INITIAL_REFRESH_SECONDS
+    refresh_countdown_label: str = (
+        f"{_INITIAL_REFRESH_SECONDS // 60:02d}:{_INITIAL_REFRESH_SECONDS % 60:02d}"
+    )
+    refresh_countdown_progress: int = 0
+    refresh_countdown_ring_offset: float = 0.0
+
+    @rx.event(background=True)
+    async def start_refresh_countdown(self):
+        async with self:
+            if self._refresh_running:
+                return
+            self._refresh_running = True
+
+        try:
+            target = _next_refresh_boundary(datetime.now())
+
+            async with self:
+                self._refresh_boundary = target.isoformat()
+                self.refresh_countdown_seconds = _INITIAL_REFRESH_SECONDS
+                self.refresh_countdown_label = f"{_INITIAL_REFRESH_SECONDS // 60:02d}:{_INITIAL_REFRESH_SECONDS % 60:02d}"
+                self.refresh_countdown_progress = 0
+                self.refresh_countdown_ring_offset = 0.0
+
+            while True:
+                now = datetime.now()
+                remaining = (target - now).total_seconds()
+
+                if remaining <= 0:
+                    target = _next_refresh_boundary(now)
+                    async with self:
+                        self._refresh_boundary = target.isoformat()
+                        self.refresh_countdown_seconds = _REFRESH_INTERVAL
+                        self.refresh_countdown_label = "30:00"
+                        self.refresh_countdown_progress = 0
+                        self.refresh_countdown_ring_offset = 0.0
+
+                    yield HomeState.load_vnindex_data
+                    yield HomeState.load_indices_data
+                    yield HomeState.load_ticker_for_period("1D")
+                    continue
+
+                secs = ceil(remaining)
+                progress = int(round((1 - (remaining / _REFRESH_INTERVAL)) * 100))
+                progress = max(0, min(100, progress))
+
+                async with self:
+                    self.refresh_countdown_seconds = secs
+                    self.refresh_countdown_label = f"{secs // 60:02d}:{secs % 60:02d}"
+                    self.refresh_countdown_progress = progress
+                    self.refresh_countdown_ring_offset = (
+                        progress / 100.0
+                    ) * _COUNTDOWN_RING_CIRC
+
+                await asyncio.sleep(min(1.0, remaining))
+
+        except asyncio.CancelledError:
+            raise
+        finally:
+            try:
+                async with self:
+                    self._refresh_running = False
+            except Exception:
+                pass
+
+    # ──────────────────────────────────────────────────────────────────────
 
     @rx.event(background=True)
     async def load_vnindex_data(self) -> None:
@@ -132,7 +226,7 @@ class HomeState(rx.State):
                 self.vnindex_is_positive = bool(change >= 0)
                 self.vnindex_chart_data = chart_data
 
-        except Exception as e:
+        except Exception:
             traceback.print_exc()
             async with self:
                 self.vnindex_value = "N/A"
@@ -289,11 +383,13 @@ class HomeState(rx.State):
     # Lifecycle
     # -------------------------------------------------------------------------
 
+    @rx.event
     def on_mount(self):
         return [
             HomeState.load_vnindex_data,
             HomeState.load_indices_data,
             HomeState.load_ticker_for_period("1D"),
+            HomeState.start_refresh_countdown,
         ]
 
     def on_unmount(self):
