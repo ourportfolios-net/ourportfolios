@@ -20,7 +20,7 @@ def refresh_countdown_ring() -> rx.Component:
                         rx="3",
                         fill="none",
                         stroke=white(0.12),
-                        stroke_width="1.6",
+                        stroke_width="2.6",
                     ),
                     rx.el.rect(
                         x="1.5",
@@ -30,7 +30,7 @@ def refresh_countdown_ring() -> rx.Component:
                         rx="3",
                         fill="none",
                         stroke=white(0.65),
-                        stroke_width="1.6",
+                        stroke_width="2.6",
                         stroke_dasharray=str(_CIRC),
                         stroke_dashoffset=HomeState.refresh_countdown_ring_offset,
                         stroke_linecap="round",
