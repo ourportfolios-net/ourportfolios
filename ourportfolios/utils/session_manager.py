@@ -211,7 +211,9 @@ def session_isolated(func: Callable) -> Callable:
 
             manager = get_session_manager()
 
-            if not manager.is_session_active(session_id):
+            if not manager.is_session_active(session_id) or not is_client_connected(
+                self
+            ):
                 return
 
             current_task = asyncio.current_task()
@@ -221,6 +223,8 @@ def session_isolated(func: Callable) -> Callable:
             try:
                 async for item in func(self, *args, **kwargs):
                     if not manager.is_session_active(session_id):
+                        return
+                    if not is_client_connected(self):
                         return
                     yield item
             except asyncio.CancelledError:
@@ -235,7 +239,9 @@ def session_isolated(func: Callable) -> Callable:
 
             manager = get_session_manager()
 
-            if not manager.is_session_active(session_id):
+            if not manager.is_session_active(session_id) or not is_client_connected(
+                self
+            ):
                 return
 
             current_task = asyncio.current_task()
@@ -246,6 +252,8 @@ def session_isolated(func: Callable) -> Callable:
                 result = await func(self, *args, **kwargs)
 
                 if not manager.is_session_active(session_id):
+                    return
+                if not is_client_connected(self):
                     return
 
                 return result
@@ -263,6 +271,47 @@ def check_session_active(state) -> bool:
 
     manager = get_session_manager()
     return manager.is_session_active(session_id)
+
+
+def is_client_connected(state: rx.State) -> bool:
+    """Return True if the state's client token is still bound to a websocket."""
+    try:
+        token = state.router.session.client_token
+    except (AttributeError, KeyError):
+        return False
+
+    if not token or token in {"None", "null"}:
+        return False
+
+    try:
+        from reflex.utils.prerequisites import get_app
+
+        app = get_app().app
+        namespace = getattr(app, "event_namespace", None)
+
+        # During startup/tests event namespace may not be initialized yet.
+        if namespace is None:
+            return True
+
+        token_manager = getattr(namespace, "_token_manager", None)
+        token_to_socket = getattr(token_manager, "token_to_socket", None)
+        if token_to_socket is not None:
+            return token in token_to_socket
+
+        # Compatibility fallback for older/newer APIs.
+        token_to_sid = getattr(namespace, "token_to_sid", None)
+        if token_to_sid is not None:
+            return token in token_to_sid
+    except Exception:
+        # Do not fail hard if internals change.
+        return True
+
+    return True
+
+
+def is_state_live(state: rx.State) -> bool:
+    """Return True when both session and websocket client are still active."""
+    return check_session_active(state) and is_client_connected(state)
 
 
 class SessionIsolatedStateMixin:
@@ -285,7 +334,7 @@ class SessionIsolatedStateMixin:
     _is_mounted: bool = False
     _cached_state_id: str | None = None
 
-    def on_mount(self):
+    def on_mount(self) -> object | None:
         """Initialize page session when mounted.
 
         Creates a new session and cancels tasks from other pages synchronously.
@@ -296,7 +345,7 @@ class SessionIsolatedStateMixin:
         self._session_id = manager.start_session(state_id, force_new=True)
         self._is_mounted = True
 
-    def on_unmount(self):
+    def on_unmount(self) -> object | None:
         """Cleanup page session when unmounted.
 
         Cancels all running tasks synchronously for instant navigation.

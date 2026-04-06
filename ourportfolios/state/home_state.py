@@ -12,6 +12,10 @@ from sqlalchemy import text as sa_text
 
 from ..utils.database.database import get_company_session
 from ..utils.database.models import VNIndexORM, PriceORM, OverviewORM, ProfileORM
+from ..utils.session_manager import (
+    SessionIsolatedStateMixin,
+    is_state_live,
+)
 
 _market_meta = MetaData(schema="market")
 
@@ -68,7 +72,7 @@ _INITIAL_REFRESH_SECONDS = _secs_to_next_boundary()
 _COUNTDOWN_RING_CIRC = 54.85
 
 
-class HomeState(rx.State):
+class HomeState(SessionIsolatedStateMixin, rx.State):
     framework_hover_index: int = 0
     _framework_hover_active: bool = False
 
@@ -135,6 +139,9 @@ class HomeState(rx.State):
                 self.refresh_countdown_ring_offset = 0.0
 
             while True:
+                if not is_state_live(self):
+                    return
+
                 now = datetime.now()
                 remaining = (target - now).total_seconds()
 
@@ -147,6 +154,8 @@ class HomeState(rx.State):
                         self.refresh_countdown_progress = 0
                         self.refresh_countdown_ring_offset = 0.0
 
+                    if not is_state_live(self):
+                        return
                     yield HomeState.load_vnindex_data
                     yield HomeState.load_indices_data
                     yield HomeState.load_ticker_for_period("1D")
@@ -170,8 +179,9 @@ class HomeState(rx.State):
             raise
         finally:
             try:
-                async with self:
-                    self._refresh_running = False
+                if is_state_live(self):
+                    async with self:
+                        self._refresh_running = False
             except Exception:
                 pass
 
@@ -383,8 +393,8 @@ class HomeState(rx.State):
     # Lifecycle
     # -------------------------------------------------------------------------
 
-    @rx.event
     def on_mount(self):
+        super().on_mount()
         return [
             HomeState.load_vnindex_data,
             HomeState.load_indices_data,
@@ -393,7 +403,7 @@ class HomeState(rx.State):
         ]
 
     def on_unmount(self):
-        pass
+        super().on_unmount()
 
     # -------------------------------------------------------------------------
     # Navigation

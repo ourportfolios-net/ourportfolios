@@ -10,6 +10,11 @@ from typing import Any
 from sqlalchemy import Select, select, or_
 from ..utils.database.database import get_company_session
 from ..utils.database.models import PriceORM, OverviewORM
+from ..utils.session_manager import (
+    SessionIsolatedStateMixin,
+    is_state_live,
+    session_isolated,
+)
 
 _TickerSelect = Select[tuple[str, float | None, float | None, str | None]]
 
@@ -19,7 +24,7 @@ _TickerSelect = Select[tuple[str, float | None, float | None, str | None]]
 _load_tasks: dict[str, asyncio.Task] = {}
 
 
-class SearchBarState(rx.State):
+class SearchBarState(SessionIsolatedStateMixin, rx.State):
     search_query: str = ""
     comparison_search_query: str = ""
     display_suggestion: bool = False
@@ -28,6 +33,14 @@ class SearchBarState(rx.State):
     ticker_list: list[dict[str, Any]] = []
     comparison_suggestions: list[dict[str, Any]] = []
     suggest_tickers: list[dict[str, Any]] = []
+
+    @rx.event
+    def on_mount(self):
+        super().on_mount()
+        return SearchBarState.load_state
+
+    def on_unmount(self):
+        super().on_unmount()
 
     @rx.event
     def set_query(self, text: str = "") -> None:
@@ -134,6 +147,7 @@ class SearchBarState(rx.State):
             return []
 
     @rx.event(background=True)
+    @session_isolated
     async def load_state(self) -> None:
         async with self:
             token = self.router.session.client_token
@@ -143,25 +157,32 @@ class SearchBarState(rx.State):
         if existing is not None and not existing.done():
             return
 
-        async def _load_loop() -> None:
-            try:
-                while True:
-                    try:
-                        rows = await self._fetch_tickers()
-                        async with self:
-                            self.ticker_list = rows
-                            self.outstanding_tickers = {
-                                item["symbol"]: 1 for item in rows[:3]
-                            }
-                    except asyncio.CancelledError:
-                        return
-                    except Exception as e:
-                        print(f"Error in load_state: {e}")
-                    try:
-                        await asyncio.sleep(60)
-                    except asyncio.CancelledError:
-                        return
-            finally:
-                _load_tasks.pop(token, None)
+        current_task = asyncio.current_task()
+        if current_task is None:
+            return
 
-        _load_tasks[token] = asyncio.create_task(_load_loop())
+        _load_tasks[token] = current_task
+
+        try:
+            while is_state_live(self):
+                try:
+                    rows = await self._fetch_tickers()
+                    if not is_state_live(self):
+                        return
+                    async with self:
+                        self.ticker_list = rows
+                        self.outstanding_tickers = {
+                            item["symbol"]: 1 for item in rows[:3]
+                        }
+                except asyncio.CancelledError:
+                    return
+                except Exception as e:
+                    print(f"Error in load_state: {e}")
+
+                try:
+                    await asyncio.sleep(60)
+                except asyncio.CancelledError:
+                    return
+        finally:
+            if _load_tasks.get(token) is current_task:
+                _load_tasks.pop(token, None)
