@@ -15,6 +15,7 @@ from ..utils.database.models import VNIndexORM, PriceORM, OverviewORM, ProfileOR
 from ..utils.session_manager import (
     SessionIsolatedStateMixin,
     is_state_live,
+    get_session_manager,
 )
 
 _market_meta = MetaData(schema="market")
@@ -128,8 +129,19 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
                 return
             self._refresh_running = True
 
+        current_task = asyncio.current_task()
+        session_id = getattr(self, "_session_id", None)
+        if current_task is not None and session_id:
+            get_session_manager().register_task(session_id, current_task)
+
         try:
             target = _next_refresh_boundary(datetime.now())
+
+            while self._refresh_running and not is_state_live(self):
+                await asyncio.sleep(0.1)
+
+            if not self._refresh_running:
+                return
 
             async with self:
                 self._refresh_boundary = target.isoformat()
@@ -155,7 +167,8 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
                         self.refresh_countdown_ring_offset = 0.0
 
                     if not is_state_live(self):
-                        return
+                        await asyncio.sleep(0.25)
+                        continue
                     yield HomeState.load_vnindex_data
                     yield HomeState.load_indices_data
                     yield HomeState.load_ticker_for_period("1D")
@@ -179,9 +192,8 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
             raise
         finally:
             try:
-                if is_state_live(self):
-                    async with self:
-                        self._refresh_running = False
+                async with self:
+                    self._refresh_running = False
             except Exception:
                 pass
 
@@ -403,6 +415,7 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
         ]
 
     def on_unmount(self):
+        self._refresh_running = False
         super().on_unmount()
 
     # -------------------------------------------------------------------------
