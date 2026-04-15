@@ -9,6 +9,7 @@ from .sections import (
     cta_section,
     footer,
 )
+from ...ui.layout import app_shell
 from ...utils.session_manager import SessionIsolatedStateMixin
 from ...components.navbar import navbar
 
@@ -26,7 +27,7 @@ class LandingState(SessionIsolatedStateMixin, rx.State):
 @rx.page(route="/", on_load=LandingState.on_mount)
 def index() -> rx.Component:
     """Render the landing page."""
-    return rx.box(
+    return app_shell(
         navbar(),
         hero_section(),
         rx.box(id="showcase"),
@@ -37,9 +38,4 @@ def index() -> rx.Component:
         cta_section(),
         footer(),
         on_unmount=LandingState.on_unmount,
-        background="#090909",
-        color="white",
-        min_height="100vh",
-        width="100%",
-        overflow_x="hidden",
     )

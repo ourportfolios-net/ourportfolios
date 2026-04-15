@@ -1,13 +1,5 @@
 """
 Heatmap state — squarified nested treemap.
-
-Subtile layout:
-- Squarify with market-cap-proportional weights (cap^0.5).
-- Weights are clamped so max/min ratio ≤ 3.0 — prevents extreme strips
-  while keeping clear visual hierarchy between large and small caps.
-- _MAX_N = 4 — show at most 4 tickers per industry tile to keep tiles readable.
-- _best_n: tries N=4 down to N=1, picks the largest N where all rects
-  have min(w,h) >= _MIN_PX.
 """
 
 from urllib.parse import quote
@@ -21,6 +13,7 @@ _PERIOD_TABLE = {
     "1D": "daily_changes",
     "1W": "weekly_changes",
     "1M": "monthly_changes",
+    "1Q": "quarterly_changes",
     "1Y": "yearly_changes",
 }
 
@@ -29,10 +22,10 @@ ITEMS_PER_ROW = 3
 _CTR_W = 760.0
 _CTR_H = 620.0
 LABEL_H_PX = 30.0
-_MIN_PX = 52.0  # min(w,h) for a subtile — keeps tiles readable
-_MAX_N = 4  # max tickers shown per industry tile
+_MIN_PX = 52.0
+_MAX_N = 4
 _MIN_TILE_H_PX = 80.0
-_MAX_WEIGHT_RATIO = 3.0  # largest weight can be at most 3× the smallest
+_MAX_WEIGHT_RATIO = 3.0
 
 _DARK_BG = "rgba(10, 10, 12, 1)"
 _GREEN_TINT = "rgba(16, 185, 129, 1)"
@@ -150,10 +143,6 @@ def _squarify(weights: list, W: float, H: float) -> list:
 
 
 def _capped_weights(caps: list) -> list:
-    """
-    cap^0.5 weights, then clamp so max/min <= _MAX_WEIGHT_RATIO.
-    Preserves ordering and relative size signal while preventing extreme strips.
-    """
     raw = [max(c, 1.0) ** 0.5 for c in caps]
     mn = min(raw)
     ceiling = mn * _MAX_WEIGHT_RATIO

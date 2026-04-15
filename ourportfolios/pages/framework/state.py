@@ -384,37 +384,50 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
         async with self:
             if not self.is_mounted():
                 return
-            await self.load_scopes()
+
+        await self.load_scopes()
+
+        async with self:
             if not self.is_mounted():
                 return
             if self.scopes:
                 self.active_scope = self.scopes[0].value
-            await self.load_frameworks()
+
+        await self.load_frameworks()
 
     @session_isolated
     async def load_scopes(self) -> None:
-        self.loading_scopes = True
+        async with self:
+            self.loading_scopes = True
+
         try:
-            self.scopes = [
+            scopes = [
                 ScopeModel(value="fundamental", title="Fundamental"),
                 ScopeModel(value="technical", title="Technical"),
             ]
-            if self.scopes and not self.active_scope:
-                self.active_scope = self.scopes[0].value
+
+            async with self:
+                self.scopes = scopes
+                if self.scopes and not self.active_scope:
+                    self.active_scope = self.scopes[0].value
         finally:
-            self.loading_scopes = False
+            async with self:
+                self.loading_scopes = False
 
     @rx.event
     @session_isolated
     async def change_scope(self, scope: str) -> None:
         async with self:
             self.active_scope = scope
-            await self.load_frameworks()
+
+        await self.load_frameworks()
 
     @session_isolated
     async def load_frameworks(self) -> None:
-        self.loading_frameworks = True
-        active_scope = self.active_scope
+        async with self:
+            self.loading_frameworks = True
+            active_scope = self.active_scope
+
         try:
             async with get_company_session() as session:
                 stmt = (
@@ -425,14 +438,19 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
                 )
                 result = await session.execute(stmt)
                 rows = result.scalars().all()
-            self._all_frameworks = [_orm_to_framework_model(r) for r in rows]
-            self._apply_filters()
+
+            async with self:
+                self._all_frameworks = [_orm_to_framework_model(r) for r in rows]
+                self._apply_filters()
         except Exception as e:
             print(f"[load_frameworks] Error: {e}")
-            self._all_frameworks = []
-            self.frameworks = []
+
+            async with self:
+                self._all_frameworks = []
+                self.frameworks = []
         finally:
-            self.loading_frameworks = False
+            async with self:
+                self.loading_frameworks = False
 
     @rx.event
     def show_framework_dialog(self, framework: FrameworkModel) -> None:

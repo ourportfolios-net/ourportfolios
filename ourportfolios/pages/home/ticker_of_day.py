@@ -64,14 +64,13 @@ def _ticker_real():
             ),
             rx.vstack(
                 rx.text(
-                    "Ticker of the Day",
+                    rx.el.span("Ticker of the "),
+                    rx.el.span(HomeState.ticker_period_label),
                     size="1",
                     weight="medium",
                     color=white(0.35),
                 ),
-                # Main content block — more space from the label above
                 rx.vstack(
-                    # Single line: symbol + cart LEFT, price RIGHT — aligned to bottom edge
                     rx.hstack(
                         rx.hstack(
                             rx.text(
@@ -107,15 +106,12 @@ def _ticker_real():
                             line_height="1",
                         ),
                         width="100%",
-                        # align="end" anchors both sides to their bottom edge
-                        # so the large symbol and the price share the same baseline
                         align="end",
                         position="relative",
                         z_index="2",
                         pointer_events="none",
                         style={"& button": {"pointer-events": "auto"}},
                     ),
-                    # Second line: company name LEFT, badge RIGHT
                     rx.hstack(
                         rx.text(
                             HomeState.ticker_of_day_name,

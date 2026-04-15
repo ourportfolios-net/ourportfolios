@@ -76,7 +76,8 @@ def search_bar():
             ),
             position="relative",
             width="18rem",
-            on_mount=SearchBarState.load_state,
+            on_mount=SearchBarState.on_mount,
+            on_unmount=SearchBarState.on_unmount,
         ),
     )
 

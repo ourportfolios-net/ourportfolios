@@ -1,14 +1,79 @@
 """Home page state management."""
 
 import asyncio
+from datetime import datetime, timedelta
+from math import ceil
 import traceback
+from collections import defaultdict
+
 import reflex as rx
-from sqlalchemy import select, func, desc
+from sqlalchemy import Table, Column, String, Float, MetaData, select, func, desc
+from sqlalchemy import text as sa_text
+
 from ..utils.database.database import get_company_session
 from ..utils.database.models import VNIndexORM, PriceORM, OverviewORM, ProfileORM
+from ..utils.session_manager import (
+    SessionIsolatedStateMixin,
+    is_state_live,
+    get_session_manager,
+)
+
+_market_meta = MetaData(schema="market")
+
+# ── Refresh interval (seconds) ─────────────────────────────────────────────
+_REFRESH_INTERVAL: int = 1800  # 30 minutes
 
 
-class HomeState(rx.State):
+def _change_table(name: str) -> Table:
+    return Table(
+        name,
+        _market_meta,
+        Column("symbol", String),
+        Column("pct_change", Float),
+        Column("market_cap", Float),
+        Column("industry", String),
+    )
+
+
+_CHANGE_TABLES = {
+    "1W": _change_table("weekly_changes"),
+    "1M": _change_table("monthly_changes"),
+    "1Q": _change_table("quarterly_changes"),
+    "1Y": _change_table("yearly_changes"),
+}
+
+_PERIOD_LABEL = {
+    "1D": "Day",
+    "1W": "Week",
+    "1M": "Month",
+    "1Q": "Quarter",
+    "1Y": "Year",
+}
+
+_profile = ProfileORM.__table__
+_price = PriceORM.__table__
+
+
+def _secs_to_next_boundary() -> int:
+    """Seconds until the next HH:00 or HH:30 cron boundary."""
+    now = datetime.now()
+    elapsed_in_slot = (now.minute % 30) * 60 + now.second
+    return max(1, _REFRESH_INTERVAL - elapsed_in_slot)
+
+
+def _next_refresh_boundary(now: datetime) -> datetime:
+    next_slot_minute = 30 if now.minute < 30 else 0
+    boundary = now.replace(minute=next_slot_minute, second=0, microsecond=0)
+    if boundary <= now:
+        boundary += timedelta(hours=1)
+    return boundary
+
+
+_INITIAL_REFRESH_SECONDS = _secs_to_next_boundary()
+_COUNTDOWN_RING_CIRC = 54.85
+
+
+class HomeState(SessionIsolatedStateMixin, rx.State):
     framework_hover_index: int = 0
     _framework_hover_active: bool = False
 
@@ -25,7 +90,10 @@ class HomeState(rx.State):
     vnindex_chart_data: list[dict] = []
     vnindex_value: str = ""
     vnindex_change: str = ""
+    vnindex_pct_change: str = ""
     vnindex_is_positive: bool = True
+
+    indices: list[dict] = []
 
     _base_portfolio_value: float = 142590.22
     _target_portfolio_value: float = 148719.73
@@ -42,6 +110,94 @@ class HomeState(rx.State):
     ticker_of_day_industry: str = ""
     ticker_of_day_price: str = ""
     ticker_of_day_change: str = ""
+    ticker_period_label: str = "Day"
+
+    # ── Refresh countdown ───────────────────────────────────────────────────
+    _refresh_running: bool = False
+    _refresh_boundary: str = ""
+    refresh_countdown_seconds: int = _INITIAL_REFRESH_SECONDS
+    refresh_countdown_label: str = (
+        f"{_INITIAL_REFRESH_SECONDS // 60:02d}:{_INITIAL_REFRESH_SECONDS % 60:02d}"
+    )
+    refresh_countdown_progress: int = 0
+    refresh_countdown_ring_offset: float = 0.0
+
+    @rx.event(background=True)
+    async def start_refresh_countdown(self):
+        async with self:
+            if self._refresh_running:
+                return
+            self._refresh_running = True
+
+        current_task = asyncio.current_task()
+        session_id = getattr(self, "_session_id", None)
+        if current_task is not None and session_id:
+            get_session_manager().register_task(session_id, current_task)
+
+        try:
+            target = _next_refresh_boundary(datetime.now())
+
+            while self._refresh_running and not is_state_live(self):
+                await asyncio.sleep(0.1)
+
+            if not self._refresh_running:
+                return
+
+            async with self:
+                self._refresh_boundary = target.isoformat()
+                self.refresh_countdown_seconds = _INITIAL_REFRESH_SECONDS
+                self.refresh_countdown_label = f"{_INITIAL_REFRESH_SECONDS // 60:02d}:{_INITIAL_REFRESH_SECONDS % 60:02d}"
+                self.refresh_countdown_progress = 0
+                self.refresh_countdown_ring_offset = 0.0
+
+            while True:
+                if not is_state_live(self):
+                    return
+
+                now = datetime.now()
+                remaining = (target - now).total_seconds()
+
+                if remaining <= 0:
+                    target = _next_refresh_boundary(now)
+                    async with self:
+                        self._refresh_boundary = target.isoformat()
+                        self.refresh_countdown_seconds = _REFRESH_INTERVAL
+                        self.refresh_countdown_label = "30:00"
+                        self.refresh_countdown_progress = 0
+                        self.refresh_countdown_ring_offset = 0.0
+
+                    if not is_state_live(self):
+                        await asyncio.sleep(0.25)
+                        continue
+                    yield HomeState.load_vnindex_data
+                    yield HomeState.load_indices_data
+                    yield HomeState.load_ticker_for_period("1D")
+                    continue
+
+                secs = ceil(remaining)
+                progress = int(round((1 - (remaining / _REFRESH_INTERVAL)) * 100))
+                progress = max(0, min(100, progress))
+
+                async with self:
+                    self.refresh_countdown_seconds = secs
+                    self.refresh_countdown_label = f"{secs // 60:02d}:{secs % 60:02d}"
+                    self.refresh_countdown_progress = progress
+                    self.refresh_countdown_ring_offset = (
+                        progress / 100.0
+                    ) * _COUNTDOWN_RING_CIRC
+
+                await asyncio.sleep(min(1.0, remaining))
+
+        except asyncio.CancelledError:
+            raise
+        finally:
+            try:
+                async with self:
+                    self._refresh_running = False
+            except Exception:
+                pass
+
+    # ──────────────────────────────────────────────────────────────────────
 
     @rx.event(background=True)
     async def load_vnindex_data(self) -> None:
@@ -60,19 +216,19 @@ class HomeState(rx.State):
             previous_close: float = rows[0].close or 0.0
             current_value: float = rows[-1].close or 0.0
             change: float = current_value - previous_close
-            sign = "+" if change >= 0 else ""
+            sign = "+" if change >= 0 else "-"
 
-            chart_data: list[dict] = []
             today_rows = rows[1:]
+            chart_data: list[dict] = []
 
             if today_rows:
-                close_values: list[float] = [r.close or 0.0 for r in today_rows]
-                min_val: float = min(close_values)
-                max_val: float = max(close_values)
+                close_values = [r.close or 0.0 for r in today_rows]
+                min_val = min(close_values)
+                max_val = max(close_values)
 
                 for row in today_rows:
-                    row_close: float = row.close or 0.0
-                    normalized: float = (
+                    row_close = row.close or 0.0
+                    normalized = (
                         (row_close - min_val) / (max_val - min_val)
                         if max_val > min_val
                         else 0.5
@@ -87,79 +243,201 @@ class HomeState(rx.State):
             async with self:
                 self.vnindex_value = f"{current_value:,.2f}"
                 self.vnindex_change = f"{sign}{abs(change):.2f}"
+                pct = (change / previous_close * 100) if previous_close else 0.0
+                self.vnindex_pct_change = f"{sign}{abs(pct):.2f}%"
                 self.vnindex_is_positive = bool(change >= 0)
                 self.vnindex_chart_data = chart_data
 
-        except Exception as e:
-            print(f"Error loading VNINDEX data: {e}")
+        except Exception:
             traceback.print_exc()
             async with self:
                 self.vnindex_value = "N/A"
                 self.vnindex_change = "N/A"
 
     @rx.event(background=True)
-    async def load_ticker_of_day(self) -> None:
+    async def load_indices_data(self) -> None:
         try:
             async with get_company_session() as session:
-                score = (
-                    PriceORM.accumulated_volume * func.abs(PriceORM.pct_price_change)
-                ).label("score")
-                stmt = (
-                    select(
-                        PriceORM.symbol,
-                        PriceORM.pct_price_change,
-                        PriceORM.accumulated_volume,
-                        PriceORM.current_price,
-                        OverviewORM.industry,
-                        ProfileORM.company_name,
-                        score,
-                    )
-                    .join(OverviewORM, PriceORM.symbol == OverviewORM.symbol)
-                    .join(ProfileORM, PriceORM.symbol == ProfileORM.symbol)
-                    .where(PriceORM.pct_price_change > 0)
-                    .order_by(desc(score))
-                    .limit(1)
+                lookup_res = await session.execute(
+                    sa_text("SELECT index_name FROM market.indices_lookup")
                 )
+                dynamic_order = [row[0] for row in lookup_res.fetchall()]
+
+                result = await session.execute(
+                    sa_text("""
+                    SELECT l.index_name, i.time, i.close
+                    FROM market.indices i
+                    JOIN market.indices_lookup l ON i.index_id = l.index_id
+                    ORDER BY l.index_name, i.time
+                """)
+                )
+                rows = result.mappings().all()
+
+            grouped: dict[str, list] = defaultdict(list)
+            for row in rows:
+                grouped[row["index_name"]].append(row)
+
+            built = []
+            for name in dynamic_order:
+                series = grouped.get(name)
+                if not series or len(series) < 2:
+                    continue
+
+                prev_close = float(series[0]["close"] or 0.0)
+                current = float(series[-1]["close"] or 0.0)
+                today = series[1:]
+
+                change = current - prev_close
+                pct = (change / prev_close * 100) if prev_close else 0.0
+                is_positive = change >= 0
+                sign = "+" if is_positive else "-"
+
+                closes = [float(r["close"] or 0.0) for r in today]
+                min_v = min(closes, default=0.0)
+                max_v = max(closes, default=0.0)
+                span = max_v - min_v
+
+                chart_data = [
+                    {
+                        "name": r["time"].strftime("%H:%M"),
+                        "normalized_close": (float(r["close"]) - min_v) / span
+                        if span
+                        else 0.5,
+                    }
+                    for r in today
+                ]
+
+                built.append(
+                    {
+                        "label": name,
+                        "value": f"{current:,.2f}",
+                        "abs_change": f"{sign}{abs(change):.2f}",
+                        "pct_change": f"{sign}{abs(pct):.2f}%",
+                        "is_positive": is_positive,
+                        "chart_data": chart_data,
+                    }
+                )
+
+            async with self:
+                self.indices = built
+
+        except Exception:
+            traceback.print_exc()
+
+    @rx.event(background=True)
+    async def load_ticker_for_period(self, period: str = "1D") -> None:
+        label = _PERIOD_LABEL.get(period, "Day")
+        try:
+            async with get_company_session() as session:
+                if period == "1D":
+                    score = (
+                        PriceORM.accumulated_volume
+                        * func.abs(PriceORM.pct_price_change)
+                    ).label("score")
+                    stmt = (
+                        select(
+                            PriceORM.symbol,
+                            PriceORM.pct_price_change.label("pct_change"),
+                            PriceORM.current_price,
+                            OverviewORM.industry,
+                            ProfileORM.company_name,
+                            score,
+                        )
+                        .join(OverviewORM, PriceORM.symbol == OverviewORM.symbol)
+                        .join(ProfileORM, PriceORM.symbol == ProfileORM.symbol)
+                        .where(PriceORM.pct_price_change > 0)
+                        .order_by(desc(score))
+                        .limit(1)
+                    )
+                else:
+                    ct = _CHANGE_TABLES[period]
+                    score = (ct.c.market_cap * func.abs(ct.c.pct_change)).label("score")
+                    stmt = (
+                        select(
+                            ct.c.symbol,
+                            ct.c.pct_change,
+                            _price.c.current_price,
+                            ct.c.industry,
+                            _profile.c.company_name,
+                            score,
+                        )
+                        .join(_profile, ct.c.symbol == _profile.c.symbol)
+                        .join(_price, ct.c.symbol == _price.c.symbol)
+                        .where(ct.c.pct_change > 0)
+                        .order_by(desc(score))
+                        .limit(1)
+                    )
+
                 result = await session.execute(stmt)
                 row = result.mappings().first()
 
             if row is not None:
-                price: float = row["current_price"] or 0.0
-                pct: float = row["pct_price_change"] or 0.0
+                price = float(row["current_price"] or 0.0)
+                pct = float(row["pct_change"] or 0.0)
                 async with self:
                     self.ticker_of_day_symbol = row["symbol"] or ""
                     self.ticker_of_day_name = row["company_name"] or ""
                     self.ticker_of_day_industry = row["industry"] or "N/A"
                     self.ticker_of_day_price = f"{price:,.2f}"
                     self.ticker_of_day_change = f"+{pct:.2f}%"
+                    self.ticker_period_label = label
             else:
                 async with self:
                     self.ticker_of_day_symbol = "N/A"
                     self.ticker_of_day_name = "No data available"
                     self.ticker_of_day_industry = ""
-                    self.ticker_of_day_price = "$0.00"
+                    self.ticker_of_day_price = "0.00"
                     self.ticker_of_day_change = "+0.00%"
+                    self.ticker_period_label = label
 
         except Exception as e:
-            print(f"Error loading ticker of the day: {e}")
+            print(f"[ticker_of_day] Error loading period {period}: {e}")
             traceback.print_exc()
             async with self:
                 self.ticker_of_day_symbol = "N/A"
                 self.ticker_of_day_name = "Error loading data"
                 self.ticker_of_day_industry = ""
-                self.ticker_of_day_price = "$0.00"
+                self.ticker_of_day_price = "0.00"
                 self.ticker_of_day_change = "+0.00%"
+                self.ticker_period_label = label
+
+    # -------------------------------------------------------------------------
+    # Lifecycle
+    # -------------------------------------------------------------------------
 
     def on_mount(self):
-        return [HomeState.load_vnindex_data, HomeState.load_ticker_of_day]
+        super().on_mount()
+        return [
+            HomeState.load_vnindex_data,
+            HomeState.load_indices_data,
+            HomeState.load_ticker_for_period("1D"),
+            HomeState.start_refresh_countdown,
+        ]
 
     def on_unmount(self):
-        pass
+        self._refresh_running = False
+        super().on_unmount()
+
+    # -------------------------------------------------------------------------
+    # Navigation
+    # -------------------------------------------------------------------------
 
     @rx.event
     def navigate_to_ticker_of_day(self):
         if self.ticker_of_day_symbol and self.ticker_of_day_symbol != "N/A":
             return rx.redirect(f"/tickers/{self.ticker_of_day_symbol}")
+
+    @rx.event
+    def handle_compare(self):
+        return rx.redirect("/tickers")
+
+    @rx.event
+    def handle_portfolio(self):
+        return rx.redirect("/portfolio")
+
+    # -------------------------------------------------------------------------
+    # Hover interactions
+    # -------------------------------------------------------------------------
 
     @rx.event
     def start_framework_hover(self) -> None:
@@ -260,11 +538,3 @@ class HomeState(rx.State):
     @rx.event
     def end_comparison_hover(self) -> None:
         self.is_comparison_hovered = False
-
-    @rx.event
-    def handle_compare(self):
-        return rx.redirect("/tickers")
-
-    @rx.event
-    def handle_portfolio(self):
-        return rx.redirect("/portfolio")

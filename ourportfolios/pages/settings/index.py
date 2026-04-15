@@ -4,6 +4,7 @@ import reflex as rx
 from ...components.navbar import navbar
 from ...components.auth_guard import page_guard
 from ...state.auth_state import AuthState
+from ...ui.layout import app_shell
 from .state import SettingsState
 from .components import settings_layout
 from ...styles import TEXT_PRIMARY, TEXT_MUTED, PAGE_BG
@@ -37,9 +38,6 @@ def _page_body() -> rx.Component:
             padding_x="2rem",
             padding_y="2.5rem",
         ),
-        background=PAGE_BG,
-        color="white",
-        min_height="100vh",
     )
 
 
@@ -48,4 +46,4 @@ def _page_body() -> rx.Component:
     on_load=[AuthState.require_auth, SettingsState.load_settings],
 )
 def index() -> rx.Component:
-    return page_guard(_page_body(), bg=PAGE_BG)
+    return app_shell(page_guard(_page_body(), bg=PAGE_BG))

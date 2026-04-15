@@ -6,6 +6,7 @@ from ...components.navbar import navbar
 from ...components.breadcrumb import breadcrumb
 from ...components.auth_guard import page_guard
 from ...state.auth_state import AuthState
+from ...ui.layout import app_shell
 
 from .state import FrameworkState
 from .framework_cards import category_filter_button, framework_card, skeleton_card
@@ -147,8 +148,9 @@ def _page_body() -> rx.Component:
         rx.center(
             rx.box(
                 main_content(),
-                width="clamp(70vw, 90vw, 96vw)",
-                max_width="112.5rem",
+                width="86vw",
+                max_width="90rem",
+                margin="0 auto",
             ),
             width="100%",
             padding="2em",
@@ -158,10 +160,6 @@ def _page_body() -> rx.Component:
         framework_dialog(),
         add_framework_dialog(),
         add_metric_selector(),
-        background="#090909",
-        color="white",
-        min_height="100vh",
-        width="100%",
     )
 
 
@@ -170,11 +168,7 @@ def _page_body() -> rx.Component:
     on_load=[AuthState.require_auth, FrameworkState.on_mount],
 )
 def index() -> rx.Component:
-    return rx.box(
+    return app_shell(
         page_guard(_page_body()),
         on_unmount=FrameworkState.on_unmount,
-        background="#090909",
-        color="white",
-        min_height="100vh",
-        width="100%",
     )
