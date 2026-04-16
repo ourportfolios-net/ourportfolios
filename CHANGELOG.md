@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v0.16.1 (2026-04-16)
+
+### Bug Fixes
+
+- Wrap engine to not expose psycopg2
+  ([`68449b5`](https://github.com/ourportfolios-net/ourportfolios/commit/68449b59390c9d6f87f1de2b0b2da25c3ab245cd))
+
+
 ## v0.16.0 (2026-04-16)
 
 ### Chores
