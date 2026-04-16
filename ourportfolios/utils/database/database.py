@@ -1,13 +1,12 @@
-"""Database session configuration for two async databases.
+"""Async/sync SQLAlchemy sessions for PRICE_DB (Neon) and COMPANY_DB (Supabase).
 
-This module creates async SQLAlchemy engines and session makers for two
-databases: the PRICE DB (holds price and financial statements) and the
-COMPANY DB (holds other company-related data). It exposes async context
-managers `get_price_session()` and `get_company_session()` for individual
-database access.
+Uses NullPool + retry for serverless-safe connections. COMPANY_DB requires a
+Supabase Transaction Pooler URL (port 6543). See also:
+https://activeno.de/blog/2025-06/properly-connecting-with-a-database-on-serverless/
 """
 
 import os
+from functools import lru_cache
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
@@ -20,23 +19,26 @@ from sqlalchemy.ext.asyncio import (
 from sqlalchemy.pool import NullPool
 from dotenv import load_dotenv
 
+from ..retry import retry_async
+
 load_dotenv()
 
 PRICE_DB_URI = os.getenv("PRICE_DB_URI")
 COMPANY_DB_URI = os.getenv("COMPANY_DB_URI")
 
 
-def _ensure_async_pg(url: str | None) -> str:
-    """Ensure the provided PostgreSQL URL uses asyncpg dialect.
-
-    Accepts both `postgresql://` and `postgresql+psycopg2://` forms and
-    returns a URL using `postgresql+asyncpg://`. Also removes query parameters
-    like sslmode that should be in connect_args for asyncpg.
-    """
-    if url is None:
-        raise ValueError("Database URL cannot be None. Check environment variables.")
+def _strip_query_params(url: str) -> str:
+    """Strip query params from a DB URL (must be passed via connect_args instead)."""
     if "?" in url:
         url = url.split("?")[0]
+    return url
+
+
+def _ensure_async_pg(url: str | None) -> str:
+    """Normalise a PostgreSQL URL to use the asyncpg dialect and strip query params."""
+    if url is None:
+        raise ValueError("Database URL cannot be None. Check environment variables.")
+    url = _strip_query_params(url)
 
     if "postgresql+asyncpg" in url:
         return url
@@ -48,26 +50,23 @@ def _ensure_async_pg(url: str | None) -> str:
 
 
 def _clean_sync_pg(url: str | None) -> str:
-    """Clean PostgreSQL URL for psycopg2 by moving query params to connect_args.
-
-    Removes sslmode and other query params that should be in connect_args.
-    """
+    """Strip query params from a PostgreSQL URL for psycopg2 (pass via connect_args)."""
     if url is None:
         raise ValueError("Database URL cannot be None. Check environment variables.")
-    if "?" in url:
-        url = url.split("?")[0]
-    return url
+    return _strip_query_params(url)
 
 
 PRICE_DB_URI_ASYNC = _ensure_async_pg(PRICE_DB_URI)
 COMPANY_DB_URI_ASYNC = _ensure_async_pg(COMPANY_DB_URI)
 
+# NullPool: one connection per request; statement_cache_size=0 required for pgbouncer transaction mode
 price_engine = create_async_engine(
     PRICE_DB_URI_ASYNC,
     poolclass=NullPool,
     connect_args={
         "server_settings": {"jit": "off"},
         "timeout": 10,
+        "command_timeout": 20,
         "statement_cache_size": 0,
     },
 )
@@ -77,21 +76,56 @@ company_engine = create_async_engine(
     connect_args={
         "server_settings": {"jit": "off"},
         "timeout": 10,
+        "command_timeout": 20,
         "statement_cache_size": 0,
     },
 )
 
-# Sync engines for pandas to_sql operations
-price_sync_engine = create_engine(
-    _clean_sync_pg(PRICE_DB_URI), connect_args={"sslmode": "require"}
-)
-company_sync_engine = create_engine(
-    _clean_sync_pg(COMPANY_DB_URI), connect_args={"sslmode": "require"}
-)
+@lru_cache(maxsize=1)
+def get_price_sync_engine():
+    """Create the sync price engine only when a sync helper actually needs it."""
+    return create_engine(
+        _clean_sync_pg(PRICE_DB_URI),
+        poolclass=NullPool,
+        connect_args={"sslmode": "require", "connect_timeout": 10},
+    )
+
+
+@lru_cache(maxsize=1)
+def get_company_sync_engine():
+    """Create the sync company engine only when a sync helper actually needs it."""
+    return create_engine(
+        _clean_sync_pg(COMPANY_DB_URI),
+        poolclass=NullPool,
+        connect_args={"sslmode": "require", "connect_timeout": 10},
+    )
+
+
+class RetryingAsyncSession(AsyncSession):
+    """Async session with retry wrappers for transient serverless DB failures."""
+
+    async def execute(self, *args, **kwargs):
+        return await retry_async(
+            lambda: super(RetryingAsyncSession, self).execute(*args, **kwargs)
+        )
+
+    async def scalar(self, *args, **kwargs):
+        return await retry_async(
+            lambda: super(RetryingAsyncSession, self).scalar(*args, **kwargs)
+        )
+
+    async def scalars(self, *args, **kwargs):
+        return await retry_async(
+            lambda: super(RetryingAsyncSession, self).scalars(*args, **kwargs)
+        )
+
+    async def commit(self):
+        return await retry_async(lambda: super(RetryingAsyncSession, self).commit())
 
 
 PriceSession = async_sessionmaker(
     price_engine,
+    class_=RetryingAsyncSession,
     autocommit=False,
     autoflush=False,
     expire_on_commit=False,
@@ -99,6 +133,7 @@ PriceSession = async_sessionmaker(
 
 CompanySession = async_sessionmaker(
     company_engine,
+    class_=RetryingAsyncSession,
     autocommit=False,
     autoflush=False,
     expire_on_commit=False,
@@ -107,41 +142,35 @@ CompanySession = async_sessionmaker(
 
 @asynccontextmanager
 async def get_price_session() -> AsyncIterator[AsyncSession]:
-    """Async context manager yielding a price database session.
+    """Yield a price DB session; commits on success, rolls back on error."""
 
-    Usage:
-        async with get_price_session() as session:
-            result = await session.execute(...)
+    async def _get_session() -> AsyncSession:
+        return PriceSession()
 
-    Session is committed if the block exits normally, and rolled back on exception.
-    """
-    async with PriceSession() as session:
-        try:
-            yield session
-            await session.commit()
-        except Exception:
-            await session.rollback()
-            raise
-        finally:
-            await session.close()
+    session = await retry_async(_get_session, max_attempts=5, wait_ms=1000)
+    try:
+        yield session
+        await session.commit()
+    except Exception:
+        await session.rollback()
+        raise
+    finally:
+        await session.close()
 
 
 @asynccontextmanager
 async def get_company_session() -> AsyncIterator[AsyncSession]:
-    """Async context manager yielding a company database session.
+    """Yield a company DB session; commits on success, rolls back on error."""
 
-    Usage:
-        async with get_company_session() as session:
-            result = await session.execute(...)
+    async def _get_session() -> AsyncSession:
+        return CompanySession()
 
-    Session is committed if the block exits normally, and rolled back on exception.
-    """
-    async with CompanySession() as session:
-        try:
-            yield session
-            await session.commit()
-        except Exception:
-            await session.rollback()
-            raise
-        finally:
-            await session.close()
+    session = await retry_async(_get_session, max_attempts=5, wait_ms=1000)
+    try:
+        yield session
+        await session.commit()
+    except Exception:
+        await session.rollback()
+        raise
+    finally:
+        await session.close()

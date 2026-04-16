@@ -5,10 +5,10 @@ import pandas as pd
 from sqlalchemy import text
 
 from .database import (
-    company_sync_engine,
     company_engine,
-    price_sync_engine,
     price_engine,
+    get_company_sync_engine,
+    get_price_sync_engine,
 )
 
 
@@ -44,7 +44,7 @@ def fetch_income_statement(ticker_symbol: str, period: str = "year") -> pd.DataF
                 ORDER BY year DESC
             """)
 
-        with price_sync_engine.connect() as conn:
+        with get_price_sync_engine().connect() as conn:
             df = pd.read_sql(query, conn, params={"symbol": ticker_symbol})
 
         if df.empty:
@@ -94,7 +94,7 @@ def fetch_balance_sheet(ticker_symbol: str, period: str = "year") -> pd.DataFram
                 ORDER BY year DESC
             """)
 
-        with price_sync_engine.connect() as conn:
+        with get_price_sync_engine().connect() as conn:
             df = pd.read_sql(query, conn, params={"symbol": ticker_symbol})
 
         if df.empty:
@@ -144,7 +144,7 @@ def fetch_cash_flow(ticker_symbol: str, period: str = "year") -> pd.DataFrame:
                 ORDER BY year DESC
             """)
 
-        with price_sync_engine.connect() as conn:
+        with get_price_sync_engine().connect() as conn:
             df = pd.read_sql(query, conn, params={"symbol": ticker_symbol})
 
         if df.empty:
@@ -190,7 +190,7 @@ def fetch_company_data(symbol: str) -> dict[str, pd.DataFrame]:
     result: dict[str, pd.DataFrame] = {}
 
     try:
-        with company_sync_engine.connect() as conn:
+        with get_company_sync_engine().connect() as conn:
             for table in tables:
                 try:
                     query = text(
@@ -229,7 +229,7 @@ def fetch_stats_for_ticker(symbol: str) -> pd.DataFrame:
         query = text("""
             SELECT * FROM tickers.stats_df WHERE ticker = :symbol
         """)
-        with company_sync_engine.connect() as conn:
+        with get_company_sync_engine().connect() as conn:
             df = pd.read_sql(query, conn, params={"symbol": symbol})
         return df if not df.empty else pd.DataFrame()
     except Exception:
@@ -243,7 +243,7 @@ def fetch_all_tickers() -> pd.DataFrame:
             FROM tickers.stats_df 
             ORDER BY market_cap DESC
         """)
-        with company_sync_engine.connect() as conn:
+        with get_company_sync_engine().connect() as conn:
             df = pd.read_sql(query, conn)
         return df if not df.empty else pd.DataFrame()
     except Exception:
@@ -266,7 +266,7 @@ def load_historical_data(
             ORDER BY date ASC
         """)
 
-        with company_sync_engine.connect() as conn:
+        with get_company_sync_engine().connect() as conn:
             df = pd.read_sql(
                 query, conn, params={"symbol": symbol, "start": start, "end": end}
             )
