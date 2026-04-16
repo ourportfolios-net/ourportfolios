@@ -18,16 +18,21 @@ This project uses **[uv](https://docs.astral.sh/uv)** for dependency and package
    uv sync
    ```
 
-3. [A PostgreSQL Database URI](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING-URIS) should then be provided through a `.env` file. Duplicate the `.env.template` file and paste your own Database URI. The database should then be reproducable with
+3. [A PostgreSQL Database URI](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING-URIS) should then be provided through a `.env` file. Duplicate the `.env.template` file and paste your own Database URI.
 
-   ```bash
-   uv run python ourportfolios/utils/database/create_schema.py
+   **If using a connection pooler** (e.g. Supabase Transaction Pooler, pgbouncer), use the **transaction mode** endpoint and run the following SQL once on your database:
+
+   ```sql
+   ALTER ROLE postgres SET jit = off;
+   ALTER ROLE postgres SET statement_timeout = '20s';
    ```
 
-   The database should then be populated with `add_ticker()` placed in the same file. Use a notebook or add it right below `create_schema.py` as well. For example, adding `FPT` to the database would look like this:
+   These must be set at the role level because pgbouncer resets session state between transactions. For more details, see [Properly connecting with a database on serverless](https://activeno.de/blog/2025-06/properly-connecting-with-a-database-on-serverless/).
 
-   ```python
-   add_ticker("FPT", company_sync_engine, schema_name="tickers2"
+   The schema can then be created and kept up to date with Alembic:
+
+   ```bash
+   uv run alembic upgrade head
    ```
 
 4. **The Webapp should then be accessible with**
