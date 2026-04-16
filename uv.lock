@@ -1034,7 +1034,7 @@ wheels = [
 
 [[package]]
 name = "ourportfolios"
-version = "0.15.1"
+version = "0.15.4"
 source = { editable = "." }
 dependencies = [
     { name = "apscheduler" },
@@ -1965,16 +1965,16 @@ wheels = [
 
 [[package]]
 name = "vnai"
-version = "2.4.0"
+version = "2.4.6"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cffi" },
     { name = "psutil" },
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ef/a1/0d050468f6438ad7528c33be88337c5405e67131bd71a59265ecaa3505a5/vnai-2.4.0.tar.gz", hash = "sha256:6882a40abcd0d4c13299eea504a0efaf47914d0c51e061728c0a6cf3653b1973", size = 36683, upload-time = "2026-03-11T15:06:16.303Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/7d/22/958a45a332a021c0da8a524fce7b484b14bd930bf8b6bc418a990160e7af/vnai-2.4.6.tar.gz", hash = "sha256:864a3a228ae8b47110fe00b10f76d30a44e1eb574558b7798894ff2c91e18441", size = 39441, upload-time = "2026-04-06T18:30:09.845Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c9/52/7ad601e548a23ccc4a18946d1620653fa6527fda988f367597c474dcb87d/vnai-2.4.0-py3-none-any.whl", hash = "sha256:9786ef5711cdeac415ff163d37588103086b4bf120eb0361b88883d5e948170c", size = 44928, upload-time = "2026-03-11T15:06:13.432Z" },
+    { url = "https://files.pythonhosted.org/packages/e2/2e/a16e706a8df945f8dbced5d247d16a9fc73930830582a0ebe686c6384483/vnai-2.4.6-py3-none-any.whl", hash = "sha256:36e57032934e6f15d22922678525c84b1a1305aea6b67463a834e47bea6c8ad7", size = 47786, upload-time = "2026-04-06T18:30:08.417Z" },
 ]
 
 [[package]]
