@@ -6,6 +6,7 @@ https://activeno.de/blog/2025-06/properly-connecting-with-a-database-on-serverle
 """
 
 import os
+from functools import lru_cache
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
@@ -80,16 +81,24 @@ company_engine = create_async_engine(
     },
 )
 
-price_sync_engine = create_engine(
-    _clean_sync_pg(PRICE_DB_URI),
-    poolclass=NullPool,
-    connect_args={"sslmode": "require", "connect_timeout": 10},
-)
-company_sync_engine = create_engine(
-    _clean_sync_pg(COMPANY_DB_URI),
-    poolclass=NullPool,
-    connect_args={"sslmode": "require", "connect_timeout": 10},
-)
+@lru_cache(maxsize=1)
+def get_price_sync_engine():
+    """Create the sync price engine only when a sync helper actually needs it."""
+    return create_engine(
+        _clean_sync_pg(PRICE_DB_URI),
+        poolclass=NullPool,
+        connect_args={"sslmode": "require", "connect_timeout": 10},
+    )
+
+
+@lru_cache(maxsize=1)
+def get_company_sync_engine():
+    """Create the sync company engine only when a sync helper actually needs it."""
+    return create_engine(
+        _clean_sync_pg(COMPANY_DB_URI),
+        poolclass=NullPool,
+        connect_args={"sslmode": "require", "connect_timeout": 10},
+    )
 
 
 class RetryingAsyncSession(AsyncSession):
