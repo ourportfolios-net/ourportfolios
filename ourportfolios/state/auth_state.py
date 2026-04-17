@@ -1,10 +1,10 @@
-"""Authentication state for login, registration, OAuth, and password reset."""
+"""
+Place at: ourportfolios/state/auth_state.py
+"""
 
-import base64
-import hashlib
 import secrets
-import urllib.parse
-
+import hashlib
+import base64
 import httpx
 import reflex as rx
 
@@ -12,7 +12,6 @@ from ..auth_config import (
     AUTH_AVAILABLE,
     get_supabase,
     oauth_redirect_url,
-    supabase_update_user,
     SUPABASE_URL,
     SUPABASE_ANON_KEY,
 )
@@ -30,12 +29,7 @@ def _safe_destination(route: str) -> str:
     if not route:
         return "/home"
     path = route.split("?")[0].split("#")[0]
-    # Block protocol-relative URLs (//evil.com), non-local paths, and auth loops
-    if (
-        path in _BLOCKED_DESTINATIONS
-        or not path.startswith("/")
-        or path.startswith("//")
-    ):
+    if path in _BLOCKED_DESTINATIONS or not path.startswith("/"):
         return "/home"
     return path
 
@@ -420,18 +414,18 @@ class AuthState(rx.State):
             if response.session:
                 self._store_session(response.user, response.session)
                 self._clear_form()
-                display_name = self.user_display_name or response.user.email or "back"
+                name = self.user_display_name or response.user.email or "back"
                 destination = self._consume_intended_route()
                 return [
                     rx.redirect(destination),
-                    rx.toast.success(f"Welcome back, {display_name}!", **_TOAST),
+                    rx.toast.success(f"Welcome back, {name}!", **_TOAST),
                 ]
             else:
                 self.error = "Invalid credentials."
                 return rx.toast.error("Invalid email or password.", **_TOAST)
         except Exception as e:
-            error_message = str(e).lower()
-            if "email not confirmed" in error_message:
+            msg = str(e).lower()
+            if "email not confirmed" in msg:
                 self.show_resend = True
                 self.error = "Please confirm your email before signing in."
             else:
@@ -521,6 +515,8 @@ class AuthState(rx.State):
             verifier, challenge = _generate_pkce()
             self._pkce_verifier = verifier
 
+            import urllib.parse
+
             params = urllib.parse.urlencode(
                 {
                     "provider": "google",
@@ -529,8 +525,8 @@ class AuthState(rx.State):
                     "code_challenge_method": "S256",
                 }
             )
-            authorize_url = f"{SUPABASE_URL}/auth/v1/authorize?{params}"
-            return rx.redirect(authorize_url)
+            url = f"{SUPABASE_URL}/auth/v1/authorize?{params}"
+            return rx.redirect(url)
         except Exception as e:
             self.error = str(e)
             return rx.toast.error(f"Google sign in failed: {e}", **_TOAST)
@@ -579,8 +575,8 @@ class AuthState(rx.State):
                     rx.toast.warning("Sign in timed out. Please try again.", **_TOAST),
                 ]
             try:
-                async with httpx.AsyncClient() as http_client:
-                    token_response = await http_client.post(
+                async with httpx.AsyncClient() as client:
+                    resp = await client.post(
                         f"{SUPABASE_URL}/auth/v1/token?grant_type=pkce",
                         json={"auth_code": code, "code_verifier": verifier},
                         headers={
@@ -588,7 +584,7 @@ class AuthState(rx.State):
                             "Content-Type": "application/json",
                         },
                     )
-                data = token_response.json()
+                data = resp.json()
                 if "error" in data:
                     raise Exception(data.get("error_description", data["error"]))
 
@@ -606,10 +602,12 @@ class AuthState(rx.State):
                 self.auth_refresh_token = refresh_token
                 self._store_session(user_response.user)
                 destination = self._consume_intended_route()
-                display_name = self.user_display_name or self.user_email
                 return [
                     rx.redirect(destination),
-                    rx.toast.success(f"Welcome, {display_name}!", **_TOAST),
+                    rx.toast.success(
+                        f"Welcome, {self.user_display_name or self.user_email}!",
+                        **_TOAST,
+                    ),
                 ]
             except Exception as e:
                 self.error = str(e)
@@ -705,18 +703,14 @@ class AuthState(rx.State):
         self.reset_loading = True
         self.reset_error = ""
         try:
-            if not self.auth_token:
-                self.reset_error = "Session expired. Please request a new reset link."
-                return rx.toast.error("Session expired.", **_TOAST)
-            await supabase_update_user(
-                self.auth_token, {"password": self.reset_new_password}
-            )
+            supabase = get_supabase()
+            supabase.auth.update_user({"password": self.reset_new_password})
             self.reset_done = True
             self.reset_new_password = ""
             self.reset_confirm_password = ""
             return rx.toast.success("Password updated! Please sign in.", **_TOAST)
-        except Exception:
-            self.reset_error = "Failed to update password. Please try again."
-            return rx.toast.error("Failed to update password.", **_TOAST)
+        except Exception as e:
+            self.reset_error = str(e)
+            return rx.toast.error(f"Failed to update password: {e}", **_TOAST)
         finally:
             self.reset_loading = False

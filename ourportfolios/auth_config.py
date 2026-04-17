@@ -1,8 +1,11 @@
-"""Supabase client configuration and auth helpers."""
+"""
+Place at: ourportfolios/state/supabase_client.py
+Moved here from pages/auth/client.py to avoid circular imports.
+auth_state.py imports from this file; pages import from auth_state — no cycle.
+"""
 
 import os
 
-import httpx
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -37,27 +40,3 @@ def get_supabase():
 
 def oauth_redirect_url() -> str:
     return f"{SUPABASE_SITE_URL}/auth/callback"
-
-
-async def supabase_update_user(access_token: str, updates: dict) -> dict:
-    """Update the authenticated user via the Supabase REST API.
-
-    Uses the caller's access token directly instead of the shared singleton
-    client, preventing session cross-contamination under concurrency.
-    """
-    async with httpx.AsyncClient() as http_client:
-        response = await http_client.put(
-            f"{SUPABASE_URL}/auth/v1/user",
-            json=updates,
-            headers={
-                "Authorization": f"Bearer {access_token}",
-                "apikey": SUPABASE_ANON_KEY,
-                "Content-Type": "application/json",
-            },
-        )
-    data = response.json()
-    if response.status_code >= 400:
-        raise Exception(
-            data.get("msg") or data.get("error_description") or "Update failed."
-        )
-    return data
