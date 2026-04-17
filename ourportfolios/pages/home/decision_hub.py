@@ -13,6 +13,6 @@ def decision_hub_section() -> rx.Component:
             initial="1fr",
             sm="repeat(3, minmax(0, 1fr))",
         ),
-        gap="1.25rem",
+        gap=rx.breakpoints(initial="0.875rem", sm="1.25rem"),
         width="100%",
     )

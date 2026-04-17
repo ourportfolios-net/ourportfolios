@@ -35,7 +35,7 @@ def _ticker_skeleton() -> rx.Component:
             spacing="3",
             width="100%",
         ),
-        padding="1rem 1.125rem",
+        padding=rx.breakpoints(initial="0.875rem 1rem", md="1rem 1.125rem"),
         width="100%",
     )
 
@@ -75,7 +75,7 @@ def _ticker_real():
                         rx.hstack(
                             rx.text(
                                 HomeState.ticker_of_day_symbol,
-                                size="8",
+                                size=rx.breakpoints(initial="7", sm="8"),
                                 weight="bold",
                                 color="white",
                                 letter_spacing="-0.03em",
@@ -99,7 +99,7 @@ def _ticker_real():
                         rx.spacer(),
                         rx.text(
                             HomeState.ticker_of_day_price,
-                            size="6",
+                            size=rx.breakpoints(initial="5", sm="6"),
                             weight="bold",
                             color="white",
                             letter_spacing="-0.02em",
@@ -141,7 +141,7 @@ def _ticker_real():
             position="relative",
             width="100%",
         ),
-        padding="1rem 1.125rem",
+        padding=rx.breakpoints(initial="0.875rem 1rem", md="1rem 1.125rem"),
         width="100%",
         cursor="pointer",
     )

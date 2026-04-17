@@ -74,6 +74,6 @@ def cart_card() -> rx.Component:
             spacing="3",
             width="100%",
         ),
-        padding="1.125rem 1.25rem",
+        padding=rx.breakpoints(initial="0.875rem 1rem", md="1.125rem 1.25rem"),
         width="100%",
     )

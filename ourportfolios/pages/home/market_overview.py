@@ -49,6 +49,9 @@ def _skel(w: str = "100%", h: str = "0.75rem", r: str = "0.375rem") -> rx.Compon
     return rx.skeleton(rx.box(width=w, height=h), loading=True, border_radius=r)
 
 
+# ─── Desktop treemap ──────────────────────────────────────────────────────────
+
+
 def _ticker_content(t: TickerSubtile) -> rx.Component:
     return rx.cond(
         t.size == "xl",
@@ -306,22 +309,145 @@ def _treemap() -> rx.Component:
     )
 
 
+# ─── Mobile industry list ─────────────────────────────────────────────────────
+
+
+def _mobile_tile_row(tile: HeatmapTile) -> rx.Component:
+    return rx.link(
+        rx.hstack(
+            rx.text(
+                tile.name,
+                size="2",
+                weight="bold",
+                color=white(0.88),
+                flex="1",
+                overflow="hidden",
+                text_overflow="ellipsis",
+                white_space="nowrap",
+            ),
+            rx.badge(
+                tile.pct_label,
+                color_scheme=tile.pct_color_scheme,
+                variant="soft",
+                size="1",
+                flex_shrink="0",
+            ),
+            spacing="3",
+            align="center",
+            width="100%",
+        ),
+        href=tile.url,
+        text_decoration="none",
+        display="flex",
+        padding="0.6rem 0.75rem",
+        border_radius="0.5rem",
+        background=white(0.03),
+        border=_TILE_BORDER,
+        width="100%",
+        transition="border-color 0.12s ease, background 0.12s ease",
+        _hover={"border_color": _TILE_HOVER_BORDER, "background": white(0.05)},
+    )
+
+
+def _mobile_chip_row(c: HeatmapChip) -> rx.Component:
+    return rx.link(
+        rx.hstack(
+            rx.text(
+                c.name,
+                size="2",
+                weight="medium",
+                color=white(0.65),
+                flex="1",
+                overflow="hidden",
+                text_overflow="ellipsis",
+                white_space="nowrap",
+            ),
+            rx.badge(
+                c.pct_label,
+                color_scheme=c.pct_color_scheme,
+                variant="soft",
+                size="1",
+                flex_shrink="0",
+            ),
+            spacing="3",
+            align="center",
+            width="100%",
+        ),
+        href=c.url,
+        text_decoration="none",
+        display="flex",
+        padding="0.5rem 0.75rem",
+        border_radius="0.5rem",
+        background=white(0.02),
+        border=_TILE_BORDER,
+        width="100%",
+        transition="border-color 0.12s ease, background 0.12s ease",
+        _hover={"border_color": _TILE_HOVER_BORDER, "background": white(0.04)},
+    )
+
+
+def _mobile_skeleton_row() -> rx.Component:
+    return rx.box(
+        rx.hstack(
+            _skel("55%", "0.875rem"),
+            rx.spacer(),
+            _skel("3rem", "1.25rem", "0.5rem"),
+            align="center",
+            width="100%",
+        ),
+        padding="0.6rem 0.75rem",
+        border_radius="0.5rem",
+        background=white(0.03),
+        border=_TILE_BORDER,
+        width="100%",
+    )
+
+
+def _mobile_industry_view() -> rx.Component:
+    return rx.cond(
+        HeatmapState.tiles,
+        rx.vstack(
+            rx.foreach(HeatmapState.tiles, _mobile_tile_row),
+            rx.cond(
+                HeatmapState.chips,
+                rx.foreach(HeatmapState.chips, _mobile_chip_row),
+                rx.box(),
+            ),
+            spacing="2",
+            width="100%",
+        ),
+        rx.vstack(
+            *[_mobile_skeleton_row() for _ in range(8)],
+            spacing="2",
+            width="100%",
+        ),
+    )
+
+
+# ─── Section assembly ─────────────────────────────────────────────────────────
+
+
 def market_overview_section() -> rx.Component:
     return glass_card(
         rx.vstack(
+            # ── Header: countdown + title LEFT, period buttons RIGHT ──────
+            # Never wraps — title shrinks via responsive size, buttons stay fixed
             rx.hstack(
-                # Countdown ring + title grouped on the left
                 rx.hstack(
                     refresh_countdown_ring(),
                     rx.text(
                         "Market Overview",
-                        size="3",
+                        # Smaller on mobile so the period buttons always fit
+                        size=rx.breakpoints(initial="2", md="3"),
                         weight="bold",
                         color=TEXT_PRIMARY,
                         letter_spacing="-0.01em",
+                        white_space="nowrap",
                     ),
                     spacing="2",
                     align="center",
+                    flex_shrink="1",
+                    min_width="0",
                 ),
                 rx.spacer(),
                 rx.hstack(
@@ -331,26 +457,40 @@ def market_overview_section() -> rx.Component:
                     border_radius="0.4375rem",
                     background=white(0.03),
                     border=f"1px solid {white(0.06)}",
+                    flex_shrink="0",  # period strip never wraps or shrinks
                 ),
                 width="100%",
                 align="center",
+                # No wrap — single row always
             ),
-            rx.hstack(
-                indices_grid(),
-                rx.box(
-                    _treemap(),
-                    flex="1",
-                    min_width="0",
+            # ── MOBILE: horizontal index scroll + industry list ───────────
+            rx.mobile_only(
+                rx.vstack(
+                    indices_grid(),
+                    _mobile_industry_view(),
+                    spacing="3",
+                    width="100%",
                 ),
-                spacing="4",
-                width="100%",
-                align="start",
+            ),
+            # ── TABLET + DESKTOP: side-by-side indices column + treemap ──
+            rx.tablet_and_desktop(
+                rx.hstack(
+                    indices_grid(),
+                    rx.box(
+                        _treemap(),
+                        flex="1",
+                        min_width="0",
+                    ),
+                    spacing="4",
+                    width="100%",
+                    align="start",
+                ),
             ),
             accent_btn("View Full Market", href="/market"),
             spacing="4",
             width="100%",
         ),
-        padding="1.25rem 1.5rem",
+        padding=rx.breakpoints(initial="0.875rem 1rem", md="1.25rem 1.5rem"),
         width="100%",
         _hover={},
         on_mount=PrefsState.apply_to_heatmap,

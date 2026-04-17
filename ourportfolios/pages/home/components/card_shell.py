@@ -14,7 +14,7 @@ HUB_CARD_STYLE = {
     "background": CARD_BG,
     "border": CARD_BORDER,
     "border_radius": "0.875rem",
-    "padding": "1.5rem",
+    "padding": rx.breakpoints(initial="1.125rem 1rem", md="1.5rem"),
     "position": "relative",
     "overflow": "hidden",
     "width": "100%",

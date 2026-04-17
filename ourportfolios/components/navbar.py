@@ -266,8 +266,6 @@ def _user_menu() -> rx.Component:
 
 
 def _auth_section() -> rx.Component:
-    # Use on_click instead of href so the current page is saved before
-    # redirecting — the user will land back here after signing in.
     login_btn = rx.box(
         rx.text("Login", font_size="0.8125rem", font_weight="500", color=white(0.55)),
         on_click=AuthState.redirect_to_login_from_current_page,
@@ -282,51 +280,33 @@ def _auth_section() -> rx.Component:
     return rx.cond(AuthState.is_authenticated, _user_menu(), login_btn)
 
 
+def _logo() -> rx.Component:
+    return rx.link(
+        rx.text(
+            "ourportfolios",
+            font_size="1.25rem",
+            font_weight="600",
+            letter_spacing="-0.02em",
+            user_select="none",
+            flex_shrink="0",
+        ),
+        href="/home",
+        text_decoration="none",
+        color="inherit",
+        _hover={
+            "cursor": "pointer",
+            "text_decoration": "none",
+            "color": "inherit",
+        },
+    )
+
+
 # ── Navbar ────────────────────────────────────────────────────────────────────
 
 
 def navbar() -> rx.Component:
-    bar = rx.box(
-        rx.hstack(
-            rx.hstack(
-                rx.link(
-                    rx.text(
-                        "ourportfolios",
-                        font_size="1.25rem",
-                        font_weight="600",
-                        letter_spacing="-0.02em",
-                        user_select="none",
-                        flex_shrink="0",
-                    ),
-                    href="/home",
-                    text_decoration="none",
-                    color="inherit",
-                    _hover={
-                        "cursor": "pointer",
-                        "text_decoration": "none",
-                        "color": "inherit",
-                    },
-                ),
-                _framework_link(),
-                _portfolio_link(),
-                _nav_hover_dropdown("Analyze", _analyze_dropdown()),
-                _nav_hover_dropdown("About", _about_dropdown()),
-                spacing="6",
-                align="center",
-                style={"flexWrap": "wrap"},
-            ),
-            rx.hstack(
-                search_bar(),
-                _auth_section(),
-                spacing="3",
-                align="center",
-            ),
-            align="center",
-            justify="between",
-            width="100%",
-            padding_x="2rem",
-            style={"flexWrap": "wrap", "gap": "0.75rem"},
-        ),
+    # ── Shared background/blur styles ────────────────────────────────────────
+    bar_style = dict(
         position="fixed",
         top="0",
         width="100%",
@@ -336,5 +316,66 @@ def navbar() -> rx.Component:
         backdrop_filter="blur(2rem)",
         border_bottom=f"1px solid {white(0.05)}",
     )
-    spacer = rx.box(height="4rem", width="100%")
-    return rx.vstack(bar, spacer)
+
+    # ── Mobile bar: logo + auth on row 1, full-width search on row 2 ─────────
+    mobile_bar = rx.mobile_only(
+        rx.box(
+            rx.vstack(
+                rx.hstack(
+                    _logo(),
+                    rx.spacer(),
+                    _auth_section(),
+                    align="center",
+                    width="100%",
+                ),
+                rx.box(
+                    search_bar(),
+                    width="100%",
+                ),
+                spacing="2",
+                width="100%",
+                padding_x="1rem",
+            ),
+            **bar_style,
+        ),
+    )
+
+    # ── Tablet + Desktop bar: single row with all nav links ───────────────────
+    desktop_bar = rx.tablet_and_desktop(
+        rx.box(
+            rx.hstack(
+                rx.hstack(
+                    _logo(),
+                    _framework_link(),
+                    _portfolio_link(),
+                    _nav_hover_dropdown("Analyze", _analyze_dropdown()),
+                    _nav_hover_dropdown("About", _about_dropdown()),
+                    spacing="6",
+                    align="center",
+                    style={"flexWrap": "wrap"},
+                ),
+                rx.hstack(
+                    search_bar(),
+                    _auth_section(),
+                    spacing="3",
+                    align="center",
+                ),
+                align="center",
+                justify="between",
+                width="100%",
+                padding_x="2rem",
+                style={"flexWrap": "wrap", "gap": "0.75rem"},
+            ),
+            **bar_style,
+        ),
+    )
+
+    # Spacer height matches bar height:
+    # mobile  → ~7rem (two rows: logo/auth + search + padding)
+    # tablet+ → ~4rem (single row + padding)
+    spacer = rx.box(
+        height=rx.breakpoints(initial="7rem", sm="4rem"),
+        width="100%",
+    )
+
+    return rx.fragment(mobile_bar, desktop_bar, spacer)
