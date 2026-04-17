@@ -155,6 +155,7 @@ def _hub_card(
                     spacing="2",
                     align="start",
                     flex="1",
+                    min_width="0",
                 ),
                 rx.box(
                     rx.icon(icon, size=16, color=white(0.55)),

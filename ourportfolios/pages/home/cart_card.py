@@ -7,17 +7,27 @@ from ...styles import white
 def _cart_item_row(item: dict, index: int) -> rx.Component:
     return rx.hstack(
         rx.link(
-            rx.text(item["name"], size="3", weight="bold", color="white"),
+            rx.text(
+                item["name"],
+                size="3",
+                weight="bold",
+                color="white",
+                white_space="nowrap",
+                overflow="hidden",
+                text_overflow="ellipsis",
+            ),
             href=f"/analyze/{item['name']}",
             underline="none",
+            min_width="0",
+            flex="1",
         ),
         rx.badge(
             item.get("industry", "Unknown"),
             variant="outline",
             color_scheme="gray",
             size="1",
+            flex_shrink="0",
         ),
-        rx.spacer(),
         rx.box(
             rx.icon("x", size=13, color=white(0.25)),
             on_click=lambda: CartState.remove_item(index),

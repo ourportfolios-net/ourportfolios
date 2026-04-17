@@ -120,6 +120,7 @@ def _ticker_real():
                             white_space="nowrap",
                             overflow="hidden",
                             text_overflow="ellipsis",
+                            min_width="0",
                         ),
                         rx.spacer(),
                         rx.badge(
