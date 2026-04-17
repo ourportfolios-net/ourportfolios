@@ -324,6 +324,7 @@ def _mobile_tile_row(tile: HeatmapTile) -> rx.Component:
                 overflow="hidden",
                 text_overflow="ellipsis",
                 white_space="nowrap",
+                min_width="0",
             ),
             rx.badge(
                 tile.pct_label,
@@ -335,6 +336,7 @@ def _mobile_tile_row(tile: HeatmapTile) -> rx.Component:
             spacing="3",
             align="center",
             width="100%",
+            min_width="0",
         ),
         href=tile.url,
         text_decoration="none",
@@ -361,6 +363,7 @@ def _mobile_chip_row(c: HeatmapChip) -> rx.Component:
                 overflow="hidden",
                 text_overflow="ellipsis",
                 white_space="nowrap",
+                min_width="0",
             ),
             rx.badge(
                 c.pct_label,
@@ -372,6 +375,7 @@ def _mobile_chip_row(c: HeatmapChip) -> rx.Component:
             spacing="3",
             align="center",
             width="100%",
+            min_width="0",
         ),
         href=c.url,
         text_decoration="none",
@@ -424,20 +428,26 @@ def _mobile_industry_view() -> rx.Component:
     )
 
 
+# ─── Scrollable indices wrapper (mobile) ──────────────────────────────────────
+
+
+def _mobile_indices_scroll() -> rx.Component:
+    """Horizontal scroll row of index cards for mobile — delegates to indices_grid."""
+    return indices_grid()
+
+
 # ─── Section assembly ─────────────────────────────────────────────────────────
 
 
 def market_overview_section() -> rx.Component:
     return glass_card(
         rx.vstack(
-            # ── Header: countdown + title LEFT, period buttons RIGHT ──────
-            # Never wraps — title shrinks via responsive size, buttons stay fixed
+            # ── Header ───────────────────────────────────────────────────
             rx.hstack(
                 rx.hstack(
                     refresh_countdown_ring(),
                     rx.text(
                         "Market Overview",
-                        # Smaller on mobile so the period buttons always fit
                         size=rx.breakpoints(initial="2", md="3"),
                         weight="bold",
                         color=TEXT_PRIMARY,
@@ -457,25 +467,32 @@ def market_overview_section() -> rx.Component:
                     border_radius="0.4375rem",
                     background=white(0.03),
                     border=f"1px solid {white(0.06)}",
-                    flex_shrink="0",  # period strip never wraps or shrinks
+                    flex_shrink="0",
                 ),
                 width="100%",
                 align="center",
-                # No wrap — single row always
             ),
-            # ── MOBILE: horizontal index scroll + industry list ───────────
+            # ── MOBILE: scroll row of index cards + industry list ─────────
             rx.mobile_only(
                 rx.vstack(
-                    indices_grid(),
+                    _mobile_indices_scroll(),
                     _mobile_industry_view(),
                     spacing="3",
                     width="100%",
+                    max_width="100%",
+                    min_width="1px",
                 ),
+                width="100%",
             ),
-            # ── TABLET + DESKTOP: side-by-side indices column + treemap ──
+            # ── TABLET + DESKTOP: indices column (fixed) + treemap ────────
             rx.tablet_and_desktop(
                 rx.hstack(
-                    indices_grid(),
+                    # flex_shrink=0 keeps the indices column at its natural width
+                    # so it never gets squashed by the treemap
+                    rx.box(
+                        indices_grid(),
+                        flex_shrink="0",
+                    ),
                     rx.box(
                         _treemap(),
                         flex="1",

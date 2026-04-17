@@ -31,7 +31,7 @@ def _index_card_mobile(index: dict) -> rx.Component:
             is_positive=index["is_positive"],
             chart_data=index["chart_data"],
         ),
-        # min_width="10.5rem",
+        min_width="10.5rem",
         flex_shrink="0",
     )
 
@@ -40,17 +40,23 @@ def indices_grid() -> rx.Component:
     return rx.box(
         # ── Mobile: horizontal scroll area ────────────────────────────────
         rx.mobile_only(
-            rx.scroll_area(
+            rx.box(
                 rx.hstack(
                     rx.foreach(HomeState.indices, _index_card_mobile),
                     spacing="3",
                     align="stretch",
                     wrap="nowrap",
+                    width="max-content",
                 ),
-                scrollbars="horizontal",
-                type="scroll",
                 width="100%",
+                max_width="100%",
+                min_width="1px",
+                overflow_x="auto",
+                overflow_y="hidden",
+                style={"-webkit-overflow-scrolling": "touch"},
+                padding_bottom="0.25rem",
             ),
+            width="100%",
         ),
         # ── Tablet + Desktop: vertical scroll area ─────────────────────────
         rx.tablet_and_desktop(
@@ -66,4 +72,6 @@ def indices_grid() -> rx.Component:
                 max_height=_TREEMAP_H,
             ),
         ),
+        width="100%",
+        min_width="0",
     )
