@@ -1,7 +1,7 @@
-"""Place at: ourportfolios/pages/settings/state.py"""
+"""Settings page state for profile, preferences, password, and account deletion."""
 
 import reflex as rx
-from ...auth_config import get_supabase, AUTH_AVAILABLE
+from ...auth_config import AUTH_AVAILABLE, get_supabase, supabase_update_user
 from ...state.auth_state import AuthState
 from ...state.prefs_state import PrefsState
 
@@ -9,11 +9,6 @@ EXPERIENCE_OPTIONS = ["Beginner", "Experienced"]
 DEFAULT_PERIOD_OPTIONS = ["1D", "1W", "1M"]
 
 _TOAST = dict(position="bottom-right", duration=4000)
-
-
-def _restore_session(auth) -> None:
-    supabase = get_supabase()
-    supabase.auth.set_session(auth.auth_token, auth.auth_refresh_token)
 
 
 class SettingsState(rx.State):
@@ -76,20 +71,20 @@ class SettingsState(rx.State):
     # ── Setters ───────────────────────────────────────────────────────────────
 
     @rx.event
-    def set_active_tab(self, v: str):
-        self.active_tab = v
+    def set_active_tab(self, tab: str):
+        self.active_tab = tab
         self.save_msg = ""
         self.save_error = ""
 
     @rx.event
-    def set_display_name(self, v: str):
-        self.display_name = v
+    def set_display_name(self, value: str):
+        self.display_name = value
         self.save_msg = ""
         self.save_error = ""
 
     @rx.event
-    def set_display_name_draft(self, v: str):
-        self.display_name_draft = v
+    def set_display_name_draft(self, value: str):
+        self.display_name_draft = value
         self.save_msg = ""
         self.save_error = ""
 
@@ -107,32 +102,32 @@ class SettingsState(rx.State):
         self.save_error = ""
 
     @rx.event
-    def set_experience_level(self, v: str):
-        self.experience_level = v
+    def set_experience_level(self, value: str):
+        self.experience_level = value
         self.save_msg = ""
         self.save_error = ""
 
     @rx.event
-    def set_default_chart_period(self, v: str):
-        self.default_chart_period = v
+    def set_default_chart_period(self, value: str):
+        self.default_chart_period = value
         self.save_msg = ""
         self.save_error = ""
 
     # ── Password dialog setters ───────────────────────────────────────────────
 
     @rx.event
-    def set_old_password(self, v: str):
-        self.old_password = v
+    def set_old_password(self, value: str):
+        self.old_password = value
         self.password_error = ""
 
     @rx.event
-    def set_new_password(self, v: str):
-        self.new_password = v
+    def set_new_password(self, value: str):
+        self.new_password = value
         self.password_error = ""
 
     @rx.event
-    def set_confirm_password(self, v: str):
-        self.confirm_password = v
+    def set_confirm_password(self, value: str):
+        self.confirm_password = value
         self.password_error = ""
 
     @rx.event
@@ -149,8 +144,8 @@ class SettingsState(rx.State):
         self.password_dialog_open = False
 
     @rx.event
-    def set_password_dialog_open(self, v: bool):
-        self.password_dialog_open = v
+    def set_password_dialog_open(self, is_open: bool):
+        self.password_dialog_open = is_open
 
     # ── Delete dialog setters ─────────────────────────────────────────────────
 
@@ -165,12 +160,12 @@ class SettingsState(rx.State):
         self.delete_dialog_open = False
 
     @rx.event
-    def set_delete_dialog_open(self, v: bool):
-        self.delete_dialog_open = v
+    def set_delete_dialog_open(self, is_open: bool):
+        self.delete_dialog_open = is_open
 
     @rx.event
-    def set_delete_confirm_text(self, v: str):
-        self.delete_confirm_text = v
+    def set_delete_confirm_text(self, value: str):
+        self.delete_confirm_text = value
         self.delete_error = ""
 
     # ─────────────────────────────────────────────────────────────────────────
@@ -195,35 +190,40 @@ class SettingsState(rx.State):
         try:
             supabase = get_supabase()
             result = supabase.auth.get_user(auth.auth_token)
+            if result is None:
+                yield rx.redirect("/")
+                return
             user = result.user
             if user is None:
                 yield rx.redirect("/")
                 return
 
-            meta = user.user_metadata or {}
-            name = meta.get("full_name") or auth.user_display_name or ""
+            metadata = user.user_metadata or {}
+            display_name = metadata.get("full_name") or auth.user_display_name or ""
 
             # Clamp stored period to the 3 valid options
-            raw_period = meta.get("default_chart_period", "1M")
-            period = raw_period if raw_period in DEFAULT_PERIOD_OPTIONS else "1M"
+            stored_period = metadata.get("default_chart_period", "1M")
+            chart_period = (
+                stored_period if stored_period in DEFAULT_PERIOD_OPTIONS else "1M"
+            )
 
-            exp = meta.get("experience_level", "Beginner")
+            experience_level = metadata.get("experience_level", "Beginner")
 
-            self.display_name = name
-            self.display_name_draft = name
+            self.display_name = display_name
+            self.display_name_draft = display_name
             self.display_name_editing = False
-            self._orig_name = name
-            self.experience_level = exp
-            self._orig_exp = exp
-            self.default_chart_period = period
-            self._orig_period = period
+            self._orig_name = display_name
+            self.experience_level = experience_level
+            self._orig_exp = experience_level
+            self.default_chart_period = chart_period
+            self._orig_period = chart_period
 
-            auth.user_display_name = name
+            auth.user_display_name = display_name
 
             # Keep PrefsState in sync
             prefs = await self.get_state(PrefsState)
-            prefs.experience_level = exp
-            prefs.default_chart_period = period
+            prefs.experience_level = experience_level
+            prefs.default_chart_period = chart_period
 
         except Exception as e:
             self.save_error = str(e)
@@ -246,11 +246,9 @@ class SettingsState(rx.State):
             auth = await self.get_state(AuthState)
 
             if AUTH_AVAILABLE:
-                _restore_session(auth)
-                supabase = get_supabase()
-                result = supabase.auth.update_user({"data": {"full_name": name}})
-                if result.user is None:
-                    raise Exception("Update failed — Supabase returned no user.")
+                await supabase_update_user(
+                    auth.auth_token, {"data": {"full_name": name}}
+                )
 
             auth.user_display_name = name
             self.display_name = name
@@ -278,18 +276,15 @@ class SettingsState(rx.State):
             auth = await self.get_state(AuthState)
 
             if AUTH_AVAILABLE:
-                _restore_session(auth)
-                supabase = get_supabase()
-                result = supabase.auth.update_user(
+                await supabase_update_user(
+                    auth.auth_token,
                     {
                         "data": {
                             "experience_level": self.experience_level,
                             "default_chart_period": self.default_chart_period,
                         }
-                    }
+                    },
                 )
-                if result.user is None:
-                    raise Exception("Update failed — Supabase returned no user.")
 
             self._orig_exp = self.experience_level
             self._orig_period = self.default_chart_period
@@ -332,24 +327,23 @@ class SettingsState(rx.State):
             if AUTH_AVAILABLE:
                 supabase = get_supabase()
 
-                verify = supabase.auth.sign_in_with_password(
+                sign_in_response = supabase.auth.sign_in_with_password(
                     {"email": auth.user_email, "password": self.old_password}
                 )
-                if verify.user is None:
+                if sign_in_response.user is None:
                     self.password_error = "Current password is incorrect."
                     return
 
-                if verify.session:
-                    auth.auth_token = verify.session.access_token
+                if sign_in_response.session:
+                    auth.auth_token = sign_in_response.session.access_token
                     auth.auth_refresh_token = (
-                        verify.session.refresh_token or auth.auth_refresh_token
+                        sign_in_response.session.refresh_token
+                        or auth.auth_refresh_token
                     )
 
-                result = supabase.auth.update_user({"password": self.new_password})
-                if result.user is None:
-                    raise Exception(
-                        "Password update failed — Supabase returned no user."
-                    )
+                await supabase_update_user(
+                    auth.auth_token, {"password": self.new_password}
+                )
 
             self.old_password = ""
             self.new_password = ""
