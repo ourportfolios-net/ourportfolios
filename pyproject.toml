@@ -67,12 +67,12 @@ ignore_token_for_push = false
 insecure = false
 
 [tool.ruff]
-exclude = ["**/*.ipynb"]
+exclude = ["**/*.ipynb", ".venv", ".venv/**"]
 
 # E501 is left out for now, though it might be beneficial in the future to reconsider it https://docs.astral.sh/ruff/rules/#E501.
 [tool.ruff.lint]
 select = ["ALL"]
-ignore = ["D100", "D101", "D102", "D103", "D104", "D107", "E501", "ERA001"]
+ignore = ["ANN201", "D100", "D101", "D102", "D103", "D104", "D107", "E501", "ERA001"]
 
 
 [tool.setuptools.packages.find]
