@@ -1,17 +1,19 @@
 """Global framework state management."""
 
+from typing import Any
+
 import reflex as rx
-from typing import Any, Optional
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-from ..utils.database.database import get_company_session
-from ..utils.database.models import FrameworkORM, FrameworkMetricsORM
+
+from ourportfolios.utils.database.database import get_company_session
+from ourportfolios.utils.database.models import FrameworkMetricsORM, FrameworkORM
 
 
 class GlobalFrameworkState(rx.State):
-    selected_framework_id: Optional[int] = None
-    selected_framework: dict[str, Any] = {}
-    framework_metrics: dict[str, list[str]] = {}
+    selected_framework_id: int | None = None
+    selected_framework: ClassVar[dict[str, Any] ]= {}
+    framework_metrics: ClassVar[dict[str, list[str]] ]= {}
     _framework_initialized: bool = False
 
     @rx.event
@@ -48,7 +50,7 @@ class GlobalFrameworkState(rx.State):
             self.selected_framework = {}
 
     def _build_framework_metrics(self, metric_rows: list[FrameworkMetricsORM]) -> None:
-        metrics: dict[str, list[str]] = {}
+        metrics: ClassVar[dict[str, list[str]] ]= {}
         for row in sorted(metric_rows, key=lambda m: m.display_order or 0):
             if row.category not in metrics:
                 metrics[row.category] = []

@@ -2,7 +2,7 @@
 
 import reflex as rx
 
-from ..components import plasma, shiny_text, badge_button
+from ourportfolios.pages.landing.components import badge_button, plasma, shiny_text
 
 
 def hero_section() -> rx.Component:

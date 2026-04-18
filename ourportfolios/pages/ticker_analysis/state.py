@@ -1,19 +1,25 @@
 """State management for ticker analysis page."""
 
 import asyncio
+from typing import TYPE_CHECKING, Any
+
 import pandas as pd
 import reflex as rx
-from typing import Any, Optional, TYPE_CHECKING
 
-from ...state.framework_state import GlobalFrameworkState
-from ...state.prefs_state import PrefsState
-from ...components.price_chart import PriceChartState
-from ...utils.database.fetch_data import fetch_company_data, fetch_price_data_async
-from ...utils.preprocessing.financial_statements import get_transformed_dataframes
-from ...utils.session_manager import (
+from ourportfolios.components.price_chart import PriceChartState
+from ourportfolios.state.framework_state import GlobalFrameworkState
+from ourportfolios.state.prefs_state import PrefsState
+from ourportfolios.utils.database.fetch_data import (
+    fetch_company_data,
+    fetch_price_data_async,
+)
+from ourportfolios.utils.preprocessing.financial_statements import (
+    get_transformed_dataframes,
+)
+from ourportfolios.utils.session_manager import (
+    SessionCancelledError,
     SessionIsolatedStateMixin,
     session_isolated,
-    SessionCancelledError,
 )
 
 
@@ -52,16 +58,16 @@ class State(SessionIsolatedStateMixin, rx.State):
     officers_df: pd.DataFrame = pd.DataFrame()
     price_data: pd.DataFrame = pd.DataFrame()
 
-    income_statement: list[dict] = []
-    balance_sheet: list[dict] = []
-    cash_flow: list[dict] = []
+    income_statement: ClassVar[list[dict] ]= []
+    balance_sheet: ClassVar[list[dict] ]= []
+    cash_flow: ClassVar[list[dict] ]= []
     financial_df: pd.DataFrame = pd.DataFrame()
-    transformed_dataframes: dict = {}
-    available_metrics_by_category: dict[str, list[str]] = {}
-    selected_metrics: dict[str, str] = {}
+    transformed_dataframes: ClassVar[dict ]= {}
+    available_metrics_by_category: ClassVar[dict[str, list[str]] ]= {}
+    selected_metrics: ClassVar[dict[str, str] ]= {}
 
     selected_metric: str = "P/E"
-    available_metrics: list[str] = [
+    available_metrics: ClassVar[list[str] ]= [
         "P/E",
         "P/B",
         "P/S",
@@ -74,7 +80,7 @@ class State(SessionIsolatedStateMixin, rx.State):
 
     _is_mounted: bool = True
     _data_loaded: bool = False
-    _last_framework_id: Optional[int] = None
+    _last_framework_id: int | None = None
 
     # ============================================================================
     # COMPUTED VARS
@@ -412,17 +418,16 @@ class State(SessionIsolatedStateMixin, rx.State):
                             self.selected_metrics[category] = all_available_metrics[
                                 category
                             ][0]
+                    elif (
+                        isinstance(framework_metric_names, list)
+                        and len(framework_metric_names) > 0
+                    ):
+                        self.available_metrics_by_category[category] = (
+                            framework_metric_names
+                        )
+                        self.selected_metrics[category] = framework_metric_names[0]
                     else:
-                        if (
-                            isinstance(framework_metric_names, list)
-                            and len(framework_metric_names) > 0
-                        ):
-                            self.available_metrics_by_category[category] = (
-                                framework_metric_names
-                            )
-                            self.selected_metrics[category] = framework_metric_names[0]
-                        else:
-                            self.available_metrics_by_category[category] = []
+                        self.available_metrics_by_category[category] = []
             else:
                 self.available_metrics_by_category = all_available_metrics
                 self.selected_metrics = {}

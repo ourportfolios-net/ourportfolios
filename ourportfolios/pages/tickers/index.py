@@ -2,21 +2,19 @@
 
 import reflex as rx
 
-from ...components.navbar import navbar
-from ...components.drawer import drawer_button
-from ...components.breadcrumb import breadcrumb
-from ...styles import (
-    white,
+from ourportfolios.components.breadcrumb import breadcrumb
+from ourportfolios.components.drawer import drawer_button
+from ourportfolios.components.navbar import navbar
+from ourportfolios.pages.tickers.compare_table import compare_table, empty_compare_state
+from ourportfolios.pages.tickers.controls import board_toolbar, compare_toolbar
+from ourportfolios.pages.tickers.state import TickersPageState
+from ourportfolios.pages.tickers.ticker_board import new_ticker_board
+from ourportfolios.styles import (
     DIVIDER,
     PAGE_BG,
     overlay_style,
+    white,
 )
-
-from .state import TickersPageState
-from .controls import board_toolbar, compare_toolbar
-from .compare_table import compare_table, empty_compare_state
-from .ticker_board import new_ticker_board
-
 
 # ── View toggle ────────────────────────────────────────────────────────────────
 

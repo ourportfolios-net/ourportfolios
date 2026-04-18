@@ -1,16 +1,17 @@
 """Search bar state for ticker search and suggestions."""
 
-import reflex as rx
-import time
 import asyncio
 import itertools
+import time
 from collections.abc import Callable
 from typing import Any
 
-from sqlalchemy import Select, select, or_
-from ..utils.database.database import get_company_session
-from ..utils.database.models import PriceORM, OverviewORM
-from ..utils.session_manager import (
+import reflex as rx
+from sqlalchemy import Select, or_, select
+
+from ourportfolios.utils.database.database import get_company_session
+from ourportfolios.utils.database.models import OverviewORM, PriceORM
+from ourportfolios.utils.session_manager import (
     SessionIsolatedStateMixin,
     is_state_live,
     session_isolated,
@@ -29,10 +30,10 @@ class SearchBarState(SessionIsolatedStateMixin, rx.State):
     comparison_search_query: str = ""
     display_suggestion: bool = False
     empty_state_display_suggestion: bool = False
-    outstanding_tickers: dict[str, Any] = {}
-    ticker_list: list[dict[str, Any]] = []
-    comparison_suggestions: list[dict[str, Any]] = []
-    suggest_tickers: list[dict[str, Any]] = []
+    outstanding_tickers: ClassVar[dict[str, Any] ]= {}
+    ticker_list: ClassVar[list[dict[str, Any]] ]= []
+    comparison_suggestions: ClassVar[list[dict[str, Any]] ]= []
+    suggest_tickers: ClassVar[list[dict[str, Any]] ]= []
 
     @rx.event
     def on_mount(self):
@@ -112,14 +113,14 @@ class SearchBarState(SessionIsolatedStateMixin, rx.State):
 
     async def _fetch_by_prefix(self, prefix: str) -> list[dict[str, Any]]:
         return await self._fetch_tickers(
-            lambda q: q.where(PriceORM.symbol.like(f"{prefix}%"))
+            lambda q: q.where(PriceORM.symbol.like(f"{prefix}%")),
         )
 
     async def _fetch_by_permutations(self, query: str) -> list[dict[str, Any]]:
         combos = list(itertools.permutations(list(query), len(query)))
         patterns = list({"".join(c) + "%" for c in combos})
         return await self._fetch_tickers(
-            lambda q: q.where(or_(*(PriceORM.symbol.like(p) for p in patterns)))
+            lambda q: q.where(or_(*(PriceORM.symbol.like(p) for p in patterns))),
         )
 
     async def _fetch_tickers(

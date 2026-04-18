@@ -1,7 +1,8 @@
 """ShinyText animated gradient shine text."""
 
-import reflex as rx
 from typing import Literal
+
+import reflex as rx
 
 
 class ShinyText(rx.Component):

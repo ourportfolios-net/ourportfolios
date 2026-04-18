@@ -8,9 +8,10 @@ database access.
 """
 
 import os
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import AsyncIterator
 
+from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
@@ -18,7 +19,6 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from sqlalchemy.pool import NullPool
-from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -83,10 +83,10 @@ company_engine = create_async_engine(
 
 # Sync engines for pandas to_sql operations
 price_sync_engine = create_engine(
-    _clean_sync_pg(PRICE_DB_URI), connect_args={"sslmode": "require"}
+    _clean_sync_pg(PRICE_DB_URI), connect_args={"sslmode": "require"},
 )
 company_sync_engine = create_engine(
-    _clean_sync_pg(COMPANY_DB_URI), connect_args={"sslmode": "require"}
+    _clean_sync_pg(COMPANY_DB_URI), connect_args={"sslmode": "require"},
 )
 
 

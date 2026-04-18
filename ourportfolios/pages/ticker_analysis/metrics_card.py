@@ -2,11 +2,11 @@
 
 import reflex as rx
 
-from ...styles import white, purple, CARD_BORDER, TEXT_PURPLE
-from ...components.financial_statement import financial_statements
-from ...state.framework_state import GlobalFrameworkState
-from .state import State
-from .performance_cards import performance_cards
+from ourportfolios.components.financial_statement import financial_statements
+from ourportfolios.pages.ticker_analysis.performance_cards import performance_cards
+from ourportfolios.pages.ticker_analysis.state import State
+from ourportfolios.state.framework_state import GlobalFrameworkState
+from ourportfolios.styles import CARD_BORDER, TEXT_PURPLE, purple, white
 
 _CARD_RADIUS = "0.625rem"
 
@@ -93,7 +93,7 @@ def key_metrics_card():
                         rx.badge(
                             "Quarterly",
                             color_scheme=rx.cond(
-                                State.switch_value == "quarter", "violet", "gray"
+                                State.switch_value == "quarter", "violet", "gray",
                             ),
                             variant="soft",
                             size="1",
@@ -106,7 +106,7 @@ def key_metrics_card():
                         rx.badge(
                             "Yearly",
                             color_scheme=rx.cond(
-                                State.switch_value == "year", "violet", "gray"
+                                State.switch_value == "year", "violet", "gray",
                             ),
                             variant="soft",
                             size="1",

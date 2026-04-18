@@ -1,5 +1,6 @@
 import reflex as rx
-from ..components.hub_cards import (
+
+from ourportfolios.pages.home.components.hub_cards import (
     compare_assets_card,
     manage_portfolio_card,
     select_framework_card,

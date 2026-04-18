@@ -2,7 +2,7 @@
 
 import reflex as rx
 
-from ..styles import MODAL_BG, white
+from ourportfolios.styles import MODAL_BG, white
 
 
 def common_dialog(
@@ -18,8 +18,7 @@ def common_dialog(
     title_size: str = "6",
     show_close_button: bool = True,
 ) -> rx.Component:
-    """
-    A reusable dialog component with a close button in the top-left corner.
+    """A reusable dialog component with a close button in the top-left corner.
 
     Args:
         content: The main content to display in the dialog
@@ -36,8 +35,8 @@ def common_dialog(
 
     Returns:
         A dialog component wrapped in rx.cond for conditional rendering
-    """
 
+    """
     # Build optional keyword args for max_width
     extra_props = {}
     if max_width:
@@ -69,7 +68,7 @@ def common_dialog(
                 weight="medium",
                 size=title_size,
                 color=white(0.85),
-            )
+            ),
         )
 
     # Build the dialog structure
@@ -84,7 +83,7 @@ def common_dialog(
                 padding_bottom="1rem",
                 align="center",
                 justify="between" if len(header_content) > 1 else "start",
-            )
+            ),
         )
 
     # Add main content
@@ -112,7 +111,7 @@ def common_dialog(
                 **extra_props,
             ),
             open=True,
-            on_open_change=on_open_change if on_open_change else on_close,
+            on_open_change=on_open_change or on_close,
         ),
         None,
     )

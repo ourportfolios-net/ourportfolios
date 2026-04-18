@@ -2,15 +2,14 @@
 
 import reflex as rx
 
-from ...components.navbar import navbar
-from ...components.drawer import drawer_button
-from ...components.breadcrumb import breadcrumb
-
-from .state import State
-from .info_cards import name_card, general_info_card
-from .price_chart import price_chart_card
-from .metrics_card import key_metrics_card
-from .company_info import company_generic_info_card
+from ourportfolios.components.breadcrumb import breadcrumb
+from ourportfolios.components.drawer import drawer_button
+from ourportfolios.components.navbar import navbar
+from ourportfolios.pages.ticker_analysis.company_info import company_generic_info_card
+from ourportfolios.pages.ticker_analysis.info_cards import general_info_card, name_card
+from ourportfolios.pages.ticker_analysis.metrics_card import key_metrics_card
+from ourportfolios.pages.ticker_analysis.price_chart import price_chart_card
+from ourportfolios.pages.ticker_analysis.state import State
 
 
 @rx.page(

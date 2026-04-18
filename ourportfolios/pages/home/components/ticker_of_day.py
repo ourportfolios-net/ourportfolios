@@ -1,8 +1,9 @@
 import reflex as rx
-from ....state.home_state import HomeState
-from ....state.cart_state import CartState
-from ....components.cards import glass_card
-from ....styles import white
+
+from ourportfolios.components.cards import glass_card
+from ourportfolios.state.cart_state import CartState
+from ourportfolios.state.home_state import HomeState
+from ourportfolios.styles import white
 
 
 def _skel(w: str = "100%", h: str = "0.75rem", r: str = "0.375rem") -> rx.Component:
@@ -86,7 +87,7 @@ def _ticker_real():
                                 size="2",
                                 variant="outline",
                                 on_click=CartState.add_item(
-                                    HomeState.ticker_of_day_symbol
+                                    HomeState.ticker_of_day_symbol,
                                 ),
                                 cursor="pointer",
                                 position="relative",

@@ -12,20 +12,20 @@ All tokens come from styles.py.
 
 import reflex as rx
 
-from ...components.graph import pct_change_badge
-from ...state import TickerBoardState
-from ...state.cart_state import CartState
-from ...styles import (
-    white,
+from ourportfolios.components.graph import pct_change_badge
+from ourportfolios.pages.tickers.state import TickersPageState
+from ourportfolios.state import TickerBoardState
+from ourportfolios.state.cart_state import CartState
+from ourportfolios.styles import (
+    BTN_GHOST_XS,
     CARD_BG,
     CARD_BORDER,
     DIVIDER,
-    BTN_GHOST_XS,
+    TEXT_MUTED,
     TEXT_SECONDARY,
     TEXT_TERTIARY,
-    TEXT_MUTED,
+    white,
 )
-from .state import TickersPageState
 
 _COMPARE_BTN = {
     **BTN_GHOST_XS,
@@ -273,7 +273,7 @@ def ticker_row(ticker: dict) -> rx.Component:
                     ),
                     rx.box(
                         rx.tooltip(
-                            _compare_btn(symbol), content="Add to comparison board"
+                            _compare_btn(symbol), content="Add to comparison board",
                         ),
                         on_click=rx.stop_propagation,
                         display="flex",
@@ -306,7 +306,7 @@ def ticker_row(ticker: dict) -> rx.Component:
 
 def _skel(w: str, h: str = "0.8125rem") -> rx.Component:
     return rx.skeleton(
-        rx.box(width=w, height=h), loading=True, border_radius="0.3125rem"
+        rx.box(width=w, height=h), loading=True, border_radius="0.3125rem",
     )
 
 
@@ -314,7 +314,7 @@ def _skeleton_row() -> rx.Component:
     return rx.hstack(
         rx.vstack(
             rx.hstack(
-                _skel("5rem", "1.25rem"), _skel("2.5rem", "1.125rem"), spacing="2"
+                _skel("5rem", "1.25rem"), _skel("2.5rem", "1.125rem"), spacing="2",
             ),
             _skel("12.5rem", "0.8125rem"),
             spacing="2",
@@ -369,7 +369,7 @@ def _empty_state() -> rx.Component:
                 justify_content="center",
             ),
             rx.text(
-                "No tickers found", size="4", weight="medium", color=TEXT_SECONDARY
+                "No tickers found", size="4", weight="medium", color=TEXT_SECONDARY,
             ),
             rx.text(
                 "Try adjusting your search or filters.",

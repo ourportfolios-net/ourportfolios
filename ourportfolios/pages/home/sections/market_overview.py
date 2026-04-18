@@ -1,17 +1,22 @@
 import reflex as rx
 
-from ....state.home_state import HomeState
-from ....state.heatmap import HeatmapState, HeatmapTile, HeatmapChip, TickerSubtile
-from ....state.prefs_state import PrefsState
-from ....components.cards import glass_card
-from ....components.indices_grid import indices_grid
-from ....styles import (
-    white,
+from ourportfolios.components.cards import glass_card
+from ourportfolios.components.indices_grid import indices_grid
+from ourportfolios.pages.home.components.refresh_countdown import refresh_countdown_ring
+from ourportfolios.state.heatmap import (
+    HeatmapChip,
+    HeatmapState,
+    HeatmapTile,
+    TickerSubtile,
+)
+from ourportfolios.state.home_state import HomeState
+from ourportfolios.state.prefs_state import PrefsState
+from ourportfolios.styles import (
     TEXT_PRIMARY,
     TEXT_TERTIARY,
     accent_btn,
+    white,
 )
-from ..components.refresh_countdown import refresh_countdown_ring
 
 _TREEMAP_H = "38.75rem"
 
@@ -64,7 +69,7 @@ def _ticker_content(t: TickerSubtile) -> rx.Component:
                 text_align="center",
             ),
             rx.badge(
-                t.pct_label, color_scheme=t.pct_color_scheme, variant="soft", size="1"
+                t.pct_label, color_scheme=t.pct_color_scheme, variant="soft", size="1",
             ),
             spacing="1",
             align="center",

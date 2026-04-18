@@ -2,7 +2,7 @@
 
 import reflex as rx
 
-from ..styles import white
+from ourportfolios.styles import white
 
 
 def category_toggle_card(

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import reflex as rx
 
-from ....styles import CARD_BG, CARD_BORDER, SKELETON_BG, white
-from ....ui.tokens import CARD_PREVIEW_HEIGHT, CARD_TEXT_CLAMP_STYLE
+from ourportfolios.styles import CARD_BG, CARD_BORDER, SKELETON_BG, white
+from ourportfolios.ui.tokens import CARD_PREVIEW_HEIGHT, CARD_TEXT_CLAMP_STYLE
 
 CARD_HEADER_HEIGHT = "4.25rem"
 CARD_BODY_HEIGHT = "26.25rem"
@@ -31,5 +31,5 @@ HUB_CARD_TEXT_CLAMP = CARD_TEXT_CLAMP_STYLE
 
 def skeleton(width: str, height: str = "0.5625rem") -> rx.Component:
     return rx.box(
-        width=width, height=height, border_radius="0.25rem", background=SKELETON_BG
+        width=width, height=height, border_radius="0.25rem", background=SKELETON_BG,
     )

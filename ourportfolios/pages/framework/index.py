@@ -2,16 +2,22 @@
 
 import reflex as rx
 
-from ...components.navbar import navbar
-from ...components.breadcrumb import breadcrumb
-from ...components.auth_guard import page_guard
-from ...state.auth_state import AuthState
-from ...ui.layout import app_shell
-
-from .state import FrameworkState
-from .framework_cards import category_filter_button, framework_card, skeleton_card
-from .framework_dialog import framework_dialog
-from .add_framework_dialog import add_framework_dialog, add_metric_selector
+from ourportfolios.components.auth_guard import page_guard
+from ourportfolios.components.breadcrumb import breadcrumb
+from ourportfolios.components.navbar import navbar
+from ourportfolios.pages.framework.add_framework_dialog import (
+    add_framework_dialog,
+    add_metric_selector,
+)
+from ourportfolios.pages.framework.framework_cards import (
+    category_filter_button,
+    framework_card,
+    skeleton_card,
+)
+from ourportfolios.pages.framework.framework_dialog import framework_dialog
+from ourportfolios.pages.framework.state import FrameworkState
+from ourportfolios.state.auth_state import AuthState
+from ourportfolios.ui.layout import app_shell
 
 
 def page_header():

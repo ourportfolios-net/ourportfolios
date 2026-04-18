@@ -1,10 +1,13 @@
 """Cart state management."""
 
-import reflex as rx
 import asyncio
+from typing import ClassVar
+
+import reflex as rx
 from sqlalchemy import select
-from ..utils.database.database import get_company_session
-from ..utils.database.models import OverviewORM
+
+from ourportfolios.utils.database.database import get_company_session
+from ourportfolios.utils.database.models import OverviewORM
 
 
 async def get_industry(ticker: str) -> str:
@@ -27,7 +30,7 @@ async def get_industry(ticker: str) -> str:
 
 
 class CartState(rx.State):
-    cart_items: list[dict] = []
+    cart_items: ClassVar[list[dict] ]= []
     is_open: bool = False
 
     @rx.var
@@ -56,10 +59,9 @@ class CartState(rx.State):
         count = len(self.cart_items)
         if count == 0:
             return "0 ITEMS"
-        elif count == 1:
+        if count == 1:
             return "1 ITEM"
-        else:
-            return f"{count} ITEMS"
+        return f"{count} ITEMS"
 
     @rx.event
     def go_to_compare(self):

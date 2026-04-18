@@ -1,7 +1,7 @@
+from typing import Any
+
 import numpy as np
 import pandas as pd
-
-from typing import Any
 
 
 def compute_ma(df: pd.DataFrame, ma_period: int = 200) -> list[dict[str, Any]]:

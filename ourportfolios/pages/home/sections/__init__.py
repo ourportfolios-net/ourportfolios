@@ -1,5 +1,5 @@
 """Home page section composition."""
 
-from .dashboard import page_body
+from ourportfolios.pages.home.sections.dashboard import page_body
 
 __all__ = ["page_body"]

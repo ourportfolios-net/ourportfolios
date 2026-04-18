@@ -2,9 +2,9 @@
 
 import reflex as rx
 
-from ...styles import white, CARD_BORDER
-from ...state.auth_state import AuthState
-from .state import State
+from ourportfolios.pages.ticker_analysis.state import State
+from ourportfolios.state.auth_state import AuthState
+from ourportfolios.styles import CARD_BORDER, white
 
 _CARD_RADIUS = "0.625rem"
 
@@ -213,7 +213,7 @@ def create_dynamic_chart(category: str):
                             State.available_metrics_by_category[category],
                             value=State.selected_metrics.get(category, ""),
                             on_change=lambda value: State.set_metric_for_category(
-                                category, value
+                                category, value,
                             ),
                             size="1",
                             style={

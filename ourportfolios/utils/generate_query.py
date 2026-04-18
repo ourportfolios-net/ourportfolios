@@ -1,13 +1,15 @@
-import pandas as pd
 import itertools
-from typing import Any, Tuple
-from .database.database import get_company_session
+from typing import Any
+
+import pandas as pd
 from sqlalchemy import text
+
+from ourportfolios.utils.database.database import get_company_session
 
 
 async def get_suggest_ticker(
-    search_query: str, return_type: str
-) -> Tuple[str, Any] | pd.DataFrame:
+    search_query: str, return_type: str,
+) -> tuple[str, Any] | pd.DataFrame:
     """Attempt to retrieve data with strategy:
     1. Fetch ticker with full query at first
     2. Fetch with all permutation of the search query if (1) failed to returns any data
@@ -19,28 +21,29 @@ async def get_suggest_ticker(
 
     Returns:
         Tuple[str, Any] | pd.DataFrame: Can either returns search params or a full dataframe
+
     """
     # Fetch exact ticker
     match_query = "pb.symbol LIKE :pattern"
     match_params = {"pattern": f"{search_query}%"}
     result: pd.DataFrame = await fetch_ticker(
-        match_query=match_query, params=match_params, return_type=return_type
+        match_query=match_query, params=match_params, return_type=return_type,
     )
 
     # In-case of mistype or no ticker returned, calculate all possible combination of provided search_query with fixed length
     if result.empty:
-        combos: list[Tuple] = list(
-            itertools.permutations(list(search_query), len(search_query))
+        combos: list[tuple] = list(
+            itertools.permutations(list(search_query), len(search_query)),
         )
         match_params = {
             f"pattern_{idx}": f"{''.join(combo)}%" for idx, combo in enumerate(combos)
         }
         match_query = " OR ".join(
-            [f"pb.symbol LIKE :pattern_{i}" for i in range(len(match_params))]
+            [f"pb.symbol LIKE :pattern_{i}" for i in range(len(match_params))],
         )
 
         result: pd.DataFrame = await fetch_ticker(
-            match_query=match_query, params=match_params, return_type=return_type
+            match_query=match_query, params=match_params, return_type=return_type,
         )
 
     # Matches first letter if still no ticker retrieved
@@ -48,7 +51,7 @@ async def get_suggest_ticker(
         match_query = "pb.symbol LIKE :pattern"
         match_params = {"pattern": f"{search_query[0]}%"}  # First letter
         result: bool = await fetch_ticker(
-            match_query=match_query, params=match_params, return_type=return_type
+            match_query=match_query, params=match_params, return_type=return_type,
         )
 
     return (
@@ -59,7 +62,7 @@ async def get_suggest_ticker(
 
 
 async def fetch_ticker(
-    match_query: str = "all", params: Any = None, return_type: str = "df"
+    match_query: str = "all", params: Any = None, return_type: str = "df",
 ) -> pd.DataFrame:
     """Fetch data from NeonDB.
        Designed to be use in conjunction with get_suggest_ticker but can also be used independently
@@ -71,6 +74,7 @@ async def fetch_ticker(
 
     Returns:
         pd.DataFrame: _description_
+
     """
     completed_query: str = f"""
         SELECT {

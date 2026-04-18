@@ -1,7 +1,8 @@
 """Global navigation state that cancels sessions on route changes."""
 
 import reflex as rx
-from ..utils.session_manager import get_session_manager
+
+from ourportfolios.utils.session_manager import get_session_manager
 
 
 class GlobalNavigationState(rx.State):

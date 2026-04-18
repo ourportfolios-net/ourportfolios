@@ -1,8 +1,9 @@
 """Refresh countdown rendered directly from HomeState."""
 
 import reflex as rx
-from ....state.home_state import HomeState
-from ....styles import white
+
+from ourportfolios.state.home_state import HomeState
+from ourportfolios.styles import white
 
 _CIRC = 54.85
 

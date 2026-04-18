@@ -1,21 +1,27 @@
 """Home page state management."""
 
 import asyncio
-from datetime import datetime, timedelta
-from math import ceil
 import traceback
 from collections import defaultdict
+from datetime import datetime, timedelta
+from math import ceil
 
 import reflex as rx
-from sqlalchemy import Table, Column, String, Float, MetaData, select, func, desc
+from sqlalchemy import Column, Float, MetaData, String, Table, desc, func, select
 from sqlalchemy import text as sa_text
 
-from ..utils.database.database import get_company_session
-from ..utils.database.models import VNIndexORM, PriceORM, OverviewORM, ProfileORM
-from ..utils.session_manager import (
+from ourportfolios.utils.database.database import get_company_session
+from ourportfolios.utils.database.models import (
+    OverviewORM,
+    PriceORM,
+    ProfileORM,
+    VNIndexORM,
+)
+from ourportfolios.utils.session_manager import (
+from typing import ClassVar
     SessionIsolatedStateMixin,
-    is_state_live,
     get_session_manager,
+    is_state_live,
 )
 
 _market_meta = MetaData(schema="market")
@@ -80,20 +86,20 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
     is_portfolio_hovered: bool = False
     is_comparison_hovered: bool = False
 
-    comparison_preview_data: list[dict] = [
+    comparison_preview_data: ClassVar[list[dict] ]= [
         {"period": "Q1", "value": 12},
         {"period": "Q2", "value": 15},
         {"period": "Q3", "value": 13},
         {"period": "Q4", "value": 16},
     ]
 
-    vnindex_chart_data: list[dict] = []
+    vnindex_chart_data: ClassVar[list[dict] ]= []
     vnindex_value: str = ""
     vnindex_change: str = ""
     vnindex_pct_change: str = ""
     vnindex_is_positive: bool = True
 
-    indices: list[dict] = []
+    indices: ClassVar[list[dict] ]= []
 
     _base_portfolio_value: float = 142590.22
     _target_portfolio_value: float = 148719.73
@@ -194,7 +200,7 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
             try:
                 async with self:
                     self._refresh_running = False
-            except Exception:
+            except Exception as e:
                 pass
 
     # ──────────────────────────────────────────────────────────────────────
@@ -219,7 +225,7 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
             sign = "+" if change >= 0 else "-"
 
             today_rows = rows[1:]
-            chart_data: list[dict] = []
+            chart_data: ClassVar[list[dict] ]= []
 
             if today_rows:
                 close_values = [r.close or 0.0 for r in today_rows]
@@ -237,7 +243,7 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
                         {
                             "name": row.time.strftime("%H:%M"),
                             "normalized_close": normalized,
-                        }
+                        },
                     )
 
             async with self:
@@ -248,7 +254,7 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
                 self.vnindex_is_positive = bool(change >= 0)
                 self.vnindex_chart_data = chart_data
 
-        except Exception:
+        except Exception as e:
             traceback.print_exc()
             async with self:
                 self.vnindex_value = "N/A"
@@ -259,7 +265,7 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
         try:
             async with get_company_session() as session:
                 lookup_res = await session.execute(
-                    sa_text("SELECT index_name FROM market.indices_lookup")
+                    sa_text("SELECT index_name FROM market.indices_lookup"),
                 )
                 dynamic_order = [row[0] for row in lookup_res.fetchall()]
 
@@ -269,11 +275,11 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
                     FROM market.indices i
                     JOIN market.indices_lookup l ON i.index_id = l.index_id
                     ORDER BY l.index_name, i.time
-                """)
+                """),
                 )
                 rows = result.mappings().all()
 
-            grouped: dict[str, list] = defaultdict(list)
+            grouped: ClassVar[dict[str, list] ]= defaultdict(list)
             for row in rows:
                 grouped[row["index_name"]].append(row)
 
@@ -315,13 +321,13 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
                         "pct_change": f"{sign}{abs(pct):.2f}%",
                         "is_positive": is_positive,
                         "chart_data": chart_data,
-                    }
+                    },
                 )
 
             async with self:
                 self.indices = built
 
-        except Exception:
+        except Exception as e:
             traceback.print_exc()
 
     @rx.event(background=True)
@@ -486,7 +492,7 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
             try:
                 async with self:
                     self._animation_running = False
-            except Exception:
+            except Exception as e:
                 pass
 
     @rx.event(background=True)
@@ -528,7 +534,7 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
             try:
                 async with self:
                     self._animation_running = False
-            except Exception:
+            except Exception as e:
                 pass
 
     @rx.event

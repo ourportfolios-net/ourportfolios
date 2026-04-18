@@ -2,7 +2,12 @@
 
 import reflex as rx
 
-from ..components import shiny_text, scroll_reveal, card_swap, card
+from ourportfolios.pages.landing.components import (
+    card,
+    card_swap,
+    scroll_reveal,
+    shiny_text,
+)
 
 
 def _skeleton(
@@ -386,7 +391,7 @@ def showcase_section() -> rx.Component:
                                                                     hide=True,
                                                                 ),
                                                                 rx.recharts.y_axis(
-                                                                    hide=True
+                                                                    hide=True,
                                                                 ),
                                                                 data=_PERF_DATA_1,
                                                                 margin={
@@ -426,7 +431,7 @@ def showcase_section() -> rx.Component:
                                                                     hide=True,
                                                                 ),
                                                                 rx.recharts.y_axis(
-                                                                    hide=True
+                                                                    hide=True,
                                                                 ),
                                                                 data=_PERF_DATA_2,
                                                                 margin={

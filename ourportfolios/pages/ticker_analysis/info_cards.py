@@ -2,10 +2,10 @@
 
 import reflex as rx
 
-from ...components.drawer import CartState
-from ...styles import white, CARD_BORDER
-from .state import State
-from .dialog import company_profile_dialog
+from ourportfolios.components.drawer import CartState
+from ourportfolios.pages.ticker_analysis.dialog import company_profile_dialog
+from ourportfolios.pages.ticker_analysis.state import State
+from ourportfolios.styles import CARD_BORDER, white
 
 _CARD_RADIUS = "0.625rem"
 
@@ -102,7 +102,7 @@ def name_card():
                             rx.icon("plus", size=14),
                             size="2",
                             on_click=lambda: CartState.add_item(
-                                overview.get("symbol", "")
+                                overview.get("symbol", ""),
                             ),
                             style={
                                 "background": white(0.05),

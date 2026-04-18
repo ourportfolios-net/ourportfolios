@@ -2,9 +2,9 @@
 
 import reflex as rx
 
-from ...styles import white, purple, CARD_BORDER, TEXT_PURPLE
-from ...components.price_chart import PriceChartState
-from .state import State
+from ourportfolios.components.price_chart import PriceChartState
+from ourportfolios.pages.ticker_analysis.state import State
+from ourportfolios.styles import CARD_BORDER, TEXT_PURPLE, purple, white
 
 _CARD_RADIUS = "0.625rem"
 _CHART_MIN_W = "20rem"
@@ -224,7 +224,7 @@ def price_chart_card():
                             white(0.6),
                         ),
                         font_weight=rx.cond(
-                            PriceChartState.selected_interval == "1D", "600", "500"
+                            PriceChartState.selected_interval == "1D", "600", "500",
                         ),
                         font_size="0.8125rem",
                         border_radius="0.5rem",
@@ -251,7 +251,7 @@ def price_chart_card():
                             white(0.6),
                         ),
                         font_weight=rx.cond(
-                            PriceChartState.selected_interval == "1W", "600", "500"
+                            PriceChartState.selected_interval == "1W", "600", "500",
                         ),
                         font_size="0.8125rem",
                         border_radius="0.5rem",
@@ -278,7 +278,7 @@ def price_chart_card():
                             white(0.6),
                         ),
                         font_weight=rx.cond(
-                            PriceChartState.selected_interval == "1M", "600", "500"
+                            PriceChartState.selected_interval == "1M", "600", "500",
                         ),
                         font_size="0.8125rem",
                         border_radius="0.5rem",

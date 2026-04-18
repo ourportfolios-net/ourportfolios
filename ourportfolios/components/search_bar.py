@@ -1,9 +1,11 @@
 """Search bar UI component with ticker suggestions."""
 
-import reflex as rx
 from typing import Any
-from .graph import pct_change_badge
-from ..state import SearchBarState
+
+import reflex as rx
+
+from ourportfolios.components.graph import pct_change_badge
+from ourportfolios.state import SearchBarState
 
 
 def search_bar():
@@ -49,7 +51,7 @@ def search_bar():
                             rx.foreach(
                                 SearchBarState.suggest_tickers,
                                 lambda ticker_value: suggestion_card(
-                                    value=ticker_value
+                                    value=ticker_value,
                                 ),
                             ),
                             scrollbars="vertical",

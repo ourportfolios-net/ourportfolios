@@ -1,9 +1,10 @@
 """Place at: ourportfolios/pages/settings/state.py"""
 
 import reflex as rx
-from ...auth_config import get_supabase, AUTH_AVAILABLE
-from ...state.auth_state import AuthState
-from ...state.prefs_state import PrefsState
+
+from ourportfolios.auth_config import AUTH_AVAILABLE, get_supabase
+from ourportfolios.state.auth_state import AuthState
+from ourportfolios.state.prefs_state import PrefsState
 
 EXPERIENCE_OPTIONS = ["Beginner", "Experienced"]
 DEFAULT_PERIOD_OPTIONS = ["1D", "1W", "1M"]
@@ -285,8 +286,8 @@ class SettingsState(rx.State):
                         "data": {
                             "experience_level": self.experience_level,
                             "default_chart_period": self.default_chart_period,
-                        }
-                    }
+                        },
+                    },
                 )
                 if result.user is None:
                     raise Exception("Update failed — Supabase returned no user.")
@@ -333,7 +334,7 @@ class SettingsState(rx.State):
                 supabase = get_supabase()
 
                 verify = supabase.auth.sign_in_with_password(
-                    {"email": auth.user_email, "password": self.old_password}
+                    {"email": auth.user_email, "password": self.old_password},
                 )
                 if verify.user is None:
                     self.password_error = "Current password is incorrect."
@@ -348,7 +349,7 @@ class SettingsState(rx.State):
                 result = supabase.auth.update_user({"password": self.new_password})
                 if result.user is None:
                     raise Exception(
-                        "Password update failed — Supabase returned no user."
+                        "Password update failed — Supabase returned no user.",
                     )
 
             self.old_password = ""

@@ -1,26 +1,27 @@
 """Place at: ourportfolios/pages/auth/login.py"""
 
 import reflex as rx
-from ...state.auth_state import AuthState
-from ...styles import (
-    white,
-    TEXT_PRIMARY,
-    TEXT_TERTIARY,
-    TEXT_MUTED,
-    ERROR_COLOR,
-)
-from ...components.common_dialog import common_dialog
-from .components import (
-    label,
-    text_input,
+
+from ourportfolios.components.common_dialog import common_dialog
+from ourportfolios.pages.auth.components import (
+    INPUT_OVERRIDE,
     action_btn,
+    auth_card,
+    auth_centered,
+    auth_page_shell,
     divider_with_text,
     google_button,
-    auth_card,
-    auth_page_shell,
-    auth_centered,
+    label,
     session_check_screen,
-    INPUT_OVERRIDE,
+    text_input,
+)
+from ourportfolios.state.auth_state import AuthState
+from ourportfolios.styles import (
+    ERROR_COLOR,
+    TEXT_MUTED,
+    TEXT_PRIMARY,
+    TEXT_TERTIARY,
+    white,
 )
 
 
@@ -207,10 +208,10 @@ def _login_form() -> rx.Component:
         divider_with_text("or"),
         google_button(),
         _footer_row(
-            "Don't have an account?", "Create one", AuthState.set_mode_register
+            "Don't have an account?", "Create one", AuthState.set_mode_register,
         ),
         _footer_row(
-            "Only trying things out?", "Be ourguest", AuthState.continue_as_guest
+            "Only trying things out?", "Be ourguest", AuthState.continue_as_guest,
         ),
         spacing="4",
         width="100%",

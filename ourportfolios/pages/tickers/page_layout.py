@@ -6,14 +6,12 @@ and main_content composition — all non-route helpers.
 
 import reflex as rx
 
-from ...components.breadcrumb import breadcrumb
-from ...styles import white, BTN_SECONDARY, BTN_SECONDARY_ACTIVE
-
-from .state import TickersPageState
-from .controls import board_toolbar, compare_toolbar
-from .compare_table import compare_table, empty_compare_state
-from .ticker_board import new_ticker_board
-
+from ourportfolios.components.breadcrumb import breadcrumb
+from ourportfolios.pages.tickers.compare_table import compare_table, empty_compare_state
+from ourportfolios.pages.tickers.controls import board_toolbar, compare_toolbar
+from ourportfolios.pages.tickers.state import TickersPageState
+from ourportfolios.pages.tickers.ticker_board import new_ticker_board
+from ourportfolios.styles import BTN_SECONDARY, BTN_SECONDARY_ACTIVE, white
 
 # ── View toggle ────────────────────────────────────────────────────────────────
 # Uses BTN_SECONDARY / BTN_SECONDARY_ACTIVE — same tokens as Sort & Filter.

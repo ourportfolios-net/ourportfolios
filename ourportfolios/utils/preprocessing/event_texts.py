@@ -32,7 +32,7 @@ def preprocess_events_texts(text: str) -> str:
     buffer = ""
     for line in lines:
         if re.match(
-            r"^\s*- Name of person/ corporation that conducts the transfer:", line
+            r"^\s*- Name of person/ corporation that conducts the transfer:", line,
         ):
             if buffer:
                 summaries.append(buffer.strip())
@@ -57,15 +57,15 @@ def preprocess_events_texts(text: str) -> str:
 
         # Extract shares and percentages
         shares_before = get(r"before the transaction:\s*([\d,]+)\s*shares").replace(
-            ",", ""
+            ",", "",
         )
         percent_before = get(r"before the transaction:.*?([\d.]+%)")
         shares_registered = get(
-            r"Number of shares registered:\s*([\d,]+)\s*shares"
+            r"Number of shares registered:\s*([\d,]+)\s*shares",
         ).replace(",", "")
         acquired_shares = get(r"Acquired shares:\s*([-\d,]+)\s*shares").replace(",", "")
         shares_after = get(r"after the transaction:\s*([\d,]+)\s*shares").replace(
-            ",", ""
+            ",", "",
         )
         percent_after = get(r"after the transaction:.*?([\d.]+%)")
         exec_date = get(r"Exec:\s*(\d{4}-\d{2}-\d{2})")
@@ -98,8 +98,7 @@ def preprocess_events_texts(text: str) -> str:
 
 
 def process_events_for_display(events: list) -> list:
-    """
-    Process events and return them in the format expected by your lambda function.
+    """Process events and return them in the format expected by your lambda function.
     Preprocesses only transaction events' descriptions and retains all other fields.
     """
     processed_events = []

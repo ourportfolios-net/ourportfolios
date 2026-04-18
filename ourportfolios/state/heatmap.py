@@ -1,13 +1,14 @@
-"""
-Heatmap state — squarified nested treemap.
+"""Heatmap state — squarified nested treemap.
 """
 
+from typing import ClassVar
 from urllib.parse import quote
+
 import reflex as rx
 from pydantic import BaseModel
 from sqlalchemy import text
 
-from ..utils.database.database import get_company_session
+from ourportfolios.utils.database.database import get_company_session
 
 _PERIOD_TABLE = {
     "1D": "daily_changes",
@@ -137,7 +138,7 @@ def _squarify(weights: list, W: float, H: float) -> list:
     total = sum(weights)
     if total == 0:
         return []
-    out: list = []
+    out: ClassVar[list ]= []
     _sq([v / total * W * H for v in weights], 0.0, 0.0, W, H, out)
     return out
 
@@ -191,7 +192,7 @@ class HeatmapTile(BaseModel):
     bg: str = _DARK_BG
     pct_color_scheme: str = "gray"
     url: str = ""
-    tickers: list[TickerSubtile] = []
+    tickers: ClassVar[list[TickerSubtile] ]= []
     x: float = 0.0
     y: float = 0.0
     w: float = 0.0
@@ -210,10 +211,10 @@ class HeatmapChip(BaseModel):
 
 
 def _build(industry_rows, ticker_rows):
-    raw: dict[str, list] = {}
+    raw: ClassVar[dict[str, list] ]= {}
     for row in ticker_rows:
         raw.setdefault(str(row[0]), []).append(
-            (str(row[1]), float(row[2] or 0.0), float(row[3] or 0.0))
+            (str(row[1]), float(row[2] or 0.0), float(row[3] or 0.0)),
         )
 
     ind_cap = {ind: sum(max(c, 1.0) for _, _, c in ticks) for ind, ticks in raw.items()}
@@ -227,7 +228,7 @@ def _build(industry_rows, ticker_rows):
     treemap_inds = sorted_inds[:MAX_TREEMAP_INDUSTRIES]
     chip_inds = sorted_inds[MAX_TREEMAP_INDUSTRIES:]
 
-    chips: list[HeatmapChip] = []
+    chips: ClassVar[list[HeatmapChip] ]= []
     for ind_row in chip_inds:
         name = str(ind_row[0])
         avg_pct = float(ind_row[1] or 0.0)
@@ -240,7 +241,7 @@ def _build(industry_rows, ticker_rows):
                 bg=_bg(d, _tint_opacity(avg_pct)),
                 pct_color_scheme=_pct_color_scheme(d),
                 url=_url_industry(name),
-            )
+            ),
         )
 
     rows_layout = [
@@ -253,7 +254,7 @@ def _build(industry_rows, ticker_rows):
     ]
     grand = max(sum(row_ws), 1.0)
 
-    tiles: list[HeatmapTile] = []
+    tiles: ClassVar[list[HeatmapTile] ]= []
     y_pct_accum = 0.0
 
     for row, rw in zip(rows_layout, row_ws):
@@ -291,7 +292,7 @@ def _build(industry_rows, ticker_rows):
             sign = "+" if avg_pct >= 0 else ""
 
             items = raw.get(name, [])
-            subtiles: list[TickerSubtile] = []
+            subtiles: ClassVar[list[TickerSubtile] ]= []
 
             if items:
                 caps = [max(c, 1.0) for _, _, c in items]
@@ -319,7 +320,7 @@ def _build(industry_rows, ticker_rows):
                             w=round(iw / tile_w_px * 100.0, 5),
                             h=round(h_in_tile, 5),
                             size=_size_hint(min(iw, ih)),
-                        )
+                        ),
                     )
 
             tiles.append(
@@ -334,7 +335,7 @@ def _build(industry_rows, ticker_rows):
                     y=round(y_pct_accum, 5),
                     w=round(w_pct, 5),
                     h=round(h_pct, 5),
-                )
+                ),
             )
             x_pct += w_pct
 
@@ -348,8 +349,8 @@ def _build(industry_rows, ticker_rows):
 
 class HeatmapState(rx.State):
     selected_period: str = "1D"
-    tiles: list[HeatmapTile] = []
-    chips: list[HeatmapChip] = []
+    tiles: ClassVar[list[HeatmapTile] ]= []
+    chips: ClassVar[list[HeatmapChip] ]= []
     loading: bool = False
 
     @rx.event(background=True)
@@ -379,7 +380,7 @@ class HeatmapState(rx.State):
                     FROM market.{table}
                     WHERE industry IS NOT NULL AND industry != ''
                     GROUP BY industry
-                """)
+                """),
                 )
                 tick_res = await session.execute(
                     text(f"""
@@ -388,7 +389,7 @@ class HeatmapState(rx.State):
                     WHERE industry IS NOT NULL AND industry != ''
                           AND market_cap IS NOT NULL AND market_cap > 0
                     ORDER BY industry, market_cap DESC
-                """)
+                """),
                 )
             tiles, chips = _build(ind_res.fetchall(), tick_res.fetchall())
             async with self:

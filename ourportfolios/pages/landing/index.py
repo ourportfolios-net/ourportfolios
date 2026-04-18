@@ -2,16 +2,16 @@
 
 import reflex as rx
 
-from .sections import (
-    hero_section,
-    showcase_section,
+from ourportfolios.components.navbar import navbar
+from ourportfolios.pages.landing.sections import (
     bento_section,
     cta_section,
     footer,
+    hero_section,
+    showcase_section,
 )
-from ...ui.layout import app_shell
-from ...utils.session_manager import SessionIsolatedStateMixin
-from ...components.navbar import navbar
+from ourportfolios.ui.layout import app_shell
+from ourportfolios.utils.session_manager import SessionIsolatedStateMixin
 
 
 class LandingState(SessionIsolatedStateMixin, rx.State):

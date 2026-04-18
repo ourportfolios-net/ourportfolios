@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import reflex as rx
 
-from ..components.cart_card import cart_card
-from .decision_hub import decision_hub_section
-from .market_overview import market_overview_section
-from ..components.hub_cards import selected_framework_card
-from ..components.ticker_of_day import ticker_of_the_day_card
+from ourportfolios.pages.home.components.cart_card import cart_card
+from ourportfolios.pages.home.components.hub_cards import selected_framework_card
+from ourportfolios.pages.home.components.ticker_of_day import ticker_of_the_day_card
+from ourportfolios.pages.home.sections.decision_hub import decision_hub_section
+from ourportfolios.pages.home.sections.market_overview import market_overview_section
 
 
 def page_body() -> rx.Component:

@@ -1,16 +1,17 @@
 """Place at: ourportfolios/pages/auth/reset_password.py"""
 
 import reflex as rx
-from ...state.auth_state import AuthState
-from ...styles import white, TEXT_PRIMARY, TEXT_TERTIARY, ERROR_COLOR
-from .components import (
-    label,
+
+from ourportfolios.pages.auth.components import (
+    INPUT_OVERRIDE,
     action_btn,
     auth_card,
-    auth_page_shell,
     auth_centered,
-    INPUT_OVERRIDE,
+    auth_page_shell,
+    label,
 )
+from ourportfolios.state.auth_state import AuthState
+from ourportfolios.styles import ERROR_COLOR, TEXT_PRIMARY, TEXT_TERTIARY, white
 
 
 def _reset_form() -> rx.Component:

@@ -1,5 +1,5 @@
 """Landing ticker page module."""
 
-from .index import index
+from ourportfolios.pages.ticker_analysis.index import index
 
 __all__ = ["index"]

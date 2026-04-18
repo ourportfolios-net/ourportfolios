@@ -1,8 +1,9 @@
 """Financial statement UI component for displaying income statement, balance sheet, and cash flow."""
 
 import reflex as rx
-from ..state import FinancialStatementState
-from .common_dialog import common_dialog
+
+from ourportfolios.components.common_dialog import common_dialog
+from ourportfolios.state import FinancialStatementState
 
 titles = ["Income\nStatement", "Balance\nSheet", "Cash\nFlow"]
 
@@ -36,9 +37,9 @@ def _render_body_row(data):
                     kv[1] != None,  # noqa: E711
                     rx.text(kv[1]),
                     rx.text(""),
-                )
+                ),
             ),
-        )
+        ),
     )
 
 
@@ -95,14 +96,14 @@ def preview_table(data, idx, show_skeleton=False):
                             rx.foreach(
                                 data[0].keys(),
                                 _render_header_cell,
-                            )
-                        )
+                            ),
+                        ),
                     ),
                     rx.table.body(
                         rx.foreach(
                             data[:5],
                             _render_body_row,
-                        )
+                        ),
                     ),
                     size="1",
                     variant="surface",
@@ -141,9 +142,9 @@ def _render_expanded_row(data):
                     kv[1] != None,  # noqa: E711
                     rx.text(kv[1]),
                     rx.text(""),
-                )
+                ),
             ),
-        )
+        ),
     )
 
 
@@ -156,14 +157,14 @@ def expanded_dialog(data, idx):
                         rx.foreach(
                             data[0].keys(),
                             _render_header_cell,
-                        )
-                    )
+                        ),
+                    ),
                 ),
                 rx.table.body(
                     rx.foreach(
                         data,
                         _render_expanded_row,
-                    )
+                    ),
                 ),
                 size="2",
                 variant="surface",

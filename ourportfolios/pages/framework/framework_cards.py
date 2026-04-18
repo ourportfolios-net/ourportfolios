@@ -2,8 +2,8 @@
 
 import reflex as rx
 
-from .state import FrameworkState
-from ...styles import (
+from ourportfolios.pages.framework.state import FrameworkState
+from ourportfolios.styles import (
     CARD_STYLE,
     PILL_TOGGLE,
     PILL_TOGGLE_ACTIVE,
@@ -14,7 +14,7 @@ from ...styles import (
 
 def _skel(w: str, h: str) -> rx.Component:
     return rx.skeleton(
-        rx.box(width=w, height=h), loading=True, border_radius="0.375rem"
+        rx.box(width=w, height=h), loading=True, border_radius="0.375rem",
     )
 
 

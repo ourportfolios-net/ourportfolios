@@ -1,9 +1,9 @@
-"""
-Place at: ourportfolios/state/prefs_state.py
+"""Place at: ourportfolios/state/prefs_state.py
 """
 
 import reflex as rx
-from ..auth_config import get_supabase, AUTH_AVAILABLE
+
+from ourportfolios.auth_config import AUTH_AVAILABLE, get_supabase
 
 _DEFAULT_PERIOD = "1D"
 
@@ -15,7 +15,7 @@ class PrefsState(rx.State):
 
     @rx.event
     async def load(self):
-        from .auth_state import AuthState
+        from ourportfolios.state.auth_state import AuthState
 
         auth = await self.get_state(AuthState)
         if not auth.is_authenticated or not AUTH_AVAILABLE:
@@ -36,9 +36,9 @@ class PrefsState(rx.State):
 
     @rx.event
     async def apply_to_heatmap(self):
-        from .auth_state import AuthState
-        from ..state.heatmap import HeatmapState
-        from ..state.home_state import HomeState
+        from ourportfolios.state.auth_state import AuthState
+        from ourportfolios.state.heatmap import HeatmapState
+        from ourportfolios.state.home_state import HomeState
 
         auth = await self.get_state(AuthState)
         if auth.is_authenticated and AUTH_AVAILABLE:

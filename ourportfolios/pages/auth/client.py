@@ -1,6 +1,6 @@
 """Compatibility wrapper for the shared auth config."""
 
-from ...auth_config import (
+from ourportfolios.auth_config import (
     AUTH_AVAILABLE,
     DATABASE_URL,
     SUPABASE_ANON_KEY,

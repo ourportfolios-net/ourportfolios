@@ -1,14 +1,15 @@
 """Financial statements transformation and ratio computation."""
 
 import asyncio
-import pandas as pd
 from datetime import datetime, timedelta
 from typing import Any
 
+import pandas as pd
+
 from ourportfolios.utils.database.fetch_data import (
-    fetch_income_statement_async,
     fetch_balance_sheet_async,
     fetch_cash_flow_async,
+    fetch_income_statement_async,
     fetch_ratios_async,
 )
 
@@ -106,7 +107,7 @@ _QUARTER_COLS = ["year", "quarter"]
 
 
 def _reorder(
-    df: pd.DataFrame, spec: list[tuple[str, str]], period: str
+    df: pd.DataFrame, spec: list[tuple[str, str]], period: str,
 ) -> pd.DataFrame:
     """Reorder + rename columns per spec in O(n) time.
 
@@ -158,7 +159,7 @@ def calculate_yoy_growth(series):
 
 
 async def get_transformed_dataframes(
-    ticker_symbol: str, period: str = "year"
+    ticker_symbol: str, period: str = "year",
 ) -> dict[str, Any]:
     cache_key = f"{ticker_symbol}_{period}"
     if cache_key in _cache:
@@ -194,7 +195,7 @@ async def get_transformed_dataframes(
             }
         else:
             categorized_ratios = _categorize_ratios(
-                ratios_df, period, income_df, balance_df, cashflow_df
+                ratios_df, period, income_df, balance_df, cashflow_df,
             )
 
         result = {
@@ -214,7 +215,7 @@ async def get_transformed_dataframes(
         return result
 
     except Exception as e:
-        error_msg = f"{type(e).__name__}: {str(e)}"
+        error_msg = f"{type(e).__name__}: {e!s}"
         return {
             "transformed_income_statement": [],
             "transformed_balance_sheet": [],
@@ -347,7 +348,7 @@ def _categorize_ratios(
     categorized_ratios["Profitability"] = extract_category(profitability_metrics)
     categorized_ratios["Valuation"] = extract_category(valuation_metrics)
     categorized_ratios["Leverage & Liquidity"] = extract_category(
-        leverage_liquidity_metrics
+        leverage_liquidity_metrics,
     )
     categorized_ratios["Efficiency"] = extract_category(efficiency_metrics)
     categorized_ratios["Growth Rate"] = _compute_growth_rates(combined_df, period)
@@ -388,7 +389,7 @@ def _compute_growth_rates(ratios_df: pd.DataFrame, period: str) -> list:
     for growth_name, source_metric in growth_mappings.items():
         if source_metric in df.columns:
             series = df[source_metric].apply(
-                lambda x: float(x) if x is not None else None
+                lambda x: float(x) if x is not None else None,
             )
             growth_df[growth_name] = series.pct_change() * 100
 

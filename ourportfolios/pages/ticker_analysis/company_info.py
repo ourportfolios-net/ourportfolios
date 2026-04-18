@@ -1,8 +1,9 @@
 """Company information components."""
 
 import reflex as rx
-from ...styles import white, CARD_BORDER
-from .state import State
+
+from ourportfolios.pages.ticker_analysis.state import State
+from ourportfolios.styles import CARD_BORDER, white
 
 _CARD_RADIUS = "0.625rem"
 

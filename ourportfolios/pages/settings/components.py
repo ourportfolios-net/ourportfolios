@@ -1,25 +1,26 @@
 """Place at: ourportfolios/pages/settings/components.py"""
 
 import reflex as rx
-from .state import SettingsState, DEFAULT_PERIOD_OPTIONS
-from ...state.auth_state import AuthState
-from ...components.common_dialog import common_dialog
-from ...components.category_toggle_card import category_toggle_card
-from ...styles import (
-    white,
-    red,
-    TEXT_PRIMARY,
-    TEXT_SECONDARY,
-    TEXT_TERTIARY,
-    TEXT_MUTED,
+
+from ourportfolios.components.category_toggle_card import category_toggle_card
+from ourportfolios.components.common_dialog import common_dialog
+from ourportfolios.pages.settings.state import DEFAULT_PERIOD_OPTIONS, SettingsState
+from ourportfolios.state.auth_state import AuthState
+from ourportfolios.styles import (
+    BTN_GHOST_SM,
     CARD_BG,
     CARD_BORDER,
     DIVIDER,
+    ERROR_COLOR,
     INPUT_STYLE,
     LABEL_STYLE,
-    ERROR_COLOR,
-    BTN_GHOST_SM,
+    TEXT_MUTED,
+    TEXT_PRIMARY,
+    TEXT_SECONDARY,
+    TEXT_TERTIARY,
     icon_box,
+    red,
+    white,
 )
 
 # ── Primitives ────────────────────────────────────────────────────────────────
@@ -199,7 +200,7 @@ def _card(*children, border: str = CARD_BORDER) -> rx.Component:
 
 
 def _card_header(
-    icon_name: str, title: str, subtitle: str, color: str = "purple"
+    icon_name: str, title: str, subtitle: str, color: str = "purple",
 ) -> rx.Component:
     return rx.hstack(
         icon_box(icon_name, color=color),
@@ -385,7 +386,7 @@ def _delete_dialog() -> rx.Component:
                         align="center",
                     ),
                     rx.text(
-                        "Delete account", size="2", font_weight="500", color=red(0.8)
+                        "Delete account", size="2", font_weight="500", color=red(0.8),
                     ),
                 ),
                 on_click=SettingsState.confirm_delete_account,
@@ -461,7 +462,7 @@ def profile_panel() -> rx.Component:
                                 SettingsState.display_name_editing,
                                 rx.hstack(
                                     _edit_link(
-                                        "Cancel", SettingsState.cancel_display_name_edit
+                                        "Cancel", SettingsState.cancel_display_name_edit,
                                     ),
                                     _loading_btn(
                                         "Save",
@@ -472,7 +473,7 @@ def profile_panel() -> rx.Component:
                                     align="center",
                                 ),
                                 _edit_link(
-                                    "Edit", SettingsState.start_display_name_edit
+                                    "Edit", SettingsState.start_display_name_edit,
                                 ),
                             ),
                             align="center",
@@ -484,7 +485,7 @@ def profile_panel() -> rx.Component:
                                 rx.icon("mail", size=13, color=white(0.28)),
                                 rx.text("Email", size="1", color=TEXT_MUTED),
                                 rx.text(
-                                    AuthState.user_email, size="2", color=TEXT_PRIMARY
+                                    AuthState.user_email, size="2", color=TEXT_PRIMARY,
                                 ),
                                 spacing="2",
                                 align="center",
@@ -556,7 +557,7 @@ def delete_card() -> rx.Component:
         rx.hstack(
             rx.vstack(
                 rx.text(
-                    "Delete account", size="2", weight="medium", color=TEXT_PRIMARY
+                    "Delete account", size="2", weight="medium", color=TEXT_PRIMARY,
                 ),
                 rx.text(
                     "Permanently removes your account and all associated data.",
@@ -755,7 +756,7 @@ def _nav_item(tab: str, icon_name: str, label: str) -> rx.Component:
     return rx.box(
         rx.hstack(
             rx.icon(
-                icon_name, size=14, color=rx.cond(is_active, white(0.75), white(0.28))
+                icon_name, size=14, color=rx.cond(is_active, white(0.75), white(0.28)),
             ),
             rx.text(
                 label,

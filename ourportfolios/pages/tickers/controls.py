@@ -2,24 +2,23 @@
 
 import reflex as rx
 
-from .state import TickersPageState
-from ...state import SearchBarState
-from ...components.category_toggle_card import category_toggle_card
-from ...styles import (
-    white,
-    purple,
-    TEXT_PURPLE,
-    LABEL_STYLE,
+from ourportfolios.components.category_toggle_card import category_toggle_card
+from ourportfolios.pages.tickers.state import TickersPageState
+from ourportfolios.state import SearchBarState
+from ourportfolios.styles import (
     BTN_GHOST_SM,
     BTN_SECONDARY,
     CHIP_STYLE,
-    SEARCH_ICON_STYLE,
-    SEARCH_INPUT_STYLE,
+    FLEX_COL_FILL,
+    LABEL_STYLE,
     MODAL_BG,
     MODAL_PANEL_STYLE,
-    FLEX_COL_FILL,
+    SEARCH_ICON_STYLE,
+    SEARCH_INPUT_STYLE,
+    TEXT_PURPLE,
+    purple,
+    white,
 )
-
 
 # ── Filter sliders ────────────────────────────────────────────────────────────
 
@@ -60,19 +59,19 @@ def _metric_slider(metric_tag: str, option: str):
             on_change=lambda value_range: rx.cond(
                 option == "F",
                 TickersPageState.update_fundamental_value(
-                    metric=metric_tag, value=value_range
+                    metric=metric_tag, value=value_range,
                 ),
                 TickersPageState.update_technical_value(
-                    metric=metric_tag, value=value_range
+                    metric=metric_tag, value=value_range,
                 ),
             ),
             on_value_commit=lambda value_range: rx.cond(
                 option == "F",
                 TickersPageState.set_fundamental_metric(
-                    metric=metric_tag, value=value_range
+                    metric=metric_tag, value=value_range,
                 ),
                 TickersPageState.set_technical_metric(
-                    metric=metric_tag, value=value_range
+                    metric=metric_tag, value=value_range,
                 ),
             ),
             key=f"{metric_tag}_{TickersPageState.slider_reset_key}",
@@ -129,7 +128,7 @@ def _categorical_filter():
                         item[0],
                         checked=item[1],
                         on_change=lambda value: TickersPageState.set_exchange(
-                            exchange=item[0], value=value
+                            exchange=item[0], value=value,
                         ),
                         size="3",
                         color_scheme="violet",
@@ -151,7 +150,7 @@ def _categorical_filter():
                             item[0],
                             checked=item[1],
                             on_change=lambda value: TickersPageState.set_industry(
-                                industry=item[0], value=value
+                                industry=item[0], value=value,
                             ),
                             size="3",
                             color_scheme="violet",
@@ -272,7 +271,7 @@ def filter_button() -> rx.Component:
                 font_size="0.8125rem",
                 cursor="pointer",
                 transition="all 0.15s ease",
-            )
+            ),
         ),
         rx.menu.content(
             rx.flex(
@@ -292,7 +291,7 @@ def filter_button() -> rx.Component:
                 },
             ),
             width=rx.breakpoints(
-                initial="27em", xs="30em", sm="40em", md="44em", lg="56em"
+                initial="27em", xs="30em", sm="40em", md="44em", lg="56em",
             ),
             height="30em",
             padding="0",
@@ -347,10 +346,10 @@ def _sort_button() -> rx.Component:
                                     TickersPageState.set_sort_order(order),
                                 ],
                             ),
-                        )
+                        ),
                     ),
                 ),
-            )
+            ),
         ),
     )
 
@@ -549,7 +548,7 @@ def _metrics_settings_dialog() -> rx.Component:
                 rx.icon("settings-2", size=14),
                 size="2",
                 style=BTN_SECONDARY,
-            )
+            ),
         ),
         rx.dialog.content(
             rx.vstack(
@@ -610,7 +609,7 @@ def _metrics_settings_dialog() -> rx.Component:
                                 "transition": "color 0.15s ease",
                                 "_hover": {"color": "white"},
                             },
-                        )
+                        ),
                     ),
                     width="100%",
                     align="center",
@@ -672,7 +671,7 @@ def compare_toolbar() -> rx.Component:
                     rx.icon("eye", size=13),
                 ),
                 rx.text(
-                    rx.cond(TickersPageState.show_graphs, "Hide Graphs", "Show Graphs")
+                    rx.cond(TickersPageState.show_graphs, "Hide Graphs", "Show Graphs"),
                 ),
                 spacing="2",
                 align="center",

@@ -1,16 +1,16 @@
 """Database query functions for data retrieval ONLY."""
 
 from datetime import date, timedelta
+
 import pandas as pd
 from sqlalchemy import text
 
-from .database import (
-    company_sync_engine,
+from ourportfolios.utils.database.database import (
     company_engine,
-    price_sync_engine,
+    company_sync_engine,
     price_engine,
+    price_sync_engine,
 )
-
 
 _RESAMPLE_MAP = {
     "1D": None,
@@ -55,20 +55,20 @@ def fetch_income_statement(ticker_symbol: str, period: str = "year") -> pd.DataF
                 "Q" + df["quarter"].astype(str) + " " + df["year"].astype(str)
             )
             pivot_df = df.pivot(
-                index="period", columns="metric", values="value"
+                index="period", columns="metric", values="value",
             ).reset_index()
             period_map = df.set_index("period")[["year", "quarter"]].drop_duplicates()
             pivot_df = pivot_df.merge(period_map, on="period")
             pivot_df = pivot_df.drop(columns=["period"])
             pivot_df = pivot_df.sort_values(
-                ["year", "quarter"], ascending=False
+                ["year", "quarter"], ascending=False,
             ).reset_index(drop=True)
         else:
             pivot_df = df.pivot(
-                index="year", columns="metric", values="value"
+                index="year", columns="metric", values="value",
             ).reset_index()
             pivot_df = pivot_df.sort_values("year", ascending=False).reset_index(
-                drop=True
+                drop=True,
             )
 
         return pivot_df
@@ -105,20 +105,20 @@ def fetch_balance_sheet(ticker_symbol: str, period: str = "year") -> pd.DataFram
                 "Q" + df["quarter"].astype(str) + " " + df["year"].astype(str)
             )
             pivot_df = df.pivot(
-                index="period", columns="metric", values="value"
+                index="period", columns="metric", values="value",
             ).reset_index()
             period_map = df.set_index("period")[["year", "quarter"]].drop_duplicates()
             pivot_df = pivot_df.merge(period_map, on="period")
             pivot_df = pivot_df.drop(columns=["period"])
             pivot_df = pivot_df.sort_values(
-                ["year", "quarter"], ascending=False
+                ["year", "quarter"], ascending=False,
             ).reset_index(drop=True)
         else:
             pivot_df = df.pivot(
-                index="year", columns="metric", values="value"
+                index="year", columns="metric", values="value",
             ).reset_index()
             pivot_df = pivot_df.sort_values("year", ascending=False).reset_index(
-                drop=True
+                drop=True,
             )
 
         return pivot_df
@@ -155,20 +155,20 @@ def fetch_cash_flow(ticker_symbol: str, period: str = "year") -> pd.DataFrame:
                 "Q" + df["quarter"].astype(str) + " " + df["year"].astype(str)
             )
             pivot_df = df.pivot(
-                index="period", columns="metric", values="value"
+                index="period", columns="metric", values="value",
             ).reset_index()
             period_map = df.set_index("period")[["year", "quarter"]].drop_duplicates()
             pivot_df = pivot_df.merge(period_map, on="period")
             pivot_df = pivot_df.drop(columns=["period"])
             pivot_df = pivot_df.sort_values(
-                ["year", "quarter"], ascending=False
+                ["year", "quarter"], ascending=False,
             ).reset_index(drop=True)
         else:
             pivot_df = df.pivot(
-                index="year", columns="metric", values="value"
+                index="year", columns="metric", values="value",
             ).reset_index()
             pivot_df = pivot_df.sort_values("year", ascending=False).reset_index(
-                drop=True
+                drop=True,
             )
 
         return pivot_df
@@ -194,7 +194,7 @@ def fetch_company_data(symbol: str) -> dict[str, pd.DataFrame]:
             for table in tables:
                 try:
                     query = text(
-                        f"SELECT * FROM tickers.{table}_df WHERE symbol = :symbol"
+                        f"SELECT * FROM tickers.{table}_df WHERE symbol = :symbol",
                     )
                     df = pd.read_sql(query, conn, params={"symbol": symbol})
                     result[table] = df if not df.empty else pd.DataFrame()
@@ -268,7 +268,7 @@ def load_historical_data(
 
         with company_sync_engine.connect() as conn:
             df = pd.read_sql(
-                query, conn, params={"symbol": symbol, "start": start, "end": end}
+                query, conn, params={"symbol": symbol, "start": start, "end": end},
             )
 
         if df.empty:
@@ -288,7 +288,7 @@ def load_historical_data(
 
 
 async def fetch_income_statement_async(
-    ticker_symbol: str, period: str = "year"
+    ticker_symbol: str, period: str = "year",
 ) -> pd.DataFrame:
     try:
         if period == "quarter":
@@ -319,27 +319,26 @@ async def fetch_income_statement_async(
                 "Q" + df["quarter"].astype(str) + " " + df["year"].astype(str)
             )
             pivot_df = df.pivot(
-                index="period", columns="metric", values="value"
+                index="period", columns="metric", values="value",
             ).reset_index()
             period_map = df.set_index("period")[["year", "quarter"]].drop_duplicates()
             pivot_df = pivot_df.merge(period_map, on="period", how="left")
             pivot_df = pivot_df.sort_values(
-                ["year", "quarter"], ascending=[False, False]
+                ["year", "quarter"], ascending=[False, False],
             )
             return pivot_df
-        else:
-            pivot_df = df.pivot(
-                index="year", columns="metric", values="value"
-            ).reset_index()
-            pivot_df = pivot_df.sort_values("year", ascending=False)
-            return pivot_df
+        pivot_df = df.pivot(
+            index="year", columns="metric", values="value",
+        ).reset_index()
+        pivot_df = pivot_df.sort_values("year", ascending=False)
+        return pivot_df
 
     except Exception:
         return pd.DataFrame()
 
 
 async def fetch_balance_sheet_async(
-    ticker_symbol: str, period: str = "year"
+    ticker_symbol: str, period: str = "year",
 ) -> pd.DataFrame:
     try:
         if period == "quarter":
@@ -370,27 +369,26 @@ async def fetch_balance_sheet_async(
                 "Q" + df["quarter"].astype(str) + " " + df["year"].astype(str)
             )
             pivot_df = df.pivot(
-                index="period", columns="metric", values="value"
+                index="period", columns="metric", values="value",
             ).reset_index()
             period_map = df.set_index("period")[["year", "quarter"]].drop_duplicates()
             pivot_df = pivot_df.merge(period_map, on="period", how="left")
             pivot_df = pivot_df.sort_values(
-                ["year", "quarter"], ascending=[False, False]
+                ["year", "quarter"], ascending=[False, False],
             )
             return pivot_df
-        else:
-            pivot_df = df.pivot(
-                index="year", columns="metric", values="value"
-            ).reset_index()
-            pivot_df = pivot_df.sort_values("year", ascending=False)
-            return pivot_df
+        pivot_df = df.pivot(
+            index="year", columns="metric", values="value",
+        ).reset_index()
+        pivot_df = pivot_df.sort_values("year", ascending=False)
+        return pivot_df
 
     except Exception:
         return pd.DataFrame()
 
 
 async def fetch_cash_flow_async(
-    ticker_symbol: str, period: str = "year"
+    ticker_symbol: str, period: str = "year",
 ) -> pd.DataFrame:
     try:
         if period == "quarter":
@@ -421,20 +419,19 @@ async def fetch_cash_flow_async(
                 "Q" + df["quarter"].astype(str) + " " + df["year"].astype(str)
             )
             pivot_df = df.pivot(
-                index="period", columns="metric", values="value"
+                index="period", columns="metric", values="value",
             ).reset_index()
             period_map = df.set_index("period")[["year", "quarter"]].drop_duplicates()
             pivot_df = pivot_df.merge(period_map, on="period", how="left")
             pivot_df = pivot_df.sort_values(
-                ["year", "quarter"], ascending=[False, False]
+                ["year", "quarter"], ascending=[False, False],
             )
             return pivot_df
-        else:
-            pivot_df = df.pivot(
-                index="year", columns="metric", values="value"
-            ).reset_index()
-            pivot_df = pivot_df.sort_values("year", ascending=False)
-            return pivot_df
+        pivot_df = df.pivot(
+            index="year", columns="metric", values="value",
+        ).reset_index()
+        pivot_df = pivot_df.sort_values("year", ascending=False)
+        return pivot_df
 
     except Exception:
         return pd.DataFrame()
@@ -470,21 +467,20 @@ async def fetch_ratios_async(ticker_symbol: str, period: str = "year") -> pd.Dat
                 "Q" + df["quarter"].astype(str) + " " + df["year"].astype(str)
             )
             pivot_df = df.pivot(
-                index="period", columns="metric", values="value"
+                index="period", columns="metric", values="value",
             ).reset_index()
             period_map = df.set_index("period")[["year", "quarter"]].drop_duplicates()
             pivot_df = pivot_df.merge(period_map, on="period", how="left")
             pivot_df = pivot_df.drop(columns=["period"])
             pivot_df = pivot_df.sort_values(
-                ["year", "quarter"], ascending=[False, False]
+                ["year", "quarter"], ascending=[False, False],
             )
             return pivot_df
-        else:
-            pivot_df = df.pivot(
-                index="year", columns="metric", values="value"
-            ).reset_index()
-            pivot_df = pivot_df.sort_values("year", ascending=False)
-            return pivot_df
+        pivot_df = df.pivot(
+            index="year", columns="metric", values="value",
+        ).reset_index()
+        pivot_df = pivot_df.sort_values("year", ascending=False)
+        return pivot_df
 
     except Exception:
         return pd.DataFrame()

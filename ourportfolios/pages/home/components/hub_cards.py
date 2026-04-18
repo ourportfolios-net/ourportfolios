@@ -4,17 +4,17 @@ from __future__ import annotations
 
 import reflex as rx
 
-from ....components.cards import glass_card
-from ....state.framework_state import GlobalFrameworkState
-from ....state.home_state import HomeState
-from ....styles import PREVIEW_BOX_STYLE, accent_btn, blue, green, white
-from .card_shell import (
+from ourportfolios.components.cards import glass_card
+from ourportfolios.pages.home.components.card_shell import (
     CARD_HEADER_HEIGHT,
     CARD_PREVIEW_SURFACE_HEIGHT,
     HUB_CARD_STYLE,
     HUB_CARD_TEXT_CLAMP,
     skeleton,
 )
+from ourportfolios.state.framework_state import GlobalFrameworkState
+from ourportfolios.state.home_state import HomeState
+from ourportfolios.styles import PREVIEW_BOX_STYLE, accent_btn, blue, green, white
 
 _HUB_CSS = """
 .hub-card { contain: layout style; }
@@ -42,7 +42,7 @@ _HUB_CSS = """
 """
 
 _inject_hub_css = rx.script(
-    f"""(function(){{var id='hub-css';if(!document.getElementById(id)){{var s=document.createElement('style');s.id=id;s.textContent={repr(_HUB_CSS)};document.head.appendChild(s);}}}})();"""
+    f"""(function(){{var id='hub-css';if(!document.getElementById(id)){{var s=document.createElement('style');s.id=id;s.textContent={_HUB_CSS!r};document.head.appendChild(s);}}}})();""",
 )
 
 
@@ -282,7 +282,7 @@ _FW_CSS = f"""
 """
 
 _inject_fw_css = rx.script(
-    f"""(function(){{var id='fw-css';if(!document.getElementById(id)){{var s=document.createElement('style');s.id=id;s.textContent={repr(_FW_CSS)};document.head.appendChild(s);}}}})();"""
+    f"""(function(){{var id='fw-css';if(!document.getElementById(id)){{var s=document.createElement('style');s.id=id;s.textContent={_FW_CSS!r};document.head.appendChild(s);}}}})();""",
 )
 
 
@@ -489,7 +489,7 @@ def selected_framework_card():
         glass_card(
             rx.vstack(
                 rx.text(
-                    "Selected Framework", size="1", weight="medium", color=white(0.35)
+                    "Selected Framework", size="1", weight="medium", color=white(0.35),
                 ),
                 rx.link(
                     rx.text(
@@ -516,7 +516,7 @@ def selected_framework_card():
                             rx.cond(
                                 GlobalFrameworkState.selected_framework.get("author"),
                                 GlobalFrameworkState.selected_framework.get(
-                                    "author", ""
+                                    "author", "",
                                 ),
                                 "—",
                             ),
@@ -534,7 +534,7 @@ def selected_framework_card():
                     ),
                     rx.spacer(),
                     accent_btn(
-                        "Change", icon="refresh-cw", href="/framework", icon_left=True
+                        "Change", icon="refresh-cw", href="/framework", icon_left=True,
                     ),
                     width="100%",
                     align="center",
@@ -549,7 +549,7 @@ def selected_framework_card():
         glass_card(
             rx.vstack(
                 rx.text(
-                    "Selected Framework", size="1", weight="medium", color=white(0.22)
+                    "Selected Framework", size="1", weight="medium", color=white(0.22),
                 ),
                 rx.vstack(
                     rx.text(

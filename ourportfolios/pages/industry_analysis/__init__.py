@@ -1,5 +1,5 @@
 """Landing industry page module."""
 
-from .index import index
+from ourportfolios.pages.industry_analysis.index import index
 
 __all__ = ["index"]

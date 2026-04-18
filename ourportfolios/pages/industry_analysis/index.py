@@ -2,9 +2,9 @@
 
 import reflex as rx
 
-from ...components.navbar import navbar
-from ...components.drawer import drawer_button
-from ...utils.session_manager import SessionIsolatedStateMixin
+from ourportfolios.components.drawer import drawer_button
+from ourportfolios.components.navbar import navbar
+from ourportfolios.utils.session_manager import SessionIsolatedStateMixin
 
 
 class State(SessionIsolatedStateMixin, rx.State):

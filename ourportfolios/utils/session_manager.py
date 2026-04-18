@@ -6,8 +6,9 @@ preventing cross-page data contamination and ensuring responsive page transition
 
 import asyncio
 import uuid
-from functools import wraps
 from collections.abc import Callable
+from functools import wraps
+
 import reflex as rx
 
 
@@ -35,6 +36,7 @@ class SessionManager:
 
         Returns:
             Session ID for the new or existing session
+
         """
         if force_new:
             current_state_class = (
@@ -61,13 +63,11 @@ class SessionManager:
                 existing_session_id = self._active_sessions[state_id]
                 if existing_session_id not in self._cancelled_sessions:
                     return existing_session_id
-                else:
-                    del self._active_sessions[state_id]
-        else:
-            if state_id in self._active_sessions:
-                existing_session_id = self._active_sessions[state_id]
-                if existing_session_id not in self._cancelled_sessions:
-                    return existing_session_id
+                del self._active_sessions[state_id]
+        elif state_id in self._active_sessions:
+            existing_session_id = self._active_sessions[state_id]
+            if existing_session_id not in self._cancelled_sessions:
+                return existing_session_id
 
         session_id = str(uuid.uuid4())
         self._active_sessions[state_id] = session_id
@@ -80,6 +80,7 @@ class SessionManager:
 
         Args:
             session_id: The session whose tasks should be cancelled
+
         """
         if session_id not in self._session_tasks:
             return
@@ -93,7 +94,6 @@ class SessionManager:
                     task.cancel()
                 except Exception as e:
                     print(f"Error: {e}")
-                    pass
 
         if session_id in self._session_tasks:
             del self._session_tasks[session_id]
@@ -106,6 +106,7 @@ class SessionManager:
 
         Returns:
             True if the session is active, False if cancelled
+
         """
         return session_id not in self._cancelled_sessions
 
@@ -171,6 +172,7 @@ def session_isolated(func: Callable) -> Callable:
 
     Returns:
         Wrapped function with session isolation
+
     """
     import inspect
 
@@ -183,6 +185,7 @@ def session_isolated(func: Callable) -> Callable:
 
         Returns:
             session_id if available, None otherwise
+
         """
         session_id = getattr(state, "_session_id", None)
 
@@ -194,7 +197,7 @@ def session_isolated(func: Callable) -> Callable:
                     return session_id
 
             print(
-                f"Warning: session_id not available for {func_name}, skipping execution"
+                f"Warning: session_id not available for {func_name}, skipping execution",
             )
             return None
 
@@ -212,7 +215,7 @@ def session_isolated(func: Callable) -> Callable:
             manager = get_session_manager()
 
             if not manager.is_session_active(session_id) or not is_client_connected(
-                self
+                self,
             ):
                 return
 
@@ -235,14 +238,14 @@ def session_isolated(func: Callable) -> Callable:
         async def wrapper(self: rx.State, *args, **kwargs):
             session_id = await _wait_for_session_id(self, func.__name__)
             if not session_id:
-                return
+                return None
 
             manager = get_session_manager()
 
             if not manager.is_session_active(session_id) or not is_client_connected(
-                self
+                self,
             ):
-                return
+                return None
 
             current_task = asyncio.current_task()
             if current_task:
@@ -252,13 +255,13 @@ def session_isolated(func: Callable) -> Callable:
                 result = await func(self, *args, **kwargs)
 
                 if not manager.is_session_active(session_id):
-                    return
+                    return None
                 if not is_client_connected(self):
-                    return
+                    return None
 
                 return result
             except asyncio.CancelledError:
-                return
+                return None
 
     return wrapper
 

@@ -2,8 +2,8 @@
 
 import reflex as rx
 
-from ..state.home_state import HomeState
-from .mini_chart_card import mini_chart_card
+from ourportfolios.components.mini_chart_card import mini_chart_card
+from ourportfolios.state.home_state import HomeState
 
 # Must match the treemap height so the vertical scroll area is constrained
 _TREEMAP_H = "38.75rem"

@@ -2,16 +2,16 @@
 
 import reflex as rx
 
-from .state import TickersPageState
-from ...styles import (
-    white,
-    purple,
-    TOOLTIP_CURSOR,
-    TOOLTIP_CONTENT_STYLE,
-    TOOLTIP_WRAPPER_STYLE,
+from ourportfolios.pages.tickers.state import TickersPageState
+from ourportfolios.styles import (
+    TABLE_BG,
     TEXT_TERTIARY,
     TEXT_TRUNCATE,
-    TABLE_BG,
+    TOOLTIP_CONTENT_STYLE,
+    TOOLTIP_CURSOR,
+    TOOLTIP_WRAPPER_STYLE,
+    purple,
+    white,
 )
 
 # ── Layout constants ───────────────────────────────────────────────────────────────────────
@@ -303,10 +303,10 @@ def _skeleton_row(ticker: str) -> rx.Component:
                 rx.hstack(
                     rx.vstack(
                         rx.skeleton(
-                            height="0.8125rem", width="2.75rem", border_radius="0.25rem"
+                            height="0.8125rem", width="2.75rem", border_radius="0.25rem",
                         ),
                         rx.skeleton(
-                            height="0.5625rem", width="4.25rem", border_radius="0.25rem"
+                            height="0.5625rem", width="4.25rem", border_radius="0.25rem",
                         ),
                         spacing="1",
                         align="start",
@@ -473,7 +473,7 @@ def compare_table() -> rx.Component:
                                     rx.foreach(
                                         TickersPageState.selected_metrics,
                                         lambda metric_key: _metric_cell(
-                                            stock, metric_key, item[0]
+                                            stock, metric_key, item[0],
                                         ),
                                     ),
                                     spacing="0",
@@ -505,7 +505,7 @@ def compare_table() -> rx.Component:
             ),
         ),
         rx.html(
-            "<style>@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}</style>"
+            "<style>@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}</style>",
         ),
         position="relative",
         width="100%",

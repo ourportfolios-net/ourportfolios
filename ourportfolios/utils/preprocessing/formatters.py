@@ -1,12 +1,11 @@
 """Utility functions for formatting numbers and values for display."""
 
-from typing import Union
+
 import pandas as pd
 
 
-def format_large_number(value: Union[int, float], decimals: int = 2) -> str:
-    """
-    Format large numbers with K, M, B, T suffixes.
+def format_large_number(value: float, decimals: int = 2) -> str:
+    """Format large numbers with K, M, B, T suffixes.
 
     Args:
         value: The number to format
@@ -19,6 +18,7 @@ def format_large_number(value: Union[int, float], decimals: int = 2) -> str:
         1500 -> "1.50 K"
         1500000 -> "1.50 M"
         1500000000 -> "1.50 B"
+
     """
     if value is None or (isinstance(value, float) and pd.isna(value)):
         return "N/A"
@@ -46,9 +46,8 @@ def format_large_number(value: Union[int, float], decimals: int = 2) -> str:
         return "N/A"
 
 
-def format_percentage(value: Union[int, float], decimals: int = 2) -> str:
-    """
-    Format a number as a percentage.
+def format_percentage(value: float, decimals: int = 2) -> str:
+    """Format a number as a percentage.
 
     Args:
         value: The number to format
@@ -56,6 +55,7 @@ def format_percentage(value: Union[int, float], decimals: int = 2) -> str:
 
     Returns:
         Formatted percentage string
+
     """
     if value is None or (isinstance(value, float) and pd.isna(value)):
         return "N/A"
@@ -66,9 +66,8 @@ def format_percentage(value: Union[int, float], decimals: int = 2) -> str:
         return "N/A"
 
 
-def format_ratio(value: Union[int, float], decimals: int = 2) -> str:
-    """
-    Format a ratio or decimal number.
+def format_ratio(value: float, decimals: int = 2) -> str:
+    """Format a ratio or decimal number.
 
     Args:
         value: The number to format
@@ -76,6 +75,7 @@ def format_ratio(value: Union[int, float], decimals: int = 2) -> str:
 
     Returns:
         Formatted ratio string
+
     """
     if value is None or (isinstance(value, float) and pd.isna(value)):
         return "N/A"
@@ -86,15 +86,15 @@ def format_ratio(value: Union[int, float], decimals: int = 2) -> str:
         return "N/A"
 
 
-def format_integer(value: Union[int, float]) -> str:
-    """
-    Format a number as an integer.
+def format_integer(value: float) -> str:
+    """Format a number as an integer.
 
     Args:
         value: The number to format
 
     Returns:
         Formatted integer string
+
     """
     if value is None or (isinstance(value, float) and pd.isna(value)):
         return "N/A"
@@ -105,9 +105,8 @@ def format_integer(value: Union[int, float]) -> str:
         return "N/A"
 
 
-def format_currency_vnd(value: Union[int, float], use_suffix: bool = True) -> str:
-    """
-    Format VND currency values.
+def format_currency_vnd(value: float, use_suffix: bool = True) -> str:
+    """Format VND currency values.
 
     Args:
         value: The number to format
@@ -115,6 +114,7 @@ def format_currency_vnd(value: Union[int, float], use_suffix: bool = True) -> st
 
     Returns:
         Formatted currency string
+
     """
     if value is None or (isinstance(value, float) and pd.isna(value)):
         return "N/A"

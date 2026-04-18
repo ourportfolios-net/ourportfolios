@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import reflex as rx
 
-from .colors import blue, green, indigo, purple, white
-from .surfaces import CARD_HOVER_STYLE
+from ourportfolios.ui.theme.colors import blue, green, indigo, purple, white
+from ourportfolios.ui.theme.surfaces import CARD_HOVER_STYLE
 
 
 def accent_btn(
@@ -87,7 +87,7 @@ def icon_box(icon_name: str, color: str = "purple", size: int = 16) -> rx.Compon
 
 
 def icon_box_style(
-    color: str = "purple", size: str = "2.5rem", radius: str = "0.625rem"
+    color: str = "purple", size: str = "2.5rem", radius: str = "0.625rem",
 ) -> dict:
     bg, border, _ = _ICON_COLORS.get(color, _ICON_COLORS["purple"])
     return {
@@ -124,7 +124,7 @@ def glow_orb_style(color: str = "purple") -> dict:
 
 
 def skeleton_box_style(
-    width: str, height: str, radius: str = "0.25rem", opacity: float = 0.06
+    width: str, height: str, radius: str = "0.25rem", opacity: float = 0.06,
 ) -> dict:
     return {
         "width": width,

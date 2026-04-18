@@ -1,5 +1,4 @@
-"""
-Place at: ourportfolios/state/supabase_client.py
+"""Place at: ourportfolios/state/supabase_client.py
 Moved here from pages/auth/client.py to avoid circular imports.
 auth_state.py imports from this file; pages import from auth_state — no cycle.
 """
@@ -28,7 +27,7 @@ def get_supabase():
         except ImportError:
             raise RuntimeError(
                 "SUPABASE_URL and SUPABASE_ANON_KEY are set but 'supabase' is not installed.\n"
-                "Run: pip install -r requirements-auth.txt"
+                "Run: pip install -r requirements-auth.txt",
             )
         _client = create_client(
             SUPABASE_URL,

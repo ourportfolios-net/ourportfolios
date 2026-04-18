@@ -1,10 +1,10 @@
 """State management for framework recommendation page."""
 
 import uuid
-import reflex as rx
-from typing import Any, Optional
-from pydantic import BaseModel
+from typing import Any
 
+import reflex as rx
+from pydantic import BaseModel
 from sqlalchemy import BigInteger, Integer, String, Text, select
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import (
@@ -15,9 +15,12 @@ from sqlalchemy.orm import (
     selectinload,
 )
 
-from ...state import GlobalFrameworkState
-from ...utils.database.database import get_company_session
-from ...utils.session_manager import SessionIsolatedStateMixin, session_isolated
+from ourportfolios.state import GlobalFrameworkState
+from ourportfolios.utils.database.database import get_company_session
+from ourportfolios.utils.session_manager import (
+    SessionIsolatedStateMixin,
+    session_isolated,
+)
 
 
 class Base(DeclarativeBase):
@@ -29,17 +32,17 @@ class FrameworkORM(Base):
     __table_args__ = {"schema": "frameworks"}
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    title: Mapped[Optional[str]] = mapped_column(Text)
-    description: Mapped[Optional[str]] = mapped_column(Text)
-    author: Mapped[Optional[str]] = mapped_column(Text)
-    complexity: Mapped[Optional[str]] = mapped_column(Text)
-    scope: Mapped[Optional[str]] = mapped_column(Text)
-    source_name: Mapped[Optional[str]] = mapped_column(String(255))
-    source_url: Mapped[Optional[str]] = mapped_column(Text)
-    industry: Mapped[Optional[str]] = mapped_column(String(100))
-    metrics: Mapped[Optional[dict[str, Any]]] = mapped_column(JSONB)
-    framework_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        UUID(as_uuid=True), unique=True, default=uuid.uuid4
+    title: Mapped[str | None] = mapped_column(Text)
+    description: Mapped[str | None] = mapped_column(Text)
+    author: Mapped[str | None] = mapped_column(Text)
+    complexity: Mapped[str | None] = mapped_column(Text)
+    scope: Mapped[str | None] = mapped_column(Text)
+    source_name: Mapped[str | None] = mapped_column(String(255))
+    source_url: Mapped[str | None] = mapped_column(Text)
+    industry: Mapped[str | None] = mapped_column(String(100))
+    metrics: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    framework_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), unique=True, default=uuid.uuid4,
     )
 
     metric_rows: Mapped[list["FrameworkMetricsORM"]] = relationship(
@@ -57,9 +60,9 @@ class FrameworkMetricsORM(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     category: Mapped[str] = mapped_column(String(100), nullable=False)
     metrics: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False)
-    display_order: Mapped[Optional[int]] = mapped_column(Integer, default=0)
+    display_order: Mapped[int | None] = mapped_column(Integer, default=0)
     framework_uuid: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), nullable=False
+        UUID(as_uuid=True), nullable=False,
     )
 
     framework: Mapped["FrameworkORM"] = relationship(
@@ -77,10 +80,10 @@ class FrameworkModel(BaseModel):
     complexity: str = "beginner-friendly"
     scope: str = "fundamental"
     industry: str = "general"
-    source_name: Optional[str] = None
-    source_url: Optional[str] = None
+    source_name: str | None = None
+    source_url: str | None = None
     framework_uuid: str = ""
-    metrics: list[dict[str, Any]] = []
+    metrics: ClassVar[list[dict[str, Any]] ]= []
 
 
 class ScopeModel(BaseModel):
@@ -106,11 +109,11 @@ class MetricModel(BaseModel):
 
 
 def _orm_to_framework_model(row: FrameworkORM) -> FrameworkModel:
-    metrics: list[dict[str, Any]] = []
+    metrics: ClassVar[list[dict[str, Any]] ]= []
     for mr in sorted(row.metric_rows or [], key=lambda m: m.display_order or 0):
         for name in mr.metrics:
             metrics.append(
-                {"name": name, "type": mr.category, "order": mr.display_order}
+                {"name": name, "type": mr.category, "order": mr.display_order},
             )
     return FrameworkModel(
         id=row.id,
@@ -130,24 +133,24 @@ def _orm_to_framework_model(row: FrameworkORM) -> FrameworkModel:
 class FrameworkState(SessionIsolatedStateMixin, rx.State):
     active_scope: str = "fundamental"
     active_category: str = "all"
-    scopes: list[ScopeModel] = []
+    scopes: ClassVar[list[ScopeModel] ]= []
 
-    _all_frameworks: list[FrameworkModel] = []
-    frameworks: list[FrameworkModel] = []
+    _all_frameworks: ClassVar[list[FrameworkModel] ]= []
+    frameworks: ClassVar[list[FrameworkModel] ]= []
 
     loading_scopes: bool = False
     loading_frameworks: bool = False
     selected_framework: FrameworkModel = FrameworkModel(
-        id=0, title="", description="", author=""
+        id=0, title="", description="", author="",
     )
     show_dialog: bool = False
     show_add_dialog: bool = False
 
     search_query: str = ""
 
-    ticker_cart: list[TickerModel] = []
+    ticker_cart: ClassVar[list[TickerModel] ]= []
 
-    categories: list[CategoryModel] = [
+    categories: ClassVar[list[CategoryModel] ]= [
         CategoryModel(value="all", label="All"),
         CategoryModel(value="fundamental", label="Fundamentals"),
         CategoryModel(value="technical", label="Technical"),
@@ -163,12 +166,12 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
     form_industry: str = "general"
     form_source_name: str = ""
     form_source_url: str = ""
-    form_errors: dict[str, str] = {}
+    form_errors: ClassVar[dict[str, str] ]= {}
 
-    form_metrics: list[MetricModel] = []
+    form_metrics: ClassVar[list[MetricModel] ]= []
     hovered_metric_index: int = -1
 
-    available_categories: list[str] = [
+    available_categories: ClassVar[list[str] ]= [
         "Per Share Value",
         "Growth Rate",
         "Profitability",
@@ -177,20 +180,20 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
         "Efficiency",
     ]
 
-    per_share_metrics: list[str] = [
+    per_share_metrics: ClassVar[list[str] ]= [
         "Earnings",
         "Book Value",
         "Free Cash Flow",
         "Dividend",
         "Revenues",
     ]
-    growth_rate_metrics: list[str] = [
+    growth_rate_metrics: ClassVar[list[str] ]= [
         "Revenues YoY",
         "Earnings YoY",
         "Free Cash Flow YoY",
         "Book Value YoY",
     ]
-    profitability_metrics: list[str] = [
+    profitability_metrics: ClassVar[list[str] ]= [
         "ROE",
         "ROIC",
         "Net Margin",
@@ -198,15 +201,15 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
         "Operating Margin",
         "EBITDA Margin",
     ]
-    valuation_metrics: list[str] = ["P/E", "P/B", "P/S", "EV/EBITDA"]
-    leverage_liquidity_metrics: list[str] = [
+    valuation_metrics: ClassVar[list[str] ]= ["P/E", "P/B", "P/S", "EV/EBITDA"]
+    leverage_liquidity_metrics: ClassVar[list[str] ]= [
         "Debt/Equity",
         "Current Ratio",
         "Quick Ratio",
         "Interest Coverage",
         "Cash Ratio",
     ]
-    efficiency_metrics: list[str] = ["ROA", "Asset Turnover", "Dividend Payout %"]
+    efficiency_metrics: ClassVar[list[str] ]= ["ROA", "Asset Turnover", "Dividend Payout %"]
 
     show_add_metric_dialog: bool = False
     new_metric_name: str = ""
@@ -312,7 +315,7 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
                 category=self.new_metric_category,
                 enabled=True,
                 order=len(self.form_metrics),
-            )
+            ),
         )
         self.new_metric_name = ""
         self.show_add_metric_dialog = False
@@ -461,7 +464,7 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
     def close_dialog(self) -> None:
         self.show_dialog = False
         self.selected_framework = FrameworkModel(
-            id=0, title="", description="", author=""
+            id=0, title="", description="", author="",
         )
 
     @rx.event
@@ -471,7 +474,7 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
 
     @rx.event
     def open_add_dialog(self) -> None:
-        self.form_scope = self.active_scope if self.active_scope else "fundamental"
+        self.form_scope = self.active_scope or "fundamental"
         self.form_title = ""
         self.form_description = ""
         self.form_author = ""
@@ -496,14 +499,14 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
     @session_isolated
     async def submit_framework(self):
         async with self:
-            errors: dict[str, str] = {}
+            errors: ClassVar[dict[str, str] ]= {}
             if not self.form_title.strip():
                 errors["title"] = "Title is required"
             if not self.form_author.strip():
                 errors["author"] = "Author is required"
             if errors:
                 self.form_errors = errors
-                return
+                return None
             self.form_errors = {}
 
             title = self.form_title
@@ -540,7 +543,7 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
                                 category=metric.category,
                                 metrics=[metric.name],
                                 display_order=metric.order,
-                            )
+                            ),
                         )
 
                     await session.commit()
@@ -549,12 +552,12 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
                 self.active_scope = scope
                 await self.load_frameworks()
                 return rx.toast.success(
-                    f'Framework "{title}" added successfully.', duration=3000
+                    f'Framework "{title}" added successfully.', duration=3000,
                 )
             except Exception as e:
                 print(f"[submit_framework] Error: {e}")
                 return rx.toast.error(
-                    f"Failed to add framework: {str(e)}", duration=5000
+                    f"Failed to add framework: {e!s}", duration=5000,
                 )
 
     @rx.event
@@ -562,7 +565,7 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
     async def select_and_navigate_framework(self):
         async with self:
             if not self.selected_framework or self.selected_framework.id == 0:
-                return
+                return None
             framework_id = self.selected_framework.id
             title = self.selected_framework.title
             self.show_dialog = False

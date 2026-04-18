@@ -1,22 +1,29 @@
 """Ticker board state for filtering and displaying ticker lists."""
 
-import reflex as rx
 from typing import Any
-from sqlalchemy import select, func, and_
-from ..utils.database.database import get_company_session
-from ..utils.database.models import PriceORM, ProfileORM, OverviewORM, StatsORM
+
+import reflex as rx
+from sqlalchemy import and_, func, select
+
+from ourportfolios.utils.database.database import get_company_session
+from ourportfolios.utils.database.models import (
+    OverviewORM,
+    PriceORM,
+    ProfileORM,
+    StatsORM,
+)
 
 
 class TickerBoardState(rx.State):
     search_query: str = ""
 
-    _all_tickers_cache: list[dict[str, Any]] = []
+    _all_tickers_cache: ClassVar[list[dict[str, Any]] ]= []
     _cache_loaded: bool = False
 
-    selected_exchange: set[str] = set()
-    selected_industry: set[str] = set()
-    selected_technical_metric: dict[str, list[float]] = {}
-    selected_fundamental_metric: dict[str, list[float]] = {}
+    selected_exchange: ClassVar[set[str] ]= set()
+    selected_industry: ClassVar[set[str] ]= set()
+    selected_technical_metric: ClassVar[dict[str, list[float]] ]= {}
+    selected_fundamental_metric: ClassVar[dict[str, list[float]] ]= {}
 
     selected_sort_order: str = "ASC"
     selected_sort_option: str = "symbol"
@@ -105,7 +112,7 @@ class TickerBoardState(rx.State):
             self._cache_loaded = True
         except Exception as e:
             print(
-                f"TICKER BOARD ERROR: Failed to load ticker cache: {type(e).__name__}: {e}"
+                f"TICKER BOARD ERROR: Failed to load ticker cache: {type(e).__name__}: {e}",
             )
 
     @rx.event
@@ -118,7 +125,7 @@ class TickerBoardState(rx.State):
 
     @staticmethod
     def _passes_metric_filters(
-        ticker: dict[str, Any], metrics: dict[str, list[float]]
+        ticker: dict[str, Any], metrics: dict[str, list[float]],
     ) -> bool:
         """Return True if ticker passes every metric range filter."""
         for metric, bounds in metrics.items():
@@ -140,7 +147,7 @@ class TickerBoardState(rx.State):
         if not self._cache_loaded or not self._all_tickers_cache:
             return []
 
-        results: list[dict[str, Any]] = list(self._all_tickers_cache)
+        results: ClassVar[list[dict[str, Any]] ]= list(self._all_tickers_cache)
 
         if self.search_query:
             search_upper = self.search_query.upper()

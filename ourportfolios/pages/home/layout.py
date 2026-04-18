@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import reflex as rx
 
-from ...components.navbar import navbar
-from ...ui.layout import app_shell, page_frame
-from ...ui.tokens import (
+from ourportfolios.components.navbar import navbar
+from ourportfolios.ui.layout import app_shell, page_frame
+from ourportfolios.ui.tokens import (
     HOME_CONTENT_MAX_WIDTH,
     HOME_CONTENT_WIDTH,
     HOME_PAGE_VERTICAL_PADDING,

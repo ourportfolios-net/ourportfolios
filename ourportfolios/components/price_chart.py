@@ -1,13 +1,14 @@
 import asyncio
-import reflex as rx
-import pandas as pd
-from typing import Any, TYPE_CHECKING
-from datetime import date
-from dateutil.relativedelta import relativedelta
 import json
+from datetime import date
+from typing import TYPE_CHECKING, Any
 
-from ..utils.compute_instrument import compute_ma, compute_rsi
-from ..utils.database.fetch_data import load_historical_data
+import pandas as pd
+import reflex as rx
+from dateutil.relativedelta import relativedelta
+
+from ourportfolios.utils.compute_instrument import compute_ma, compute_rsi
+from ourportfolios.utils.database.fetch_data import load_historical_data
 
 
 class PriceChartState(rx.State):
@@ -20,10 +21,10 @@ class PriceChartState(rx.State):
     df: pd.DataFrame = pd.DataFrame()
     selected_interval: str = "1D"
     selected_chart: str = "Candlestick"
-    selected_ma_period: dict[str, bool] = {}
+    selected_ma_period: ClassVar[dict[str, bool] ]= {}
     rsi_line: bool = False
 
-    ma_period: dict[str, Any] = {
+    ma_period: ClassVar[dict[str, Any] ]= {
         "5": "#D19DFF",
         "10": "#B661FFC2",
         "20": "#AEFEEDF5",
@@ -33,12 +34,12 @@ class PriceChartState(rx.State):
     }
 
     df_daily: pd.DataFrame = pd.DataFrame()
-    df_by_interval: dict[str, Any] = {
+    df_by_interval: ClassVar[dict[str, Any] ]= {
         "1D": pd.DataFrame(),
         "1W": pd.DataFrame(),
         "1M": pd.DataFrame(),
     }
-    interval_range: dict[str, Any] = {
+    interval_range: ClassVar[dict[str, Any] ]= {
         "1D": date.today() - relativedelta(years=5),
         "1W": date.today(),
         "1M": date.today(),
@@ -91,9 +92,7 @@ class PriceChartState(rx.State):
             async with self:
                 self.df_daily = df_daily
                 self.df = self._resample(df_daily, self.selected_interval)
-                self.selected_ma_period = {
-                    item: False for item in self.ma_period.keys()
-                }
+                self.selected_ma_period = dict.fromkeys(self.ma_period.keys(), False)
                 self.is_loading = False
 
             yield PriceChartState.render_price_chart
@@ -118,7 +117,7 @@ class PriceChartState(rx.State):
                         }}
                     }}, 100);
                 }}
-                """
+                """,
             )
 
     @rx.event(background=True)
@@ -149,7 +148,7 @@ class PriceChartState(rx.State):
     @rx.event
     def toggle_ma_period(self, period_key: str):
         self.selected_ma_period[period_key] = not self.selected_ma_period.get(
-            period_key, False
+            period_key, False,
         )
         yield PriceChartState.render_price_chart
 
@@ -205,7 +204,7 @@ class PriceChartState(rx.State):
         price_data = (
             self.ohlc_data if self.selected_chart == "Candlestick" else self.price_data
         )
-        data: dict[str, Any] = {
+        data: ClassVar[dict[str, Any] ]= {
             "type": self.selected_chart,
             "price_data": price_data,
             "ma_line_data": self.ma_data,
@@ -215,7 +214,7 @@ class PriceChartState(rx.State):
 
     @rx.var
     def chart_options(self) -> str:
-        options: dict[str, Any] = {}
+        options: ClassVar[dict[str, Any] ]= {}
         options["chart_layout"] = {
             "layout": {
                 "background": {"type": "solid", "color": "#131722"},

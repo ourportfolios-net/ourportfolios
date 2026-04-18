@@ -1,9 +1,10 @@
 """State for financial statement display and management."""
 
-import reflex as rx
-from typing import TYPE_CHECKING
-import io
 import csv
+import io
+from typing import TYPE_CHECKING
+
+import reflex as rx
 
 
 class FinancialStatementState(rx.State):
@@ -36,7 +37,7 @@ class FinancialStatementState(rx.State):
         titles = ["Income_Statement", "Balance_Sheet", "Cash_Flow"]
         ticker = self.ticker
         if not data:
-            return
+            return None
         output = io.StringIO()
         writer = csv.DictWriter(output, fieldnames=list(data[0].keys()))
         writer.writeheader()

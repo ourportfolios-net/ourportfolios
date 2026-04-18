@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from ..tokens import APP_BG, APP_PANEL_BG, APP_SURFACE_BG
-from .colors import TEXT_PURPLE, purple, white
-
+from ourportfolios.ui.theme.colors import TEXT_PURPLE, purple, white
+from ourportfolios.ui.tokens import APP_BG, APP_PANEL_BG, APP_SURFACE_BG
 
 CARD_BG = white(0.03)
 CARD_BORDER = f"1px solid {white(0.07)}"

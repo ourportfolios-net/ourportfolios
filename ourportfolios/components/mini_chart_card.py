@@ -13,7 +13,8 @@ Usage:
 """
 
 import reflex as rx
-from ..styles import purple, CARD_BG, CARD_BORDER, TEXT_TERTIARY
+
+from ourportfolios.styles import CARD_BG, CARD_BORDER, TEXT_TERTIARY, purple
 
 _CHART_W = 80
 _CHART_H = 52
@@ -44,8 +45,7 @@ def mini_chart_card(
     stroke_color_pos: str | None = None,
     fill_color_pos: str | None = None,
 ) -> rx.Component:
-    """
-    Reusable mini sparkline card.
+    """Reusable mini sparkline card.
 
     Args:
         label:             Card header label (plain string).
@@ -60,6 +60,7 @@ def mini_chart_card(
         fill_color_pos:    Fill color when positive (defaults to purple).
         stroke_color_neg:  Stroke color when negative (defaults to red).
         fill_color_neg:    Fill color when negative (defaults to red).
+
     """
     stroke_pos = stroke_color_pos or purple(0.85)
     fill_pos = fill_color_pos or purple(0.12)

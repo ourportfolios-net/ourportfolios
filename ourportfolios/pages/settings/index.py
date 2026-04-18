@@ -1,13 +1,14 @@
 """Place at: ourportfolios/pages/settings/index.py"""
 
 import reflex as rx
-from ...components.navbar import navbar
-from ...components.auth_guard import page_guard
-from ...state.auth_state import AuthState
-from ...ui.layout import app_shell
-from .state import SettingsState
-from .components import settings_layout
-from ...styles import TEXT_PRIMARY, TEXT_MUTED, PAGE_BG
+
+from ourportfolios.components.auth_guard import page_guard
+from ourportfolios.components.navbar import navbar
+from ourportfolios.pages.settings.components import settings_layout
+from ourportfolios.pages.settings.state import SettingsState
+from ourportfolios.state.auth_state import AuthState
+from ourportfolios.styles import PAGE_BG, TEXT_MUTED, TEXT_PRIMARY
+from ourportfolios.ui.layout import app_shell
 
 
 def _page_body() -> rx.Component:

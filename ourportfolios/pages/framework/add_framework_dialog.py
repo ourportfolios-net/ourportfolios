@@ -2,20 +2,20 @@
 
 import reflex as rx
 
-from .state import FrameworkState
-from ...components.common_dialog import common_dialog
-from ...styles import (
-    INPUT_STYLE,
-    SELECT_STYLE,
-    LABEL_STYLE,
+from ourportfolios.components.common_dialog import common_dialog
+from ourportfolios.pages.framework.state import FrameworkState
+from ourportfolios.styles import (
     BTN_GHOST,
     BTN_GHOST_SM,
     BTN_SECONDARY,
-    white,
-    ERROR_COLOR,
-    ERROR_BORDER,
-    ERROR_SHADOW,
     DELETE_HOVER,
+    ERROR_BORDER,
+    ERROR_COLOR,
+    ERROR_SHADOW,
+    INPUT_STYLE,
+    LABEL_STYLE,
+    SELECT_STYLE,
+    white,
 )
 
 

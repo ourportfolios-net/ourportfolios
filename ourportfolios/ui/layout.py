@@ -4,7 +4,12 @@ from __future__ import annotations
 
 import reflex as rx
 
-from .tokens import APP_BG, PAGE_EDGE_PADDING, PAGE_MAX_WIDTH, PAGE_VERTICAL_PADDING
+from ourportfolios.ui.tokens import (
+    APP_BG,
+    PAGE_EDGE_PADDING,
+    PAGE_MAX_WIDTH,
+    PAGE_VERTICAL_PADDING,
+)
 
 
 def clamp_lines(lines: int) -> dict[str, str]:

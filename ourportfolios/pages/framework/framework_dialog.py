@@ -2,9 +2,9 @@
 
 import reflex as rx
 
-from .state import FrameworkState
-from ...components.common_dialog import common_dialog
-from ...styles import BTN_GHOST, white
+from ourportfolios.components.common_dialog import common_dialog
+from ourportfolios.pages.framework.state import FrameworkState
+from ourportfolios.styles import BTN_GHOST, white
 
 
 def metric_badge(metric):
@@ -21,12 +21,12 @@ def framework_dialog():
     content = rx.vstack(
         rx.vstack(
             rx.heading(
-                FrameworkState.selected_framework.title, size="8", weight="bold"
+                FrameworkState.selected_framework.title, size="8", weight="bold",
             ),
             rx.hstack(
                 rx.text("by", size="2", color=white(0.4)),
                 rx.text(
-                    FrameworkState.selected_framework.author, size="2", weight="bold"
+                    FrameworkState.selected_framework.author, size="2", weight="bold",
                 ),
                 spacing="2",
             ),
@@ -83,11 +83,11 @@ def framework_dialog():
                     FrameworkState.selected_framework.metrics.length() > 0,
                     rx.vstack(
                         rx.text(
-                            "Framework Metrics", size="3", weight="bold", color="white"
+                            "Framework Metrics", size="3", weight="bold", color="white",
                         ),
                         rx.box(
                             rx.foreach(
-                                FrameworkState.selected_framework.metrics, metric_badge
+                                FrameworkState.selected_framework.metrics, metric_badge,
                             ),
                             display="flex",
                             flex_wrap="wrap",

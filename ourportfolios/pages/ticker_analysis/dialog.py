@@ -1,9 +1,10 @@
 """Company profile dialog component for displaying detailed company information."""
 
 import reflex as rx
-from ...styles import white, CARD_BORDER
-from ...components.common_dialog import common_dialog
-from .state import State
+
+from ourportfolios.components.common_dialog import common_dialog
+from ourportfolios.pages.ticker_analysis.state import State
+from ourportfolios.styles import CARD_BORDER, white
 
 _CARD_RADIUS = "0.625rem"
 

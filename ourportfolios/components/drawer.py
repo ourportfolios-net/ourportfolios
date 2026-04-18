@@ -1,7 +1,8 @@
 """Cart drawer UI component."""
 
 import reflex as rx
-from ..state import CartState
+
+from ourportfolios.state import CartState
 
 
 def _cart_item(item, i):
@@ -67,7 +68,7 @@ def cart_drawer_content():
                             user_select="none",
                             color=rx.color("accent", 10),
                             _hover={"color": rx.color("accent", 7)},
-                        )
+                        ),
                     ),
                     width="100%",
                     display="flex",
@@ -122,7 +123,7 @@ def drawer_button():
                 bottom="2em",
                 left="2em",
                 z_index="1000",
-            )
+            ),
         ),
         rx.drawer.overlay(on_click=CartState.toggle_cart),
         rx.drawer.portal(cart_drawer_content()),

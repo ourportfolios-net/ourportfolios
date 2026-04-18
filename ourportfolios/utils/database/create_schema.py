@@ -1,16 +1,18 @@
 """Schema definition and single-ticker population for the tickers schema."""
 
 import time
+from datetime import date
+
 import numpy as np
 import pandas as pd
-from datetime import date
+from database import company_sync_engine
 from dateutil.relativedelta import relativedelta
-
 from sqlalchemy import (
     BigInteger,
     Column,
     Date,
     Double,
+    Engine,
     ForeignKey,
     Identity,
     Index,
@@ -18,12 +20,12 @@ from sqlalchemy import (
     Table,
     Text,
     UniqueConstraint,
-    Engine,
+)
+from sqlalchemy import (
     text as sa_text,
 )
 from sqlalchemy.dialects.postgresql import insert as pg_insert
-from vnstock import Vnstock, Trading
-from database import company_sync_engine
+from vnstock import Trading, Vnstock
 
 from ourportfolios.utils.preprocessing.event_texts import process_events_for_display
 
@@ -186,7 +188,7 @@ def create_tickers_schema(schema_name: str, engine: Engine) -> tuple[MetaData, d
 
 # TODO: Adjust to new vnstock version
 def add_ticker(
-    symbol: str, engine: Engine, schema_name: str, years_history: int = 3
+    symbol: str, engine: Engine, schema_name: str, years_history: int = 3,
 ) -> None:
     """Fetch all data for one ticker from vnstock and insert into every table."""
     _, tables = _build_metadata(schema_name)
@@ -243,12 +245,12 @@ def add_ticker(
             df["share_own_percent"] = (df["share_own_percent"] * 100).round(2)
             with engine.connect() as conn:
                 conn.execute(
-                    shareholders_df.delete().where(shareholders_df.c.symbol == symbol)
+                    shareholders_df.delete().where(shareholders_df.c.symbol == symbol),
                 )
                 conn.execute(
                     shareholders_df.insert(),
                     df[["symbol", "share_holder", "share_own_percent"]].to_dict(
-                        "records"
+                        "records",
                     ),
                 )
                 conn.commit()
@@ -282,7 +284,7 @@ def add_ticker(
         if df is not None and not df.empty:
             df["symbol"] = symbol
             df["price_change_ratio"] = pd.to_numeric(
-                df["price_change_ratio"], errors="coerce"
+                df["price_change_ratio"], errors="coerce",
             )
             df = df[~df["title"].str.contains("insider", case=False, na=False)]
             df["price_change_ratio"] = (df["price_change_ratio"] * 100).round(2)
@@ -312,11 +314,11 @@ def add_ticker(
                                     p.strip()
                                     for p in x
                                     if isinstance(p, str) and p.strip()
-                                }
-                            )
+                                },
+                            ),
                         ),
                         "officer_own_percent": "first",
-                    }
+                    },
                 )
                 .reset_index()
             )
@@ -445,7 +447,7 @@ def load_price_df(tickers: list[str], verbose: bool = False) -> pd.DataFrame:
             "price_change",
             "pct_price_change",
             "accumulated_volume",
-        ]
+        ],
     )
 
     try:

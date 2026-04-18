@@ -1,7 +1,7 @@
 """Shared UI primitives and layout tokens."""
 
-from .layout import clamp_lines, page_frame
-from .tokens import (
+from ourportfolios.ui.layout import clamp_lines, page_frame
+from ourportfolios.ui.tokens import (
     APP_BG,
     APP_PANEL_BG,
     APP_SURFACE_BG,
