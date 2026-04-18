@@ -1,6 +1,9 @@
 import reflex as rx
-from .hub_cards import compare_assets_card, manage_portfolio_card
-from .framework_card import select_framework_card
+from ..components.hub_cards import (
+    compare_assets_card,
+    manage_portfolio_card,
+    select_framework_card,
+)
 
 
 def decision_hub_section() -> rx.Component:

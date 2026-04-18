@@ -1,7 +1,7 @@
 import reflex as rx
-from ...state.cart_state import CartState
-from ...components.cards import glass_card
-from ...styles import white
+from ....state.cart_state import CartState
+from ....components.cards import glass_card
+from ....styles import white
 
 
 def _cart_item_row(item: dict, index: int) -> rx.Component:

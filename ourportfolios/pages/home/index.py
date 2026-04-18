@@ -4,7 +4,7 @@ import reflex as rx
 
 from ...state.home_state import HomeState
 from .layout import home_shell
-from .page_body import page_body
+from .sections.dashboard import page_body
 
 
 @rx.page(route="/home", on_load=cast(Any, HomeState.on_mount))
