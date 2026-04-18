@@ -1,6 +1,5 @@
 """MagicBento Reflex component."""
 
-from typing import ClassVar
 
 import reflex as rx
 
@@ -11,7 +10,7 @@ class MagicBentoCard(rx.Component):
     library = "$/public/MagicBento"
     tag = "MagicBentoCard"
 
-    lib_dependencies: ClassVar[list[str] ]= ["motion@11.15.0"]
+    lib_dependencies: list[str] = ["motion@11.15.0"]
 
     # Component props
     spotlight_radius: rx.Var[int] = 60
@@ -25,7 +24,7 @@ class MagicBento(rx.Component):
     library = "$/public/MagicBento"
     tag = "MagicBento"
 
-    lib_dependencies: ClassVar[list[str] ]= ["motion@11.15.0"]
+    lib_dependencies: list[str] = ["motion@11.15.0"]
 
     # Component props
     columns: rx.Var[int] = 3

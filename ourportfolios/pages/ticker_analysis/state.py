@@ -58,16 +58,16 @@ class State(SessionIsolatedStateMixin, rx.State):
     officers_df: pd.DataFrame = pd.DataFrame()
     price_data: pd.DataFrame = pd.DataFrame()
 
-    income_statement: ClassVar[list[dict] ]= []
-    balance_sheet: ClassVar[list[dict] ]= []
-    cash_flow: ClassVar[list[dict] ]= []
+    income_statement: list[dict]  = rx.Field(default_factory=list)
+    balance_sheet: list[dict]  = rx.Field(default_factory=list)
+    cash_flow: list[dict]  = rx.Field(default_factory=list)
     financial_df: pd.DataFrame = pd.DataFrame()
-    transformed_dataframes: ClassVar[dict ]= {}
-    available_metrics_by_category: ClassVar[dict[str, list[str]] ]= {}
-    selected_metrics: ClassVar[dict[str, str] ]= {}
+    transformed_dataframes: dict  = rx.Field(default_factory=dict)
+    available_metrics_by_category: dict[str, list[str]]  = rx.Field(default_factory=dict)
+    selected_metrics: dict[str, str]  = rx.Field(default_factory=dict)
 
     selected_metric: str = "P/E"
-    available_metrics: ClassVar[list[str] ]= [
+    available_metrics: list[str] = [
         "P/E",
         "P/B",
         "P/S",
@@ -523,8 +523,8 @@ class State(SessionIsolatedStateMixin, rx.State):
             for idx, d in enumerate(pie_data):
                 d["fill"] = colors[idx % len(colors)]
             return pie_data
-        except Exception as e:
-            print(f"Error: {e}")
+        except Exception:
+            # print(f"Error: {e}")
             return []
 
     @rx.event

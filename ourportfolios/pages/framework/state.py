@@ -83,7 +83,7 @@ class FrameworkModel(BaseModel):
     source_name: str | None = None
     source_url: str | None = None
     framework_uuid: str = ""
-    metrics: ClassVar[list[dict[str, Any]] ]= []
+    metrics: list[dict[str, Any]]  = rx.Field(default_factory=list)
 
 
 class ScopeModel(BaseModel):
@@ -109,7 +109,7 @@ class MetricModel(BaseModel):
 
 
 def _orm_to_framework_model(row: FrameworkORM) -> FrameworkModel:
-    metrics: ClassVar[list[dict[str, Any]] ]= []
+    metrics: list[dict[str, Any]]  = rx.Field(default_factory=list)
     for mr in sorted(row.metric_rows or [], key=lambda m: m.display_order or 0):
         for name in mr.metrics:
             metrics.append(
@@ -133,10 +133,10 @@ def _orm_to_framework_model(row: FrameworkORM) -> FrameworkModel:
 class FrameworkState(SessionIsolatedStateMixin, rx.State):
     active_scope: str = "fundamental"
     active_category: str = "all"
-    scopes: ClassVar[list[ScopeModel] ]= []
+    scopes: list[ScopeModel]  = rx.Field(default_factory=list)
 
-    _all_frameworks: ClassVar[list[FrameworkModel] ]= []
-    frameworks: ClassVar[list[FrameworkModel] ]= []
+    _all_frameworks: list[FrameworkModel]  = rx.Field(default_factory=list)
+    frameworks: list[FrameworkModel]  = rx.Field(default_factory=list)
 
     loading_scopes: bool = False
     loading_frameworks: bool = False
@@ -148,9 +148,9 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
 
     search_query: str = ""
 
-    ticker_cart: ClassVar[list[TickerModel] ]= []
+    ticker_cart: list[TickerModel]  = rx.Field(default_factory=list)
 
-    categories: ClassVar[list[CategoryModel] ]= [
+    categories: list[CategoryModel] = [
         CategoryModel(value="all", label="All"),
         CategoryModel(value="fundamental", label="Fundamentals"),
         CategoryModel(value="technical", label="Technical"),
@@ -166,12 +166,12 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
     form_industry: str = "general"
     form_source_name: str = ""
     form_source_url: str = ""
-    form_errors: ClassVar[dict[str, str] ]= {}
+    form_errors: dict[str, str]  = rx.Field(default_factory=dict)
 
-    form_metrics: ClassVar[list[MetricModel] ]= []
+    form_metrics: list[MetricModel]  = rx.Field(default_factory=list)
     hovered_metric_index: int = -1
 
-    available_categories: ClassVar[list[str] ]= [
+    available_categories: list[str] = [
         "Per Share Value",
         "Growth Rate",
         "Profitability",
@@ -180,20 +180,20 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
         "Efficiency",
     ]
 
-    per_share_metrics: ClassVar[list[str] ]= [
+    per_share_metrics: list[str] = [
         "Earnings",
         "Book Value",
         "Free Cash Flow",
         "Dividend",
         "Revenues",
     ]
-    growth_rate_metrics: ClassVar[list[str] ]= [
+    growth_rate_metrics: list[str] = [
         "Revenues YoY",
         "Earnings YoY",
         "Free Cash Flow YoY",
         "Book Value YoY",
     ]
-    profitability_metrics: ClassVar[list[str] ]= [
+    profitability_metrics: list[str] = [
         "ROE",
         "ROIC",
         "Net Margin",
@@ -201,15 +201,15 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
         "Operating Margin",
         "EBITDA Margin",
     ]
-    valuation_metrics: ClassVar[list[str] ]= ["P/E", "P/B", "P/S", "EV/EBITDA"]
-    leverage_liquidity_metrics: ClassVar[list[str] ]= [
+    valuation_metrics: list[str] = ["P/E", "P/B", "P/S", "EV/EBITDA"]
+    leverage_liquidity_metrics: list[str] = [
         "Debt/Equity",
         "Current Ratio",
         "Quick Ratio",
         "Interest Coverage",
         "Cash Ratio",
     ]
-    efficiency_metrics: ClassVar[list[str] ]= ["ROA", "Asset Turnover", "Dividend Payout %"]
+    efficiency_metrics: list[str] = ["ROA", "Asset Turnover", "Dividend Payout %"]
 
     show_add_metric_dialog: bool = False
     new_metric_name: str = ""
@@ -445,8 +445,8 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
             async with self:
                 self._all_frameworks = [_orm_to_framework_model(r) for r in rows]
                 self._apply_filters()
-        except Exception as e:
-            print(f"[load_frameworks] Error: {e}")
+        except Exception:
+            # print(f"[load_frameworks] Error: {e}")
 
             async with self:
                 self._all_frameworks = []
@@ -499,7 +499,7 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
     @session_isolated
     async def submit_framework(self):
         async with self:
-            errors: ClassVar[dict[str, str] ]= {}
+            errors: dict[str, str]  = rx.Field(default_factory=dict)
             if not self.form_title.strip():
                 errors["title"] = "Title is required"
             if not self.form_author.strip():
@@ -555,7 +555,7 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
                     f'Framework "{title}" added successfully.', duration=3000,
                 )
             except Exception as e:
-                print(f"[submit_framework] Error: {e}")
+                # print(f"[submit_framework] Error: {e}")
                 return rx.toast.error(
                     f"Failed to add framework: {e!s}", duration=5000,
                 )

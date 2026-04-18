@@ -15,7 +15,7 @@ class Plasma(rx.Component):
     is_default = True
 
     # Specify the npm dependency
-    lib_dependencies: ClassVar[list[str] ]= ["ogl@1.0.6"]
+    lib_dependencies: list[str] = ["ogl@1.0.6"]
 
     # Component props
     color: rx.Var[str] = "#ffffff"

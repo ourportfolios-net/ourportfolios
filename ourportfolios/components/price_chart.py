@@ -21,10 +21,10 @@ class PriceChartState(rx.State):
     df: pd.DataFrame = pd.DataFrame()
     selected_interval: str = "1D"
     selected_chart: str = "Candlestick"
-    selected_ma_period: ClassVar[dict[str, bool] ]= {}
+    selected_ma_period: dict[str, bool] = rx.Field(default_factory=dict)
     rsi_line: bool = False
 
-    ma_period: ClassVar[dict[str, Any] ]= {
+    ma_period: dict[str, Any] = {
         "5": "#D19DFF",
         "10": "#B661FFC2",
         "20": "#AEFEEDF5",
@@ -34,12 +34,12 @@ class PriceChartState(rx.State):
     }
 
     df_daily: pd.DataFrame = pd.DataFrame()
-    df_by_interval: ClassVar[dict[str, Any] ]= {
+    df_by_interval: dict[str, Any] = {
         "1D": pd.DataFrame(),
         "1W": pd.DataFrame(),
         "1M": pd.DataFrame(),
     }
-    interval_range: ClassVar[dict[str, Any] ]= {
+    interval_range: dict[str, Any] = {
         "1D": date.today() - relativedelta(years=5),
         "1W": date.today(),
         "1M": date.today(),
@@ -97,8 +97,8 @@ class PriceChartState(rx.State):
 
             yield PriceChartState.render_price_chart
 
-        except Exception as e:
-            print(f"[PriceChartState] Error loading price chart: {e}")
+        except Exception:
+            # print(f"[PriceChartState] Error loading price chart: {e}")
             async with self:
                 self.is_loading = False
 
@@ -148,7 +148,8 @@ class PriceChartState(rx.State):
     @rx.event
     def toggle_ma_period(self, period_key: str):
         self.selected_ma_period[period_key] = not self.selected_ma_period.get(
-            period_key, False,
+            period_key,
+            False,
         )
         yield PriceChartState.render_price_chart
 
@@ -204,7 +205,7 @@ class PriceChartState(rx.State):
         price_data = (
             self.ohlc_data if self.selected_chart == "Candlestick" else self.price_data
         )
-        data: ClassVar[dict[str, Any] ]= {
+        data: dict[str, Any] = {
             "type": self.selected_chart,
             "price_data": price_data,
             "ma_line_data": self.ma_data,
@@ -214,7 +215,7 @@ class PriceChartState(rx.State):
 
     @rx.var
     def chart_options(self) -> str:
-        options: ClassVar[dict[str, Any] ]= {}
+        options: dict[str, Any] = {}
         options["chart_layout"] = {
             "layout": {
                 "background": {"type": "solid", "color": "#131722"},

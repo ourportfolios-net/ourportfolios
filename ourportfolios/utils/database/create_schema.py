@@ -168,20 +168,20 @@ def _build_metadata(schema_name: str) -> tuple[MetaData, dict]:
 
 def create_tickers_schema(schema_name: str, engine: Engine) -> tuple[MetaData, dict]:
     """Create tickers schema and all tables idempotently. Returns (metadata, tables)."""
-    print(f"[schema] Initializing '{schema_name}'...")
+    # print(f"[schema] Initializing '{schema_name}'...")
 
     metadata, tables = _build_metadata(schema_name)
 
     with engine.connect() as conn:
         conn.execute(sa_text(f"CREATE SCHEMA IF NOT EXISTS {schema_name}"))
         conn.commit()
-    print("[schema] Schema created")
+    # print("[schema] Schema created")
 
     metadata.create_all(engine, checkfirst=True)
     table_names = ", ".join(t.name for t in metadata.sorted_tables)
-    print(f"[schema] Tables: {table_names}")
-    print("[schema] Indexes: idx_price_history_symbol, idx_price_history_date_brin")
-    print("[schema] Done")
+    # print(f"[schema] Tables: {table_names}")
+    # print("[schema] Indexes: idx_price_history_symbol, idx_price_history_date_brin")
+    # print("[schema] Done")
 
     return metadata, tables
 
@@ -201,11 +201,11 @@ def add_ticker(
     profile_df = tables["profile_df"]
     officers_df = tables["officers_df"]
 
-    print(f"[{symbol}] Starting population...")
+    # print(f"[{symbol}] Starting population...")
     stock = Vnstock().stock(symbol=symbol, source="VCI")
     company = stock.company
 
-    print(f"[{symbol}] Fetching overview...")
+    # print(f"[{symbol}] Fetching overview...")
     raw = company.overview()
     if raw is None or raw.empty:
         raise ValueError(f"[{symbol}] No overview data returned — aborting")
@@ -234,11 +234,11 @@ def add_ticker(
     with engine.connect() as conn:
         conn.execute(stmt)
         conn.commit()
-    print(f"[{symbol}] ✓ overview_df")
+    # print(f"[{symbol}] ✓ overview_df")
     time.sleep(1)
 
     try:
-        print(f"[{symbol}] Fetching shareholders...")
+        # print(f"[{symbol}] Fetching shareholders...")
         df = company.shareholders()
         if df is not None and not df.empty:
             df["symbol"] = symbol
@@ -254,13 +254,13 @@ def add_ticker(
                     ),
                 )
                 conn.commit()
-        print(f"[{symbol}] ✓ shareholders_df")
+        # print(f"[{symbol}] ✓ shareholders_df")
     except Exception as e:
-        print(f"[{symbol}] ✗ shareholders_df: {e}")
+        # print(f"[{symbol}] ✗ shareholders_df: {e}")
     time.sleep(1)
 
     try:
-        print(f"[{symbol}] Fetching events...")
+        # print(f"[{symbol}] Fetching events...")
         df = company.events()
         if df is not None and not df.empty:
             df["symbol"] = symbol
@@ -273,13 +273,13 @@ def add_ticker(
                 conn.execute(events_df.delete().where(events_df.c.symbol == symbol))
                 conn.execute(events_df.insert(), df.to_dict("records"))
                 conn.commit()
-        print(f"[{symbol}] ✓ events_df")
+        # print(f"[{symbol}] ✓ events_df")
     except Exception as e:
-        print(f"[{symbol}] ✗ events_df: {e}")
+        # print(f"[{symbol}] ✗ events_df: {e}")
     time.sleep(1)
 
     try:
-        print(f"[{symbol}] Fetching news...")
+        # print(f"[{symbol}] Fetching news...")
         df = company.news()
         if df is not None and not df.empty:
             df["symbol"] = symbol
@@ -293,13 +293,13 @@ def add_ticker(
                 conn.execute(news_df.delete().where(news_df.c.symbol == symbol))
                 conn.execute(news_df.insert(), df.to_dict("records"))
                 conn.commit()
-        print(f"[{symbol}] ✓ news_df")
+        # print(f"[{symbol}] ✓ news_df")
     except Exception as e:
-        print(f"[{symbol}] ✗ news_df: {e}")
+        # print(f"[{symbol}] ✗ news_df: {e}")
     time.sleep(1)
 
     try:
-        print(f"[{symbol}] Fetching officers...")
+        # print(f"[{symbol}] Fetching officers...")
         df = company.officers()
         if df is not None and not df.empty:
             df["symbol"] = symbol
@@ -339,13 +339,13 @@ def add_ticker(
                     ].to_dict("records"),
                 )
                 conn.commit()
-        print(f"[{symbol}] ✓ officers_df")
+        # print(f"[{symbol}] ✓ officers_df")
     except Exception as e:
-        print(f"[{symbol}] ✗ officers_df: {e}")
+        # print(f"[{symbol}] ✗ officers_df: {e}")
     time.sleep(1)
 
     try:
-        print(f"[{symbol}] Fetching profile...")
+        # print(f"[{symbol}] Fetching profile...")
         df = company.profile()
         if df is not None and not df.empty:
             df["symbol"] = symbol
@@ -364,13 +364,13 @@ def add_ticker(
                 conn.execute(profile_df.delete().where(profile_df.c.symbol == symbol))
                 conn.execute(profile_df.insert(), df.to_dict("records"))
                 conn.commit()
-        print(f"[{symbol}] ✓ profile_df")
+        # print(f"[{symbol}] ✓ profile_df")
     except Exception as e:
-        print(f"[{symbol}] ✗ profile_df: {e}")
+        # print(f"[{symbol}] ✗ profile_df: {e}")
     time.sleep(1)
 
     try:
-        print(f"[{symbol}] Fetching price snapshot...")
+        # print(f"[{symbol}] Fetching price snapshot...")
         snap = load_price_df([symbol])
         if not snap.empty:
             stmt = (
@@ -388,12 +388,12 @@ def add_ticker(
             with engine.connect() as conn:
                 conn.execute(stmt)
                 conn.commit()
-        print(f"[{symbol}] ✓ price_df")
+        # print(f"[{symbol}] ✓ price_df")
     except Exception as e:
-        print(f"[{symbol}] ✗ price_df: {e}")
+        # print(f"[{symbol}] ✗ price_df: {e}")
 
     try:
-        print(f"[{symbol}] Fetching price history ({years_history}y)...")
+        # print(f"[{symbol}] Fetching price history ({years_history}y)...")
         start = (date.today() - relativedelta(years=years_history)).strftime("%Y-%m-%d")
         end = (date.today() + relativedelta(days=1)).strftime("%Y-%m-%d")
 
@@ -428,17 +428,17 @@ def add_ticker(
             with engine.connect() as conn:
                 conn.execute(stmt)
                 conn.commit()
-            print(f"[{symbol}] ✓ price_history ({len(hist)} rows)")
+            # print(f"[{symbol}] ✓ price_history ({len(hist)} rows)")
     except Exception as e:
-        print(f"[{symbol}] ✗ price_history: {e}")
+        # print(f"[{symbol}] ✗ price_history: {e}")
 
-    print(f"[{symbol}] Done")
+    # print(f"[{symbol}] Done")
 
 
 def load_price_df(tickers: list[str], verbose: bool = False) -> pd.DataFrame:
     """Load price board for given tickers and return a cleaned DataFrame."""
     if verbose:
-        print(f"Loading price board for {len(tickers)} tickers...")
+        # print(f"Loading price board for {len(tickers)} tickers...")
 
     _empty = pd.DataFrame(
         columns=[
@@ -454,7 +454,7 @@ def load_price_df(tickers: list[str], verbose: bool = False) -> pd.DataFrame:
         df = Trading(source="vci", symbol="ACB").price_board(symbols_list=tickers)
     except Exception as e:
         if verbose:
-            print(f"Error fetching price board: {e}")
+            # print(f"Error fetching price board: {e}")
         return _empty
 
     if isinstance(df.columns, pd.MultiIndex):
@@ -481,7 +481,7 @@ def load_price_df(tickers: list[str], verbose: bool = False) -> pd.DataFrame:
     df["pct_price_change"] = round(df["pct_price_change"], 2)
 
     if verbose:
-        print(f"Price board shape: {df.shape}")
+        # print(f"Price board shape: {df.shape}")
 
     return df[
         [

@@ -18,7 +18,7 @@ def common_dialog(
     title_size: str = "6",
     show_close_button: bool = True,
 ) -> rx.Component:
-    """A reusable dialog component with a close button in the top-left corner.
+    """Return reusable dialog component with a close button in the top-left corner.
 
     Args:
         content: The main content to display in the dialog

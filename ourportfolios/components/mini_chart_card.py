@@ -19,13 +19,13 @@ from ourportfolios.styles import CARD_BG, CARD_BORDER, TEXT_TERTIARY, purple
 _CHART_W = 80
 _CHART_H = 52
 
-_SHELL = dict(
-    padding="0.625rem 0.875rem",
-    border_radius="0.625rem",
-    background=CARD_BG,
-    border=CARD_BORDER,
-    box_sizing="border-box",
-)
+_SHELL = {
+    "padding": "0.625rem 0.875rem",
+    "border_radius": "0.625rem",
+    "background": CARD_BG,
+    "border": CARD_BORDER,
+    "box_sizing": "border-box",
+}
 
 
 def _skel(w: str, h: str, r: str = "0.375rem") -> rx.Component:

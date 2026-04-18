@@ -18,7 +18,6 @@ from ourportfolios.utils.database.models import (
     VNIndexORM,
 )
 from ourportfolios.utils.session_manager import (
-from typing import ClassVar
     SessionIsolatedStateMixin,
     get_session_manager,
     is_state_live,
@@ -86,20 +85,20 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
     is_portfolio_hovered: bool = False
     is_comparison_hovered: bool = False
 
-    comparison_preview_data: ClassVar[list[dict] ]= [
+    comparison_preview_data: list[dict] = [
         {"period": "Q1", "value": 12},
         {"period": "Q2", "value": 15},
         {"period": "Q3", "value": 13},
         {"period": "Q4", "value": 16},
     ]
 
-    vnindex_chart_data: ClassVar[list[dict] ]= []
+    vnindex_chart_data: list[dict] = rx.Field(default_factory=list)
     vnindex_value: str = ""
     vnindex_change: str = ""
     vnindex_pct_change: str = ""
     vnindex_is_positive: bool = True
 
-    indices: ClassVar[list[dict] ]= []
+    indices: list[dict] = rx.Field(default_factory=list)
 
     _base_portfolio_value: float = 142590.22
     _target_portfolio_value: float = 148719.73
@@ -200,7 +199,7 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
             try:
                 async with self:
                     self._refresh_running = False
-            except Exception as e:
+            except Exception:
                 pass
 
     # ──────────────────────────────────────────────────────────────────────
@@ -225,7 +224,7 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
             sign = "+" if change >= 0 else "-"
 
             today_rows = rows[1:]
-            chart_data: ClassVar[list[dict] ]= []
+            chart_data: list[dict] = []
 
             if today_rows:
                 close_values = [r.close or 0.0 for r in today_rows]
@@ -254,7 +253,7 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
                 self.vnindex_is_positive = bool(change >= 0)
                 self.vnindex_chart_data = chart_data
 
-        except Exception as e:
+        except Exception:
             traceback.print_exc()
             async with self:
                 self.vnindex_value = "N/A"
@@ -279,7 +278,7 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
                 )
                 rows = result.mappings().all()
 
-            grouped: ClassVar[dict[str, list] ]= defaultdict(list)
+            grouped: dict[str, list] = defaultdict(list)
             for row in rows:
                 grouped[row["index_name"]].append(row)
 
@@ -327,7 +326,7 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
             async with self:
                 self.indices = built
 
-        except Exception as e:
+        except Exception:
             traceback.print_exc()
 
     @rx.event(background=True)
@@ -396,8 +395,8 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
                     self.ticker_of_day_change = "+0.00%"
                     self.ticker_period_label = label
 
-        except Exception as e:
-            print(f"[ticker_of_day] Error loading period {period}: {e}")
+        except Exception:
+            # print(f"[ticker_of_day] Error loading period {period}: {e}")
             traceback.print_exc()
             async with self:
                 self.ticker_of_day_symbol = "N/A"
@@ -492,7 +491,7 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
             try:
                 async with self:
                     self._animation_running = False
-            except Exception as e:
+            except Exception:
                 pass
 
     @rx.event(background=True)
@@ -534,7 +533,7 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
             try:
                 async with self:
                     self._animation_running = False
-            except Exception as e:
+            except Exception:
                 pass
 
     @rx.event

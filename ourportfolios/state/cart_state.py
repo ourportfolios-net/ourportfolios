@@ -1,7 +1,6 @@
 """Cart state management."""
 
 import asyncio
-from typing import ClassVar
 
 import reflex as rx
 from sqlalchemy import select
@@ -20,17 +19,17 @@ async def get_industry(ticker: str) -> str:
                 result = await session.execute(stmt)
                 value: str | None = result.scalar_one_or_none()
                 return value if value is not None else "Unknown"
-        except Exception as e:
+        except Exception:
             retry_count += 1
             if retry_count >= max_retries:
-                print(f"Error fetching industry for {ticker}: {e}")
+                # print(f"Error fetching industry for {ticker}: {e}")
                 return "Unknown"
             await asyncio.sleep(0.1)
     return "Unknown"
 
 
 class CartState(rx.State):
-    cart_items: ClassVar[list[dict] ]= []
+    cart_items: list[dict]  = rx.Field(default_factory=list)
     is_open: bool = False
 
     @rx.var

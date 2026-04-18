@@ -37,7 +37,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
     _data_loaded: bool = False
     show_arrow: bool = True
 
-    fundamentals_default_value: ClassVar[dict[str, list[float]] ]= {
+    fundamentals_default_value: dict[str, list[float]] = {
         "pe": [0.00, 100.00],
         "pb": [0.00, 10.00],
         "roe": [0.00, 100.00],
@@ -51,7 +51,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         "ev_ebitda": [0.00, 200.00],
         "dividend_yield": [0.00, 100.00],
     }
-    technicals_default_value: ClassVar[dict[str, list[float]] ]= {
+    technicals_default_value: dict[str, list[float]] = {
         "rsi14": [0.00, 100.00],
         "alpha": [0.00, 5.00],
         "beta": [0.00, 5.00],
@@ -59,38 +59,38 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
 
     selected_sort_order: str = "ASC"
     selected_sort_option: str = "A-Z"
-    sort_orders: ClassVar[list[str] ]= ["ASC", "DESC"]
-    sort_options: ClassVar[dict[str, str] ]= {
+    sort_orders: list[str] = ["ASC", "DESC"]
+    sort_options: dict[str, str] = {
         "A-Z": "symbol",
         "Market Cap": "market_cap",
         "% Change": "pct_price_change",
         "Volume": "accumulated_volume",
     }
 
-    selected_exchange: ClassVar[set[str] ]= set()
-    selected_industry: ClassVar[set[str] ]= set()
-    selected_technical_metric: ClassVar[set[str] ]= set()
-    selected_fundamental_metric: ClassVar[set[str] ]= set()
+    selected_exchange: set[str] = rx.Field(default_factory=set)
+    selected_industry: set[str] = rx.Field(default_factory=set)
+    selected_technical_metric: set[str] = rx.Field(default_factory=set)
+    selected_fundamental_metric: set[str] = rx.Field(default_factory=set)
 
-    exchange_filter: ClassVar[dict[str, bool] ]= {}
-    industry_filter: ClassVar[dict[str, bool] ]= {}
-    technicals_current_value: ClassVar[dict[str, list[float]] ]= {}
-    fundamentals_current_value: ClassVar[dict[str, list[float]] ]= {}
+    exchange_filter: dict[str, bool] = rx.Field(default_factory=dict)
+    industry_filter: dict[str, bool] = rx.Field(default_factory=dict)
+    technicals_current_value: dict[str, list[float]] = rx.Field(default_factory=dict)
+    fundamentals_current_value: dict[str, list[float]] = rx.Field(default_factory=dict)
     slider_reset_key: int = 0
 
     # ── Compare state ─────────────────────────────────────────────────────────
-    stocks: ClassVar[list[dict[str, Any]] ]= []
-    compare_list: ClassVar[list[str] ]= []
-    selected_metrics: ClassVar[list[str] ]= []
-    all_metrics: ClassVar[dict[str, list[str]] ]= {}
-    historical_data: ClassVar[dict[str, list[dict[str, Any]]] ]= {}
+    stocks: list[dict[str, Any]] = rx.Field(default_factory=list)
+    compare_list: list[str] = rx.Field(default_factory=list)
+    selected_metrics: list[str] = rx.Field(default_factory=list)
+    all_metrics: dict[str, list[str]] = rx.Field(default_factory=dict)
+    historical_data: dict[str, list[dict[str, Any]]] = rx.Field(default_factory=dict)
     time_period: str = "quarter"
     show_graphs: bool = True
     is_loading_data: bool = False
     is_loading_historical: bool = False
-    _data_cache: ClassVar[dict[str, dict[str, Any]] ]= {}
+    _data_cache: dict[str, dict[str, Any]] = rx.Field(default_factory=dict)
 
-    pending_metrics: ClassVar[list[str] ]= []
+    pending_metrics: list[str] = rx.Field(default_factory=list)
     metrics_dialog_open: bool = False
 
     # ── Computed vars ─────────────────────────────────────────────────────────
@@ -113,14 +113,14 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
 
     @rx.var
     def all_available_metrics(self) -> list[str]:
-        metrics: ClassVar[list[str] ]= []
+        metrics: list[str] = []
         for category_metrics in self.all_metrics.values():
             metrics.extend(category_metrics)
         return metrics
 
     @rx.var
     def metric_labels(self) -> dict[str, str]:
-        labels: ClassVar[dict[str, str] ]= {}
+        labels: dict[str, str] = {}
         for metric in self.all_available_metrics:
             clean = metric.replace("(VND)", "").replace("(Bn. VND)", "")
             clean = clean.replace("(Mil. Shares)", "").replace("(%)", "")
@@ -129,7 +129,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
 
     @rx.var
     def category_selection_state(self) -> dict[str, bool]:
-        state: ClassVar[dict[str, bool] ]= {}
+        state: dict[str, bool] = {}
         for category, metrics in self.all_metrics.items():
             state[category] = bool(metrics) and all(
                 m in self.pending_metrics for m in metrics
@@ -156,17 +156,18 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
 
     @rx.var
     def formatted_stocks(self) -> list[dict[str, Any]]:
-        formatted: ClassVar[list[dict[str, Any]] ]= []
+        formatted: list[dict[str, Any]] = []
         latest_values_by_ticker = self.latest_values_by_ticker
         for stock in self.stocks:
-            formatted_stock: ClassVar[dict[str, Any] ]= {}
+            formatted_stock: dict[str, Any] = {}
             ticker = stock.get("symbol", "")
             formatted_stock["symbol"] = ticker
             formatted_stock["industry"] = stock.get("industry", "Unknown")
             formatted_stock["company_name"] = stock.get("company_name", "")
             if "market_cap" in stock:
                 formatted_stock["market_cap"] = format_large_number(
-                    stock["market_cap"], decimals=2,
+                    stock["market_cap"],
+                    decimals=2,
                 )
             for metric_name in self.selected_metrics:
                 if (
@@ -175,11 +176,13 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                 ):
                     value = latest_values_by_ticker[ticker][metric_name]
                     formatted_stock[metric_name] = self._format_value(
-                        metric_name, value,
+                        metric_name,
+                        value,
                     )
                 elif metric_name in stock:
                     formatted_stock[metric_name] = self._format_value(
-                        metric_name, stock[metric_name],
+                        metric_name,
+                        stock[metric_name],
                     )
                 else:
                     formatted_stock[metric_name] = "N/A"
@@ -201,7 +204,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
 
     @rx.var
     def industry_best_performers(self) -> dict[str, dict[str, str]]:
-        industry_best: ClassVar[dict[str, dict[str, str]] ]= {}
+        industry_best: dict[str, dict[str, str]] = {}
         latest_values = self.latest_values_by_ticker
         lower_is_better = {
             "P/E",
@@ -214,7 +217,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         for industry, stocks in self.grouped_stocks.items():
             industry_best[industry] = {}
             for metric in self.selected_metrics:
-                values: ClassVar[list[tuple[float, str]] ]= []
+                values: list[tuple[float, str]] = []
                 for stock in stocks:
                     ticker = stock.get("symbol", "")
                     if ticker in latest_values and metric in latest_values[ticker]:
@@ -223,14 +226,15 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                             values.append((float(val), ticker))
                 if values:
                     best_ticker = (min if metric in lower_is_better else max)(
-                        values, key=lambda x: x[0],
+                        values,
+                        key=lambda x: x[0],
                     )[1]
                     industry_best[industry][metric] = best_ticker
         return industry_best
 
     @rx.var
     def industry_metric_data_map(self) -> dict[str, dict[str, list[dict[str, Any]]]]:
-        result: ClassVar[dict[str, dict[str, list[dict[str, Any]]]] ]= {}
+        result: dict[str, dict[str, list[dict[str, Any]]]] = {}
         for industry, stocks in self.grouped_stocks.items():
             industry_tickers = [s.get("symbol", "") for s in stocks]
             result[industry] = {}
@@ -289,8 +293,8 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         # multi-table join is running.
         try:
             all_tickers = await TickerBoardState._fetch_tickers_data()
-        except Exception as e:
-            print(f"TICKERS PAGE ERROR: Failed to load ticker cache: {e}")
+        except Exception:
+            # print(f"TICKERS PAGE ERROR: Failed to load ticker cache: {e}")
             return
         try:
             async with self:
@@ -425,7 +429,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         try:
             sample_data = await get_transformed_dataframes("VNM", period="quarter")
             if sample_data and "categorized_ratios" in sample_data:
-                new_metrics: ClassVar[dict[str, list[str]] ]= {}
+                new_metrics: dict[str, list[str]] = {}
                 for category, category_data in sample_data[
                     "categorized_ratios"
                 ].items():
@@ -447,8 +451,8 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                 result = await session.execute(stmt)
                 industries = [row[0] for row in result.all() if row[0] is not None]
             return dict.fromkeys(industries, False)
-        except Exception as e:
-            print(f"TICKERS PAGE ERROR: Failed to load industries: {e}")
+        except Exception:
+            # print(f"TICKERS PAGE ERROR: Failed to load industries: {e}")
             return {}
 
     async def _load_exchanges(self) -> dict[str, bool]:
@@ -458,8 +462,8 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                 result = await session.execute(stmt)
                 exchanges = [row[0] for row in result.all() if row[0] is not None]
             return dict.fromkeys(exchanges, False)
-        except Exception as e:
-            print(f"TICKERS PAGE ERROR: Failed to load exchanges: {e}")
+        except Exception:
+            # print(f"TICKERS PAGE ERROR: Failed to load exchanges: {e}")
             return {}
 
     def _reset_fundamentals(self) -> None:
@@ -645,7 +649,8 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                     )
                 else:
                     data = await get_transformed_dataframes(
-                        ticker, period=time_period_copy,
+                        ticker,
+                        period=time_period_copy,
                     )
                     all_metrics = {}
                 try:
@@ -657,14 +662,17 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                         self._data_cache[cache_key] = data
                         self.historical_data = (
                             self._merge_one_ticker_into_historical_data(
-                                ticker, data, self.historical_data, time_period_copy,
+                                ticker,
+                                data,
+                                self.historical_data,
+                                time_period_copy,
                             )
                         )
                         # Populate and auto-select metrics on first add
                         if all_metrics and not self.all_metrics:
                             self.all_metrics = all_metrics
                         if not self.selected_metrics and self.all_metrics:
-                            all_m: ClassVar[list[str] ]= []
+                            all_m: list[str] = []
                             for ms in self.all_metrics.values():
                                 all_m.extend(ms)
                             self.selected_metrics = all_m
@@ -722,7 +730,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                 self.stocks = []
                 return
             compare_list_copy = list(self.compare_list)
-        stocks: ClassVar[list[dict[str, Any]] ]= []
+        stocks: list[dict[str, Any]] = []
         try:
             async with get_company_session() as session:
                 stmt = (
@@ -758,8 +766,8 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
             time_period_copy = self.time_period
             data_cache_copy = dict(self._data_cache)
         try:
-            ticker_data: ClassVar[dict[str, Any] ]= {}
-            tickers_to_fetch: ClassVar[list[str] ]= []
+            ticker_data: dict[str, Any] = {}
+            tickers_to_fetch: list[str] = []
             for ticker in compare_list_copy:
                 cache_key = f"{ticker}_{time_period_copy}"
                 if cache_key in data_cache_copy:
@@ -779,7 +787,8 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                     data_cache_copy[f"{ticker}_{time_period_copy}"] = result
                     ticker_data[ticker] = result
             historical_data_temp = self._extract_historical_data_static(
-                ticker_data, time_period_copy,
+                ticker_data,
+                time_period_copy,
             )
             async with self:
                 self._data_cache.update(data_cache_copy)
@@ -802,7 +811,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
             return existing
         max_periods = 8 if time_period == "quarter" else 4
         ticker_metric_periods: defaultdict[str, dict[str, Any]] = defaultdict(dict)
-        new_periods_ordered: ClassVar[list[str] ]= []
+        new_periods_ordered: list[str] = []
         for _category, category_data in ticker_data["categorized_ratios"].items():
             if not category_data:
                 continue
@@ -833,7 +842,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                     val = row[metric]
                     if pd.notna(val):
                         ticker_metric_periods[metric][period] = val
-        result: ClassVar[dict[str, list[dict[str, Any]]] ]= dict(existing)
+        result: dict[str, list[dict[str, Any]]] = dict(existing)
         for metric, period_values in ticker_metric_periods.items():
             if metric not in result:
                 result[metric] = [
@@ -859,7 +868,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         metrics_by_ticker_period: defaultdict[str, defaultdict[str, dict[str, Any]]] = (
             defaultdict(lambda: defaultdict(dict))
         )
-        all_periods: ClassVar[list[str] ]= []
+        all_periods: list[str] = []
         for ticker, data in ticker_data.items():
             if not data or "categorized_ratios" not in data:
                 continue
@@ -893,11 +902,11 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                         val = row[metric]
                         if pd.notna(val):
                             metrics_by_ticker_period[metric][ticker][period] = val
-        result: ClassVar[dict[str, list[dict[str, Any]]] ]= {}
+        result: dict[str, list[dict[str, Any]]] = {}
         for metric, tickers in metrics_by_ticker_period.items():
-            metric_data: ClassVar[list[dict[str, Any]] ]= []
+            metric_data: list[dict[str, Any]] = []
             for period in all_periods:
-                period_entry: ClassVar[dict[str, Any] ]= {"period": period}
+                period_entry: dict[str, Any] = {"period": period}
                 for ticker, periods in tickers.items():
                     period_entry[ticker] = periods.get(period)
                 metric_data.append(period_entry)

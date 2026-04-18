@@ -1,14 +1,13 @@
-"""Heatmap state — squarified nested treemap.
-"""
+"""Heatmap state — squarified nested treemap."""
 
-from typing import ClassVar
 from urllib.parse import quote
 
 import reflex as rx
 from pydantic import BaseModel
-from sqlalchemy import text
+from sqlalchemy import func, select, text
 
 from ourportfolios.utils.database.database import get_company_session
+from ourportfolios.utils.database.models import OverviewORM, PriceORM
 
 _PERIOD_TABLE = {
     "1D": "daily_changes",
@@ -138,7 +137,7 @@ def _squarify(weights: list, W: float, H: float) -> list:
     total = sum(weights)
     if total == 0:
         return []
-    out: ClassVar[list ]= []
+    out: list = []
     _sq([v / total * W * H for v in weights], 0.0, 0.0, W, H, out)
     return out
 
@@ -192,7 +191,7 @@ class HeatmapTile(BaseModel):
     bg: str = _DARK_BG
     pct_color_scheme: str = "gray"
     url: str = ""
-    tickers: ClassVar[list[TickerSubtile] ]= []
+    tickers: list[TickerSubtile] = rx.Field(default_factory=list)
     x: float = 0.0
     y: float = 0.0
     w: float = 0.0
@@ -211,7 +210,7 @@ class HeatmapChip(BaseModel):
 
 
 def _build(industry_rows, ticker_rows):
-    raw: ClassVar[dict[str, list] ]= {}
+    raw: dict[str, list] = {}
     for row in ticker_rows:
         raw.setdefault(str(row[0]), []).append(
             (str(row[1]), float(row[2] or 0.0), float(row[3] or 0.0)),
@@ -228,7 +227,7 @@ def _build(industry_rows, ticker_rows):
     treemap_inds = sorted_inds[:MAX_TREEMAP_INDUSTRIES]
     chip_inds = sorted_inds[MAX_TREEMAP_INDUSTRIES:]
 
-    chips: ClassVar[list[HeatmapChip] ]= []
+    chips: list[HeatmapChip] = []
     for ind_row in chip_inds:
         name = str(ind_row[0])
         avg_pct = float(ind_row[1] or 0.0)
@@ -254,7 +253,7 @@ def _build(industry_rows, ticker_rows):
     ]
     grand = max(sum(row_ws), 1.0)
 
-    tiles: ClassVar[list[HeatmapTile] ]= []
+    tiles: list[HeatmapTile] = []
     y_pct_accum = 0.0
 
     for row, rw in zip(rows_layout, row_ws):
@@ -292,7 +291,7 @@ def _build(industry_rows, ticker_rows):
             sign = "+" if avg_pct >= 0 else ""
 
             items = raw.get(name, [])
-            subtiles: ClassVar[list[TickerSubtile] ]= []
+            subtiles: list[TickerSubtile] = []
 
             if items:
                 caps = [max(c, 1.0) for _, _, c in items]
@@ -349,8 +348,8 @@ def _build(industry_rows, ticker_rows):
 
 class HeatmapState(rx.State):
     selected_period: str = "1D"
-    tiles: ClassVar[list[HeatmapTile] ]= []
-    chips: ClassVar[list[HeatmapChip] ]= []
+    tiles: list[HeatmapTile] = rx.Field(default_factory=list)
+    chips: list[HeatmapChip] = rx.Field(default_factory=list)
     loading: bool = False
 
     @rx.event(background=True)
@@ -371,32 +370,64 @@ class HeatmapState(rx.State):
             self.loading = False
 
     async def _fetch(self, period: str):
-        table = _PERIOD_TABLE.get(period, "daily_changes")
         try:
             async with get_company_session() as session:
-                ind_res = await session.execute(
-                    text(f"""
-                    SELECT industry, AVG(pct_change), COUNT(*)
-                    FROM market.{table}
-                    WHERE industry IS NOT NULL AND industry != ''
-                    GROUP BY industry
-                """),
-                )
-                tick_res = await session.execute(
-                    text(f"""
-                    SELECT industry, symbol, pct_change, market_cap
-                    FROM market.{table}
-                    WHERE industry IS NOT NULL AND industry != ''
-                          AND market_cap IS NOT NULL AND market_cap > 0
-                    ORDER BY industry, market_cap DESC
-                """),
-                )
+                if period == "1D":
+                    ind_stmt = (
+                        select(
+                            OverviewORM.industry,
+                            func.avg(PriceORM.pct_price_change).label("pct_change"),
+                            func.count().label("row_count"),
+                        )
+                        .join(OverviewORM, PriceORM.symbol == OverviewORM.symbol)
+                        .where(
+                            OverviewORM.industry.is_not(None),
+                            OverviewORM.industry != "",
+                            PriceORM.pct_price_change.is_not(None),
+                        )
+                        .group_by(OverviewORM.industry)
+                    )
+                    tick_stmt = (
+                        select(
+                            OverviewORM.industry,
+                            PriceORM.symbol,
+                            PriceORM.pct_price_change.label("pct_change"),
+                            OverviewORM.market_cap,
+                        )
+                        .join(OverviewORM, PriceORM.symbol == OverviewORM.symbol)
+                        .where(
+                            OverviewORM.industry.is_not(None),
+                            OverviewORM.industry != "",
+                            OverviewORM.market_cap.is_not(None),
+                            OverviewORM.market_cap > 0,
+                            PriceORM.pct_price_change.is_not(None),
+                        )
+                        .order_by(OverviewORM.industry, OverviewORM.market_cap.desc())
+                    )
+                else:
+                    table = _PERIOD_TABLE.get(period, "daily_changes")
+                    ind_stmt = text(f"""
+                        SELECT industry, AVG(pct_change), COUNT(*)
+                        FROM market.{table}
+                        WHERE industry IS NOT NULL AND industry != ''
+                        GROUP BY industry
+                    """)
+                    tick_stmt = text(f"""
+                        SELECT industry, symbol, pct_change, market_cap
+                        FROM market.{table}
+                        WHERE industry IS NOT NULL AND industry != ''
+                              AND market_cap IS NOT NULL AND market_cap > 0
+                        ORDER BY industry, market_cap DESC
+                    """)
+
+                ind_res = await session.execute(ind_stmt)
+                tick_res = await session.execute(tick_stmt)
             tiles, chips = _build(ind_res.fetchall(), tick_res.fetchall())
             async with self:
                 self.tiles = tiles
                 self.chips = chips
-        except BaseException as exc:
-            print(f"[HeatmapState] {exc}")
+        except BaseException:
+            # print(f"[HeatmapState] {exc}")
             async with self:
                 self.tiles = []
                 self.chips = []

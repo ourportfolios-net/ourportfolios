@@ -30,10 +30,10 @@ class SearchBarState(SessionIsolatedStateMixin, rx.State):
     comparison_search_query: str = ""
     display_suggestion: bool = False
     empty_state_display_suggestion: bool = False
-    outstanding_tickers: ClassVar[dict[str, Any] ]= {}
-    ticker_list: ClassVar[list[dict[str, Any]] ]= []
-    comparison_suggestions: ClassVar[list[dict[str, Any]] ]= []
-    suggest_tickers: ClassVar[list[dict[str, Any]] ]= []
+    outstanding_tickers: dict[str, Any] = rx.Field(default_factory=dict)
+    ticker_list: list[dict[str, Any]] = rx.Field(default_factory=list)
+    comparison_suggestions: list[dict[str, Any]] = rx.Field(default_factory=list)
+    suggest_tickers: list[dict[str, Any]] = rx.Field(default_factory=list)
 
     @rx.event
     def on_mount(self):
@@ -143,8 +143,8 @@ class SearchBarState(SessionIsolatedStateMixin, rx.State):
                     stmt = filter_fn(stmt)
                 result = await session.execute(stmt)
                 return [dict(row) for row in result.mappings().all()]
-        except Exception as e:
-            print(f"Database error in _fetch_tickers: {e}")
+        except Exception:
+            # print(f"Database error in _fetch_tickers: {e}")
             return []
 
     @rx.event(background=True)

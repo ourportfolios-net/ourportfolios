@@ -12,8 +12,8 @@ from ourportfolios.utils.database.models import FrameworkMetricsORM, FrameworkOR
 
 class GlobalFrameworkState(rx.State):
     selected_framework_id: int | None = None
-    selected_framework: ClassVar[dict[str, Any] ]= {}
-    framework_metrics: ClassVar[dict[str, list[str]] ]= {}
+    selected_framework: dict[str, Any]  = rx.Field(default_factory=dict)
+    framework_metrics: dict[str, list[str]]  = rx.Field(default_factory=dict)
     _framework_initialized: bool = False
 
     @rx.event
@@ -45,12 +45,12 @@ class GlobalFrameworkState(rx.State):
                     self._framework_initialized = True
                 else:
                     self.selected_framework = {}
-        except Exception as e:
-            print(f"[select_framework] Error: {e}")
+        except Exception:
+            # print(f"[select_framework] Error: {e}")
             self.selected_framework = {}
 
     def _build_framework_metrics(self, metric_rows: list[FrameworkMetricsORM]) -> None:
-        metrics: ClassVar[dict[str, list[str]] ]= {}
+        metrics: dict[str, list[str]]  = rx.Field(default_factory=dict)
         for row in sorted(metric_rows, key=lambda m: m.display_order or 0):
             if row.category not in metrics:
                 metrics[row.category] = []
@@ -72,8 +72,8 @@ class GlobalFrameworkState(rx.State):
                 row = result.scalar_one_or_none()
                 if row is not None:
                     self._build_framework_metrics(row.metric_rows)
-        except Exception as e:
-            print(f"[load_framework_metrics] Error: {e}")
+        except Exception:
+            # print(f"[load_framework_metrics] Error: {e}")
             self.framework_metrics = {}
 
     @rx.var

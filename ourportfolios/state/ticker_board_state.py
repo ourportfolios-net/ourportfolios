@@ -17,13 +17,13 @@ from ourportfolios.utils.database.models import (
 class TickerBoardState(rx.State):
     search_query: str = ""
 
-    _all_tickers_cache: ClassVar[list[dict[str, Any]] ]= []
+    _all_tickers_cache: list[dict[str, Any]]  = rx.Field(default_factory=list)
     _cache_loaded: bool = False
 
-    selected_exchange: ClassVar[set[str] ]= set()
-    selected_industry: ClassVar[set[str] ]= set()
-    selected_technical_metric: ClassVar[dict[str, list[float]] ]= {}
-    selected_fundamental_metric: ClassVar[dict[str, list[float]] ]= {}
+    selected_exchange: set[str]  = rx.Field(default_factory=set)
+    selected_industry: set[str]  = rx.Field(default_factory=set)
+    selected_technical_metric: dict[str, list[float]]  = rx.Field(default_factory=dict)
+    selected_fundamental_metric: dict[str, list[float]]  = rx.Field(default_factory=dict)
 
     selected_sort_order: str = "ASC"
     selected_sort_option: str = "symbol"
@@ -147,7 +147,7 @@ class TickerBoardState(rx.State):
         if not self._cache_loaded or not self._all_tickers_cache:
             return []
 
-        results: ClassVar[list[dict[str, Any]] ]= list(self._all_tickers_cache)
+        results: list[dict[str, Any]] = list(self._all_tickers_cache)
 
         if self.search_query:
             search_upper = self.search_query.upper()
