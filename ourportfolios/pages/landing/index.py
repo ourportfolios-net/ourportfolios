@@ -27,15 +27,17 @@ class LandingState(SessionIsolatedStateMixin, rx.State):
 @rx.page(route="/", on_load=LandingState.on_mount)
 def index() -> rx.Component:
     """Render the landing page."""
-    return app_shell(
-        navbar(),
-        hero_section(),
-        rx.box(id="showcase"),
-        showcase_section(),
-        rx.box(id="features"),
-        bento_section(),
-        rx.box(id="pricing"),
-        cta_section(),
-        footer(),
+    return rx.box(
+        app_shell(
+            navbar(),
+            hero_section(),
+            rx.box(id="showcase"),
+            showcase_section(),
+            rx.box(id="features"),
+            bento_section(),
+            rx.box(id="pricing"),
+            cta_section(),
+            footer(),
+        ),
         on_unmount=LandingState.on_unmount,
     )

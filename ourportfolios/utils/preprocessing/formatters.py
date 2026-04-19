@@ -7,7 +7,7 @@ BILLION = 1_000_000_000
 MILLION = 1_000_000
 
 
-def format_large_number(value: float, decimals: int = 2) -> str:
+def format_large_number(value: object, decimals: int = 2) -> str:
     """Format large numbers with K, M, B, T suffixes.
 
     Args:
@@ -26,29 +26,34 @@ def format_large_number(value: float, decimals: int = 2) -> str:
     if value is None or (isinstance(value, float) and pd.isna(value)):
         return "N/A"
 
-    try:
+    if isinstance(value, (int, float)):
         num = float(value)
-    except (ValueError, TypeError):
-        return "N/A"
+    elif isinstance(value, str):
+        try:
+            num = float(value)
+        except ValueError:
+            return "N/A"
     else:
-        # Handle negative numbers
-        is_negative = num < 0
-        num = abs(num)
+        return "N/A"
 
-        if num >= TRILLION:
-            formatted = f"{num / TRILLION:.{decimals}f} T"
-        elif num >= BILLION:
-            formatted = f"{num / BILLION:.{decimals}f} B"
-        elif num >= MILLION:
-            formatted = f"{num / MILLION:.{decimals}f} M"
-        else:
-            # Don't format thousands, keep as-is with decimals
-            formatted = f"{num:.{decimals}f}"
+    # Handle negative numbers
+    is_negative = num < 0
+    num = abs(num)
 
-        return f"-{formatted}" if is_negative else formatted
+    if num >= TRILLION:
+        formatted = f"{num / TRILLION:.{decimals}f} T"
+    elif num >= BILLION:
+        formatted = f"{num / BILLION:.{decimals}f} B"
+    elif num >= MILLION:
+        formatted = f"{num / MILLION:.{decimals}f} M"
+    else:
+        # Don't format thousands, keep as-is with decimals
+        formatted = f"{num:.{decimals}f}"
+
+    return f"-{formatted}" if is_negative else formatted
 
 
-def format_percentage(value: float, decimals: int = 2) -> str:
+def format_percentage(value: object, decimals: int = 2) -> str:
     """Format a number as a percentage.
 
     Args:
@@ -62,13 +67,17 @@ def format_percentage(value: float, decimals: int = 2) -> str:
     if value is None or (isinstance(value, float) and pd.isna(value)):
         return "N/A"
 
-    try:
+    if isinstance(value, (int, float)):
         return f"{float(value):.{decimals}f}%"
-    except (ValueError, TypeError):
-        return "N/A"
+    if isinstance(value, str):
+        try:
+            return f"{float(value):.{decimals}f}%"
+        except ValueError:
+            return "N/A"
+    return "N/A"
 
 
-def format_ratio(value: float, decimals: int = 2) -> str:
+def format_ratio(value: object, decimals: int = 2) -> str:
     """Format a ratio or decimal number.
 
     Args:
@@ -82,13 +91,17 @@ def format_ratio(value: float, decimals: int = 2) -> str:
     if value is None or (isinstance(value, float) and pd.isna(value)):
         return "N/A"
 
-    try:
+    if isinstance(value, (int, float)):
         return f"{float(value):.{decimals}f}"
-    except (ValueError, TypeError):
-        return "N/A"
+    if isinstance(value, str):
+        try:
+            return f"{float(value):.{decimals}f}"
+        except ValueError:
+            return "N/A"
+    return "N/A"
 
 
-def format_integer(value: float) -> str:
+def format_integer(value: object) -> str:
     """Format a number as an integer.
 
     Args:
@@ -101,13 +114,17 @@ def format_integer(value: float) -> str:
     if value is None or (isinstance(value, float) and pd.isna(value)):
         return "N/A"
 
-    try:
+    if isinstance(value, (int, float)):
         return f"{int(float(value))}"
-    except (ValueError, TypeError):
-        return "N/A"
+    if isinstance(value, str):
+        try:
+            return f"{int(float(value))}"
+        except ValueError:
+            return "N/A"
+    return "N/A"
 
 
-def format_currency_vnd(value: float, *, use_suffix: bool = True) -> str:
+def format_currency_vnd(value: object, *, use_suffix: bool = True) -> str:
     """Format VND currency values.
 
     Args:
@@ -124,7 +141,11 @@ def format_currency_vnd(value: float, *, use_suffix: bool = True) -> str:
     if use_suffix:
         return format_large_number(value, decimals=2)
 
-    try:
+    if isinstance(value, (int, float)):
         return f"{float(value):,.0f}"
-    except (ValueError, TypeError):
-        return "N/A"
+    if isinstance(value, str):
+        try:
+            return f"{float(value):,.0f}"
+        except ValueError:
+            return "N/A"
+    return "N/A"

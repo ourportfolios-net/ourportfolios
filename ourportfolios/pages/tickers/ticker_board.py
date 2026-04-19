@@ -51,28 +51,12 @@ _TRILLION = 1_000_000_000_000
 # ── Display helpers ────────────────────────────────────────────────────────────
 
 
-def _compact_number(val: float, size: str = "2") -> rx.Component:
+def _compact_number(val: float) -> rx.Component:
     """Format a number with K/M/B/T suffix — uses TEXT_SECONDARY."""
     return rx.cond(
-        val >= _TRILLION,
-        rx.text(f"{val / _TRILLION:.1f}T", size=size, color=TEXT_SECONDARY),
-        rx.cond(
-            val >= _BILLION,
-            rx.text(f"{val / _BILLION:.1f}B", size=size, color=TEXT_SECONDARY),
-            rx.cond(
-                val >= _MILLION,
-                rx.text(f"{val / _MILLION:.1f}M", size=size, color=TEXT_SECONDARY),
-                rx.cond(
-                    val >= _THOUSAND,
-                    rx.text(f"{val / _THOUSAND:.0f}K", size=size, color=TEXT_SECONDARY),
-                    rx.cond(
-                        val > 0,
-                        rx.text(val, size=size, color=TEXT_SECONDARY),
-                        rx.text("—", size=size, color=TEXT_MUTED),
-                    ),
-                ),
-            ),
-        ),
+        val > 0,
+        rx.text(f"{val}", size="2", color=TEXT_SECONDARY),
+        rx.text("—", size="2", color=TEXT_MUTED),
     )
 
 
@@ -85,7 +69,7 @@ def _cart_btn(symbol: str) -> rx.Component:
         rx.icon("shopping-cart", size=13),
         on_click=CartState.add_item(symbol),
         size="1",
-        **BTN_GHOST_XS,
+        style=BTN_GHOST_XS,
     )
 
 
@@ -94,7 +78,7 @@ def _compare_btn(symbol: str) -> rx.Component:
         rx.icon("between_horizontal_start", size=13),
         on_click=TickersPageState.add_ticker_to_compare(symbol),
         size="1",
-        **_COMPARE_BTN,
+        style=_COMPARE_BTN,
     )
 
 

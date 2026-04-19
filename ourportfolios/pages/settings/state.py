@@ -213,6 +213,9 @@ class SettingsState(rx.State):
         try:
             supabase = get_supabase()
             result = supabase.auth.get_user(auth.auth_token)
+            if result is None:
+                yield rx.redirect("/")
+                return
             user = result.user
             if user is None:
                 yield rx.redirect("/")

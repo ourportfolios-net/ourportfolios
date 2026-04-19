@@ -4,7 +4,7 @@ from collections.abc import Sequence
 from urllib.parse import quote
 
 import reflex as rx
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import Column, Float, MetaData, String, Table, func, select
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -229,7 +229,7 @@ class HeatmapTile(BaseModel):
     bg: str = _DARK_BG
     pct_color_scheme: str = "gray"
     url: str = ""
-    tickers: list[TickerSubtile] = rx.Field(default_factory=list)
+    tickers: list[TickerSubtile] = Field(default_factory=list)
     x: float = 0.0
     y: float = 0.0
     w: float = 0.0
@@ -249,6 +249,7 @@ class HeatmapChip(BaseModel):
 
 IndustryRow = tuple[str, float, int]
 TickerRow = tuple[str, str, float, float]
+TickerItem = tuple[str, float, float]
 
 
 def _chip_from_industry(name: str, avg_pct: float) -> HeatmapChip:
@@ -264,7 +265,7 @@ def _chip_from_industry(name: str, avg_pct: float) -> HeatmapChip:
 
 
 def _subtiles_for_items(
-    items: list[TickerRow],
+    items: list[TickerItem],
     tile_w_px: float,
     tile_h_px: float,
 ) -> list[TickerSubtile]:
@@ -313,7 +314,7 @@ def _build(
     industry_rows: Sequence[IndustryRow],
     ticker_rows: Sequence[TickerRow],
 ) -> tuple[list[HeatmapTile], list[HeatmapChip]]:
-    raw: dict[str, list[TickerRow]] = {}
+    raw: dict[str, list[TickerItem]] = {}
     for row in ticker_rows:
         raw.setdefault(str(row[0]), []).append(
             (str(row[1]), float(row[2] or 0.0), float(row[3] or 0.0)),
@@ -398,8 +399,8 @@ def _build(
 
 class HeatmapState(rx.State):
     selected_period: str = "1D"
-    tiles: list[HeatmapTile] = rx.Field(default_factory=list)
-    chips: list[HeatmapChip] = rx.Field(default_factory=list)
+    tiles: rx.Field[list[HeatmapTile]] = rx.Field(default_factory=list)
+    chips: rx.Field[list[HeatmapChip]] = rx.Field(default_factory=list)
     loading: bool = False
 
     @rx.event(background=True)
@@ -490,7 +491,21 @@ class HeatmapState(rx.State):
 
                 ind_res = await session.execute(ind_stmt)
                 tick_res = await session.execute(tick_stmt)
-            tiles, chips = _build(ind_res.fetchall(), tick_res.fetchall())
+            industry_rows: list[IndustryRow] = [
+                (str(industry), float(avg_pct or 0.0), int(row_count or 0))
+                for industry, avg_pct, row_count in ind_res.fetchall()
+            ]
+            ticker_rows: list[TickerRow] = [
+                (
+                    str(industry),
+                    str(symbol),
+                    float(pct_change or 0.0),
+                    float(market_cap or 0.0),
+                )
+                for industry, symbol, pct_change, market_cap in tick_res.fetchall()
+            ]
+
+            tiles, chips = _build(industry_rows, ticker_rows)
             async with self:
                 self.tiles = tiles
                 self.chips = chips

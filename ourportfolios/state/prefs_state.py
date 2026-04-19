@@ -24,7 +24,7 @@ class PrefsState(rx.State):
         try:
             supabase = get_supabase()
             result = supabase.auth.get_user(auth.auth_token)
-            if result.user is None:
+            if result is None or result.user is None:
                 return
             meta = result.user.user_metadata or {}
             if "default_chart_period" in meta:

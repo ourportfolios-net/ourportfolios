@@ -375,10 +375,8 @@ def _delete_dialog() -> rx.Component:
                 placeholder=SettingsState.delete_confirmation_token,
                 value=SettingsState.delete_confirm_text,
                 on_change=SettingsState.set_delete_confirm_text,
-                **{
-                    **_input_dialog_style(),
-                    "_placeholder": {"color": white(0.35)},
-                },
+                style=_input_dialog_style(),
+                _placeholder={"color": white(0.35)},
             ),
             spacing="2",
             width="100%",

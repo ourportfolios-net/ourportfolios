@@ -7,9 +7,9 @@ from ourportfolios.pages.framework.state import FrameworkState
 from ourportfolios.styles import BTN_GHOST, white
 
 
-def metric_badge(metric: object) -> rx.Component:
+def metric_badge(metric: dict[str, object]) -> rx.Component:
     return rx.badge(
-        metric["name"],
+        str(metric.get("name", "")),
         variant="soft",
         color_scheme="gray",
         size="2",
@@ -84,7 +84,7 @@ def framework_dialog():
                     color=white(0.7),
                 ),
                 rx.cond(
-                    FrameworkState.selected_framework.metrics.length() > 0,
+                    FrameworkState.selected_framework_has_metrics,
                     rx.vstack(
                         rx.text(
                             "Framework Metrics",
@@ -118,7 +118,7 @@ def framework_dialog():
                 "Cancel",
                 on_click=FrameworkState.close_dialog,
                 size="3",
-                **BTN_GHOST,
+                style=BTN_GHOST,
             ),
             rx.spacer(),
             rx.button(
@@ -129,7 +129,7 @@ def framework_dialog():
                 ),
                 on_click=FrameworkState.select_and_navigate_framework,
                 size="3",
-                **BTN_GHOST,
+                style=BTN_GHOST,
             ),
             width="100%",
         ),

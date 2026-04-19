@@ -2,7 +2,6 @@ import reflex as rx
 
 
 def pct_change_badge(diff: float):
-    diff = diff.to(float)  # Convert to Python[float]
     color_scheme = rx.cond(diff > 0, "green", rx.cond(diff < 0, "red", "gray"))
 
     return rx.badge(
@@ -16,7 +15,15 @@ def pct_change_badge(diff: float):
                     rx.icon(tag="minus", size=12),
                 ),
             ),
-            rx.text(f"{diff:.2f}%", size="1", weight="medium"),
+            rx.hstack(
+                rx.cond(
+                    diff > 0, rx.text("+", size="1", weight="medium"), rx.fragment(),
+                ),
+                rx.text(diff, size="1", weight="medium"),
+                rx.text("%", size="1", weight="medium"),
+                spacing="0",
+                align="center",
+            ),
             spacing="1",
             align="center",
             justify="center",

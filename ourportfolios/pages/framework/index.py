@@ -174,7 +174,9 @@ def _page_body() -> rx.Component:
     on_load=[AuthState.require_auth, FrameworkState.on_mount],
 )
 def index() -> rx.Component:
-    return app_shell(
-        page_guard(_page_body()),
+    return rx.box(
+        app_shell(
+            page_guard(_page_body()),
+        ),
         on_unmount=FrameworkState.on_unmount,
     )

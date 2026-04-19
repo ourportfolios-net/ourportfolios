@@ -2,7 +2,7 @@
 
 import asyncio
 from collections import defaultdict
-from typing import Any
+from typing import cast
 
 import pandas as pd
 import reflex as rx
@@ -28,6 +28,8 @@ from ourportfolios.utils.session_manager import (
     session_isolated,
 )
 
+_MIN_CATEGORY_TUPLE_ITEMS = 2
+
 
 class TickersPageState(SessionIsolatedStateMixin, rx.State):
     # ── View mode ─────────────────────────────────────────────────────────────
@@ -38,7 +40,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
     _data_loaded: bool = False
     show_arrow: bool = True
 
-    fundamentals_default_value: dict[str, list[float]] = rx.Field(
+    fundamentals_default_value: rx.Field[dict[str, list[float]]] = rx.Field(
         default_factory=lambda: {
             "pe": [0.00, 100.00],
             "pb": [0.00, 10.00],
@@ -54,7 +56,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
             "dividend_yield": [0.00, 100.00],
         },
     )
-    technicals_default_value: dict[str, list[float]] = rx.Field(
+    technicals_default_value: rx.Field[dict[str, list[float]]] = rx.Field(
         default_factory=lambda: {
             "rsi14": [0.00, 100.00],
             "alpha": [0.00, 5.00],
@@ -64,8 +66,10 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
 
     selected_sort_order: str = "ASC"
     selected_sort_option: str = "A-Z"
-    sort_orders: list[str] = rx.Field(default_factory=lambda: ["ASC", "DESC"])
-    sort_options: dict[str, str] = rx.Field(
+    sort_orders: rx.Field[list[str]] = rx.Field(
+        default_factory=lambda: ["ASC", "DESC"],
+    )
+    sort_options: rx.Field[dict[str, str]] = rx.Field(
         default_factory=lambda: {
             "A-Z": "symbol",
             "Market Cap": "market_cap",
@@ -74,30 +78,38 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         },
     )
 
-    selected_exchange: set[str] = rx.Field(default_factory=set)
-    selected_industry: set[str] = rx.Field(default_factory=set)
-    selected_technical_metric: set[str] = rx.Field(default_factory=set)
-    selected_fundamental_metric: set[str] = rx.Field(default_factory=set)
+    selected_exchange: rx.Field[set[str]] = rx.Field(default_factory=set)
+    selected_industry: rx.Field[set[str]] = rx.Field(default_factory=set)
+    selected_technical_metric: rx.Field[set[str]] = rx.Field(default_factory=set)
+    selected_fundamental_metric: rx.Field[set[str]] = rx.Field(default_factory=set)
 
-    exchange_filter: dict[str, bool] = rx.Field(default_factory=dict)
-    industry_filter: dict[str, bool] = rx.Field(default_factory=dict)
-    technicals_current_value: dict[str, list[float]] = rx.Field(default_factory=dict)
-    fundamentals_current_value: dict[str, list[float]] = rx.Field(default_factory=dict)
+    exchange_filter: rx.Field[dict[str, bool]] = rx.Field(default_factory=dict)
+    industry_filter: rx.Field[dict[str, bool]] = rx.Field(default_factory=dict)
+    technicals_current_value: rx.Field[dict[str, list[float]]] = rx.Field(
+        default_factory=dict,
+    )
+    fundamentals_current_value: rx.Field[dict[str, list[float]]] = rx.Field(
+        default_factory=dict,
+    )
     slider_reset_key: int = 0
 
     # ── Compare state ─────────────────────────────────────────────────────────
-    stocks: list[dict[str, Any]] = rx.Field(default_factory=list)
-    compare_list: list[str] = rx.Field(default_factory=list)
-    selected_metrics: list[str] = rx.Field(default_factory=list)
-    all_metrics: dict[str, list[str]] = rx.Field(default_factory=dict)
-    historical_data: dict[str, list[dict[str, Any]]] = rx.Field(default_factory=dict)
+    stocks: rx.Field[list[dict[str, object]]] = rx.Field(default_factory=list)
+    compare_list: rx.Field[list[str]] = rx.Field(default_factory=list)
+    selected_metrics: rx.Field[list[str]] = rx.Field(default_factory=list)
+    all_metrics: rx.Field[dict[str, list[str]]] = rx.Field(default_factory=dict)
+    historical_data: rx.Field[dict[str, list[dict[str, object]]]] = rx.Field(
+        default_factory=dict,
+    )
     time_period: str = "quarter"
     show_graphs: bool = True
     is_loading_data: bool = False
     is_loading_historical: bool = False
-    _data_cache: dict[str, dict[str, Any]] = rx.Field(default_factory=dict)
+    _data_cache: rx.Field[dict[str, dict[str, object]]] = rx.Field(
+        default_factory=dict,
+    )
 
-    pending_metrics: list[str] = rx.Field(default_factory=list)
+    pending_metrics: rx.Field[list[str]] = rx.Field(default_factory=list)
     metrics_dialog_open: bool = False
 
     # ── Computed vars ─────────────────────────────────────────────────────────
@@ -151,8 +163,8 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         }
 
     @rx.var
-    def latest_values_by_ticker(self) -> dict[str, dict[str, Any]]:
-        latest: defaultdict[str, dict[str, Any]] = defaultdict(dict)
+    def latest_values_by_ticker(self) -> dict[str, dict[str, object]]:
+        latest: defaultdict[str, dict[str, object]] = defaultdict(dict)
         for metric_key, metric_data in self.historical_data.items():
             if metric_data:
                 latest_period = metric_data[-1]
@@ -162,12 +174,13 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         return dict(latest)
 
     @rx.var
-    def formatted_stocks(self) -> list[dict[str, Any]]:
-        formatted: list[dict[str, Any]] = []
+    def formatted_stocks(self) -> list[dict[str, object]]:
+        formatted: list[dict[str, object]] = []
         latest_values_by_ticker = self.latest_values_by_ticker
         for stock in self.stocks:
-            formatted_stock: dict[str, Any] = {}
-            ticker = stock.get("symbol", "")
+            formatted_stock: dict[str, object] = {}
+            ticker_value = stock.get("symbol", "")
+            ticker = ticker_value if isinstance(ticker_value, str) else ""
             formatted_stock["symbol"] = ticker
             formatted_stock["industry"] = stock.get("industry", "Unknown")
             formatted_stock["company_name"] = stock.get("company_name", "")
@@ -197,16 +210,23 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         return formatted
 
     @rx.var
-    def grouped_stocks(self) -> dict[str, list[dict[str, Any]]]:
-        groups: defaultdict[str, list[dict[str, Any]]] = defaultdict(list)
+    def grouped_stocks(self) -> dict[str, list[dict[str, object]]]:
+        groups: defaultdict[str, list[dict[str, object]]] = defaultdict(list)
         for stock in self.formatted_stocks:
-            groups[stock.get("industry", "Unknown")].append(stock)
+            industry_value = stock.get("industry", "Unknown")
+            industry = industry_value if isinstance(industry_value, str) else "Unknown"
+            groups[industry].append(stock)
         return dict(groups)
 
     @rx.var
     def pending_tickers(self) -> list[str]:
         """Tickers in compare_list that don't yet have loaded stock data."""
-        loaded = {s.get("symbol", "") for s in self.stocks}
+        loaded = {
+            symbol
+            for s in self.stocks
+            for symbol in [s.get("symbol", "")]
+            if isinstance(symbol, str)
+        }
         return [t for t in self.compare_list if t not in loaded]
 
     @rx.var
@@ -226,7 +246,8 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
             for metric in self.selected_metrics:
                 values: list[tuple[float, str]] = []
                 for stock in stocks:
-                    ticker = stock.get("symbol", "")
+                    ticker_value = stock.get("symbol", "")
+                    ticker = ticker_value if isinstance(ticker_value, str) else ""
                     if ticker in latest_values and metric in latest_values[ticker]:
                         val = latest_values[ticker][metric]
                         if val is not None and isinstance(val, (int, float)):
@@ -240,8 +261,8 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         return industry_best
 
     @rx.var
-    def industry_metric_data_map(self) -> dict[str, dict[str, list[dict[str, Any]]]]:
-        result: dict[str, dict[str, list[dict[str, Any]]]] = {}
+    def industry_metric_data_map(self) -> dict[str, dict[str, list[dict[str, object]]]]:
+        result: dict[str, dict[str, list[dict[str, object]]]] = {}
         for industry, stocks in self.grouped_stocks.items():
             industry_tickers = [s.get("symbol", "") for s in stocks]
             result[industry] = {}
@@ -378,7 +399,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
             TickerBoardState.set_sort_order(default_order),
         ]
 
-    def _build_filters(self) -> dict:
+    def _build_filters(self) -> dict[str, object]:
         return {
             "industry": self.selected_industry,
             "exchange": self.selected_exchange,
@@ -739,7 +760,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                 self.stocks = []
                 return
             compare_list_copy = list(self.compare_list)
-        stocks: list[dict[str, Any]] = []
+        stocks: list[dict[str, object]] = []
         try:
             async with get_company_session() as session:
                 stmt = (
@@ -775,7 +796,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
             time_period_copy = self.time_period
             data_cache_copy = dict(self._data_cache)
         try:
-            ticker_data: dict[str, Any] = {}
+            ticker_data: dict[str, object] = {}
             tickers_to_fetch: list[str] = []
             for ticker in compare_list_copy:
                 cache_key = f"{ticker}_{time_period_copy}"
@@ -790,7 +811,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                 ]
                 results = await asyncio.gather(*tasks, return_exceptions=True)
                 for ticker, result in zip(tickers_to_fetch, results, strict=True):
-                    if isinstance(result, Exception):
+                    if isinstance(result, BaseException):
                         ticker_data[ticker] = None
                         continue
                     data_cache_copy[f"{ticker}_{time_period_copy}"] = result
@@ -813,16 +834,26 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
     def _merge_one_ticker_into_historical_data(  # noqa: C901,PLR0912
         ticker: str,
         ticker_data: object,
-        existing: dict[str, list[dict[str, Any]]],
+        existing: dict[str, list[dict[str, object]]],
         time_period: str,
-    ) -> dict[str, list[dict[str, Any]]]:
-        if not ticker_data or "categorized_ratios" not in ticker_data:
+    ) -> dict[str, list[dict[str, object]]]:
+        if not isinstance(ticker_data, dict):
+            return existing
+        ticker_data_dict = cast("dict[str, object]", ticker_data)
+        categorized_ratios = ticker_data_dict.get("categorized_ratios")
+        if not isinstance(categorized_ratios, dict):
             return existing
         max_periods = 8 if time_period == "quarter" else 4
-        ticker_metric_periods: defaultdict[str, dict[str, Any]] = defaultdict(dict)
+        ticker_metric_periods: defaultdict[str, dict[str, object]] = defaultdict(dict)
         new_periods_ordered: list[str] = []
-        for _category, category_data in ticker_data["categorized_ratios"].values():
-            if not category_data:
+        for raw_category_data in categorized_ratios.values():
+            if (
+                not isinstance(raw_category_data, tuple)
+                or len(raw_category_data) < _MIN_CATEGORY_TUPLE_ITEMS
+            ):
+                continue
+            category_data = raw_category_data[1]
+            if not isinstance(category_data, list) or not category_data:
                 continue
             df = pd.DataFrame(category_data)
             if df.empty:
@@ -851,7 +882,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                     val = row[metric]
                     if pd.notna(val):
                         ticker_metric_periods[metric][period] = val
-        result: dict[str, list[dict[str, Any]]] = dict(existing)
+        result: dict[str, list[dict[str, object]]] = dict(existing)
         for metric, period_values in ticker_metric_periods.items():
             if metric not in result:
                 result[metric] = [
@@ -870,19 +901,30 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
 
     @staticmethod
     def _extract_historical_data_static(  # noqa: C901,PLR0912
-        ticker_data: dict[str, Any],
+        ticker_data: dict[str, object],
         time_period: str,
-    ) -> dict[str, list[dict[str, Any]]]:
+    ) -> dict[str, list[dict[str, object]]]:
         max_periods = 8 if time_period == "quarter" else 4
-        metrics_by_ticker_period: defaultdict[str, defaultdict[str, dict[str, Any]]] = (
-            defaultdict(lambda: defaultdict(dict))
-        )
+        metrics_by_ticker_period: defaultdict[
+            str,
+            defaultdict[str, dict[str, object]],
+        ] = defaultdict(lambda: defaultdict(dict))
         all_periods: list[str] = []
         for ticker, data in ticker_data.items():
-            if not data or "categorized_ratios" not in data:
+            if not isinstance(data, dict):
                 continue
-            for _category, category_data in data["categorized_ratios"].values():
-                if not category_data:
+            data_dict = cast("dict[str, object]", data)
+            categorized_ratios = data_dict.get("categorized_ratios")
+            if not isinstance(categorized_ratios, dict):
+                continue
+            for raw_category_data in categorized_ratios.values():
+                if (
+                    not isinstance(raw_category_data, tuple)
+                    or len(raw_category_data) < _MIN_CATEGORY_TUPLE_ITEMS
+                ):
+                    continue
+                category_data = raw_category_data[1]
+                if not isinstance(category_data, list) or not category_data:
                     continue
                 df = pd.DataFrame(category_data)
                 if df.empty:
@@ -911,19 +953,19 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                         val = row[metric]
                         if pd.notna(val):
                             metrics_by_ticker_period[metric][ticker][period] = val
-        result: dict[str, list[dict[str, Any]]] = {}
+        result: dict[str, list[dict[str, object]]] = {}
         for metric, tickers in metrics_by_ticker_period.items():
-            metric_data: list[dict[str, Any]] = []
+            metric_data: list[dict[str, object]] = []
             for period in all_periods:
-                period_entry: dict[str, Any] = {"period": period}
+                period_entry: dict[str, object] = {"period": period}
                 for ticker, periods in tickers.items():
                     period_entry[ticker] = periods.get(period)
                 metric_data.append(period_entry)
             result[metric] = metric_data
         return result
 
-    def _get_latest_values_by_ticker(self) -> dict[str, dict[str, Any]]:
-        latest_values: defaultdict[str, dict[str, Any]] = defaultdict(dict)
+    def _get_latest_values_by_ticker(self) -> dict[str, dict[str, object]]:
+        latest_values: defaultdict[str, dict[str, object]] = defaultdict(dict)
         for metric_key, metric_data in self.historical_data.items():
             if metric_data:
                 latest_period = metric_data[-1]

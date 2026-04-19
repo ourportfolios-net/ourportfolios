@@ -4,7 +4,7 @@ import base64
 import hashlib
 import secrets
 import urllib.parse
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING
 
 import httpx
 import reflex as rx
@@ -21,17 +21,6 @@ from ourportfolios.auth_config import (
 if TYPE_CHECKING:
     from supabase import Client
     from supabase_auth import AuthResponse, UserResponse
-
-
-class _SessionUser(Protocol):
-    id: object
-    email: str | None
-    user_metadata: dict[str, object] | None
-
-
-class _SessionData(Protocol):
-    access_token: str
-    refresh_token: str | None
 
 
 _BLOCKED_DESTINATIONS: frozenset[str] = frozenset(
@@ -251,21 +240,26 @@ class AuthState(rx.State):
 
     def _store_session(
         self,
-        user: _SessionUser,
-        session: _SessionData | None = None,
+        user: object,
+        session: object | None = None,
     ) -> None:
-        self.user_id = str(user.id)
-        self.user_email = user.email or ""
-        self.user_display_name = (
-            (user.user_metadata or {}).get("full_name", "")
-            or (user.user_metadata or {}).get("name", "")
-            or ""
-        )
+        user_id = getattr(user, "id", "")
+        user_email = getattr(user, "email", "")
+        user_metadata = getattr(user, "user_metadata", None)
+        metadata = user_metadata if isinstance(user_metadata, dict) else {}
+        full_name = metadata.get("full_name", "")
+        fallback_name = metadata.get("name", "")
+
+        self.user_id = str(user_id)
+        self.user_email = str(user_email or "")
+        self.user_display_name = str(full_name or fallback_name or "")
         self.is_authenticated = True
         self.is_guest = False
         if session:
-            self.auth_token = session.access_token
-            self.auth_refresh_token = session.refresh_token or ""
+            access_token = getattr(session, "access_token", "")
+            refresh_token = getattr(session, "refresh_token", "")
+            self.auth_token = str(access_token)
+            self.auth_refresh_token = str(refresh_token or "")
 
     def _clear_session(self) -> None:
         self.auth_token = ""
@@ -386,15 +380,11 @@ class AuthState(rx.State):
 
     @rx.event
     async def require_account(self) -> None | list[EventSpec] | EventSpec:
-        async for update in self.require_auth():
-            yield update
-        return
+        return await self.require_auth()
 
     @rx.event
     async def require_auth_strict(self) -> None | list[EventSpec] | EventSpec:
-        async for update in self.require_auth():
-            yield update
-        return
+        return await self.require_auth()
 
     # ─────────────────────────────────────────────────────────────────────────
     # Guest
@@ -443,7 +433,7 @@ class AuthState(rx.State):
             response: AuthResponse = supabase.auth.sign_in_with_password(
                 {"email": self.email, "password": self.password},
             )
-            if response.session:
+            if response.session and response.user:
                 self._store_session(response.user, response.session)
                 self._clear_form()
                 name: str = self.user_display_name or response.user.email or "back"
@@ -568,10 +558,11 @@ class AuthState(rx.State):
     ) -> EventSpec | list[EventSpec]:
         try:
             supabase: Client = get_supabase()
+            otp_type = "recovery" if callback_type == "recovery" else "signup"
             response: AuthResponse = supabase.auth.verify_otp(
-                {"token_hash": token_hash, "type": callback_type},
+                {"token_hash": token_hash, "type": otp_type},
             )
-            if response.session:
+            if response.session and response.user:
                 self._store_session(response.user, response.session)
                 if callback_type == "recovery":
                     return rx.redirect("/auth/reset-callback")
@@ -741,7 +732,7 @@ class AuthState(rx.State):
             response: AuthResponse = supabase.auth.verify_otp(
                 {"token_hash": token_hash, "type": "recovery"},
             )
-            if response.session:
+            if response.session and response.user:
                 self._store_session(response.user, response.session)
                 return rx.redirect("/auth/reset-password")
         except (ValueError, RuntimeError):

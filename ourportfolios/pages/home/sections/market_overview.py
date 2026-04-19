@@ -69,7 +69,10 @@ def _ticker_content(t: TickerSubtile) -> rx.Component:
                 text_align="center",
             ),
             rx.badge(
-                t.pct_label, color_scheme=t.pct_color_scheme, variant="soft", size="1",
+                t.pct_label,
+                color_scheme=t.pct_color_scheme,
+                variant="soft",
+                size="1",
             ),
             spacing="1",
             align="center",
@@ -447,75 +450,77 @@ def _mobile_indices_scroll() -> rx.Component:
 
 
 def market_overview_section() -> rx.Component:
-    return glass_card(
-        rx.vstack(
-            # ── Header ───────────────────────────────────────────────────
-            rx.hstack(
+    return rx.box(
+        glass_card(
+            rx.vstack(
+                # ── Header ───────────────────────────────────────────────────
                 rx.hstack(
-                    refresh_countdown_ring(),
-                    rx.text(
-                        "Market Overview",
-                        size=rx.breakpoints(initial="2", md="3"),
-                        weight="bold",
-                        color=TEXT_PRIMARY,
-                        letter_spacing="-0.01em",
-                        white_space="nowrap",
-                    ),
-                    spacing="2",
-                    align="center",
-                    flex_shrink="1",
-                    min_width="0",
-                ),
-                rx.spacer(),
-                rx.hstack(
-                    *[_period_btn(p) for p in _PERIOD_OPTIONS],
-                    spacing="0",
-                    padding="0.16rem",
-                    border_radius="0.4375rem",
-                    background=white(0.03),
-                    border=f"1px solid {white(0.06)}",
-                    flex_shrink="0",
-                ),
-                width="100%",
-                align="center",
-            ),
-            # ── MOBILE: scroll row of index cards + industry list ─────────
-            rx.mobile_only(
-                rx.vstack(
-                    _mobile_indices_scroll(),
-                    _mobile_industry_view(),
-                    spacing="3",
-                    width="100%",
-                    max_width="100%",
-                    min_width="1px",
-                ),
-                width="100%",
-            ),
-            # ── TABLET + DESKTOP: indices column (fixed) + treemap ────────
-            rx.tablet_and_desktop(
-                rx.hstack(
-                    # flex_shrink=0 keeps the indices column at its natural width
-                    # so it never gets squashed by the treemap
-                    rx.box(
-                        indices_grid(),
-                        flex_shrink="0",
-                    ),
-                    rx.box(
-                        _treemap(),
-                        flex="1",
+                    rx.hstack(
+                        refresh_countdown_ring(),
+                        rx.text(
+                            "Market Overview",
+                            size=rx.breakpoints(initial="2", md="3"),
+                            weight="bold",
+                            color=TEXT_PRIMARY,
+                            letter_spacing="-0.01em",
+                            white_space="nowrap",
+                        ),
+                        spacing="2",
+                        align="center",
+                        flex_shrink="1",
                         min_width="0",
                     ),
-                    spacing="4",
+                    rx.spacer(),
+                    rx.hstack(
+                        *[_period_btn(p) for p in _PERIOD_OPTIONS],
+                        spacing="0",
+                        padding="0.16rem",
+                        border_radius="0.4375rem",
+                        background=white(0.03),
+                        border=f"1px solid {white(0.06)}",
+                        flex_shrink="0",
+                    ),
                     width="100%",
-                    align="stretch",
+                    align="center",
                 ),
+                # ── MOBILE: scroll row of index cards + industry list ─────────
+                rx.mobile_only(
+                    rx.vstack(
+                        _mobile_indices_scroll(),
+                        _mobile_industry_view(),
+                        spacing="3",
+                        width="100%",
+                        max_width="100%",
+                        min_width="1px",
+                    ),
+                    width="100%",
+                ),
+                # ── TABLET + DESKTOP: indices column (fixed) + treemap ────────
+                rx.tablet_and_desktop(
+                    rx.hstack(
+                        # flex_shrink=0 keeps the indices column at its natural width
+                        # so it never gets squashed by the treemap
+                        rx.box(
+                            indices_grid(),
+                            flex_shrink="0",
+                        ),
+                        rx.box(
+                            _treemap(),
+                            flex="1",
+                            min_width="0",
+                        ),
+                        spacing="4",
+                        width="100%",
+                        align="stretch",
+                    ),
+                ),
+                accent_btn("View Full Market", href="/market"),
+                spacing="4",
+                width="100%",
             ),
-            accent_btn("View Full Market", href="/market"),
-            spacing="4",
+            padding=rx.breakpoints(initial="0.875rem 1rem", md="1.25rem 1.5rem"),
             width="100%",
+            _hover={},
         ),
-        padding=rx.breakpoints(initial="0.875rem 1rem", md="1.25rem 1.5rem"),
-        width="100%",
-        _hover={},
         on_mount=PrefsState.apply_to_heatmap,
     )

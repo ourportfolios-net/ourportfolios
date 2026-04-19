@@ -4,7 +4,7 @@ import uuid
 from typing import Any
 
 import reflex as rx
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import BigInteger, Integer, String, Text, select
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.exc import SQLAlchemyError
@@ -87,7 +87,7 @@ class FrameworkModel(BaseModel):
     source_name: str | None = None
     source_url: str | None = None
     framework_uuid: str = ""
-    metrics: list[dict[str, Any]] = rx.Field(default_factory=list)
+    metrics: list[dict[str, object]] = Field(default_factory=list)
 
 
 class ScopeModel(BaseModel):
@@ -136,10 +136,10 @@ def _orm_to_framework_model(row: FrameworkORM) -> FrameworkModel:
 class FrameworkState(SessionIsolatedStateMixin, rx.State):
     active_scope: str = "fundamental"
     active_category: str = "all"
-    scopes: list[ScopeModel] = rx.Field(default_factory=list)
+    scopes: rx.Field[list[ScopeModel]] = rx.Field(default_factory=list)
 
-    _all_frameworks: list[FrameworkModel] = rx.Field(default_factory=list)
-    frameworks: list[FrameworkModel] = rx.Field(default_factory=list)
+    _all_frameworks: rx.Field[list[FrameworkModel]] = rx.Field(default_factory=list)
+    frameworks: rx.Field[list[FrameworkModel]] = rx.Field(default_factory=list)
 
     loading_scopes: bool = False
     loading_frameworks: bool = False
@@ -154,9 +154,9 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
 
     search_query: str = ""
 
-    ticker_cart: list[TickerModel] = rx.Field(default_factory=list)
+    ticker_cart: rx.Field[list[TickerModel]] = rx.Field(default_factory=list)
 
-    categories: list[CategoryModel] = rx.Field(
+    categories: rx.Field[list[CategoryModel]] = rx.Field(
         default_factory=lambda: [
             CategoryModel(value="all", label="All"),
             CategoryModel(value="fundamental", label="Fundamentals"),
@@ -174,12 +174,12 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
     form_industry: str = "general"
     form_source_name: str = ""
     form_source_url: str = ""
-    form_errors: dict[str, str] = rx.Field(default_factory=dict)
+    form_errors: rx.Field[dict[str, str]] = rx.Field(default_factory=dict)
 
-    form_metrics: list[MetricModel] = rx.Field(default_factory=list)
+    form_metrics: rx.Field[list[MetricModel]] = rx.Field(default_factory=list)
     hovered_metric_index: int = -1
 
-    available_categories: list[str] = rx.Field(
+    available_categories: rx.Field[list[str]] = rx.Field(
         default_factory=lambda: [
             "Per Share Value",
             "Growth Rate",
@@ -190,7 +190,7 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
         ],
     )
 
-    per_share_metrics: list[str] = rx.Field(
+    per_share_metrics: rx.Field[list[str]] = rx.Field(
         default_factory=lambda: [
             "Earnings",
             "Book Value",
@@ -199,7 +199,7 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
             "Revenues",
         ],
     )
-    growth_rate_metrics: list[str] = rx.Field(
+    growth_rate_metrics: rx.Field[list[str]] = rx.Field(
         default_factory=lambda: [
             "Revenues YoY",
             "Earnings YoY",
@@ -207,7 +207,7 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
             "Book Value YoY",
         ],
     )
-    profitability_metrics: list[str] = rx.Field(
+    profitability_metrics: rx.Field[list[str]] = rx.Field(
         default_factory=lambda: [
             "ROE",
             "ROIC",
@@ -217,10 +217,10 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
             "EBITDA Margin",
         ],
     )
-    valuation_metrics: list[str] = rx.Field(
+    valuation_metrics: rx.Field[list[str]] = rx.Field(
         default_factory=lambda: ["P/E", "P/B", "P/S", "EV/EBITDA"],
     )
-    leverage_liquidity_metrics: list[str] = rx.Field(
+    leverage_liquidity_metrics: rx.Field[list[str]] = rx.Field(
         default_factory=lambda: [
             "Debt/Equity",
             "Current Ratio",
@@ -229,7 +229,7 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
             "Cash Ratio",
         ],
     )
-    efficiency_metrics: list[str] = rx.Field(
+    efficiency_metrics: rx.Field[list[str]] = rx.Field(
         default_factory=lambda: ["ROA", "Asset Turnover", "Dividend Payout %"],
     )
 
@@ -244,6 +244,10 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
     @rx.var
     def ticker_cart_count(self) -> int:
         return len(self.ticker_cart)
+
+    @rx.var(cache=True)
+    def selected_framework_has_metrics(self) -> bool:
+        return len(self.selected_framework.metrics) > 0
 
     def _apply_filters(self) -> None:
         results = self._all_frameworks
@@ -393,6 +397,7 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
         if not value:
             self.close_add_metric_dialog()
 
+    @rx.event
     def set_hovered_metric_index(self, i: int) -> None:
         self.hovered_metric_index = i
 
@@ -420,7 +425,6 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
 
         await self.load_frameworks()
 
-    @session_isolated
     async def load_scopes(self) -> None:
         async with self:
             self.loading_scopes = True
@@ -447,7 +451,6 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
 
         await self.load_frameworks()
 
-    @session_isolated
     async def load_frameworks(self) -> None:
         async with self:
             self.loading_frameworks = True

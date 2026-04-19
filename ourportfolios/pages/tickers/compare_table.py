@@ -303,10 +303,14 @@ def _skeleton_row(ticker: str) -> rx.Component:
                 rx.hstack(
                     rx.vstack(
                         rx.skeleton(
-                            height="0.8125rem", width="2.75rem", border_radius="0.25rem",
+                            height="0.8125rem",
+                            width="2.75rem",
+                            border_radius="0.25rem",
                         ),
                         rx.skeleton(
-                            height="0.5625rem", width="4.25rem", border_radius="0.25rem",
+                            height="0.5625rem",
+                            width="4.25rem",
+                            border_radius="0.25rem",
                         ),
                         spacing="1",
                         align="start",
@@ -473,7 +477,9 @@ def compare_table() -> rx.Component:
                                     rx.foreach(
                                         TickersPageState.selected_metrics,
                                         lambda metric_key: _metric_cell(
-                                            stock, metric_key, item[0],
+                                            stock,
+                                            metric_key,
+                                            item[0],
                                         ),
                                     ),
                                     spacing="0",

@@ -1,5 +1,5 @@
 import itertools
-from typing import Any
+from typing import Literal
 
 import pandas as pd
 from sqlalchemy import text
@@ -9,8 +9,8 @@ from ourportfolios.utils.database.database import get_company_session
 
 async def get_suggest_ticker(
     search_query: str,
-    return_type: str,
-) -> tuple[str, Any] | pd.DataFrame:
+    return_type: Literal["query", "df"],
+) -> tuple[str, dict[str, str]] | list[dict[str, object]]:
     """Attempt to retrieve data with strategy.
 
     1. Fetch ticker with full query at first
@@ -27,7 +27,7 @@ async def get_suggest_ticker(
     """
     # Fetch exact ticker
     match_query = "pb.symbol LIKE :pattern"
-    match_params = {"pattern": f"{search_query}%"}
+    match_params: dict[str, str] = {"pattern": f"{search_query}%"}
     result: pd.DataFrame = await fetch_ticker(
         match_query=match_query,
         params=match_params,
@@ -46,7 +46,7 @@ async def get_suggest_ticker(
             [f"pb.symbol LIKE :pattern_{i}" for i in range(len(match_params))],
         )
 
-        result: pd.DataFrame = await fetch_ticker(
+        result = await fetch_ticker(
             match_query=match_query,
             params=match_params,
             return_type=return_type,
@@ -56,7 +56,7 @@ async def get_suggest_ticker(
     if result.empty:
         match_query = "pb.symbol LIKE :pattern"
         match_params = {"pattern": f"{search_query[0]}%"}  # First letter
-        result: bool = await fetch_ticker(
+        result = await fetch_ticker(
             match_query=match_query,
             params=match_params,
             return_type=return_type,
@@ -65,14 +65,14 @@ async def get_suggest_ticker(
     return (
         (match_query, match_params)
         if return_type == "query"
-        else result.to_dict("records")
+        else list(result.to_dict("records"))
     )
 
 
 async def fetch_ticker(
     match_query: str = "all",
-    params: dict[str, object] | None = None,
-    return_type: str = "df",
+    params: dict[str, str] | None = None,
+    return_type: Literal["query", "df"] = "df",
 ) -> pd.DataFrame:
     """Fetch data from NeonDB.
 

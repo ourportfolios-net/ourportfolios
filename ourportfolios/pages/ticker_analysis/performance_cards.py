@@ -208,7 +208,7 @@ def create_dynamic_chart(category: str):
                     rx.heading(category, size="4", weight="medium"),
                     rx.spacer(),
                     rx.cond(
-                        State.available_metrics_by_category.contains(category),
+                        State.available_metrics_by_category.get(category, []) != [],
                         rx.select(
                             State.available_metrics_by_category[category],
                             value=State.selected_metrics.get(category, ""),

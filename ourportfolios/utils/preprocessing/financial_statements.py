@@ -244,9 +244,9 @@ async def get_transformed_dataframes(
 def _categorize_ratios(  # noqa: C901
     ratios_df: pd.DataFrame,
     period: str,
-    income_df: pd.DataFrame = None,
-    balance_df: pd.DataFrame = None,
-    cashflow_df: pd.DataFrame = None,
+    income_df: pd.DataFrame | None = None,
+    balance_df: pd.DataFrame | None = None,
+    cashflow_df: pd.DataFrame | None = None,
 ) -> dict[str, list]:
     categorized_ratios = {
         "Per Share Value": [],

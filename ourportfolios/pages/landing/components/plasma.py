@@ -18,12 +18,12 @@ class Plasma(rx.Component):
     lib_dependencies: tuple[str, ...] = ("ogl@1.0.6",)
 
     # Component props
-    color: rx.Var[str] = "#ffffff"
-    speed: rx.Var[float] = 1.0
-    direction: rx.Var[Literal["forward", "reverse", "pingpong"]] = "forward"
-    scale: rx.Var[float] = 1.0
-    opacity: rx.Var[float] = 1.0
-    mouse_interactive: rx.Var[bool] = True
+    color: str = "#ffffff"
+    speed: float = 1.0
+    direction: Literal["forward", "reverse", "pingpong"] = "forward"
+    scale: float = 1.0
+    opacity: float = 1.0
+    mouse_interactive: bool = True
 
 
 def plasma(  # noqa: PLR0913

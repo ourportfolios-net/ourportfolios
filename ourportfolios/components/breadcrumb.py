@@ -1,6 +1,5 @@
 """Reusable breadcrumb component that auto-generates from the current route."""
 
-
 import reflex as rx
 
 

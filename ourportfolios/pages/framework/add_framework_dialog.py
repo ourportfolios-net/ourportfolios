@@ -5,7 +5,7 @@ from collections.abc import Callable
 import reflex as rx
 
 from ourportfolios.components.common_dialog import CommonDialogConfig, common_dialog
-from ourportfolios.pages.framework.state import FrameworkState
+from ourportfolios.pages.framework.state import FrameworkState, MetricModel
 from ourportfolios.styles import (
     BTN_GHOST,
     BTN_GHOST_SM,
@@ -23,14 +23,14 @@ from ourportfolios.styles import (
 
 def field(label: str, control: rx.Component) -> rx.Component:
     return rx.vstack(
-        rx.text(label, **LABEL_STYLE),
+        rx.text(label, style=LABEL_STYLE),
         control,
         spacing="1",
         width="100%",
     )
 
 
-def metric_item(metric: object, index: int) -> rx.Component:
+def metric_item(metric: MetricModel, index: int) -> rx.Component:
     # The swap bridge is visible when hovering this row (index == hovered)
     # OR hovering the row below it (index == hovered - 1).
     # FrameworkState needs:
@@ -126,7 +126,7 @@ def add_metric_selector() -> rx.Component:
                 value=FrameworkState.new_metric_category,
                 on_change=FrameworkState.set_new_metric_category,
                 size="3",
-                **SELECT_STYLE,
+                style=SELECT_STYLE,
             ),
         ),
         field(
@@ -146,7 +146,7 @@ def add_metric_selector() -> rx.Component:
                 value=FrameworkState.new_metric_name,
                 on_change=FrameworkState.set_new_metric_name,
                 size="3",
-                **SELECT_STYLE,
+                style=SELECT_STYLE,
             ),
         ),
         rx.hstack(
@@ -154,14 +154,14 @@ def add_metric_selector() -> rx.Component:
                 "Cancel",
                 on_click=FrameworkState.close_add_metric_dialog,
                 size="2",
-                **BTN_GHOST,
+                style=BTN_GHOST,
             ),
             rx.button(
                 "Add Metric",
                 on_click=FrameworkState.add_metric_to_form,
                 size="2",
                 disabled=FrameworkState.new_metric_name == "",
-                **BTN_GHOST_SM,
+                style=BTN_GHOST_SM,
             ),
             spacing="2",
             width="100%",
@@ -188,14 +188,14 @@ def add_metric_selector() -> rx.Component:
 def metrics_management_panel() -> rx.Component:
     return rx.vstack(
         rx.hstack(
-            rx.text("METRICS", **LABEL_STYLE),
+            rx.text("METRICS", style=LABEL_STYLE),
             rx.spacer(),
             rx.button(
                 rx.icon("plus", size=12),
                 "Add",
                 on_click=FrameworkState.open_add_metric_dialog,
                 size="2",
-                **BTN_SECONDARY,
+                style=BTN_SECONDARY,
             ),
             width="100%",
             align="center",
@@ -254,7 +254,7 @@ def add_framework_dialog() -> rx.Component:
             rx.vstack(
                 rx.hstack(
                     rx.vstack(
-                        rx.text("Title *", **LABEL_STYLE),
+                        rx.text("Title *", style=LABEL_STYLE),
                         _input_with_error(
                             "Framework title",
                             FrameworkState.form_title,
@@ -265,7 +265,7 @@ def add_framework_dialog() -> rx.Component:
                         width="100%",
                     ),
                     rx.vstack(
-                        rx.text("Author *", **LABEL_STYLE),
+                        rx.text("Author *", style=LABEL_STYLE),
                         _input_with_error(
                             "Author name",
                             FrameworkState.form_author,
@@ -280,37 +280,37 @@ def add_framework_dialog() -> rx.Component:
                 ),
                 rx.hstack(
                     rx.vstack(
-                        rx.text("Industry *", **LABEL_STYLE),
+                        rx.text("Industry *", style=LABEL_STYLE),
                         rx.select(
                             ["general", "bank", "financial_services"],
                             value=FrameworkState.form_industry,
                             on_change=FrameworkState.set_form_industry,
                             size="3",
-                            **SELECT_STYLE,
+                            style=SELECT_STYLE,
                         ),
                         spacing="1",
                         width="100%",
                     ),
                     rx.vstack(
-                        rx.text("Scope *", **LABEL_STYLE),
+                        rx.text("Scope *", style=LABEL_STYLE),
                         rx.select(
                             ["fundamental", "technical"],
                             value=FrameworkState.form_scope,
                             on_change=FrameworkState.set_form_scope,
                             size="3",
-                            **SELECT_STYLE,
+                            style=SELECT_STYLE,
                         ),
                         spacing="1",
                         width="100%",
                     ),
                     rx.vstack(
-                        rx.text("Complexity *", **LABEL_STYLE),
+                        rx.text("Complexity *", style=LABEL_STYLE),
                         rx.select(
                             ["beginner-friendly", "complex"],
                             value=FrameworkState.form_complexity,
                             on_change=FrameworkState.set_form_complexity,
                             size="3",
-                            **SELECT_STYLE,
+                            style=SELECT_STYLE,
                         ),
                         spacing="1",
                         width="100%",
@@ -319,13 +319,13 @@ def add_framework_dialog() -> rx.Component:
                     width="100%",
                 ),
                 rx.vstack(
-                    rx.text("Description", **LABEL_STYLE),
+                    rx.text("Description", style=LABEL_STYLE),
                     rx.text_area(
                         placeholder="Describe this framework's strategy and goals...",
                         value=FrameworkState.form_description,
                         on_change=FrameworkState.set_form_description,
                         size="3",
-                        **INPUT_STYLE,
+                        style=INPUT_STYLE,
                         flex="1",
                         min_height="7em",
                         resize="none",
@@ -358,7 +358,7 @@ def add_framework_dialog() -> rx.Component:
                 "Cancel",
                 on_click=FrameworkState.close_add_dialog,
                 size="3",
-                **BTN_GHOST,
+                style=BTN_GHOST,
             ),
             rx.button(
                 "Add Framework",
@@ -366,7 +366,7 @@ def add_framework_dialog() -> rx.Component:
                 size="3",
                 disabled=(FrameworkState.form_title == "")
                 | (FrameworkState.form_author == ""),
-                **BTN_GHOST,
+                style=BTN_GHOST,
             ),
             spacing="2",
             width="100%",

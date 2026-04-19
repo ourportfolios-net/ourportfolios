@@ -218,7 +218,7 @@ def _hub_card(  # noqa: PLR0913
             cursor="pointer",
             on_click=on_click,
         ),
-        **HUB_CARD_STYLE,
+        style=HUB_CARD_STYLE,
         class_name="hub-card",
         # on_mouse_enter / on_mouse_leave removed — Python round-trips were the lag source
     )
@@ -477,7 +477,7 @@ def select_framework_card() -> rx.Component:
             cursor="pointer",
             on_click=rx.redirect("/framework"),
         ),
-        **HUB_CARD_STYLE,
+        style=HUB_CARD_STYLE,
         class_name="framework-card",
         # on_mouse_enter / on_mouse_leave removed
     )

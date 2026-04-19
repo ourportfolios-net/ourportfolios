@@ -14,7 +14,6 @@ def _skeleton(
     width: str = "4rem",
     height: str = "0.75rem",
     opacity: float = 0.12,
-    **kwargs: object,
 ) -> rx.Component:
     """Create a static skeleton placeholder (rounded rectangle)."""
     return rx.box(
@@ -23,7 +22,6 @@ def _skeleton(
         background=f"rgba(255, 255, 255, {opacity})",
         border_radius="0.25rem",
         flex_shrink="0",
-        **kwargs,
     )
 
 

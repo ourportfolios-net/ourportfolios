@@ -5,6 +5,7 @@ import traceback
 from collections import defaultdict
 from datetime import UTC, datetime, timedelta
 from math import ceil
+from typing import TypedDict
 
 import reflex as rx
 from sqlalchemy import Column, Float, MetaData, String, Table, desc, func, select
@@ -81,6 +82,15 @@ _INITIAL_REFRESH_SECONDS = _secs_to_next_boundary()
 _COUNTDOWN_RING_CIRC = 54.85
 
 
+class MiniIndexCardData(TypedDict):
+    label: str
+    value: str
+    abs_change: str
+    pct_change: str
+    is_positive: bool
+    chart_data: list[dict[str, float | str]]
+
+
 class HomeState(SessionIsolatedStateMixin, rx.State):
     framework_hover_index: int = 0
     _framework_hover_active: bool = False
@@ -88,7 +98,7 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
     is_portfolio_hovered: bool = False
     is_comparison_hovered: bool = False
 
-    comparison_preview_data: list[dict[str, str | int]] = rx.Field(
+    comparison_preview_data: rx.Field[list[dict[str, str | int]]] = rx.Field(
         default_factory=lambda: [
             {"period": "Q1", "value": 12},
             {"period": "Q2", "value": 15},
@@ -97,13 +107,15 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
         ],
     )
 
-    vnindex_chart_data: list[dict] = rx.Field(default_factory=list)
+    vnindex_chart_data: rx.Field[list[dict[str, float | str]]] = rx.Field(
+        default_factory=list,
+    )
     vnindex_value: str = ""
     vnindex_change: str = ""
     vnindex_pct_change: str = ""
     vnindex_is_positive: bool = True
 
-    indices: list[dict] = rx.Field(default_factory=list)
+    indices: rx.Field[list[MiniIndexCardData]] = rx.Field(default_factory=list)
 
     _base_portfolio_value: float = 142590.22
     _target_portfolio_value: float = 148719.73
@@ -132,8 +144,40 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
     refresh_countdown_progress: int = 0
     refresh_countdown_ring_offset: float = 0.0
 
+    async def _wait_until_countdown_state_live(self) -> bool:
+        if is_state_live(self):
+            return True
+        for _ in range(50):
+            if not self._refresh_running:
+                return False
+            if is_state_live(self):
+                return True
+            await asyncio.sleep(0.1)
+        return is_state_live(self)
+
+    async def _set_countdown_target(self, target: datetime, seconds: int) -> None:
+        async with self:
+            self._refresh_boundary = target.isoformat()
+            self.refresh_countdown_seconds = seconds
+            self.refresh_countdown_label = f"{seconds // 60:02d}:{seconds % 60:02d}"
+            self.refresh_countdown_progress = 0
+            self.refresh_countdown_ring_offset = 0.0
+
+    async def _set_countdown_progress(self, remaining: float) -> None:
+        secs = ceil(remaining)
+        progress = round((1 - (remaining / _REFRESH_INTERVAL)) * 100)
+        progress = max(0, min(100, progress))
+
+        async with self:
+            self.refresh_countdown_seconds = secs
+            self.refresh_countdown_label = f"{secs // 60:02d}:{secs % 60:02d}"
+            self.refresh_countdown_progress = progress
+            self.refresh_countdown_ring_offset = (
+                progress / 100.0
+            ) * _COUNTDOWN_RING_CIRC
+
     @rx.event(background=True)
-    async def start_refresh_countdown(self) -> None:
+    async def start_refresh_countdown(self) -> object:
         async with self:
             if self._refresh_running:
                 return
@@ -145,17 +189,13 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
             get_session_manager().register_task(session_id, current_task)
 
         try:
-            if not self._refresh_running or not is_state_live(self):
+            if not self._refresh_running:
+                return
+            if not await self._wait_until_countdown_state_live():
                 return
 
             target = _next_refresh_boundary(datetime.now(UTC))
-
-            async with self:
-                self._refresh_boundary = target.isoformat()
-                self.refresh_countdown_seconds = _INITIAL_REFRESH_SECONDS
-                self.refresh_countdown_label = f"{_INITIAL_REFRESH_SECONDS // 60:02d}:{_INITIAL_REFRESH_SECONDS % 60:02d}"
-                self.refresh_countdown_progress = 0
-                self.refresh_countdown_ring_offset = 0.0
+            await self._set_countdown_target(target, _INITIAL_REFRESH_SECONDS)
 
             while True:
                 if not is_state_live(self):
@@ -166,32 +206,16 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
 
                 if remaining <= 0:
                     target = _next_refresh_boundary(now)
-                    async with self:
-                        self._refresh_boundary = target.isoformat()
-                        self.refresh_countdown_seconds = _REFRESH_INTERVAL
-                        self.refresh_countdown_label = "30:00"
-                        self.refresh_countdown_progress = 0
-                        self.refresh_countdown_ring_offset = 0.0
+                    await self._set_countdown_target(target, _REFRESH_INTERVAL)
 
                     if not is_state_live(self):
-                        await asyncio.sleep(0.25)
                         continue
                     yield HomeState.load_vnindex_data
                     yield HomeState.load_indices_data
                     yield HomeState.load_ticker_for_period("1D")
                     continue
 
-                secs = ceil(remaining)
-                progress = round((1 - (remaining / _REFRESH_INTERVAL)) * 100)
-                progress = max(0, min(100, progress))
-
-                async with self:
-                    self.refresh_countdown_seconds = secs
-                    self.refresh_countdown_label = f"{secs // 60:02d}:{secs % 60:02d}"
-                    self.refresh_countdown_progress = progress
-                    self.refresh_countdown_ring_offset = (
-                        progress / 100.0
-                    ) * _COUNTDOWN_RING_CIRC
+                await self._set_countdown_progress(remaining)
 
                 await asyncio.sleep(min(1.0, remaining))
 
@@ -222,7 +246,7 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
             sign = "+" if change >= 0 else "-"
 
             today_rows = rows[1:]
-            chart_data: list[dict] = []
+            chart_data: list[dict[str, float | str]] = []
 
             if today_rows:
                 close_values = [r.close or 0.0 for r in today_rows]
@@ -249,7 +273,8 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
                 pct = (change / previous_close * 100) if previous_close else 0.0
                 self.vnindex_pct_change = f"{sign}{abs(pct):.2f}%"
                 self.vnindex_is_positive = bool(change >= 0)
-                self.vnindex_chart_data = chart_data
+                self.vnindex_chart_data.clear()
+                self.vnindex_chart_data.extend(chart_data)
 
         except (SQLAlchemyError, KeyError, TypeError, ValueError):
             traceback.print_exc()
@@ -311,14 +336,14 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
                 ]
 
                 built.append(
-                    {
-                        "label": name,
-                        "value": f"{current:,.2f}",
-                        "abs_change": f"{sign}{abs(change):.2f}",
-                        "pct_change": f"{sign}{abs(pct):.2f}%",
-                        "is_positive": is_positive,
-                        "chart_data": chart_data,
-                    },
+                    MiniIndexCardData(
+                        label=name,
+                        value=f"{current:,.2f}",
+                        abs_change=f"{sign}{abs(change):.2f}",
+                        pct_change=f"{sign}{abs(pct):.2f}%",
+                        is_positive=is_positive,
+                        chart_data=chart_data,
+                    ),
                 )
 
             async with self:

@@ -14,7 +14,7 @@ from ourportfolios.styles import (
     white,
 )
 
-INPUT_OVERRIDE = {
+INPUT_OVERRIDE: dict[str, object] = {
     **INPUT_STYLE,
     "font_size": "0.9375rem",
     "height": "3rem",
@@ -67,7 +67,7 @@ def text_input(
         on_change=on_change,
         type=field_type,
         auto_complete=auto_complete,
-        **INPUT_OVERRIDE,
+        style=INPUT_OVERRIDE,
     )
 
 
@@ -157,7 +157,7 @@ def google_button() -> rx.Component:
     )
 
 
-def auth_card(*children: rx.Component, **props: object) -> rx.Component:
+def auth_card(*children: rx.Component) -> rx.Component:
     return rx.box(
         *children,
         background=CARD_BG,
@@ -166,7 +166,6 @@ def auth_card(*children: rx.Component, **props: object) -> rx.Component:
         padding="2rem",
         width="27rem",
         flex_shrink="0",
-        **props,
     )
 
 
@@ -208,7 +207,12 @@ def auth_page_shell(*children: rx.Component) -> rx.Component:
     )
 
 
-def auth_centered(*children: rx.Component, **props: object) -> rx.Component:
+def auth_centered(
+    *children: rx.Component,
+    opacity: object | None = None,
+    pointer_events: object | None = None,
+    transition: object | None = None,
+) -> rx.Component:
     """Absolutely centered card slot."""
     return rx.box(
         *children,
@@ -217,5 +221,7 @@ def auth_centered(*children: rx.Component, **props: object) -> rx.Component:
         display="flex",
         align_items="center",
         justify_content="center",
-        **props,
+        opacity=opacity,
+        pointer_events=pointer_events,
+        transition=transition,
     )

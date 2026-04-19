@@ -15,16 +15,16 @@ class ShinyText(rx.Component):
     is_default = True
 
     # Component props
-    text: rx.Var[str]
-    disabled: rx.Var[bool] = False
-    speed: rx.Var[float] = 2.0
-    color: rx.Var[str] = "#b5b5b5"
-    shine_color: rx.Var[str] = "#ffffff"
-    spread: rx.Var[int] = 120
-    yoyo: rx.Var[bool] = False
-    pause_on_hover: rx.Var[bool] = False
-    direction: rx.Var[Literal["left", "right"]] = "left"
-    delay: rx.Var[float] = 0.0
+    text: str
+    disabled: bool = False
+    speed: float = 2.0
+    color: str = "#b5b5b5"
+    shine_color: str = "#ffffff"
+    spread: int = 120
+    yoyo: bool = False
+    pause_on_hover: bool = False
+    direction: Literal["left", "right"] = "left"
+    delay: float = 0.0
 
 
 def shiny_text(  # noqa: PLR0913

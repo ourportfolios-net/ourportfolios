@@ -1,7 +1,7 @@
 import asyncio
 import json
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import pandas as pd
 import reflex as rx
@@ -21,10 +21,10 @@ class PriceChartState(rx.State):
     df: pd.DataFrame = pd.DataFrame()
     selected_interval: str = "1D"
     selected_chart: str = "Candlestick"
-    selected_ma_period: dict[str, bool] = rx.Field(default_factory=dict)
+    selected_ma_period: rx.Field[dict[str, bool]] = rx.Field(default_factory=dict)
     rsi_line: bool = False
 
-    ma_period: dict[str, Any] = rx.Field(
+    ma_period: rx.Field[dict[str, str]] = rx.Field(
         default_factory=lambda: {
             "5": "#D19DFF",
             "10": "#B661FFC2",
@@ -36,14 +36,14 @@ class PriceChartState(rx.State):
     )
 
     df_daily: pd.DataFrame = pd.DataFrame()
-    df_by_interval: dict[str, Any] = rx.Field(
+    df_by_interval: rx.Field[dict[str, pd.DataFrame]] = rx.Field(
         default_factory=lambda: {
             "1D": pd.DataFrame(),
             "1W": pd.DataFrame(),
             "1M": pd.DataFrame(),
         },
     )
-    interval_range: dict[str, Any] = rx.Field(
+    interval_range: rx.Field[dict[str, object]] = rx.Field(
         default_factory=lambda: {
             "1D": datetime.now(UTC).date() - relativedelta(years=5),
             "1W": datetime.now(UTC).date(),
@@ -138,7 +138,7 @@ class PriceChartState(rx.State):
         yield PriceChartState.render_price_chart
 
     @rx.event
-    def set_selection(self):
+    def set_selection(self) -> object:
         if self.selected_chart == "Candlestick":
             self.selected_chart = "Price"
         else:
@@ -146,17 +146,17 @@ class PriceChartState(rx.State):
         yield PriceChartState.render_price_chart
 
     @rx.event
-    def add_ma_period(self, *, value: bool, period: str) -> None:
+    def add_ma_period(self, *, value: bool, period: str) -> object:
         self.selected_ma_period[period] = value
         yield PriceChartState.render_price_chart
 
     @rx.event
-    def add_rsi_line(self):
+    def add_rsi_line(self) -> object:
         self.rsi_line = not self.rsi_line
         yield PriceChartState.render_price_chart
 
     @rx.event
-    def toggle_ma_period(self, period_key: str):
+    def toggle_ma_period(self, period_key: str) -> object:
         self.selected_ma_period[period_key] = not self.selected_ma_period.get(
             period_key,
             False,
@@ -164,14 +164,14 @@ class PriceChartState(rx.State):
         yield PriceChartState.render_price_chart
 
     @rx.event
-    def toggle_rsi_line(self):
+    def toggle_rsi_line(self) -> object:
         self.rsi_line = not self.rsi_line
         yield PriceChartState.render_price_chart
 
     # ─────────────────────────────────────────────────────────────────────────
 
     @rx.var
-    def ohlc_data(self) -> list[dict[str, Any]]:
+    def ohlc_data(self) -> list[dict[str, object]]:
         if self.df.empty:
             return []
         df2 = self.df.copy()
@@ -181,7 +181,7 @@ class PriceChartState(rx.State):
         return df2.to_dict("records")
 
     @rx.var
-    def price_data(self) -> list[dict[str, Any]]:
+    def price_data(self) -> list[dict[str, object]]:
         if (self.df.empty) or (not {"time", "close"}.issubset(self.df.columns)):
             return []
         df2 = self.df[["time", "close"]].rename(columns={"close": "value"})
@@ -189,7 +189,7 @@ class PriceChartState(rx.State):
         return df2.dropna(how="any", axis=0).to_dict("records")
 
     @rx.var
-    def ma_data(self) -> dict[str, list[dict[str, Any]]]:
+    def ma_data(self) -> dict[str, list[dict[str, object]]]:
         if self.df.empty:
             return {}
         df2 = self.df.copy()
@@ -202,7 +202,7 @@ class PriceChartState(rx.State):
         }
 
     @rx.var
-    def rsi_data(self) -> list[dict[str, Any]]:
+    def rsi_data(self) -> list[dict[str, object]]:
         if self.df.empty or not self.rsi_line:
             return []
         df2 = self.df.copy()
@@ -215,7 +215,7 @@ class PriceChartState(rx.State):
         price_data = (
             self.ohlc_data if self.selected_chart == "Candlestick" else self.price_data
         )
-        data: dict[str, Any] = {
+        data: dict[str, object] = {
             "type": self.selected_chart,
             "price_data": price_data,
             "ma_line_data": self.ma_data,
@@ -225,7 +225,7 @@ class PriceChartState(rx.State):
 
     @rx.var
     def chart_options(self) -> str:
-        options: dict[str, Any] = {}
+        options: dict[str, object] = {}
         options["chart_layout"] = {
             "layout": {
                 "background": {"type": "solid", "color": "#131722"},

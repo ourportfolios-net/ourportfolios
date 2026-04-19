@@ -2,10 +2,10 @@
 
 import time
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING, Protocol, cast
 
 import numpy as np
 import pandas as pd
-from database import company_sync_engine
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import (
     BigInteger,
@@ -27,7 +27,20 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from vnstock import Trading, Vnstock
 
+from ourportfolios.utils.database.database import company_sync_engine
 from ourportfolios.utils.preprocessing.event_texts import process_events_for_display
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+
+class _QuoteLike(Protocol):
+    def history(self, *, start: str, end: str, interval: str) -> pd.DataFrame: ...
+
+
+class _StockLike(Protocol):
+    company: object
+    quote: _QuoteLike
 
 
 def _build_metadata(schema_name: str) -> tuple[MetaData, dict]:
@@ -204,8 +217,17 @@ def add_ticker(  # noqa: C901,PLR0912,PLR0915
     officers_df = tables["officers_df"]
 
     # print(f"[{symbol}] Starting population...")
-    stock = Vnstock().stock(symbol=symbol, source="VCI")
-    company = stock.company
+    stock_factory = getattr(Vnstock(), "stock", None)
+    if not callable(stock_factory):
+        msg = f"[{symbol}] vnstock client has no callable stock factory"
+        raise TypeError(msg)
+
+    stock_callable = cast("Callable[..., object]", stock_factory)
+    stock = cast("_StockLike", stock_callable(symbol=symbol, source="VCI"))
+    company = getattr(stock, "company", None)
+    if company is None:
+        msg = f"[{symbol}] vnstock returned stock without company accessor"
+        raise ValueError(msg)
 
     # print(f"[{symbol}] Fetching overview...")
     raw = company.overview()

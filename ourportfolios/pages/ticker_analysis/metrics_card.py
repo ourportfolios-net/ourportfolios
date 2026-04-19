@@ -1,5 +1,7 @@
 """Key metrics card with performance and financial statements tabs."""
 
+from typing import cast
+
 import reflex as rx
 
 from ourportfolios.components.financial_statement import financial_statements
@@ -12,6 +14,12 @@ _CARD_RADIUS = "0.625rem"
 
 
 def key_metrics_card():
+    financial_statement_tabs = [
+        cast("list[dict[str, str | int | float | None]]", State.income_statement),
+        cast("list[dict[str, str | int | float | None]]", State.balance_sheet),
+        cast("list[dict[str, str | int | float | None]]", State.cash_flow),
+    ]
+
     return rx.box(
         rx.vstack(
             rx.tabs.root(
@@ -93,7 +101,9 @@ def key_metrics_card():
                         rx.badge(
                             "Quarterly",
                             color_scheme=rx.cond(
-                                State.switch_value == "quarter", "violet", "gray",
+                                State.switch_value == "quarter",
+                                "violet",
+                                "gray",
                             ),
                             variant="soft",
                             size="1",
@@ -106,7 +116,9 @@ def key_metrics_card():
                         rx.badge(
                             "Yearly",
                             color_scheme=rx.cond(
-                                State.switch_value == "year", "violet", "gray",
+                                State.switch_value == "year",
+                                "violet",
+                                "gray",
                             ),
                             variant="soft",
                             size="1",
@@ -159,12 +171,7 @@ def key_metrics_card():
                         ),
                         rx.box(
                             financial_statements(
-                                [
-                                    State.income_statement,
-                                    State.balance_sheet,
-                                    State.cash_flow,
-                                ],
-                                show_skeleton=False,
+                                financial_statement_tabs, show_skeleton=False,
                             ),
                             width="100%",
                             padding_top="2em",

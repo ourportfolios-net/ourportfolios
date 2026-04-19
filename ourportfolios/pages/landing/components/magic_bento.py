@@ -12,9 +12,9 @@ class MagicBentoCard(rx.Component):
     lib_dependencies: tuple[str, ...] = ("motion@11.15.0",)
 
     # Component props
-    spotlight_radius: rx.Var[int] = 60
-    enable_tilt: rx.Var[bool] = True
-    enable_magnetism: rx.Var[bool] = True
+    spotlight_radius: int = 60
+    enable_tilt: bool = True
+    enable_magnetism: bool = True
 
 
 class MagicBento(rx.Component):
@@ -26,8 +26,8 @@ class MagicBento(rx.Component):
     lib_dependencies: tuple[str, ...] = ("motion@11.15.0",)
 
     # Component props
-    columns: rx.Var[int] = 3
-    gap: rx.Var[str] = "1rem"
+    columns: int = 3
+    gap: str = "1rem"
 
 
 def magic_bento_card(

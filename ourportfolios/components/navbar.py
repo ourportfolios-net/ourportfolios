@@ -357,7 +357,7 @@ def navbar() -> rx.Component:
                 width="100%",
                 padding_x="1rem",
             ),
-            **bar_style,
+            style=bar_style,
         ),
     )
 
@@ -387,7 +387,7 @@ def navbar() -> rx.Component:
                 padding_x="2rem",
                 style={"flexWrap": "wrap", "gap": "0.75rem"},
             ),
-            **bar_style,
+            style=bar_style,
         ),
     )
 

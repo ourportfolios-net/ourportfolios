@@ -7,11 +7,18 @@ import inspect
 import logging
 import uuid
 from functools import wraps
+from typing import TYPE_CHECKING, cast
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator, Awaitable, Callable
+    from types import ModuleType
 
 try:
-    from reflex.utils.prerequisites import get_app
+    from reflex.utils.prerequisites import get_app as _get_app
+
+    get_app: Callable[[bool], ModuleType] | None = _get_app
 except ImportError:  # pragma: no cover
-    get_app = None
+    get_app: Callable[[bool], ModuleType] | None = None
 
 LOGGER = logging.getLogger(__name__)
 SESSION_WAIT_ATTEMPTS = 6
@@ -149,10 +156,13 @@ def _is_missing_client_token(token: str | None) -> bool:
 
 
 def _get_client_token(state: object) -> str | None:
-    try:
-        token = state.router.session.client_token
-    except (AttributeError, KeyError):
+    router = getattr(state, "router", None)
+    if router is None:
         return None
+    session = getattr(router, "session", None)
+    if session is None:
+        return None
+    token = getattr(session, "client_token", None)
     return None if token is None else str(token)
 
 
@@ -161,27 +171,31 @@ def _is_runtime_client_connected(token: str) -> bool:
         return True
 
     try:
-        app = get_app().app
-        namespace = getattr(app, "event_namespace", None)
-        if namespace is None:
-            return True
-
-        token_manager = getattr(namespace, "_token_manager", None)
-        token_to_socket = getattr(token_manager, "token_to_socket", None)
-        if token_to_socket is not None:
-            return token in token_to_socket
-
-        token_to_sid = getattr(namespace, "token_to_sid", None)
-        if token_to_sid is not None:
-            return token in token_to_sid
+        dry_run = False
+        app_module = get_app(dry_run)
     except (AttributeError, KeyError, RuntimeError, TypeError):
         return True
 
-    return True
+    app = getattr(app_module, "app", None)
+    namespace = getattr(app, "event_namespace", None) if app is not None else None
+    if namespace is None:
+        return True
+
+    token_manager = getattr(namespace, "_token_manager", None)
+    token_to_socket = getattr(token_manager, "token_to_socket", None)
+    if token_to_socket is not None:
+        return token in token_to_socket
+
+    token_to_sid = getattr(namespace, "token_to_sid", None)
+    if token_to_sid is None:
+        return True
+    return token in token_to_sid
 
 
 def _state_is_session_valid(
-    state: object, manager: SessionManager, session_id: str,
+    state: object,
+    manager: SessionManager,
+    session_id: str,
 ) -> bool:
     return manager.is_session_active(session_id) and is_client_connected(state)
 
@@ -203,16 +217,17 @@ async def _wait_for_session_id(state: object, func_name: str) -> str | None:
 
 
 async def _iterate_isolated(
-    func: object,
+    func: Callable[..., object],
     state: object,
     call_args: tuple[tuple[object, ...], dict[str, object]],
     call_context: tuple[SessionManager, str],
-) -> object:
+) -> AsyncIterator[object]:
     args, kwargs = call_args
     manager, session_id = call_context
 
     try:
-        async for item in func(state, *args, **kwargs):
+        iterator = cast("AsyncIterator[object]", func(state, *args, **kwargs))
+        async for item in iterator:
             if not _state_is_session_valid(state, manager, session_id):
                 return
             yield item
@@ -221,7 +236,7 @@ async def _iterate_isolated(
 
 
 async def _await_isolated(
-    func: object,
+    func: Callable[..., object],
     state: object,
     call_args: tuple[tuple[object, ...], dict[str, object]],
     call_context: tuple[SessionManager, str],
@@ -230,7 +245,8 @@ async def _await_isolated(
     manager, session_id = call_context
 
     try:
-        result = await func(state, *args, **kwargs)
+        awaitable = cast("Awaitable[object]", func(state, *args, **kwargs))
+        result = await awaitable
     except asyncio.CancelledError:
         return None
 
@@ -247,14 +263,17 @@ def get_session_manager() -> SessionManager:
     return _session_manager
 
 
-def _make_asyncgen_wrapper(func: object) -> object:
+def _make_asyncgen_wrapper(
+    func: Callable[..., object],
+) -> Callable[..., AsyncIterator[object]]:
     @wraps(func)
     async def asyncgen_wrapper(
         self: object,
         *args: object,
         **kwargs: object,
-    ) -> object:
-        session_id = await _wait_for_session_id(self, func.__name__)
+    ) -> AsyncIterator[object]:
+        func_name = getattr(func, "__name__", "session_handler")
+        session_id = await _wait_for_session_id(self, func_name)
         if not session_id:
             return
 
@@ -274,14 +293,17 @@ def _make_asyncgen_wrapper(func: object) -> object:
     return asyncgen_wrapper
 
 
-def _make_async_wrapper(func: object) -> object:
+def _make_async_wrapper(
+    func: Callable[..., object],
+) -> Callable[..., Awaitable[object | None]]:
     @wraps(func)
     async def async_wrapper(
         self: object,
         *args: object,
         **kwargs: object,
     ) -> object | None:
-        session_id = await _wait_for_session_id(self, func.__name__)
+        func_name = getattr(func, "__name__", "session_handler")
+        session_id = await _wait_for_session_id(self, func_name)
         if not session_id:
             return None
 
@@ -300,11 +322,11 @@ def _make_async_wrapper(func: object) -> object:
     return async_wrapper
 
 
-def session_isolated(func: object) -> object:
+def session_isolated(func: Callable[..., object]) -> Callable[..., object]:
     """Wrap an async handler so it respects the active page session."""
     if inspect.isasyncgenfunction(func):
-        return _make_asyncgen_wrapper(func)
-    return _make_async_wrapper(func)
+        return cast("Callable[..., object]", _make_asyncgen_wrapper(func))
+    return cast("Callable[..., object]", _make_async_wrapper(func))
 
 
 def check_session_active(state: object) -> bool:

@@ -16,7 +16,7 @@ from ourportfolios.ui.tokens import (
 )
 
 
-def home_shell(content: rx.Component, on_unmount: object = None) -> rx.Component:
+def home_shell(content: rx.Component) -> rx.Component:
     return app_shell(
         navbar(),
         page_frame(
@@ -26,5 +26,4 @@ def home_shell(content: rx.Component, on_unmount: object = None) -> rx.Component
             padding_x="0",
             padding_y=HOME_PAGE_VERTICAL_PADDING,
         ),
-        on_unmount=on_unmount,
     )

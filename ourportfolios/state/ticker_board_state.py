@@ -1,7 +1,5 @@
 """Ticker board state for filtering and displaying ticker lists."""
 
-from typing import Any
-
 import reflex as rx
 from sqlalchemy import and_, func, select
 
@@ -17,27 +15,48 @@ from ourportfolios.utils.database.models import (
 class TickerBoardState(rx.State):
     search_query: str = ""
 
-    _all_tickers_cache: list[dict[str, Any]] = rx.Field(default_factory=list)
+    _all_tickers_cache: rx.Field[list[dict[str, object]]] = rx.Field(
+        default_factory=list,
+    )
     _cache_loaded: bool = False
 
-    selected_exchange: set[str] = rx.Field(default_factory=set)
-    selected_industry: set[str] = rx.Field(default_factory=set)
-    selected_technical_metric: dict[str, list[float]] = rx.Field(default_factory=dict)
-    selected_fundamental_metric: dict[str, list[float]] = rx.Field(default_factory=dict)
+    selected_exchange: rx.Field[set[str]] = rx.Field(default_factory=set)
+    selected_industry: rx.Field[set[str]] = rx.Field(default_factory=set)
+    selected_technical_metric: rx.Field[dict[str, list[float]]] = rx.Field(
+        default_factory=dict,
+    )
+    selected_fundamental_metric: rx.Field[dict[str, list[float]]] = rx.Field(
+        default_factory=dict,
+    )
 
     selected_sort_order: str = "ASC"
     selected_sort_option: str = "symbol"
 
     @rx.event
-    def apply_filters(self, filters: dict[str, Any]) -> None:
-        if "exchange" in filters:
-            self.selected_exchange = set(filters["exchange"])
-        if "industry" in filters:
-            self.selected_industry = set(filters["industry"])
-        if "fundamental" in filters:
-            self.selected_fundamental_metric = filters["fundamental"]
-        if "technical" in filters:
-            self.selected_technical_metric = filters["technical"]
+    def apply_filters(self, filters: dict[str, object]) -> None:
+        exchange = filters.get("exchange")
+        if isinstance(exchange, list):
+            self.selected_exchange = {str(item) for item in exchange}
+
+        industry = filters.get("industry")
+        if isinstance(industry, list):
+            self.selected_industry = {str(item) for item in industry}
+
+        fundamental = filters.get("fundamental")
+        if isinstance(fundamental, dict):
+            self.selected_fundamental_metric = {
+                str(key): [float(v) for v in value if isinstance(v, int | float)]
+                for key, value in fundamental.items()
+                if isinstance(value, list)
+            }
+
+        technical = filters.get("technical")
+        if isinstance(technical, dict):
+            self.selected_technical_metric = {
+                str(key): [float(v) for v in value if isinstance(v, int | float)]
+                for key, value in technical.items()
+                if isinstance(value, list)
+            }
 
     @rx.event
     def clear_all_filters(self) -> None:
@@ -51,7 +70,7 @@ class TickerBoardState(rx.State):
         self.search_query = value
 
     @staticmethod
-    async def _fetch_tickers_data() -> list[dict[str, Any]]:
+    async def _fetch_tickers_data() -> list[dict[str, object]]:
         """Execute the raw DB query outside any state lock and return the rows."""
         async with get_company_session() as session:
             # Subquery: latest stats row id per symbol
@@ -123,7 +142,7 @@ class TickerBoardState(rx.State):
 
     @staticmethod
     def _passes_metric_filters(
-        ticker: dict[str, Any],
+        ticker: dict[str, object],
         metrics: dict[str, list[float]],
     ) -> bool:
         """Return True if ticker passes every metric range filter."""
@@ -135,6 +154,8 @@ class TickerBoardState(rx.State):
             val = ticker.get(metric)
             if val is None:
                 return False
+            if not isinstance(val, int | float | str):
+                return False
             try:
                 if not (lo <= float(val) <= hi):
                     return False
@@ -143,11 +164,11 @@ class TickerBoardState(rx.State):
         return True
 
     @rx.var(cache=True)
-    def get_all_tickers(self) -> list[dict[str, Any]]:
+    def get_all_tickers(self) -> list[dict[str, object]]:
         if not self._cache_loaded or not self._all_tickers_cache:
             return []
 
-        results: list[dict[str, Any]] = list(self._all_tickers_cache)
+        results: list[dict[str, object]] = list(self._all_tickers_cache)
 
         if self.search_query:
             search_upper = self.search_query.upper()

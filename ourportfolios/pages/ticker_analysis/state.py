@@ -1,7 +1,7 @@
 """State management for ticker analysis page."""
 
 import asyncio
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, cast
 
 import pandas as pd
 import reflex as rx
@@ -58,16 +58,23 @@ class State(SessionIsolatedStateMixin, rx.State):
     officers_df: pd.DataFrame = pd.DataFrame()
     price_data: pd.DataFrame = pd.DataFrame()
 
-    income_statement: list[dict] = rx.Field(default_factory=list)
-    balance_sheet: list[dict] = rx.Field(default_factory=list)
-    cash_flow: list[dict] = rx.Field(default_factory=list)
+    income_statement: rx.Field[list[dict[str, object]]] = rx.Field(
+        default_factory=list,
+    )
+    balance_sheet: rx.Field[list[dict[str, object]]] = rx.Field(
+        default_factory=list,
+    )
+    cash_flow: rx.Field[list[dict[str, object]]] = rx.Field(default_factory=list)
     financial_df: pd.DataFrame = pd.DataFrame()
-    transformed_dataframes: dict = rx.Field(default_factory=dict)
-    available_metrics_by_category: dict[str, list[str]] = rx.Field(default_factory=dict)
-    selected_metrics: dict[str, str] = rx.Field(default_factory=dict)
+    transformed_dataframes: dict[str, object] = cast("dict[str, object]", {})
+    available_metrics_by_category: dict[str, list[str]] = cast(
+        "dict[str, list[str]]",
+        {},
+    )
+    selected_metrics: dict[str, str] = cast("dict[str, str]", {})
 
     selected_metric: str = "P/E"
-    available_metrics: list[str] = rx.Field(
+    available_metrics: rx.Field[list[str]] = rx.Field(
         default_factory=lambda: [
             "P/E",
             "P/B",
@@ -456,50 +463,65 @@ class State(SessionIsolatedStateMixin, rx.State):
         self.selected_metrics[category] = metric
 
     @rx.var(cache=True)
-    def get_chart_data_for_category(self) -> dict[str, list[dict[str, Any]]]:
-        chart_data = {}
+    def get_chart_data_for_category(self) -> dict[str, list[dict[str, object]]]:
+        chart_data: dict[str, list[dict[str, object]]] = {}
         categorized_ratios = self.transformed_dataframes.get("categorized_ratios", {})
+        if not isinstance(categorized_ratios, dict):
+            return chart_data
+        categorized_ratios_map = cast("dict[str, object]", categorized_ratios)
 
-        for category in self.selected_metrics:
-            if category not in categorized_ratios:
+        for category, selected_metric in self.selected_metrics.items():
+            data = categorized_ratios_map.get(category)
+            if not isinstance(data, list):
                 chart_data[category] = []
                 continue
-
-            data = categorized_ratios[category]
-            selected_metric = self.selected_metrics.get(category)
-
-            if not selected_metric or not data:
-                chart_data[category] = []
-                continue
-
-            if data and selected_metric not in data[0]:
-                chart_data[category] = []
-                continue
-
-            chart_points = []
-            for row in data:
-                year = row.get("Year", "")
-                value = row.get(selected_metric)
-
-                try:
-                    if value is not None and str(value).lower() not in [
-                        "nan",
-                        "none",
-                        "",
-                    ]:
-                        value_float = float(value)
-                    else:
-                        value_float = 0
-                except (ValueError, TypeError):
-                    value_float = 0
-
-                chart_points.append({"year": year, "value": value_float})
-
-            chart_data[category] = chart_points[-8:]
+            chart_data[category] = self._chart_points_from_rows(
+                cast("list[object]", data),
+                selected_metric,
+            )
 
         return chart_data
 
-    def get_chart_data(self, category: str) -> list[dict[str, Any]]:
+    @staticmethod
+    def _chart_points_from_rows(
+        rows: list[object],
+        selected_metric: str,
+    ) -> list[dict[str, object]]:
+        if not rows:
+            return []
+
+        first_row = rows[0]
+        if not isinstance(first_row, dict):
+            return []
+
+        first_row_map = cast("dict[str, object]", first_row)
+        if selected_metric not in first_row_map:
+            return []
+
+        chart_points: list[dict[str, object]] = []
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            row_map = cast("dict[str, object]", row)
+            year = row_map.get("Year", "")
+            value = row_map.get(selected_metric)
+
+            try:
+                if value is not None and str(value).lower() not in ["nan", "none", ""]:
+                    if isinstance(value, (int, float, str)):
+                        value_float = float(value)
+                    else:
+                        value_float = 0
+                else:
+                    value_float = 0
+            except (ValueError, TypeError):
+                value_float = 0
+
+            chart_points.append({"year": year, "value": value_float})
+
+        return chart_points[-8:]
+
+    def get_chart_data(self, category: str) -> list[dict[str, object]]:
         return self.get_chart_data_for_category.get(category, [])
 
     @rx.var
@@ -512,12 +534,16 @@ class State(SessionIsolatedStateMixin, rx.State):
             return []
 
         try:
-            palettes = ["accent", "plum", "iris"]
-            indices = [6, 7, 8]
             colors = [
-                rx.color(palette, idx, alpha=True)
-                for palette in palettes
-                for idx in indices
+                "#A855F7AA",
+                "#3B82F6AA",
+                "#10B981AA",
+                "#F59E0BAA",
+                "#EF4444AA",
+                "#14B8A6AA",
+                "#6366F1AA",
+                "#EC4899AA",
+                "#84CC16AA",
             ]
 
             pie_data = [

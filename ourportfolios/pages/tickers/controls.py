@@ -229,10 +229,10 @@ def _filter_tabs() -> rx.Component:
 def _selected_filter_chip(item: str, filter_name: str) -> rx.Component:
     label = rx.cond(
         filter_name == "fundamental",
-        f"{item}: {TickersPageState.fundamentals_current_value.get(item, [0.00, 0.00])[0]} - {TickersPageState.fundamentals_current_value.get(item, [0.00, 0.00])[1]}",
+        item,
         rx.cond(
             filter_name == "technical",
-            f"{item}: {TickersPageState.technicals_current_value.get(item, [0.00, 0.00])[0]} - {TickersPageState.technicals_current_value.get(item, [0.00, 0.00])[1]}",
+            item,
             item,
         ),
     )

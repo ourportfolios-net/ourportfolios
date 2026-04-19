@@ -2,7 +2,11 @@
 
 import reflex as rx
 
-from ourportfolios.pages.framework.state import FrameworkState
+from ourportfolios.pages.framework.state import (
+    CategoryModel,
+    FrameworkModel,
+    FrameworkState,
+)
 from ourportfolios.styles import (
     CARD_STYLE,
     PILL_TOGGLE,
@@ -64,11 +68,11 @@ def skeleton_card() -> rx.Component:
             width="100%",
             height="100%",
         ),
-        **CARD_STYLE,
+        style=CARD_STYLE,
     )
 
 
-def category_filter_button(category: object) -> rx.Component:
+def category_filter_button(category: CategoryModel) -> rx.Component:
     is_active = FrameworkState.active_category == category.value
 
     return rx.cond(
@@ -77,18 +81,18 @@ def category_filter_button(category: object) -> rx.Component:
             category.label,
             on_click=lambda: FrameworkState.set_active_category(category.value),
             size="2",
-            **PILL_TOGGLE_ACTIVE,
+            style=PILL_TOGGLE_ACTIVE,
         ),
         rx.button(
             category.label,
             on_click=lambda: FrameworkState.set_active_category(category.value),
             size="2",
-            **PILL_TOGGLE,
+            style=PILL_TOGGLE,
         ),
     )
 
 
-def framework_card(framework: object) -> rx.Component:
+def framework_card(framework: FrameworkModel) -> rx.Component:
     return rx.box(
         rx.vstack(
             rx.hstack(
@@ -171,7 +175,7 @@ def framework_card(framework: object) -> rx.Component:
             height="100%",
         ),
         on_click=lambda: FrameworkState.show_framework_dialog(framework),
-        **CARD_STYLE,
+        style=CARD_STYLE,
         cursor="pointer",
         transition="all 0.15s ease",
         _hover={

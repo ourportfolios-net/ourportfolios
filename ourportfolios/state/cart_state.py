@@ -31,7 +31,7 @@ async def get_industry(ticker: str) -> str:
 
 
 class CartState(rx.State):
-    cart_items: list[dict] = rx.Field(default_factory=list)
+    cart_items: rx.Field[list[dict[str, str]]] = rx.Field(default_factory=list)
     is_open: bool = False
 
     @rx.var

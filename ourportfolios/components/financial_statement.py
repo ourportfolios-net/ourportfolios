@@ -99,7 +99,7 @@ def preview_table(
         )
     else:
         table_content = rx.cond(
-            data.length() > 0,
+            len(data) > 0,
             rx.scroll_area(
                 rx.table.root(
                     rx.table.header(

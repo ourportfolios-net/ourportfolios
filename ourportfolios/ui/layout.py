@@ -38,13 +38,16 @@ def page_frame(
     )
 
 
-def app_shell(*children: rx.Component, **props: object) -> rx.Component:
+def app_shell(
+    *children: rx.Component,
+    bg: object | None = None,
+    background: object | None = None,
+) -> rx.Component:
     return rx.box(
         *children,
-        background=APP_BG,
+        background=background if background is not None else bg or APP_BG,
         color="white",
         min_height="100vh",
         width="100%",
         overflow_x="hidden",
-        **props,
     )

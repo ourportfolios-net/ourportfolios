@@ -2,9 +2,7 @@
 
 import asyncio
 import itertools
-import time
 from collections.abc import Callable
-from typing import Any
 
 import reflex as rx
 from sqlalchemy import Select, or_, select
@@ -30,10 +28,12 @@ class SearchBarState(SessionIsolatedStateMixin, rx.State):
     comparison_search_query: str = ""
     display_suggestion: bool = False
     empty_state_display_suggestion: bool = False
-    outstanding_tickers: dict[str, Any] = rx.Field(default_factory=dict)
-    ticker_list: list[dict[str, Any]] = rx.Field(default_factory=list)
-    comparison_suggestions: list[dict[str, Any]] = rx.Field(default_factory=list)
-    suggest_tickers: list[dict[str, Any]] = rx.Field(default_factory=list)
+    outstanding_tickers: rx.Field[dict[str, bool]] = rx.Field(default_factory=dict)
+    ticker_list: rx.Field[list[dict[str, object]]] = rx.Field(default_factory=list)
+    comparison_suggestions: rx.Field[list[dict[str, object]]] = rx.Field(
+        default_factory=list,
+    )
+    suggest_tickers: rx.Field[list[dict[str, object]]] = rx.Field(default_factory=list)
 
     @rx.event
     def on_mount(self):
@@ -71,8 +71,8 @@ class SearchBarState(SessionIsolatedStateMixin, rx.State):
             self.comparison_suggestions = list(self.ticker_list[:30])
 
     @rx.event
-    def blur_comparison_search(self) -> None:
-        yield time.sleep(0.15)
+    async def blur_comparison_search(self) -> None:
+        await asyncio.sleep(0.15)
         self.empty_state_display_suggestion = False
 
     @rx.event
@@ -100,23 +100,24 @@ class SearchBarState(SessionIsolatedStateMixin, rx.State):
             self.suggest_tickers = result
 
     @rx.event
-    def set_display_suggestions(self, *, state: bool):
-        yield time.sleep(0.2)
+    async def set_display_suggestions(self, *, state: bool):
+        await asyncio.sleep(0.2)
         self.display_suggestion = state
         if state:
             return SearchBarState.fetch_suggest_tickers
+        return None
 
     @rx.event
-    def set_empty_state_display_suggestions(self, *, state: bool):
-        yield time.sleep(0.2)
+    async def set_empty_state_display_suggestions(self, *, state: bool):
+        await asyncio.sleep(0.2)
         self.empty_state_display_suggestion = state
 
-    async def _fetch_by_prefix(self, prefix: str) -> list[dict[str, Any]]:
+    async def _fetch_by_prefix(self, prefix: str) -> list[dict[str, object]]:
         return await self._fetch_tickers(
             lambda q: q.where(PriceORM.symbol.like(f"{prefix}%")),
         )
 
-    async def _fetch_by_permutations(self, query: str) -> list[dict[str, Any]]:
+    async def _fetch_by_permutations(self, query: str) -> list[dict[str, object]]:
         combos = list(itertools.permutations(list(query), len(query)))
         patterns = list({"".join(c) + "%" for c in combos})
         return await self._fetch_tickers(
@@ -126,7 +127,7 @@ class SearchBarState(SessionIsolatedStateMixin, rx.State):
     async def _fetch_tickers(
         self,
         filter_fn: Callable[[_TickerSelect], _TickerSelect] | None = None,
-    ) -> list[dict[str, Any]]:
+    ) -> list[dict[str, object]]:
         try:
             async with get_company_session() as session:
                 stmt: _TickerSelect = (
@@ -173,7 +174,7 @@ class SearchBarState(SessionIsolatedStateMixin, rx.State):
                     async with self:
                         self.ticker_list = rows
                         self.outstanding_tickers = {
-                            item["symbol"]: 1 for item in rows[:3]
+                            str(item["symbol"]): True for item in rows[:3]
                         }
                 except asyncio.CancelledError:
                     return
