@@ -1,4 +1,4 @@
-"""Place at: ourportfolios/pages/auth/reset_password.py"""
+"""Auth reset-password page."""
 
 import reflex as rx
 
@@ -62,7 +62,12 @@ def _reset_form() -> rx.Component:
                     line_height="1.65",
                     text_align="center",
                 ),
-                action_btn("Go to sign in", rx.redirect("/auth"), False, ""),
+                action_btn(
+                    "Go to sign in",
+                    rx.redirect("/auth"),
+                    loading=False,
+                    loading_label="",
+                ),
                 spacing="3",
                 width="100%",
                 align="center",
@@ -104,8 +109,8 @@ def _reset_form() -> rx.Component:
                 action_btn(
                     "Update password",
                     AuthState.handle_reset_password,
-                    AuthState.reset_loading,
-                    "Updating…",
+                    loading=AuthState.reset_loading,
+                    loading_label="Updating…",
                 ),
                 spacing="4",
                 width="100%",

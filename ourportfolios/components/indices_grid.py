@@ -2,7 +2,10 @@
 
 import reflex as rx
 
-from ourportfolios.components.mini_chart_card import mini_chart_card
+from ourportfolios.components.mini_chart_card import (
+    MiniChartCardProps,
+    mini_chart_card,
+)
 from ourportfolios.state.home_state import HomeState
 
 # Must match the treemap height so the vertical scroll area is constrained
@@ -11,12 +14,14 @@ _TREEMAP_H = "38.75rem"
 
 def _index_card(index: dict) -> rx.Component:
     return mini_chart_card(
-        label=index["label"],
-        value=index["value"],
-        abs_change=index["abs_change"],
-        pct_change=index["pct_change"],
-        is_positive=index["is_positive"],
-        chart_data=index["chart_data"],
+        MiniChartCardProps(
+            label=index["label"],
+            value=index["value"],
+            abs_change=index["abs_change"],
+            pct_change=index["pct_change"],
+            is_positive=index["is_positive"],
+            chart_data=index["chart_data"],
+        ),
     )
 
 
@@ -24,12 +29,14 @@ def _index_card_mobile(index: dict) -> rx.Component:
     """Fixed-width, non-shrinking wrapper for each card in the horizontal row."""
     return rx.box(
         mini_chart_card(
-            label=index["label"],
-            value=index["value"],
-            abs_change=index["abs_change"],
-            pct_change=index["pct_change"],
-            is_positive=index["is_positive"],
-            chart_data=index["chart_data"],
+            MiniChartCardProps(
+                label=index["label"],
+                value=index["value"],
+                abs_change=index["abs_change"],
+                pct_change=index["pct_change"],
+                is_positive=index["is_positive"],
+                chart_data=index["chart_data"],
+            ),
         ),
         min_width="10.5rem",
         flex_shrink="0",

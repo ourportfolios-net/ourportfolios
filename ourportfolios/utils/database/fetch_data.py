@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from typing import TYPE_CHECKING
 
 import pandas as pd
 from sqlalchemy import text
@@ -14,6 +15,9 @@ from ourportfolios.utils.database.database import (
     price_engine,
     price_sync_engine,
 )
+
+if TYPE_CHECKING:
+    from sqlalchemy.sql.elements import TextClause
 
 _RESAMPLE_MAP = {
     "1D": None,
@@ -90,7 +94,7 @@ def _empty_price_history_df() -> pd.DataFrame:
     return pd.DataFrame(columns=["time", "open", "high", "low", "close", "volume"])
 
 
-def _statement_query(statement_name: str, period: str) -> object:
+def _statement_query(statement_name: str, period: str) -> TextClause:
     statement_map = _STATEMENT_QUERIES.get(statement_name)
     if statement_map is None:
         message = "Unsupported statement"
@@ -98,7 +102,7 @@ def _statement_query(statement_name: str, period: str) -> object:
     return statement_map["quarter" if period == "quarter" else "year"]
 
 
-def _ratios_query(period: str) -> object:
+def _ratios_query(period: str) -> TextClause:
     if period == "quarter":
         return text("""
             SELECT year, quarter, metric, value
@@ -148,13 +152,18 @@ def _pivot_financials(df: pd.DataFrame, period: str) -> pd.DataFrame:
     )
 
 
-def _safe_read_sql(query: object, params: dict[str, str] | None = None) -> pd.DataFrame:
+def _safe_read_sql(
+    query: TextClause,
+    params: dict[str, str] | None = None,
+) -> pd.DataFrame:
     with price_sync_engine.connect() as conn:
         return pd.read_sql(query, conn, params=params)
 
 
 def _fetch_statement_sync(
-    statement_name: str, ticker_symbol: str, period: str,
+    statement_name: str,
+    ticker_symbol: str,
+    period: str,
 ) -> pd.DataFrame:
     query = _statement_query(statement_name, period)
     try:
@@ -177,7 +186,7 @@ async def _fetch_statement_async(
         async with price_engine.connect() as conn:
             result = await conn.execute(query, {"symbol": ticker_symbol})
             rows = result.fetchall()
-            df = pd.DataFrame(rows, columns=result.keys())
+            df = pd.DataFrame(rows, columns=list(result.keys()))
     except (SQLAlchemyError, ValueError, TypeError):
         return pd.DataFrame()
 
@@ -225,7 +234,7 @@ async def fetch_price_data_async(symbol: str) -> pd.DataFrame:
         async with company_engine.connect() as conn:
             result = await conn.execute(query, {"symbol": symbol})
             rows = result.fetchall()
-            df = pd.DataFrame(rows, columns=result.keys())
+            df = pd.DataFrame(rows, columns=list(result.keys()))
     except (SQLAlchemyError, ValueError, TypeError):
         return pd.DataFrame()
 
@@ -305,7 +314,17 @@ def load_historical_data(
 
     rule = _RESAMPLE_MAP.get(interval)
     if rule:
-        df = df.resample(rule).agg(_OHLCV_AGG).dropna(subset=["close"])
+        df = (
+            df.resample(rule)
+            .agg(
+                open=("open", "first"),
+                high=("high", "max"),
+                low=("low", "min"),
+                close=("close", "last"),
+                volume=("volume", "sum"),
+            )
+            .dropna(subset=["close"])
+        )
 
     return df.reset_index()
 
@@ -337,7 +356,7 @@ async def fetch_ratios_async(ticker_symbol: str, period: str = "year") -> pd.Dat
         async with company_engine.connect() as conn:
             result = await conn.execute(query, {"symbol": ticker_symbol})
             rows = result.fetchall()
-            df = pd.DataFrame(rows, columns=result.keys())
+            df = pd.DataFrame(rows, columns=list(result.keys()))
     except (SQLAlchemyError, ValueError, TypeError):
         return pd.DataFrame()
 

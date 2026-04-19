@@ -3,12 +3,13 @@
 import asyncio
 import traceback
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from math import ceil
 
 import reflex as rx
 from sqlalchemy import Column, Float, MetaData, String, Table, desc, func, select
 from sqlalchemy import text as sa_text
+from sqlalchemy.exc import SQLAlchemyError
 
 from ourportfolios.utils.database.database import get_company_session
 from ourportfolios.utils.database.models import (
@@ -27,6 +28,8 @@ _market_meta = MetaData(schema="market")
 
 # ── Refresh interval (seconds) ─────────────────────────────────────────────
 _REFRESH_INTERVAL: int = 1800  # 30 minutes
+_HALF_HOUR_MINUTE: int = 30
+_MIN_SERIES_POINTS: int = 2
 
 
 def _change_table(name: str) -> Table:
@@ -61,13 +64,13 @@ _price = PriceORM.__table__
 
 def _secs_to_next_boundary() -> int:
     """Seconds until the next HH:00 or HH:30 cron boundary."""
-    now = datetime.now()
-    elapsed_in_slot = (now.minute % 30) * 60 + now.second
+    now = datetime.now(UTC)
+    elapsed_in_slot = (now.minute % _HALF_HOUR_MINUTE) * 60 + now.second
     return max(1, _REFRESH_INTERVAL - elapsed_in_slot)
 
 
 def _next_refresh_boundary(now: datetime) -> datetime:
-    next_slot_minute = 30 if now.minute < 30 else 0
+    next_slot_minute = _HALF_HOUR_MINUTE if now.minute < _HALF_HOUR_MINUTE else 0
     boundary = now.replace(minute=next_slot_minute, second=0, microsecond=0)
     if boundary <= now:
         boundary += timedelta(hours=1)
@@ -85,12 +88,14 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
     is_portfolio_hovered: bool = False
     is_comparison_hovered: bool = False
 
-    comparison_preview_data: list[dict] = [
-        {"period": "Q1", "value": 12},
-        {"period": "Q2", "value": 15},
-        {"period": "Q3", "value": 13},
-        {"period": "Q4", "value": 16},
-    ]
+    comparison_preview_data: list[dict[str, str | int]] = rx.Field(
+        default_factory=lambda: [
+            {"period": "Q1", "value": 12},
+            {"period": "Q2", "value": 15},
+            {"period": "Q3", "value": 13},
+            {"period": "Q4", "value": 16},
+        ],
+    )
 
     vnindex_chart_data: list[dict] = rx.Field(default_factory=list)
     vnindex_value: str = ""
@@ -128,7 +133,7 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
     refresh_countdown_ring_offset: float = 0.0
 
     @rx.event(background=True)
-    async def start_refresh_countdown(self):
+    async def start_refresh_countdown(self) -> None:
         async with self:
             if self._refresh_running:
                 return
@@ -140,13 +145,10 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
             get_session_manager().register_task(session_id, current_task)
 
         try:
-            target = _next_refresh_boundary(datetime.now())
-
-            while self._refresh_running and not is_state_live(self):
-                await asyncio.sleep(0.1)
-
-            if not self._refresh_running:
+            if not self._refresh_running or not is_state_live(self):
                 return
+
+            target = _next_refresh_boundary(datetime.now(UTC))
 
             async with self:
                 self._refresh_boundary = target.isoformat()
@@ -159,7 +161,7 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
                 if not is_state_live(self):
                     return
 
-                now = datetime.now()
+                now = datetime.now(UTC)
                 remaining = (target - now).total_seconds()
 
                 if remaining <= 0:
@@ -180,7 +182,7 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
                     continue
 
                 secs = ceil(remaining)
-                progress = int(round((1 - (remaining / _REFRESH_INTERVAL)) * 100))
+                progress = round((1 - (remaining / _REFRESH_INTERVAL)) * 100)
                 progress = max(0, min(100, progress))
 
                 async with self:
@@ -193,14 +195,10 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
 
                 await asyncio.sleep(min(1.0, remaining))
 
-        except asyncio.CancelledError:
-            raise
         finally:
-            try:
+            if is_state_live(self):
                 async with self:
                     self._refresh_running = False
-            except Exception:
-                pass
 
     # ──────────────────────────────────────────────────────────────────────
 
@@ -253,7 +251,7 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
                 self.vnindex_is_positive = bool(change >= 0)
                 self.vnindex_chart_data = chart_data
 
-        except Exception:
+        except (SQLAlchemyError, KeyError, TypeError, ValueError):
             traceback.print_exc()
             async with self:
                 self.vnindex_value = "N/A"
@@ -285,7 +283,7 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
             built = []
             for name in dynamic_order:
                 series = grouped.get(name)
-                if not series or len(series) < 2:
+                if not series or len(series) < _MIN_SERIES_POINTS:
                     continue
 
                 prev_close = float(series[0]["close"] or 0.0)
@@ -326,7 +324,7 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
             async with self:
                 self.indices = built
 
-        except Exception:
+        except (SQLAlchemyError, KeyError, TypeError, ValueError):
             traceback.print_exc()
 
     @rx.event(background=True)
@@ -395,7 +393,7 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
                     self.ticker_of_day_change = "+0.00%"
                     self.ticker_period_label = label
 
-        except Exception:
+        except (SQLAlchemyError, KeyError, TypeError, ValueError):
             # print(f"[ticker_of_day] Error loading period {period}: {e}")
             traceback.print_exc()
             async with self:
@@ -428,9 +426,10 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
     # -------------------------------------------------------------------------
 
     @rx.event
-    def navigate_to_ticker_of_day(self):
+    def navigate_to_ticker_of_day(self) -> rx.event.EventSpec | None:
         if self.ticker_of_day_symbol and self.ticker_of_day_symbol != "N/A":
             return rx.redirect(f"/tickers/{self.ticker_of_day_symbol}")
+        return None
 
     @rx.event
     def handle_compare(self):
@@ -485,14 +484,10 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
                     self.portfolio_change = f"+{current_chg:.1f}%"
                 if i < steps:
                     await asyncio.sleep(step_duration)
-        except asyncio.CancelledError:
-            raise
         finally:
-            try:
+            if is_state_live(self):
                 async with self:
                     self._animation_running = False
-            except Exception:
-                pass
 
     @rx.event(background=True)
     async def end_portfolio_hover(self) -> None:
@@ -527,14 +522,10 @@ class HomeState(SessionIsolatedStateMixin, rx.State):
                     self.portfolio_change = f"+{current_chg:.1f}%"
                 if i < steps:
                     await asyncio.sleep(step_duration)
-        except asyncio.CancelledError:
-            raise
         finally:
-            try:
+            if is_state_live(self):
                 async with self:
                     self._animation_running = False
-            except Exception:
-                pass
 
     @rx.event
     def start_comparison_hover(self) -> None:

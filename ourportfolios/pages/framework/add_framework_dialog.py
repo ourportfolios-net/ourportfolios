@@ -2,7 +2,7 @@
 
 import reflex as rx
 
-from ourportfolios.components.common_dialog import common_dialog
+from ourportfolios.components.common_dialog import CommonDialogConfig, common_dialog
 from ourportfolios.pages.framework.state import FrameworkState
 from ourportfolios.styles import (
     BTN_GHOST,
@@ -169,15 +169,17 @@ def add_metric_selector():
     )
 
     return common_dialog(
-        content=content,
-        is_open=FrameworkState.show_add_metric_dialog,
-        on_close=FrameworkState.close_add_metric_dialog,
-        on_open_change=FrameworkState.handle_add_metric_dialog_open,
-        width="23.75rem",
-        height="auto",
-        padding="1.5rem",
-        title="Add Metric",
-        title_size="5",
+        content,
+        CommonDialogConfig(
+            is_open=FrameworkState.show_add_metric_dialog,
+            on_close=FrameworkState.close_add_metric_dialog,
+            on_open_change=FrameworkState.handle_add_metric_dialog_open,
+            width="23.75rem",
+            height="auto",
+            padding="1.5rem",
+            title="Add Metric",
+            title_size="5",
+        ),
     )
 
 
@@ -373,12 +375,14 @@ def add_framework_dialog():
     )
 
     return common_dialog(
-        content=content,
-        is_open=FrameworkState.show_add_dialog,
-        on_close=FrameworkState.close_add_dialog,
-        on_open_change=FrameworkState.handle_add_dialog_open,
-        width="75vw",
-        height="75vh",
-        max_width="112.5rem",
-        padding="1.5rem 2rem 2rem 2rem",
+        content,
+        CommonDialogConfig(
+            is_open=FrameworkState.show_add_dialog,
+            on_close=FrameworkState.close_add_dialog,
+            on_open_change=FrameworkState.handle_add_dialog_open,
+            width="75vw",
+            height="75vh",
+            max_width="112.5rem",
+            padding="1.5rem 2rem 2rem 2rem",
+        ),
     )

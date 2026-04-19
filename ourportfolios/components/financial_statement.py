@@ -2,17 +2,23 @@
 
 import reflex as rx
 
-from ourportfolios.components.common_dialog import common_dialog
+from ourportfolios.components.common_dialog import CommonDialogConfig, common_dialog
 from ourportfolios.state import FinancialStatementState
 
 titles = ["Income\nStatement", "Balance\nSheet", "Cash\nFlow"]
+RowData = dict[str, str | float | int | None]
+TableData = list[RowData]
 
 
-def financial_statements(df_list, show_skeleton=False):
+def financial_statements(
+    df_list: list[TableData],
+    *,
+    show_skeleton: bool = False,
+) -> rx.Component:
     return rx.vstack(
         *[
             rx.box(
-                preview_table(tbl, i, show_skeleton),
+                preview_table(tbl, i, show_skeleton=show_skeleton),
                 expanded_dialog(tbl, i),
                 min_width="0",
             )
@@ -23,18 +29,18 @@ def financial_statements(df_list, show_skeleton=False):
     )
 
 
-def _render_header_cell(h):
+def _render_header_cell(h: str) -> rx.Component:
     return rx.table.column_header_cell(h)
 
 
-def _render_body_row(data):
+def _render_body_row(data: RowData) -> rx.Component:
     """Render a single row — uses index-based access to avoid lambda closure bug."""
     return rx.table.row(
         rx.foreach(
             data.items(),
             lambda kv: rx.table.cell(
                 rx.cond(
-                    kv[1] != None,  # noqa: E711
+                    kv[1],
                     rx.text(kv[1]),
                     rx.text(""),
                 ),
@@ -43,7 +49,12 @@ def _render_body_row(data):
     )
 
 
-def preview_table(data, idx, show_skeleton=False):
+def preview_table(
+    data: TableData,
+    idx: int,
+    *,
+    show_skeleton: bool = False,
+) -> rx.Component:
     title = titles[idx]
 
     header = rx.vstack(
@@ -133,13 +144,13 @@ def preview_table(data, idx, show_skeleton=False):
     )
 
 
-def _render_expanded_row(data):
+def _render_expanded_row(data: RowData) -> rx.Component:
     return rx.table.row(
         rx.foreach(
             data.items(),
             lambda kv: rx.table.cell(
                 rx.cond(
-                    kv[1] != None,  # noqa: E711
+                    kv[1],
                     rx.text(kv[1]),
                     rx.text(""),
                 ),
@@ -148,7 +159,7 @@ def _render_expanded_row(data):
     )
 
 
-def expanded_dialog(data, idx):
+def expanded_dialog(data: TableData, idx: int) -> rx.Component:
     content = rx.center(
         rx.scroll_area(
             rx.table.root(
@@ -178,13 +189,15 @@ def expanded_dialog(data, idx):
     )
 
     return common_dialog(
-        content=content,
-        is_open=FinancialStatementState.expanded_table == idx,
-        on_close=FinancialStatementState.close,
-        on_open_change=FinancialStatementState.handle_dialog_open,
-        width="90vw",
-        height="80vh",
-        max_width="90vw",
-        padding="1.5rem",
-        title=["Income Statement", "Balance Sheet", "Cash Flow"][idx],
+        content,
+        CommonDialogConfig(
+            is_open=FinancialStatementState.expanded_table == idx,
+            on_close=FinancialStatementState.close,
+            on_open_change=FinancialStatementState.handle_dialog_open,
+            width="90vw",
+            height="80vh",
+            max_width="90vw",
+            padding="1.5rem",
+            title=["Income Statement", "Balance Sheet", "Cash Flow"][idx],
+        ),
     )

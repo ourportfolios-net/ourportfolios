@@ -1,8 +1,8 @@
-"""Place at: ourportfolios/pages/auth/login.py"""
+"""Auth login and registration page."""
 
 import reflex as rx
 
-from ourportfolios.components.common_dialog import common_dialog
+from ourportfolios.components.common_dialog import CommonDialogConfig, common_dialog
 from ourportfolios.pages.auth.components import (
     INPUT_OVERRIDE,
     action_btn,
@@ -25,7 +25,7 @@ from ourportfolios.styles import (
 )
 
 
-def _inline_link(label_text: str, on_click) -> rx.Component:
+def _inline_link(label_text: str, on_click: object) -> rx.Component:
     return rx.text(
         label_text,
         size="1",
@@ -38,7 +38,7 @@ def _inline_link(label_text: str, on_click) -> rx.Component:
     )
 
 
-def _footer_row(prompt: str, link_text: str, on_click) -> rx.Component:
+def _footer_row(prompt: str, link_text: str, on_click: object) -> rx.Component:
     return rx.hstack(
         rx.text(prompt, size="1", color=TEXT_MUTED),
         _inline_link(link_text, on_click),
@@ -72,7 +72,12 @@ def _forgot_password_content() -> rx.Component:
                 line_height="1.65",
                 text_align="center",
             ),
-            action_btn("Done", AuthState.close_forgot, False, ""),
+            action_btn(
+                "Done",
+                AuthState.close_forgot,
+                loading=False,
+                loading_label="",
+            ),
             spacing="3",
             width="100%",
             align="center",
@@ -105,8 +110,8 @@ def _forgot_password_content() -> rx.Component:
             action_btn(
                 "Send reset link",
                 AuthState.handle_forgot_password,
-                AuthState.forgot_loading,
-                "Sending…",
+                loading=AuthState.forgot_loading,
+                loading_label="Sending…",
             ),
             spacing="3",
             width="100%",
@@ -116,13 +121,15 @@ def _forgot_password_content() -> rx.Component:
 
 def _forgot_password_modal() -> rx.Component:
     return common_dialog(
-        content=_forgot_password_content(),
-        is_open=AuthState.forgot_open,
-        on_close=AuthState.close_forgot,
-        title="Reset password",
-        width="22rem",
-        height="auto",
-        padding="1.5rem",
+        _forgot_password_content(),
+        CommonDialogConfig(
+            is_open=AuthState.forgot_open,
+            on_close=AuthState.close_forgot,
+            title="Reset password",
+            width="22rem",
+            height="auto",
+            padding="1.5rem",
+        ),
     )
 
 
@@ -204,14 +211,23 @@ def _login_form() -> rx.Component:
             ),
             rx.text(" ", size="1"),
         ),
-        action_btn("Sign in", AuthState.handle_login, AuthState.loading, "Signing in…"),
+        action_btn(
+            "Sign in",
+            AuthState.handle_login,
+            loading=AuthState.loading,
+            loading_label="Signing in…",
+        ),
         divider_with_text("or"),
         google_button(),
         _footer_row(
-            "Don't have an account?", "Create one", AuthState.set_mode_register,
+            "Don't have an account?",
+            "Create one",
+            AuthState.set_mode_register,
         ),
         _footer_row(
-            "Only trying things out?", "Be ourguest", AuthState.continue_as_guest,
+            "Only trying things out?",
+            "Be ourguest",
+            AuthState.continue_as_guest,
         ),
         spacing="4",
         width="100%",
@@ -307,8 +323,8 @@ def _register_form() -> rx.Component:
         action_btn(
             "Create account",
             AuthState.handle_register,
-            AuthState.loading,
-            "Creating account…",
+            loading=AuthState.loading,
+            loading_label="Creating account…",
         ),
         divider_with_text("or"),
         google_button(),

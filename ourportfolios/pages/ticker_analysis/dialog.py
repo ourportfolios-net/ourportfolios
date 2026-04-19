@@ -2,7 +2,7 @@
 
 import reflex as rx
 
-from ourportfolios.components.common_dialog import common_dialog
+from ourportfolios.components.common_dialog import CommonDialogConfig, common_dialog
 from ourportfolios.pages.ticker_analysis.state import State
 from ourportfolios.styles import CARD_BORDER, white
 
@@ -76,12 +76,14 @@ def company_profile_dialog():
             },
         ),
         common_dialog(
-            content=dialog_content,
-            is_open=State.profile_dialog_open,
-            on_close=State.set_profile_dialog_open(False),
-            width="86vw",
-            height="85vh",
-            max_width="75rem",
-            show_close_button=True,
+            dialog_content,
+            CommonDialogConfig(
+                is_open=State.profile_dialog_open,
+                on_close=State.set_profile_dialog_open(False),
+                width="86vw",
+                height="85vh",
+                max_width="75rem",
+                show_close_button=True,
+            ),
         ),
     )

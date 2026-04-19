@@ -7,6 +7,7 @@ from typing import Any
 import pandas as pd
 import reflex as rx
 from sqlalchemy import distinct, select
+from sqlalchemy.exc import SQLAlchemyError
 
 from ourportfolios.state import TickerBoardState
 from ourportfolios.state.cart_state import CartState
@@ -37,35 +38,41 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
     _data_loaded: bool = False
     show_arrow: bool = True
 
-    fundamentals_default_value: dict[str, list[float]] = {
-        "pe": [0.00, 100.00],
-        "pb": [0.00, 10.00],
-        "roe": [0.00, 100.00],
-        "roa": [0.00, 100.00],
-        "doe": [0.00, 10.00],
-        "eps": [100.00, 10000.00],
-        "ps": [0.00, 100.00],
-        "gross_margin": [0.00, 200.00],
-        "net_margin": [0.00, 200.00],
-        "ev": [0.00, 100.00],
-        "ev_ebitda": [0.00, 200.00],
-        "dividend_yield": [0.00, 100.00],
-    }
-    technicals_default_value: dict[str, list[float]] = {
-        "rsi14": [0.00, 100.00],
-        "alpha": [0.00, 5.00],
-        "beta": [0.00, 5.00],
-    }
+    fundamentals_default_value: dict[str, list[float]] = rx.Field(
+        default_factory=lambda: {
+            "pe": [0.00, 100.00],
+            "pb": [0.00, 10.00],
+            "roe": [0.00, 100.00],
+            "roa": [0.00, 100.00],
+            "doe": [0.00, 10.00],
+            "eps": [100.00, 10000.00],
+            "ps": [0.00, 100.00],
+            "gross_margin": [0.00, 200.00],
+            "net_margin": [0.00, 200.00],
+            "ev": [0.00, 100.00],
+            "ev_ebitda": [0.00, 200.00],
+            "dividend_yield": [0.00, 100.00],
+        },
+    )
+    technicals_default_value: dict[str, list[float]] = rx.Field(
+        default_factory=lambda: {
+            "rsi14": [0.00, 100.00],
+            "alpha": [0.00, 5.00],
+            "beta": [0.00, 5.00],
+        },
+    )
 
     selected_sort_order: str = "ASC"
     selected_sort_option: str = "A-Z"
-    sort_orders: list[str] = ["ASC", "DESC"]
-    sort_options: dict[str, str] = {
-        "A-Z": "symbol",
-        "Market Cap": "market_cap",
-        "% Change": "pct_price_change",
-        "Volume": "accumulated_volume",
-    }
+    sort_orders: list[str] = rx.Field(default_factory=lambda: ["ASC", "DESC"])
+    sort_options: dict[str, str] = rx.Field(
+        default_factory=lambda: {
+            "A-Z": "symbol",
+            "Market Cap": "market_cap",
+            "% Change": "pct_price_change",
+            "Volume": "accumulated_volume",
+        },
+    )
 
     selected_exchange: set[str] = rx.Field(default_factory=set)
     selected_industry: set[str] = rx.Field(default_factory=set)
@@ -293,8 +300,8 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         # multi-table join is running.
         try:
             all_tickers = await TickerBoardState._fetch_tickers_data()
-        except Exception:
-            # print(f"TICKERS PAGE ERROR: Failed to load ticker cache: {e}")
+        except (TimeoutError, AttributeError, RuntimeError):
+            # Failed to load ticker cache; continue without it
             return
         try:
             async with self:
@@ -440,7 +447,8 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                         c for c in df.columns if c not in {"Year", "Quarter", "period"}
                     ]
                 return new_metrics
-        except Exception:
+        except (KeyError, ValueError, TypeError):
+            # Failed to discover metrics; use empty dict as fallback
             pass
         return {}
 
@@ -451,8 +459,8 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                 result = await session.execute(stmt)
                 industries = [row[0] for row in result.all() if row[0] is not None]
             return dict.fromkeys(industries, False)
-        except Exception:
-            # print(f"TICKERS PAGE ERROR: Failed to load industries: {e}")
+        except (SQLAlchemyError, asyncio.CancelledError):
+            # Failed to load industries; use empty dict as fallback
             return {}
 
     async def _load_exchanges(self) -> dict[str, bool]:
@@ -462,8 +470,8 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                 result = await session.execute(stmt)
                 exchanges = [row[0] for row in result.all() if row[0] is not None]
             return dict.fromkeys(exchanges, False)
-        except Exception:
-            # print(f"TICKERS PAGE ERROR: Failed to load exchanges: {e}")
+        except (SQLAlchemyError, asyncio.CancelledError):
+            # Failed to load exchanges; use empty dict as fallback
             return {}
 
     def _reset_fundamentals(self) -> None:
@@ -477,7 +485,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         }
 
     @rx.event
-    def set_exchange(self, exchange: str, value: bool) -> None:
+    def set_exchange(self, exchange: str, *, value: bool) -> None:
         self.exchange_filter[exchange] = value
         if value:
             self.selected_exchange = self.selected_exchange | {exchange}
@@ -485,7 +493,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
             self.selected_exchange = self.selected_exchange - {exchange}
 
     @rx.event
-    def set_industry(self, industry: str, value: bool) -> None:
+    def set_industry(self, industry: str, *, value: bool) -> None:
         self.industry_filter[industry] = value
         if value:
             self.selected_industry = self.selected_industry | {industry}
@@ -547,8 +555,8 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
 
     # ── Metrics-dialog lifecycle ──────────────────────────────────────────────
     @rx.event
-    def handle_metrics_dialog_change(self, open: bool) -> None:
-        if open:
+    def handle_metrics_dialog_change(self, *, is_open: bool) -> None:
+        if is_open:
             self.pending_metrics = list(self.selected_metrics)
             self.metrics_dialog_open = True
         else:
@@ -560,7 +568,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         if metric in self.pending_metrics:
             self.pending_metrics = [m for m in self.pending_metrics if m != metric]
         else:
-            self.pending_metrics = self.pending_metrics + [metric]
+            self.pending_metrics = [*self.pending_metrics, metric]
 
     @rx.event
     def toggle_category(self, category: str) -> None:
@@ -588,7 +596,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
 
     @rx.event
     @session_isolated
-    async def toggle_time_period(self, checked: bool) -> None:
+    async def toggle_time_period(self, *, checked: bool) -> None:
         async with self:
             self.time_period = "year" if checked else "quarter"
         await self.fetch_historical_data()
@@ -611,7 +619,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                     time_period_copy = self.time_period
                     # Immediately add to compare_list so pending_tickers drives a
                     # skeleton row in the UI before data arrives.
-                    self.compare_list = self.compare_list + [ticker]
+                    self.compare_list = [*self.compare_list, ticker]
                     # Check if we need to load metrics (first add, no metrics yet)
                     needs_metrics = not self.all_metrics
         except asyncio.CancelledError:
@@ -657,7 +665,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                     async with self:
                         if not self.is_mounted():
                             return
-                        self.stocks = self.stocks + [dict(row)]
+                        self.stocks = [*self.stocks, dict(row)]
                         cache_key = f"{ticker}_{time_period_copy}"
                         self._data_cache[cache_key] = data
                         self.historical_data = (
@@ -699,7 +707,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                 except asyncio.CancelledError:
                     return
                 yield rx.toast.error(f"No data found for {ticker}")
-        except Exception:
+        except (ValueError, KeyError, RuntimeError):
             try:
                 async with self:
                     self.compare_list = [t for t in self.compare_list if t != ticker]
@@ -745,7 +753,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                 )
                 result = await session.execute(stmt)
                 stocks = [dict(row) for row in result.mappings().all()]
-        except Exception:
+        except (SQLAlchemyError, asyncio.CancelledError):
             pass
         async with self:
             self.stocks = stocks
@@ -793,7 +801,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
             async with self:
                 self._data_cache.update(data_cache_copy)
                 self.historical_data = dict(historical_data_temp)
-        except Exception:
+        except (ValueError, KeyError, RuntimeError):
             async with self:
                 self.historical_data = {}
         finally:
@@ -812,7 +820,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         max_periods = 8 if time_period == "quarter" else 4
         ticker_metric_periods: defaultdict[str, dict[str, Any]] = defaultdict(dict)
         new_periods_ordered: list[str] = []
-        for _category, category_data in ticker_data["categorized_ratios"].items():
+        for _category, category_data in ticker_data["categorized_ratios"].values():
             if not category_data:
                 continue
             df = pd.DataFrame(category_data)
@@ -872,7 +880,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         for ticker, data in ticker_data.items():
             if not data or "categorized_ratios" not in data:
                 continue
-            for _category, category_data in data["categorized_ratios"].items():
+            for _category, category_data in data["categorized_ratios"].values():
                 if not category_data:
                     continue
                 df = pd.DataFrame(category_data)

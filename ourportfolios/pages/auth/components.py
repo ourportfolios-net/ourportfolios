@@ -1,4 +1,4 @@
-"""Place at: ourportfolios/pages/auth/components.py"""
+"""Shared auth UI components."""
 
 import reflex as rx
 
@@ -55,9 +55,10 @@ def label(text: str) -> rx.Component:
 
 def text_input(
     placeholder: str,
-    value,
-    on_change,
+    value: str | rx.Var[str],
+    on_change: object,
     field_type: str = "text",
+    *,
     auto_complete: bool = False,
 ) -> rx.Component:
     return rx.input(
@@ -70,7 +71,13 @@ def text_input(
     )
 
 
-def action_btn(label_text: str, on_click, loading, loading_label: str) -> rx.Component:
+def action_btn(
+    label_text: str,
+    on_click: object,
+    *,
+    loading: bool | rx.Var[bool],
+    loading_label: str,
+) -> rx.Component:
     return rx.box(
         rx.cond(
             loading,
@@ -101,7 +108,11 @@ def divider_with_text(text: str) -> rx.Component:
     return rx.hstack(
         rx.box(flex="1", height="1px", background=white(0.07)),
         rx.text(
-            text, size="1", color=TEXT_MUTED, white_space="nowrap", padding_x="0.75rem",
+            text,
+            size="1",
+            color=TEXT_MUTED,
+            white_space="nowrap",
+            padding_x="0.75rem",
         ),
         rx.box(flex="1", height="1px", background=white(0.07)),
         width="100%",
@@ -121,7 +132,10 @@ def google_button() -> rx.Component:
                 "</svg>",
             ),
             rx.text(
-                "Continue with Google", size="2", weight="medium", color=white(0.7),
+                "Continue with Google",
+                size="2",
+                weight="medium",
+                color=white(0.7),
             ),
             spacing="3",
             align="center",
@@ -143,7 +157,7 @@ def google_button() -> rx.Component:
     )
 
 
-def auth_card(*children, **props) -> rx.Component:
+def auth_card(*children: rx.Component, **props: object) -> rx.Component:
     return rx.box(
         *children,
         background=CARD_BG,
@@ -180,7 +194,7 @@ def auth_bg() -> rx.Component:
     )
 
 
-def auth_page_shell(*children) -> rx.Component:
+def auth_page_shell(*children: rx.Component) -> rx.Component:
     """Outer page wrapper — dark bg, centered content."""
     return rx.box(
         auth_bg(),
@@ -194,7 +208,7 @@ def auth_page_shell(*children) -> rx.Component:
     )
 
 
-def auth_centered(*children, **props) -> rx.Component:
+def auth_centered(*children: rx.Component, **props: object) -> rx.Component:
     """Absolutely centered card slot."""
     return rx.box(
         *children,

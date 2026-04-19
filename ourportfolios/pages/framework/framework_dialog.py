@@ -2,7 +2,7 @@
 
 import reflex as rx
 
-from ourportfolios.components.common_dialog import common_dialog
+from ourportfolios.components.common_dialog import CommonDialogConfig, common_dialog
 from ourportfolios.pages.framework.state import FrameworkState
 from ourportfolios.styles import BTN_GHOST, white
 
@@ -21,12 +21,16 @@ def framework_dialog():
     content = rx.vstack(
         rx.vstack(
             rx.heading(
-                FrameworkState.selected_framework.title, size="8", weight="bold",
+                FrameworkState.selected_framework.title,
+                size="8",
+                weight="bold",
             ),
             rx.hstack(
                 rx.text("by", size="2", color=white(0.4)),
                 rx.text(
-                    FrameworkState.selected_framework.author, size="2", weight="bold",
+                    FrameworkState.selected_framework.author,
+                    size="2",
+                    weight="bold",
                 ),
                 spacing="2",
             ),
@@ -83,11 +87,15 @@ def framework_dialog():
                     FrameworkState.selected_framework.metrics.length() > 0,
                     rx.vstack(
                         rx.text(
-                            "Framework Metrics", size="3", weight="bold", color="white",
+                            "Framework Metrics",
+                            size="3",
+                            weight="bold",
+                            color="white",
                         ),
                         rx.box(
                             rx.foreach(
-                                FrameworkState.selected_framework.metrics, metric_badge,
+                                FrameworkState.selected_framework.metrics,
+                                metric_badge,
                             ),
                             display="flex",
                             flex_wrap="wrap",
@@ -131,11 +139,13 @@ def framework_dialog():
     )
 
     return common_dialog(
-        content=content,
-        is_open=FrameworkState.show_dialog,
-        on_close=FrameworkState.close_dialog,
-        on_open_change=FrameworkState.handle_dialog_open,
-        width="65vw",
-        height="70vh",
-        max_width="56.25rem",
+        content,
+        CommonDialogConfig(
+            is_open=FrameworkState.show_dialog,
+            on_close=FrameworkState.close_dialog,
+            on_open_change=FrameworkState.handle_dialog_open,
+            width="65vw",
+            height="70vh",
+            max_width="56.25rem",
+        ),
     )

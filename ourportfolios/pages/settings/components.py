@@ -3,7 +3,7 @@
 import reflex as rx
 
 from ourportfolios.components.category_toggle_card import category_toggle_card
-from ourportfolios.components.common_dialog import common_dialog
+from ourportfolios.components.common_dialog import CommonDialogConfig, common_dialog
 from ourportfolios.pages.settings.state import DEFAULT_PERIOD_OPTIONS, SettingsState
 from ourportfolios.state.auth_state import AuthState
 from ourportfolios.styles import (
@@ -200,7 +200,10 @@ def _card(*children, border: str = CARD_BORDER) -> rx.Component:
 
 
 def _card_header(
-    icon_name: str, title: str, subtitle: str, color: str = "purple",
+    icon_name: str,
+    title: str,
+    subtitle: str,
+    color: str = "purple",
 ) -> rx.Component:
     return rx.hstack(
         icon_box(icon_name, color=color),
@@ -315,16 +318,18 @@ def _password_dialog() -> rx.Component:
     )
 
     return common_dialog(
-        content=content,
-        is_open=SettingsState.password_dialog_open,
-        on_close=SettingsState.close_password_dialog,
-        on_open_change=SettingsState.set_password_dialog_open,
-        title="Change password",
-        title_size="5",
-        width="90vw",
-        max_width="30rem",
-        height="fit-content",
-        padding="1.75rem",
+        content,
+        CommonDialogConfig(
+            is_open=SettingsState.password_dialog_open,
+            on_close=SettingsState.close_password_dialog,
+            on_open_change=SettingsState.set_password_dialog_open,
+            title="Change password",
+            title_size="5",
+            width="90vw",
+            max_width="30rem",
+            height="fit-content",
+            padding="1.75rem",
+        ),
     )
 
 
@@ -386,7 +391,10 @@ def _delete_dialog() -> rx.Component:
                         align="center",
                     ),
                     rx.text(
-                        "Delete account", size="2", font_weight="500", color=red(0.8),
+                        "Delete account",
+                        size="2",
+                        font_weight="500",
+                        color=red(0.8),
                     ),
                 ),
                 on_click=SettingsState.confirm_delete_account,
@@ -411,16 +419,18 @@ def _delete_dialog() -> rx.Component:
     )
 
     return common_dialog(
-        content=content,
-        is_open=SettingsState.delete_dialog_open,
-        on_close=SettingsState.close_delete_dialog,
-        on_open_change=SettingsState.set_delete_dialog_open,
-        title="Delete account",
-        title_size="5",
-        width="90vw",
-        max_width="32rem",
-        height="fit-content",
-        padding="2rem",
+        content,
+        CommonDialogConfig(
+            is_open=SettingsState.delete_dialog_open,
+            on_close=SettingsState.close_delete_dialog,
+            on_open_change=SettingsState.set_delete_dialog_open,
+            title="Delete account",
+            title_size="5",
+            width="90vw",
+            max_width="32rem",
+            height="fit-content",
+            padding="2rem",
+        ),
     )
 
 
@@ -462,7 +472,8 @@ def profile_panel() -> rx.Component:
                                 SettingsState.display_name_editing,
                                 rx.hstack(
                                     _edit_link(
-                                        "Cancel", SettingsState.cancel_display_name_edit,
+                                        "Cancel",
+                                        SettingsState.cancel_display_name_edit,
                                     ),
                                     _loading_btn(
                                         "Save",
@@ -473,7 +484,8 @@ def profile_panel() -> rx.Component:
                                     align="center",
                                 ),
                                 _edit_link(
-                                    "Edit", SettingsState.start_display_name_edit,
+                                    "Edit",
+                                    SettingsState.start_display_name_edit,
                                 ),
                             ),
                             align="center",
@@ -485,7 +497,9 @@ def profile_panel() -> rx.Component:
                                 rx.icon("mail", size=13, color=white(0.28)),
                                 rx.text("Email", size="1", color=TEXT_MUTED),
                                 rx.text(
-                                    AuthState.user_email, size="2", color=TEXT_PRIMARY,
+                                    AuthState.user_email,
+                                    size="2",
+                                    color=TEXT_PRIMARY,
                                 ),
                                 spacing="2",
                                 align="center",
@@ -557,7 +571,10 @@ def delete_card() -> rx.Component:
         rx.hstack(
             rx.vstack(
                 rx.text(
-                    "Delete account", size="2", weight="medium", color=TEXT_PRIMARY,
+                    "Delete account",
+                    size="2",
+                    weight="medium",
+                    color=TEXT_PRIMARY,
                 ),
                 rx.text(
                     "Permanently removes your account and all associated data.",
@@ -756,7 +773,9 @@ def _nav_item(tab: str, icon_name: str, label: str) -> rx.Component:
     return rx.box(
         rx.hstack(
             rx.icon(
-                icon_name, size=14, color=rx.cond(is_active, white(0.75), white(0.28)),
+                icon_name,
+                size=14,
+                color=rx.cond(is_active, white(0.75), white(0.28)),
             ),
             rx.text(
                 label,

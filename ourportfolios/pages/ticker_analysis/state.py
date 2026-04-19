@@ -58,24 +58,26 @@ class State(SessionIsolatedStateMixin, rx.State):
     officers_df: pd.DataFrame = pd.DataFrame()
     price_data: pd.DataFrame = pd.DataFrame()
 
-    income_statement: list[dict]  = rx.Field(default_factory=list)
-    balance_sheet: list[dict]  = rx.Field(default_factory=list)
-    cash_flow: list[dict]  = rx.Field(default_factory=list)
+    income_statement: list[dict] = rx.Field(default_factory=list)
+    balance_sheet: list[dict] = rx.Field(default_factory=list)
+    cash_flow: list[dict] = rx.Field(default_factory=list)
     financial_df: pd.DataFrame = pd.DataFrame()
-    transformed_dataframes: dict  = rx.Field(default_factory=dict)
-    available_metrics_by_category: dict[str, list[str]]  = rx.Field(default_factory=dict)
-    selected_metrics: dict[str, str]  = rx.Field(default_factory=dict)
+    transformed_dataframes: dict = rx.Field(default_factory=dict)
+    available_metrics_by_category: dict[str, list[str]] = rx.Field(default_factory=dict)
+    selected_metrics: dict[str, str] = rx.Field(default_factory=dict)
 
     selected_metric: str = "P/E"
-    available_metrics: list[str] = [
-        "P/E",
-        "P/B",
-        "P/S",
-        "P/Cash Flow",
-        "ROE (%)",
-        "ROA (%)",
-        "Debt/Equity",
-    ]
+    available_metrics: list[str] = rx.Field(
+        default_factory=lambda: [
+            "P/E",
+            "P/B",
+            "P/S",
+            "P/Cash Flow",
+            "ROE (%)",
+            "ROA (%)",
+            "Debt/Equity",
+        ],
+    )
     selected_margin_metric: str = "gross_margin"
 
     _is_mounted: bool = True
@@ -205,7 +207,7 @@ class State(SessionIsolatedStateMixin, rx.State):
 
     @rx.event
     @session_isolated
-    async def toggle_switch(self, value: bool):
+    async def toggle_switch(self, *, value: bool):
         async with self:
             self.switch_value = "year" if value else "quarter"
             self.transformed_dataframes = {}
@@ -262,7 +264,7 @@ class State(SessionIsolatedStateMixin, rx.State):
 
         except SessionCancelledError:
             return
-        except Exception as e:
+        except (AttributeError, ValueError, KeyError, RuntimeError):
             async with self:
                 self.overview_df = pd.DataFrame()
                 self.shareholders_df = pd.DataFrame()
@@ -282,7 +284,7 @@ class State(SessionIsolatedStateMixin, rx.State):
             return {}
         try:
             return self.overview_df.iloc[0].to_dict()
-        except Exception:
+        except (IndexError, ValueError, KeyError):
             return {}
 
     @rx.var
@@ -291,7 +293,7 @@ class State(SessionIsolatedStateMixin, rx.State):
             return {}
         try:
             return self.profile_df.iloc[0].to_dict()
-        except Exception:
+        except (IndexError, ValueError, KeyError):
             return {}
 
     @rx.var
@@ -300,7 +302,7 @@ class State(SessionIsolatedStateMixin, rx.State):
             return []
         try:
             return self.shareholders_df.to_dict("records")
-        except Exception:
+        except (ValueError, KeyError, TypeError):
             return []
 
     @rx.var
@@ -309,7 +311,7 @@ class State(SessionIsolatedStateMixin, rx.State):
             return []
         try:
             return self.events_df.to_dict("records")
-        except Exception:
+        except (ValueError, KeyError, TypeError):
             return []
 
     @rx.var
@@ -318,7 +320,7 @@ class State(SessionIsolatedStateMixin, rx.State):
             return []
         try:
             return self.news_df.to_dict("records")
-        except Exception:
+        except (ValueError, KeyError, TypeError):
             return []
 
     @rx.var
@@ -327,7 +329,7 @@ class State(SessionIsolatedStateMixin, rx.State):
             return []
         try:
             return self.officers_df.to_dict("records")
-        except Exception:
+        except (ValueError, KeyError, TypeError):
             return []
 
     @rx.event
@@ -523,10 +525,10 @@ class State(SessionIsolatedStateMixin, rx.State):
             for idx, d in enumerate(pie_data):
                 d["fill"] = colors[idx % len(colors)]
             return pie_data
-        except Exception:
+        except (ValueError, KeyError, IndexError):
             # print(f"Error: {e}")
             return []
 
     @rx.event
-    def set_profile_dialog_open(self, value: bool):
+    def set_profile_dialog_open(self, *, value: bool):
         self.profile_dialog_open = value
