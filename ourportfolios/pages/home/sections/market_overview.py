@@ -12,6 +12,9 @@ from ourportfolios.state.heatmap import (
 from ourportfolios.state.home_state import HomeState
 from ourportfolios.state.prefs_state import PrefsState
 from ourportfolios.styles import (
+    CARD_BG,
+    CARD_BORDER,
+    SKELETON_BG,
     TEXT_PRIMARY,
     TEXT_TERTIARY,
     accent_btn,
@@ -51,7 +54,103 @@ def _period_btn(label: str) -> rx.Component:
 
 
 def _skel(w: str = "100%", h: str = "0.75rem", r: str = "0.375rem") -> rx.Component:
+    """rx.skeleton — works fine for fixed sizes (used in indices col)."""
     return rx.skeleton(rx.box(width=w, height=h), loading=True, border_radius=r)
+
+
+def _skel_box(w: str, h: str, r: str = "0.25rem") -> rx.Component:
+    """Plain box skeleton — reliable with percentage widths (used in treemap area)."""
+    return rx.box(width=w, height=h, border_radius=r, background=SKELETON_BG)
+
+
+# ─── Indices skeleton ─────────────────────────────────────────────────────────
+
+
+def _mini_index_card_skel() -> rx.Component:
+    return rx.box(
+        rx.hstack(
+            rx.vstack(
+                _skel("3rem", "0.5rem"),
+                _skel("5.5rem", "1.5rem", "0.375rem"),
+                _skel("3.5rem", "1rem", "0.5rem"),
+                spacing="1",
+                align="start",
+                flex_shrink="0",
+            ),
+            rx.spacer(),
+            _skel("5.625rem", "3.25rem", "0.375rem"),
+            align="center",
+            width="100%",
+        ),
+        padding="0.625rem 0.875rem",
+        border_radius="0.625rem",
+        background=CARD_BG,
+        border=CARD_BORDER,
+        width="100%",
+        box_sizing="border-box",
+    )
+
+
+def _indices_skeleton_vertical() -> rx.Component:
+    return rx.vstack(
+        _mini_index_card_skel(),
+        _mini_index_card_skel(),
+        _mini_index_card_skel(),
+        _mini_index_card_skel(),
+        spacing="3",
+        width="100%",
+    )
+
+
+def _indices_skeleton_horizontal() -> rx.Component:
+    return rx.box(
+        rx.hstack(
+            *[
+                rx.box(_mini_index_card_skel(), min_width="11rem", flex_shrink="0")
+                for _ in range(3)
+            ],
+            spacing="3",
+            align="stretch",
+            width="max-content",
+        ),
+        width="100%",
+        overflow_x="auto",
+        scrollbar_width="none",
+        style={"&::-webkit-scrollbar": {"display": "none"}},
+    )
+
+
+# ─── Heatmap skeleton (plain boxes — no rx.skeleton, reliable at any width) ──
+
+
+def _treemap_skeleton() -> rx.Component:
+    return rx.vstack(
+        rx.hstack(
+            _skel("42%", "12.5rem", "0.5rem"),
+            _skel("35%", "12.5rem", "0.5rem"),
+            _skel("23%", "12.5rem", "0.5rem"),
+            spacing="2",
+            width="100%",
+        ),
+        rx.hstack(
+            _skel("33%", "11.875rem", "0.5rem"),
+            _skel("33%", "11.875rem", "0.5rem"),
+            _skel("33%", "11.875rem", "0.5rem"),
+            spacing="2",
+            width="100%",
+        ),
+        rx.hstack(
+            _skel("25%", "11.25rem", "0.5rem"),
+            _skel("38%", "11.25rem", "0.5rem"),
+            _skel("37%", "11.25rem", "0.5rem"),
+            spacing="2",
+            width="100%",
+        ),
+        spacing="2",
+        width="100%",
+        height=_TREEMAP_H,
+        overflow="hidden",
+    )
 
 
 # ─── Desktop treemap ──────────────────────────────────────────────────────────
@@ -69,10 +168,7 @@ def _ticker_content(t: TickerSubtile) -> rx.Component:
                 text_align="center",
             ),
             rx.badge(
-                t.pct_label,
-                color_scheme=t.pct_color_scheme,
-                variant="soft",
-                size="1",
+                t.pct_label, color_scheme=t.pct_color_scheme, variant="soft", size="1",
             ),
             spacing="1",
             align="center",
@@ -267,39 +363,10 @@ def _chip_row() -> rx.Component:
     )
 
 
-def _treemap_skeleton() -> rx.Component:
-    return rx.vstack(
-        rx.hstack(
-            _skel("42%", "12.5rem", "0.5rem"),
-            _skel("35%", "12.5rem", "0.5rem"),
-            _skel("23%", "12.5rem", "0.5rem"),
-            spacing="2",
-            width="100%",
-        ),
-        rx.hstack(
-            _skel("33%", "11.875rem", "0.5rem"),
-            _skel("33%", "11.875rem", "0.5rem"),
-            _skel("33%", "11.875rem", "0.5rem"),
-            spacing="2",
-            width="100%",
-        ),
-        rx.hstack(
-            _skel("25%", "11.25rem", "0.5rem"),
-            _skel("38%", "11.25rem", "0.5rem"),
-            _skel("37%", "11.25rem", "0.5rem"),
-            spacing="2",
-            width="100%",
-        ),
-        spacing="2",
-        width="100%",
-        height=_TREEMAP_H,
-        overflow="hidden",
-    )
-
-
 def _treemap() -> rx.Component:
     return rx.cond(
-        HeatmapState.tiles,
+        HeatmapState.loading | (HeatmapState.tiles.length() == 0),
+        _treemap_skeleton(),
         rx.vstack(
             rx.box(
                 rx.foreach(HeatmapState.tiles, _industry_tile),
@@ -312,10 +379,7 @@ def _treemap() -> rx.Component:
             _chip_row(),
             spacing="0",
             width="100%",
-            height=_TREEMAP_H,
-            overflow="hidden",
         ),
-        _treemap_skeleton(),
     )
 
 
@@ -419,19 +483,21 @@ def _mobile_skeleton_row() -> rx.Component:
 
 def _mobile_industry_view() -> rx.Component:
     return rx.cond(
-        HeatmapState.tiles,
+        HeatmapState.loading | (HeatmapState.tiles.length() == 0),
         rx.vstack(
-            rx.foreach(HeatmapState.tiles, _mobile_tile_row),
-            rx.cond(
-                HeatmapState.chips,
-                rx.foreach(HeatmapState.chips, _mobile_chip_row),
-                rx.box(),
-            ),
+            *[_mobile_skeleton_row() for _ in range(8)],
             spacing="2",
             width="100%",
         ),
         rx.vstack(
-            *[_mobile_skeleton_row() for _ in range(8)],
+            rx.foreach(HeatmapState.tiles, _mobile_tile_row),
+            rx.box(
+                rx.cond(
+                    HeatmapState.chips,
+                    rx.foreach(HeatmapState.chips, _mobile_chip_row),
+                    rx.box(),
+                ),
+            ),
             spacing="2",
             width="100%",
         ),
@@ -441,86 +507,75 @@ def _mobile_industry_view() -> rx.Component:
 # ─── Scrollable indices wrapper (mobile) ──────────────────────────────────────
 
 
-def _mobile_indices_scroll() -> rx.Component:
-    """Horizontal scroll row of index cards for mobile — delegates to indices_grid."""
-    return indices_grid()
-
-
 # ─── Section assembly ─────────────────────────────────────────────────────────
 
 
 def market_overview_section() -> rx.Component:
-    return rx.box(
-        glass_card(
-            rx.vstack(
-                # ── Header ───────────────────────────────────────────────────
+    return glass_card(
+        rx.vstack(
+            # ── Header ───────────────────────────────────────────────────
+            rx.hstack(
                 rx.hstack(
-                    rx.hstack(
-                        refresh_countdown_ring(),
-                        rx.text(
-                            "Market Overview",
-                            size=rx.breakpoints(initial="2", md="3"),
-                            weight="bold",
-                            color=TEXT_PRIMARY,
-                            letter_spacing="-0.01em",
-                            white_space="nowrap",
-                        ),
-                        spacing="2",
-                        align="center",
-                        flex_shrink="1",
-                        min_width="0",
+                    refresh_countdown_ring(),
+                    rx.text(
+                        "Market Overview",
+                        size=rx.breakpoints(initial="2", md="3"),
+                        weight="bold",
+                        color=TEXT_PRIMARY,
+                        letter_spacing="-0.01em",
+                        white_space="nowrap",
                     ),
-                    rx.spacer(),
-                    rx.hstack(
-                        *[_period_btn(p) for p in _PERIOD_OPTIONS],
-                        spacing="0",
-                        padding="0.16rem",
-                        border_radius="0.4375rem",
-                        background=white(0.03),
-                        border=f"1px solid {white(0.06)}",
-                        flex_shrink="0",
-                    ),
-                    width="100%",
+                    spacing="2",
                     align="center",
+                    flex_shrink="1",
+                    min_width="0",
                 ),
-                # ── MOBILE: scroll row of index cards + industry list ─────────
-                rx.mobile_only(
-                    rx.vstack(
-                        _mobile_indices_scroll(),
+                rx.spacer(),
+                rx.hstack(
+                    *[_period_btn(p) for p in _PERIOD_OPTIONS],
+                    spacing="0",
+                    padding="0.16rem",
+                    border_radius="0.4375rem",
+                    background=white(0.03),
+                    border=f"1px solid {white(0.06)}",
+                    flex_shrink="0",
+                ),
+                width="100%",
+                align="center",
+            ),
+            # ── Content ───────────────────────────────────────────────────
+            rx.flex(
+                rx.vstack(
+                    indices_grid(),
+                    rx.box(
                         _mobile_industry_view(),
-                        spacing="3",
+                        display=rx.breakpoints(initial="block", md="none"),
                         width="100%",
-                        max_width="100%",
-                        min_width="1px",
                     ),
+                    width=rx.breakpoints(initial="100%", md="13.125rem"),
+                    spacing="3",
+                    flex_shrink="0",
+                ),
+                # Right Column (Treemap)
+                rx.box(
+                    _treemap(),
+                    display=rx.breakpoints(initial="none", md="block"),
+                    flex="1",
+                    min_width="0",
                     width="100%",
                 ),
-                # ── TABLET + DESKTOP: indices column (fixed) + treemap ────────
-                rx.tablet_and_desktop(
-                    rx.hstack(
-                        # flex_shrink=0 keeps the indices column at its natural width
-                        # so it never gets squashed by the treemap
-                        rx.box(
-                            indices_grid(),
-                            flex_shrink="0",
-                        ),
-                        rx.box(
-                            _treemap(),
-                            flex="1",
-                            min_width="0",
-                        ),
-                        spacing="4",
-                        width="100%",
-                        align="stretch",
-                    ),
-                ),
-                accent_btn("View Full Market", href="/market"),
-                spacing="4",
+                direction=rx.breakpoints(initial="column", md="row"),
+                gap="0.75rem",
                 width="100%",
+                align="start",
+                min_height=rx.breakpoints(initial="auto", md=_TREEMAP_H),
             ),
-            padding=rx.breakpoints(initial="0.875rem 1rem", md="1.25rem 1.5rem"),
+            accent_btn("View Full Market", href="/market"),
+            spacing="4",
             width="100%",
-            _hover={},
         ),
-        on_mount=PrefsState.apply_to_heatmap,
+        padding=rx.breakpoints(initial="1rem", md="1.25rem 1.5rem"),
+        width="100%",
+        _hover={},
+        on_mount=[PrefsState.apply_to_heatmap, HeatmapState.load_heatmap_data],
     )

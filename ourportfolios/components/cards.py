@@ -9,9 +9,10 @@ _GLASS_HOVER_BORDER = "rgba(255, 255, 255, 0.13)"
 
 def glass_card(
     *children: rx.Component,
-    padding: object = "1rem",
-    width: object | None = None,
-    _hover: dict[str, object] | None = None,
+    padding: rx.Var[str] | str | dict[str, str] = "1rem",
+    width: rx.Var[str] | str | dict[str, str] | None = None,
+    _hover: dict[str, rx.Var[str] | str] | None = None,
+    on_mount: list[rx.EventHandler] | rx.EventHandler | None = None,
 ) -> rx.Component:
     hover_style = (
         {
@@ -30,6 +31,7 @@ def glass_card(
         border=_GLASS_BORDER,
         width=width,
         _hover=hover_style,
+        on_mount=on_mount,
     )
 
 
