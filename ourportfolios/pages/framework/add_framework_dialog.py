@@ -1,5 +1,7 @@
 """Add framework dialog and metrics management."""
 
+from collections.abc import Callable
+
 import reflex as rx
 
 from ourportfolios.components.common_dialog import CommonDialogConfig, common_dialog
@@ -19,7 +21,7 @@ from ourportfolios.styles import (
 )
 
 
-def field(label: str, control) -> rx.Component:
+def field(label: str, control: rx.Component) -> rx.Component:
     return rx.vstack(
         rx.text(label, **LABEL_STYLE),
         control,
@@ -28,7 +30,7 @@ def field(label: str, control) -> rx.Component:
     )
 
 
-def metric_item(metric, index: int):
+def metric_item(metric: object, index: int) -> rx.Component:
     # The swap bridge is visible when hovering this row (index == hovered)
     # OR hovering the row below it (index == hovered - 1).
     # FrameworkState needs:
@@ -115,7 +117,7 @@ def metric_item(metric, index: int):
     )
 
 
-def add_metric_selector():
+def add_metric_selector() -> rx.Component:
     content = rx.vstack(
         field(
             "Category",
@@ -183,7 +185,7 @@ def add_metric_selector():
     )
 
 
-def metrics_management_panel():
+def metrics_management_panel() -> rx.Component:
     return rx.vstack(
         rx.hstack(
             rx.text("METRICS", **LABEL_STYLE),
@@ -202,7 +204,7 @@ def metrics_management_panel():
             rx.vstack(
                 rx.foreach(
                     FrameworkState.form_metrics,
-                    lambda metric, idx: metric_item(metric, idx),
+                    metric_item,
                 ),
                 spacing="0",
                 width="100%",
@@ -218,7 +220,12 @@ def metrics_management_panel():
     )
 
 
-def _input_with_error(placeholder, value, on_change, error_key):
+def _input_with_error(
+    placeholder: str,
+    value: str,
+    on_change: Callable[..., object],
+    error_key: str,
+) -> rx.Component:
     return rx.vstack(
         rx.input(
             placeholder=placeholder,
@@ -241,7 +248,7 @@ def _input_with_error(placeholder, value, on_change, error_key):
     )
 
 
-def add_framework_dialog():
+def add_framework_dialog() -> rx.Component:
     content = rx.vstack(
         rx.hstack(
             rx.vstack(
@@ -357,12 +364,8 @@ def add_framework_dialog():
                 "Add Framework",
                 on_click=FrameworkState.submit_framework,
                 size="3",
-                disabled=rx.cond(
-                    (FrameworkState.form_title == "")
-                    | (FrameworkState.form_author == ""),
-                    True,
-                    False,
-                ),
+                disabled=(FrameworkState.form_title == "")
+                | (FrameworkState.form_author == ""),
                 **BTN_GHOST,
             ),
             spacing="2",

@@ -12,7 +12,7 @@ _CARD_RADIUS = "0.625rem"
 def company_profile_dialog():
     profile_data = State.profile
 
-    def create_profile_tab_content(content_key: str, tab_value: str):
+    def create_profile_tab_content(content_key: str, tab_value: str) -> rx.Component:
         return rx.tabs.content(
             rx.text(
                 profile_data.get(content_key, ""),

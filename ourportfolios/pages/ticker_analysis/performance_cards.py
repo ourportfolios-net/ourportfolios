@@ -213,7 +213,8 @@ def create_dynamic_chart(category: str):
                             State.available_metrics_by_category[category],
                             value=State.selected_metrics.get(category, ""),
                             on_change=lambda value: State.set_metric_for_category(
-                                category, value,
+                                category,
+                                value,
                             ),
                             size="1",
                             style={
@@ -298,7 +299,7 @@ def performance_cards():
             rx.box(
                 rx.foreach(
                     categories,
-                    lambda category: create_dynamic_chart(category),
+                    create_dynamic_chart,
                 ),
                 display="grid",
                 grid_template_columns="repeat(auto-fill, minmax(min(18rem, 100%), 1fr))",

@@ -100,14 +100,14 @@ class SearchBarState(SessionIsolatedStateMixin, rx.State):
             self.suggest_tickers = result
 
     @rx.event
-    def set_display_suggestions(self, state: bool):
+    def set_display_suggestions(self, *, state: bool):
         yield time.sleep(0.2)
         self.display_suggestion = state
         if state:
             return SearchBarState.fetch_suggest_tickers
 
     @rx.event
-    def set_empty_state_display_suggestions(self, state: bool):
+    def set_empty_state_display_suggestions(self, *, state: bool):
         yield time.sleep(0.2)
         self.empty_state_display_suggestion = state
 
@@ -143,7 +143,7 @@ class SearchBarState(SessionIsolatedStateMixin, rx.State):
                     stmt = filter_fn(stmt)
                 result = await session.execute(stmt)
                 return [dict(row) for row in result.mappings().all()]
-        except Exception:
+        except (ValueError, RuntimeError, KeyError, AttributeError):
             # print(f"Database error in _fetch_tickers: {e}")
             return []
 
@@ -177,8 +177,8 @@ class SearchBarState(SessionIsolatedStateMixin, rx.State):
                         }
                 except asyncio.CancelledError:
                     return
-                except Exception as e:
-                    print(f"Error in load_state: {e}")
+                except (ValueError, RuntimeError, KeyError):
+                    pass
 
                 try:
                     await asyncio.sleep(60)

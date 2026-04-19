@@ -1,6 +1,6 @@
 import asyncio
 import json
-from datetime import date
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 import pandas as pd
@@ -24,26 +24,32 @@ class PriceChartState(rx.State):
     selected_ma_period: dict[str, bool] = rx.Field(default_factory=dict)
     rsi_line: bool = False
 
-    ma_period: dict[str, Any] = {
-        "5": "#D19DFF",
-        "10": "#B661FFC2",
-        "20": "#AEFEEDF5",
-        "50": "#41FFDF76",
-        "100": "#70B8FF",
-        "200": "#3094FEB9",
-    }
+    ma_period: dict[str, Any] = rx.Field(
+        default_factory=lambda: {
+            "5": "#D19DFF",
+            "10": "#B661FFC2",
+            "20": "#AEFEEDF5",
+            "50": "#41FFDF76",
+            "100": "#70B8FF",
+            "200": "#3094FEB9",
+        },
+    )
 
     df_daily: pd.DataFrame = pd.DataFrame()
-    df_by_interval: dict[str, Any] = {
-        "1D": pd.DataFrame(),
-        "1W": pd.DataFrame(),
-        "1M": pd.DataFrame(),
-    }
-    interval_range: dict[str, Any] = {
-        "1D": date.today() - relativedelta(years=5),
-        "1W": date.today(),
-        "1M": date.today(),
-    }
+    df_by_interval: dict[str, Any] = rx.Field(
+        default_factory=lambda: {
+            "1D": pd.DataFrame(),
+            "1W": pd.DataFrame(),
+            "1M": pd.DataFrame(),
+        },
+    )
+    interval_range: dict[str, Any] = rx.Field(
+        default_factory=lambda: {
+            "1D": datetime.now(UTC).date() - relativedelta(years=5),
+            "1W": datetime.now(UTC).date(),
+            "1M": datetime.now(UTC).date(),
+        },
+    )
 
     rsi_period: int = 14
 
@@ -74,12 +80,16 @@ class PriceChartState(rx.State):
 
             self._last_ticker = ticker
             self.is_loading = True
-            start_date = (date.today() - relativedelta(years=5)).strftime("%Y-%m-%d")
+            start_date = (datetime.now(UTC).date() - relativedelta(years=5)).strftime(
+                "%Y-%m-%d",
+            )
 
         try:
-            end_date = (date.today() + relativedelta(days=1)).strftime("%Y-%m-%d")
+            end_date = (datetime.now(UTC).date() + relativedelta(days=1)).strftime(
+                "%Y-%m-%d",
+            )
 
-            def fetch_daily():
+            def fetch_daily() -> pd.DataFrame:
                 return load_historical_data(
                     symbol=ticker,
                     start=start_date,
@@ -97,7 +107,7 @@ class PriceChartState(rx.State):
 
             yield PriceChartState.render_price_chart
 
-        except Exception:
+        except (ValueError, RuntimeError, KeyError):
             # print(f"[PriceChartState] Error loading price chart: {e}")
             async with self:
                 self.is_loading = False
@@ -121,7 +131,7 @@ class PriceChartState(rx.State):
             )
 
     @rx.event(background=True)
-    async def set_interval(self, _range):
+    async def set_interval(self, _range: str):
         async with self:
             self.selected_interval = _range
             self.df = self._resample(self.df_daily, _range)
@@ -136,7 +146,7 @@ class PriceChartState(rx.State):
         yield PriceChartState.render_price_chart
 
     @rx.event
-    def add_ma_period(self, value: bool, period: str):
+    def add_ma_period(self, *, value: bool, period: str) -> None:
         self.selected_ma_period[period] = value
         yield PriceChartState.render_price_chart
 

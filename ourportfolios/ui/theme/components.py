@@ -12,7 +12,8 @@ def accent_btn(
     label: str,
     icon: str = "arrow-right",
     href: str | None = None,
-    on_click=None,
+    on_click: object | None = None,
+    *,
     icon_left: bool = False,
 ) -> rx.Component:
     icon_el = rx.icon(icon, size=12, color=white(0.5))
@@ -58,7 +59,7 @@ def ghost_btn(
     label: str,
     icon: str = "arrow-right",
     href: str | None = None,
-    on_click=None,
+    on_click: object | None = None,
 ) -> rx.Component:
     return accent_btn(label, icon=icon, href=href, on_click=on_click)
 
@@ -87,7 +88,9 @@ def icon_box(icon_name: str, color: str = "purple", size: int = 16) -> rx.Compon
 
 
 def icon_box_style(
-    color: str = "purple", size: str = "2.5rem", radius: str = "0.625rem",
+    color: str = "purple",
+    size: str = "2.5rem",
+    radius: str = "0.625rem",
 ) -> dict:
     bg, border, _ = _ICON_COLORS.get(color, _ICON_COLORS["purple"])
     return {
@@ -124,7 +127,10 @@ def glow_orb_style(color: str = "purple") -> dict:
 
 
 def skeleton_box_style(
-    width: str, height: str, radius: str = "0.25rem", opacity: float = 0.06,
+    width: str,
+    height: str,
+    radius: str = "0.25rem",
+    opacity: float = 0.06,
 ) -> dict:
     return {
         "width": width,
@@ -135,7 +141,7 @@ def skeleton_box_style(
     }
 
 
-def overlay_style(is_active) -> dict:
+def overlay_style(is_active: object) -> dict:
     return {
         "opacity": rx.cond(is_active, "1", "0"),
         "pointer_events": rx.cond(is_active, "auto", "none"),

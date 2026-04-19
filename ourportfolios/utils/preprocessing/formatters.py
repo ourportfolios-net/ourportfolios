@@ -1,7 +1,10 @@
 """Utility functions for formatting numbers and values for display."""
 
-
 import pandas as pd
+
+TRILLION = 1_000_000_000_000
+BILLION = 1_000_000_000
+MILLION = 1_000_000
 
 
 def format_large_number(value: float, decimals: int = 2) -> str:
@@ -25,25 +28,24 @@ def format_large_number(value: float, decimals: int = 2) -> str:
 
     try:
         num = float(value)
-
+    except (ValueError, TypeError):
+        return "N/A"
+    else:
         # Handle negative numbers
         is_negative = num < 0
         num = abs(num)
 
-        if num >= 1_000_000_000_000:  # Trillion
-            formatted = f"{num / 1_000_000_000_000:.{decimals}f} T"
-        elif num >= 1_000_000_000:  # Billion
-            formatted = f"{num / 1_000_000_000:.{decimals}f} B"
-        elif num >= 1_000_000:  # Million
-            formatted = f"{num / 1_000_000:.{decimals}f} M"
+        if num >= TRILLION:
+            formatted = f"{num / TRILLION:.{decimals}f} T"
+        elif num >= BILLION:
+            formatted = f"{num / BILLION:.{decimals}f} B"
+        elif num >= MILLION:
+            formatted = f"{num / MILLION:.{decimals}f} M"
         else:
             # Don't format thousands, keep as-is with decimals
             formatted = f"{num:.{decimals}f}"
 
         return f"-{formatted}" if is_negative else formatted
-
-    except (ValueError, TypeError):
-        return "N/A"
 
 
 def format_percentage(value: float, decimals: int = 2) -> str:
@@ -105,7 +107,7 @@ def format_integer(value: float) -> str:
         return "N/A"
 
 
-def format_currency_vnd(value: float, use_suffix: bool = True) -> str:
+def format_currency_vnd(value: float, *, use_suffix: bool = True) -> str:
     """Format VND currency values.
 
     Args:

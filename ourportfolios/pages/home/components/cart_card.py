@@ -66,7 +66,7 @@ def cart_card() -> rx.Component:
                 rx.vstack(
                     rx.foreach(
                         CartState.cart_items,
-                        lambda item, i: _cart_item_row(item, i),
+                        _cart_item_row,
                     ),
                     spacing="2",
                     width="100%",

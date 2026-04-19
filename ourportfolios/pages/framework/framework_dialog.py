@@ -7,7 +7,7 @@ from ourportfolios.pages.framework.state import FrameworkState
 from ourportfolios.styles import BTN_GHOST, white
 
 
-def metric_badge(metric):
+def metric_badge(metric: object) -> rx.Component:
     return rx.badge(
         metric["name"],
         variant="soft",
@@ -127,7 +127,7 @@ def framework_dialog():
                     rx.icon("arrow-right", size=18),
                     spacing="2",
                 ),
-                on_click=lambda: FrameworkState.select_and_navigate_framework(),
+                on_click=FrameworkState.select_and_navigate_framework,
                 size="3",
                 **BTN_GHOST,
             ),

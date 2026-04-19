@@ -5,7 +5,7 @@ import reflex as rx
 from ourportfolios.state import CartState
 
 
-def _cart_item(item, i):
+def _cart_item(item: dict[str, str], i: int) -> rx.Component:
     """Single cart item card — shared by scroll and non-scroll layouts."""
     return rx.card(
         rx.hstack(
@@ -40,7 +40,7 @@ def _cart_item(item, i):
     )
 
 
-def _cart_items_list():
+def _cart_items_list() -> rx.Component:
     """Cart item list, scrollable when there are many items."""
     items_vstack = rx.vstack(
         rx.foreach(CartState.cart_items, _cart_item),

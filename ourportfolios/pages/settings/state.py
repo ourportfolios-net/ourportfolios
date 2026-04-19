@@ -167,7 +167,7 @@ class SettingsState(rx.State):
         self.password_dialog_open = False
 
     @rx.event
-    def set_password_dialog_open(self, value: bool) -> None:
+    def set_password_dialog_open(self, *, value: bool) -> None:
         self.password_dialog_open = value
 
     # ── Delete dialog setters ─────────────────────────────────────────────────
@@ -183,7 +183,7 @@ class SettingsState(rx.State):
         self.delete_dialog_open = False
 
     @rx.event
-    def set_delete_dialog_open(self, value: bool) -> None:
+    def set_delete_dialog_open(self, *, value: bool) -> None:
         self.delete_dialog_open = value
 
     @rx.event

@@ -1,7 +1,7 @@
 """Schema definition and single-ticker population for the tickers schema."""
 
 import time
-from datetime import date
+from datetime import UTC, datetime
 
 import numpy as np
 import pandas as pd
@@ -178,7 +178,6 @@ def create_tickers_schema(schema_name: str, engine: Engine) -> tuple[MetaData, d
     # print("[schema] Schema created")
 
     metadata.create_all(engine, checkfirst=True)
-    table_names = ", ".join(t.name for t in metadata.sorted_tables)
     # print(f"[schema] Tables: {table_names}")
     # print("[schema] Indexes: idx_price_history_symbol, idx_price_history_date_brin")
     # print("[schema] Done")
@@ -186,9 +185,12 @@ def create_tickers_schema(schema_name: str, engine: Engine) -> tuple[MetaData, d
     return metadata, tables
 
 
-# TODO: Adjust to new vnstock version
-def add_ticker(
-    symbol: str, engine: Engine, schema_name: str, years_history: int = 3,
+# Adjust to new vnstock version.
+def add_ticker(  # noqa: C901,PLR0912,PLR0915
+    symbol: str,
+    engine: Engine,
+    schema_name: str,
+    years_history: int = 3,
 ) -> None:
     """Fetch all data for one ticker from vnstock and insert into every table."""
     _, tables = _build_metadata(schema_name)
@@ -208,7 +210,8 @@ def add_ticker(
     # print(f"[{symbol}] Fetching overview...")
     raw = company.overview()
     if raw is None or raw.empty:
-        raise ValueError(f"[{symbol}] No overview data returned — aborting")
+        msg = f"[{symbol}] No overview data returned — aborting"
+        raise ValueError(msg)
 
     if "website" in raw.columns:
         raw["website"] = (
@@ -255,9 +258,9 @@ def add_ticker(
                 )
                 conn.commit()
         # print(f"[{symbol}] ✓ shareholders_df")
-    except Exception as e:
+    except (ValueError, RuntimeError, KeyError, TypeError):
         # print(f"[{symbol}] ✗ shareholders_df: {e}")
-    time.sleep(1)
+        time.sleep(1)
 
     try:
         # print(f"[{symbol}] Fetching events...")
@@ -274,9 +277,9 @@ def add_ticker(
                 conn.execute(events_df.insert(), df.to_dict("records"))
                 conn.commit()
         # print(f"[{symbol}] ✓ events_df")
-    except Exception as e:
+    except (ValueError, RuntimeError, KeyError, TypeError):
         # print(f"[{symbol}] ✗ events_df: {e}")
-    time.sleep(1)
+        time.sleep(1)
 
     try:
         # print(f"[{symbol}] Fetching news...")
@@ -284,7 +287,8 @@ def add_ticker(
         if df is not None and not df.empty:
             df["symbol"] = symbol
             df["price_change_ratio"] = pd.to_numeric(
-                df["price_change_ratio"], errors="coerce",
+                df["price_change_ratio"],
+                errors="coerce",
             )
             df = df[~df["title"].str.contains("insider", case=False, na=False)]
             df["price_change_ratio"] = (df["price_change_ratio"] * 100).round(2)
@@ -294,9 +298,9 @@ def add_ticker(
                 conn.execute(news_df.insert(), df.to_dict("records"))
                 conn.commit()
         # print(f"[{symbol}] ✓ news_df")
-    except Exception as e:
+    except (ValueError, RuntimeError, KeyError, TypeError):
         # print(f"[{symbol}] ✗ news_df: {e}")
-    time.sleep(1)
+        time.sleep(1)
 
     try:
         # print(f"[{symbol}] Fetching officers...")
@@ -340,8 +344,9 @@ def add_ticker(
                 )
                 conn.commit()
         # print(f"[{symbol}] ✓ officers_df")
-    except Exception as e:
+    except (ValueError, RuntimeError, KeyError, TypeError):
         # print(f"[{symbol}] ✗ officers_df: {e}")
+        pass
     time.sleep(1)
 
     try:
@@ -365,8 +370,9 @@ def add_ticker(
                 conn.execute(profile_df.insert(), df.to_dict("records"))
                 conn.commit()
         # print(f"[{symbol}] ✓ profile_df")
-    except Exception as e:
+    except (ValueError, RuntimeError, KeyError, TypeError):
         # print(f"[{symbol}] ✗ profile_df: {e}")
+        pass
     time.sleep(1)
 
     try:
@@ -389,13 +395,18 @@ def add_ticker(
                 conn.execute(stmt)
                 conn.commit()
         # print(f"[{symbol}] ✓ price_df")
-    except Exception as e:
+    except (ValueError, RuntimeError, KeyError, TypeError):
         # print(f"[{symbol}] ✗ price_df: {e}")
+        pass
 
     try:
         # print(f"[{symbol}] Fetching price history ({years_history}y)...")
-        start = (date.today() - relativedelta(years=years_history)).strftime("%Y-%m-%d")
-        end = (date.today() + relativedelta(days=1)).strftime("%Y-%m-%d")
+        start = (
+            datetime.now(UTC).date() - relativedelta(years=years_history)
+        ).strftime(
+            "%Y-%m-%d",
+        )
+        end = (datetime.now(UTC).date() + relativedelta(days=1)).strftime("%Y-%m-%d")
 
         hist = stock.quote.history(start=start, end=end, interval="1D")
         if hist is not None and not hist.empty:
@@ -429,16 +440,17 @@ def add_ticker(
                 conn.execute(stmt)
                 conn.commit()
             # print(f"[{symbol}] ✓ price_history ({len(hist)} rows)")
-    except Exception as e:
+    except (ValueError, RuntimeError, KeyError, TypeError):
         # print(f"[{symbol}] ✗ price_history: {e}")
+        pass
 
     # print(f"[{symbol}] Done")
 
 
-def load_price_df(tickers: list[str], verbose: bool = False) -> pd.DataFrame:
+def load_price_df(tickers: list[str], *, verbose: bool = False) -> pd.DataFrame:
     """Load price board for given tickers and return a cleaned DataFrame."""
     if verbose:
-        # print(f"Loading price board for {len(tickers)} tickers...")
+        pass
 
     _empty = pd.DataFrame(
         columns=[
@@ -452,9 +464,9 @@ def load_price_df(tickers: list[str], verbose: bool = False) -> pd.DataFrame:
 
     try:
         df = Trading(source="vci", symbol="ACB").price_board(symbols_list=tickers)
-    except Exception as e:
+    except (ValueError, RuntimeError, KeyError, TypeError):
         if verbose:
-            # print(f"Error fetching price board: {e}")
+            pass
         return _empty
 
     if isinstance(df.columns, pd.MultiIndex):
@@ -481,7 +493,7 @@ def load_price_df(tickers: list[str], verbose: bool = False) -> pd.DataFrame:
     df["pct_price_change"] = round(df["pct_price_change"], 2)
 
     if verbose:
-        # print(f"Price board shape: {df.shape}")
+        pass
 
     return df[
         [

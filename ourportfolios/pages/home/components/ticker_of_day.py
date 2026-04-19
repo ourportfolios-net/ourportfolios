@@ -41,7 +41,7 @@ def _ticker_skeleton() -> rx.Component:
     )
 
 
-def ticker_of_the_day_card():
+def ticker_of_the_day_card() -> rx.Component:
     return rx.cond(
         HomeState.ticker_of_day_symbol,
         _ticker_real(),
@@ -49,7 +49,7 @@ def ticker_of_the_day_card():
     )
 
 
-def _ticker_real():
+def _ticker_real() -> rx.Component:
     return glass_card(
         rx.box(
             rx.link(

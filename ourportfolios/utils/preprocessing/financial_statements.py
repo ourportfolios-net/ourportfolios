@@ -1,7 +1,7 @@
 """Financial statements transformation and ratio computation."""
 
 import asyncio
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import pandas as pd
@@ -15,6 +15,7 @@ from ourportfolios.utils.database.fetch_data import (
 
 _cache = {}
 _cache_duration = timedelta(minutes=30)
+_MIN_POINTS_FOR_GROWTH = 2
 
 # ---------------------------------------------------------------------------
 # Column ordering: (display_name, db_column_name)
@@ -107,7 +108,9 @@ _QUARTER_COLS = ["year", "quarter"]
 
 
 def _reorder(
-    df: pd.DataFrame, spec: list[tuple[str, str]], period: str,
+    df: pd.DataFrame,
+    spec: list[tuple[str, str]],
+    period: str,
 ) -> pd.DataFrame:
     """Reorder + rename columns per spec in O(n) time.
 
@@ -133,7 +136,7 @@ def _reorder(
     # Step 2: ordered column list
     ordered = [c for c in period_cols if c in existing_after_rename]
     seen = set(ordered)
-    for display, db in spec:
+    for display, _db in spec:
         col = display  # after rename, column is now display name
         if col in existing_after_rename and col not in seen:
             ordered.append(col)
@@ -152,19 +155,20 @@ def _compute_free_cash_flow(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def calculate_yoy_growth(series):
-    if len(series) < 2:
+def calculate_yoy_growth(series: pd.Series) -> pd.Series:
+    if len(series) < _MIN_POINTS_FOR_GROWTH:
         return pd.Series(dtype=float, index=series.index)
     return series.sort_index().pct_change(fill_method=None) * 100
 
 
 async def get_transformed_dataframes(
-    ticker_symbol: str, period: str = "year",
+    ticker_symbol: str,
+    period: str = "year",
 ) -> dict[str, Any]:
     cache_key = f"{ticker_symbol}_{period}"
     if cache_key in _cache:
         cached_data, cached_time = _cache[cache_key]
-        if datetime.now() - cached_time < _cache_duration:
+        if datetime.now(UTC) - cached_time < _cache_duration:
             return cached_data
 
     try:
@@ -195,7 +199,11 @@ async def get_transformed_dataframes(
             }
         else:
             categorized_ratios = _categorize_ratios(
-                ratios_df, period, income_df, balance_df, cashflow_df,
+                ratios_df,
+                period,
+                income_df,
+                balance_df,
+                cashflow_df,
             )
 
         result = {
@@ -211,10 +219,9 @@ async def get_transformed_dataframes(
             "categorized_ratios": categorized_ratios,
         }
 
-        _cache[cache_key] = (result, datetime.now())
-        return result
+        _cache[cache_key] = (result, datetime.now(UTC))
 
-    except Exception as e:
+    except (ValueError, TypeError, KeyError, RuntimeError) as e:
         error_msg = f"{type(e).__name__}: {e!s}"
         return {
             "transformed_income_statement": [],
@@ -230,9 +237,11 @@ async def get_transformed_dataframes(
             },
             "error": error_msg,
         }
+    else:
+        return result
 
 
-def _categorize_ratios(
+def _categorize_ratios(  # noqa: C901
     ratios_df: pd.DataFrame,
     period: str,
     income_df: pd.DataFrame = None,
@@ -318,7 +327,7 @@ def _categorize_ratios(
     time_cols = {"year", "Year", "quarter", "Quarter", "period"}
     available_cols = set(combined_df.columns) - time_cols
 
-    def extract_category(metrics_list):
+    def extract_category(metrics_list: list[str]) -> list[dict[str, Any]]:
         found = [m for m in metrics_list if m in available_cols]
         if not found:
             return []
@@ -382,9 +391,9 @@ def _compute_growth_rates(ratios_df: pd.DataFrame, period: str) -> list:
 
     df = df.sort_values(sort_cols)
     growth_df = pd.DataFrame()
-    growth_df["Year"] = df[year_col].values
+    growth_df["Year"] = df[year_col].to_numpy()
     if quarter_col and quarter_col in df.columns:
-        growth_df["Quarter"] = df[quarter_col].values
+        growth_df["Quarter"] = df[quarter_col].to_numpy()
 
     for growth_name, source_metric in growth_mappings.items():
         if source_metric in df.columns:
@@ -400,7 +409,7 @@ def _compute_growth_rates(ratios_df: pd.DataFrame, period: str) -> list:
     return growth_df.to_dict(orient="records")
 
 
-def format_quarter_data(data_list):
+def format_quarter_data(data_list: list[dict[str, Any]]) -> list[dict[str, Any]]:
     processed_data = []
     for item in data_list:
         processed_item = item.copy()

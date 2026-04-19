@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-import reflex as rx
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import reflex as rx
 
 from ourportfolios.components.navbar import navbar
 from ourportfolios.ui.layout import app_shell, page_frame
@@ -13,7 +16,7 @@ from ourportfolios.ui.tokens import (
 )
 
 
-def home_shell(content: rx.Component, on_unmount=None) -> rx.Component:
+def home_shell(content: rx.Component, on_unmount: object = None) -> rx.Component:
     return app_shell(
         navbar(),
         page_frame(

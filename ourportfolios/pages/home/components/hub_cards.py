@@ -165,13 +165,13 @@ def _gradient_overlay(color: str) -> rx.Component:
     )
 
 
-def _hub_card(
+def _hub_card(  # noqa: PLR0913
     title: str,
     description: str,
     gradient_color: str,
     preview: rx.Component,
     cta_label: str,
-    on_click,
+    on_click: object,
 ) -> rx.Component:
     return rx.box(
         _inject_hub_css,
@@ -489,7 +489,10 @@ def selected_framework_card():
         glass_card(
             rx.vstack(
                 rx.text(
-                    "Selected Framework", size="1", weight="medium", color=white(0.35),
+                    "Selected Framework",
+                    size="1",
+                    weight="medium",
+                    color=white(0.35),
                 ),
                 rx.link(
                     rx.text(
@@ -516,7 +519,8 @@ def selected_framework_card():
                             rx.cond(
                                 GlobalFrameworkState.selected_framework.get("author"),
                                 GlobalFrameworkState.selected_framework.get(
-                                    "author", "",
+                                    "author",
+                                    "",
                                 ),
                                 "—",
                             ),
@@ -534,7 +538,10 @@ def selected_framework_card():
                     ),
                     rx.spacer(),
                     accent_btn(
-                        "Change", icon="refresh-cw", href="/framework", icon_left=True,
+                        "Change",
+                        icon="refresh-cw",
+                        href="/framework",
+                        icon_left=True,
                     ),
                     width="100%",
                     align="center",
@@ -549,7 +556,10 @@ def selected_framework_card():
         glass_card(
             rx.vstack(
                 rx.text(
-                    "Selected Framework", size="1", weight="medium", color=white(0.22),
+                    "Selected Framework",
+                    size="1",
+                    weight="medium",
+                    color=white(0.22),
                 ),
                 rx.vstack(
                     rx.text(

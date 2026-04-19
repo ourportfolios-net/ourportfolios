@@ -17,13 +17,13 @@ from ourportfolios.utils.database.models import (
 class TickerBoardState(rx.State):
     search_query: str = ""
 
-    _all_tickers_cache: list[dict[str, Any]]  = rx.Field(default_factory=list)
+    _all_tickers_cache: list[dict[str, Any]] = rx.Field(default_factory=list)
     _cache_loaded: bool = False
 
-    selected_exchange: set[str]  = rx.Field(default_factory=set)
-    selected_industry: set[str]  = rx.Field(default_factory=set)
-    selected_technical_metric: dict[str, list[float]]  = rx.Field(default_factory=dict)
-    selected_fundamental_metric: dict[str, list[float]]  = rx.Field(default_factory=dict)
+    selected_exchange: set[str] = rx.Field(default_factory=set)
+    selected_industry: set[str] = rx.Field(default_factory=set)
+    selected_technical_metric: dict[str, list[float]] = rx.Field(default_factory=dict)
+    selected_fundamental_metric: dict[str, list[float]] = rx.Field(default_factory=dict)
 
     selected_sort_order: str = "ASC"
     selected_sort_option: str = "symbol"
@@ -110,10 +110,8 @@ class TickerBoardState(rx.State):
             rows = await TickerBoardState._fetch_tickers_data()
             self._all_tickers_cache = rows
             self._cache_loaded = True
-        except Exception as e:
-            print(
-                f"TICKER BOARD ERROR: Failed to load ticker cache: {type(e).__name__}: {e}",
-            )
+        except (ValueError, RuntimeError, KeyError):
+            pass
 
     @rx.event
     def set_sort_option(self, option: str) -> None:
@@ -125,11 +123,13 @@ class TickerBoardState(rx.State):
 
     @staticmethod
     def _passes_metric_filters(
-        ticker: dict[str, Any], metrics: dict[str, list[float]],
+        ticker: dict[str, Any],
+        metrics: dict[str, list[float]],
     ) -> bool:
         """Return True if ticker passes every metric range filter."""
+        metric_bounds_count = 2
         for metric, bounds in metrics.items():
-            if len(bounds) != 2:
+            if len(bounds) != metric_bounds_count:
                 continue
             lo, hi = bounds[0], bounds[1]
             val = ticker.get(metric)

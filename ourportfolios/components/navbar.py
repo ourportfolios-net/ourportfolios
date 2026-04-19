@@ -40,7 +40,10 @@ def _dropdown_item(icon: str, label: str, description: str, href: str) -> rx.Com
             rx.icon(tag=icon, size=17, color=purple(0.75), flex_shrink="0"),
             rx.vstack(
                 rx.text(
-                    label, font_size="0.875rem", font_weight="500", color=TEXT_PRIMARY,
+                    label,
+                    font_size="0.875rem",
+                    font_weight="500",
+                    color=TEXT_PRIMARY,
                 ),
                 rx.text(
                     description,
@@ -98,10 +101,16 @@ def _nav_hover_dropdown(label: str, content: rx.Component) -> rx.Component:
 def _analyze_dropdown() -> rx.Component:
     return rx.vstack(
         _dropdown_item(
-            "line-chart", "Market", "Market overview and trends", "/analyze",
+            "line-chart",
+            "Market",
+            "Market overview and trends",
+            "/analyze",
         ),
         _dropdown_item(
-            "factory", "Industries", "Explore sectors and industries", "/select",
+            "factory",
+            "Industries",
+            "Explore sectors and industries",
+            "/select",
         ),
         _dropdown_item(
             "git-compare-arrows",
@@ -117,10 +126,16 @@ def _analyze_dropdown() -> rx.Component:
 def _about_dropdown() -> rx.Component:
     return rx.vstack(
         _dropdown_item(
-            "users", "ourteam", "Meet the people behind ourportfolios", "/about/team",
+            "users",
+            "ourteam",
+            "Meet the people behind ourportfolios",
+            "/about/team",
         ),
         _dropdown_item(
-            "briefcase", "ourportfolios", "Learn more about the project", "/about",
+            "briefcase",
+            "ourportfolios",
+            "Learn more about the project",
+            "/about",
         ),
         spacing="0",
         width="17rem",
@@ -147,7 +162,12 @@ def _portfolio_link() -> rx.Component:
 
 
 def _menu_item(
-    icon: str, label: str, href: str = "", on_click=None, danger: bool = False,
+    icon: str,
+    label: str,
+    href: str = "",
+    on_click: object = None,
+    *,
+    danger: bool = False,
 ) -> rx.Component:
     fg = "rgba(239,68,68,0.75)" if danger else white(0.6)
     hover_bg = "rgba(239,68,68,0.07)" if danger else white(0.05)
@@ -307,17 +327,17 @@ def _logo() -> rx.Component:
 
 def navbar() -> rx.Component:
     # ── Shared background/blur styles ────────────────────────────────────────
-    bar_style = dict(
-        position="fixed",
-        top="0",
-        width="100%",
-        z_index="50",
-        padding_y="1rem",
-        background="rgba(10, 10, 10, 0.4)",
-        backdrop_filter="blur(2rem)",
-        border_bottom=f"1px solid {white(0.05)}",
-    )
-
+    bar_style = {
+        "position": "fixed",
+        "top": "0",
+        "width": "100%",
+        "z_index": "50",
+        "padding_y": "1rem",
+        "background": "rgba(10, 10, 10, 0.4)",
+        "backdrop_filter": "blur(18px)",
+        "border_bottom": f"1px solid {white(0.09)}",
+        "box_shadow": "0 10px 40px rgba(0,0,0,0.32)",
+    }
     # ── Mobile bar: logo + auth on row 1, full-width search on row 2 ─────────
     mobile_bar = rx.mobile_only(
         rx.box(

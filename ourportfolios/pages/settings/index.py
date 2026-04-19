@@ -1,4 +1,4 @@
-"""Place at: ourportfolios/pages/settings/index.py"""
+"""Settings page route module."""
 
 import reflex as rx
 

@@ -21,7 +21,7 @@ class FinancialStatementState(rx.State):
         self.expanded_table = idx
 
     @rx.event
-    def handle_dialog_open(self, value: bool):
+    def handle_dialog_open(self, *, value: bool):
         """Handle dialog open/close state."""
         if not value:
             self.expanded_table = -1

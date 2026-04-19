@@ -3,7 +3,7 @@
 import reflex as rx
 
 
-def badge_button(text: str, **props) -> rx.Component:
+def badge_button(text: str, **props: object) -> rx.Component:
     """Create a badge-style button with pulsing dot."""
     padding_x = props.pop("padding_x", "1rem")
     padding_y = props.pop("padding_y", "0.375rem")

@@ -27,8 +27,9 @@ class ShinyText(rx.Component):
     delay: rx.Var[float] = 0.0
 
 
-def shiny_text(
+def shiny_text(  # noqa: PLR0913
     text: str,
+    *,
     disabled: bool = False,
     speed: float = 2.0,
     color: str = "#b5b5b5",
@@ -38,7 +39,7 @@ def shiny_text(
     pause_on_hover: bool = False,
     direction: Literal["left", "right"] = "left",
     delay: float = 0.0,
-    **props,
+    **props: object,
 ) -> rx.Component:
     """Create an animated text with gradient shine effect."""
     # Coerce color values to plain strings for the component

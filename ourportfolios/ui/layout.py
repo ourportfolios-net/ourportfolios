@@ -38,7 +38,7 @@ def page_frame(
     )
 
 
-def app_shell(*children: rx.Component, **props) -> rx.Component:
+def app_shell(*children: rx.Component, **props: object) -> rx.Component:
     return rx.box(
         *children,
         background=APP_BG,

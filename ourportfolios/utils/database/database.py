@@ -24,6 +24,7 @@ load_dotenv()
 
 PRICE_DB_URI = os.getenv("PRICE_DB_URI")
 COMPANY_DB_URI = os.getenv("COMPANY_DB_URI")
+_MISSING_DB_URL_ERROR = "Database URL cannot be None. Check environment variables."
 
 
 def _ensure_async_pg(url: str | None) -> str:
@@ -34,7 +35,7 @@ def _ensure_async_pg(url: str | None) -> str:
     like sslmode that should be in connect_args for asyncpg.
     """
     if url is None:
-        raise ValueError("Database URL cannot be None. Check environment variables.")
+        raise ValueError(_MISSING_DB_URL_ERROR)
     if "?" in url:
         url = url.split("?")[0]
 
@@ -53,7 +54,7 @@ def _clean_sync_pg(url: str | None) -> str:
     Removes sslmode and other query params that should be in connect_args.
     """
     if url is None:
-        raise ValueError("Database URL cannot be None. Check environment variables.")
+        raise ValueError(_MISSING_DB_URL_ERROR)
     if "?" in url:
         url = url.split("?")[0]
     return url
@@ -83,10 +84,12 @@ company_engine = create_async_engine(
 
 # Sync engines for pandas to_sql operations
 price_sync_engine = create_engine(
-    _clean_sync_pg(PRICE_DB_URI), connect_args={"sslmode": "require"},
+    _clean_sync_pg(PRICE_DB_URI),
+    connect_args={"sslmode": "require"},
 )
 company_sync_engine = create_engine(
-    _clean_sync_pg(COMPANY_DB_URI), connect_args={"sslmode": "require"},
+    _clean_sync_pg(COMPANY_DB_URI),
+    connect_args={"sslmode": "require"},
 )
 
 

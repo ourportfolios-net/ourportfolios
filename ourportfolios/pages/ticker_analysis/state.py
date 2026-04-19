@@ -264,7 +264,7 @@ class State(SessionIsolatedStateMixin, rx.State):
 
         except SessionCancelledError:
             return
-        except (AttributeError, ValueError, KeyError, RuntimeError):
+        except (AttributeError, ValueError, KeyError, RuntimeError) as e:
             async with self:
                 self.overview_df = pd.DataFrame()
                 self.shareholders_df = pd.DataFrame()
@@ -334,7 +334,7 @@ class State(SessionIsolatedStateMixin, rx.State):
 
     @rx.event
     @session_isolated
-    async def load_transformed_dataframes(self):
+    async def load_transformed_dataframes(self):  # noqa: C901,PLR0912,PLR0915
         ticker = self.ticker
         if not self.is_mounted():
             return
@@ -360,7 +360,7 @@ class State(SessionIsolatedStateMixin, rx.State):
                 self.balance_sheet = result.get("transformed_balance_sheet", [])
                 self.cash_flow = result.get("transformed_cash_flow", [])
 
-        except Exception as e:
+        except (ValueError, RuntimeError, KeyError) as e:
             async with self:
                 self.transformed_dataframes = {
                     "transformed_income_statement": [],
@@ -460,7 +460,7 @@ class State(SessionIsolatedStateMixin, rx.State):
         chart_data = {}
         categorized_ratios = self.transformed_dataframes.get("categorized_ratios", {})
 
-        for category in self.selected_metrics.keys():
+        for category in self.selected_metrics:
             if category not in categorized_ratios:
                 chart_data[category] = []
                 continue
@@ -515,7 +515,9 @@ class State(SessionIsolatedStateMixin, rx.State):
             palettes = ["accent", "plum", "iris"]
             indices = [6, 7, 8]
             colors = [
-                rx.color(palette, idx, True) for palette in palettes for idx in indices
+                rx.color(palette, idx, alpha=True)
+                for palette in palettes
+                for idx in indices
             ]
 
             pie_data = [
@@ -524,10 +526,11 @@ class State(SessionIsolatedStateMixin, rx.State):
             ]
             for idx, d in enumerate(pie_data):
                 d["fill"] = colors[idx % len(colors)]
-            return pie_data
         except (ValueError, KeyError, IndexError):
             # print(f"Error: {e}")
             return []
+        else:
+            return pie_data
 
     @rx.event
     def set_profile_dialog_open(self, *, value: bool):

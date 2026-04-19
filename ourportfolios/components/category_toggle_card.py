@@ -1,5 +1,7 @@
 """Reusable category toggle card used across settings UIs."""
 
+from collections.abc import Callable
+
 import reflex as rx
 
 from ourportfolios.styles import white
@@ -7,10 +9,11 @@ from ourportfolios.styles import white
 
 def category_toggle_card(
     title: str,
-    checked,
-    on_change,
+    *,
+    checked: bool | rx.Var[bool],
+    on_change: Callable[..., object],
     body: rx.Component,
-    on_click=None,
+    on_click: Callable[..., object] | None = None,
 ) -> rx.Component:
     card = rx.box(
         rx.vstack(

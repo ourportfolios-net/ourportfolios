@@ -267,7 +267,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         super().on_unmount()
 
     @rx.event(background=True)
-    async def auto_load_data(self) -> None:
+    async def auto_load_data(self) -> None:  # noqa: PLR0911
         try:
             async with self:
                 if self._data_loaded or not self.is_mounted():
@@ -299,7 +299,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         # block other state updates (e.g. add_ticker_to_compare) while the
         # multi-table join is running.
         try:
-            all_tickers = await TickerBoardState._fetch_tickers_data()
+            all_tickers = await TickerBoardState._fetch_tickers_data()  # noqa: SLF001
         except (TimeoutError, AttributeError, RuntimeError):
             # Failed to load ticker cache; continue without it
             return
@@ -308,8 +308,8 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                 if not self.is_mounted():
                     return
                 ticker_board_state = await self.get_state(TickerBoardState)
-                ticker_board_state._all_tickers_cache = all_tickers
-                ticker_board_state._cache_loaded = True
+                ticker_board_state._all_tickers_cache = all_tickers  # noqa: SLF001
+                ticker_board_state._cache_loaded = True  # noqa: SLF001
                 self._data_loaded = True
         except asyncio.CancelledError:
             return
@@ -324,6 +324,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         # Lazily load compare metrics the first time the user opens compare.
         if self.view_mode == "compare" and not self.all_metrics:
             return TickersPageState.load_compare_metrics
+        return None
 
     @rx.event(background=True)
     async def load_compare_metrics(self) -> None:
@@ -603,7 +604,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
 
     @rx.event(background=True)
     @session_isolated
-    async def add_ticker_to_compare(self, ticker: str):
+    async def add_ticker_to_compare(self, ticker: str):  # noqa: C901,PLR0911,PLR0912,PLR0915
         # ── Phase 1: guard + optimistic update (sends state to frontend immediately)
         duplicate = False
         time_period_copy = "quarter"
@@ -788,7 +789,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                     for t in tickers_to_fetch
                 ]
                 results = await asyncio.gather(*tasks, return_exceptions=True)
-                for ticker, result in zip(tickers_to_fetch, results):
+                for ticker, result in zip(tickers_to_fetch, results, strict=True):
                     if isinstance(result, Exception):
                         ticker_data[ticker] = None
                         continue
@@ -809,9 +810,9 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                 self.is_loading_historical = False
 
     @staticmethod
-    def _merge_one_ticker_into_historical_data(
+    def _merge_one_ticker_into_historical_data(  # noqa: C901,PLR0912
         ticker: str,
-        ticker_data: Any,
+        ticker_data: object,
         existing: dict[str, list[dict[str, Any]]],
         time_period: str,
     ) -> dict[str, list[dict[str, Any]]]:
@@ -868,7 +869,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         return result
 
     @staticmethod
-    def _extract_historical_data_static(
+    def _extract_historical_data_static(  # noqa: C901,PLR0912
         ticker_data: dict[str, Any],
         time_period: str,
     ) -> dict[str, list[dict[str, Any]]]:
@@ -931,7 +932,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                         latest_values[ticker][metric_key] = latest_period[ticker]
         return dict(latest_values)
 
-    def _format_value(self, metric_name: str, value: Any) -> str:
+    def _format_value(self, metric_name: str, value: object) -> str:
         if value is None or (isinstance(value, float) and pd.isna(value)):
             return "N/A"
         if "(%)" in metric_name or "Margin" in metric_name or "YoY" in metric_name:

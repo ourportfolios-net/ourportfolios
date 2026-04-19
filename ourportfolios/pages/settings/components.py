@@ -1,4 +1,6 @@
-"""Place at: ourportfolios/pages/settings/components.py"""
+"""Settings page UI components."""
+
+from collections.abc import Callable
 
 import reflex as rx
 
@@ -75,7 +77,7 @@ def _dialog_label(text: str) -> rx.Component:
     )
 
 
-def _ghost_btn(label: str, on_click) -> rx.Component:
+def _ghost_btn(label: str, on_click: Callable[..., object]) -> rx.Component:
     return rx.box(
         rx.text(label, size="2", font_weight="500"),
         on_click=on_click,
@@ -83,7 +85,12 @@ def _ghost_btn(label: str, on_click) -> rx.Component:
     )
 
 
-def _loading_btn(label: str, on_click, loading_var) -> rx.Component:
+def _loading_btn(
+    label: str,
+    on_click: Callable[..., object],
+    *,
+    loading_var: bool | rx.Var[bool],
+) -> rx.Component:
     return rx.box(
         rx.cond(
             loading_var,
@@ -100,7 +107,7 @@ def _loading_btn(label: str, on_click, loading_var) -> rx.Component:
     )
 
 
-def _feedback(msg, is_error: bool = False) -> rx.Component:
+def _feedback(msg: str, *, is_error: bool = False) -> rx.Component:
     color = ERROR_COLOR if is_error else "rgba(52,211,153,0.9)"
     return rx.hstack(
         rx.icon("circle-alert" if is_error else "check-check", size=12, color=color),
@@ -124,7 +131,7 @@ def _password_action_btn() -> rx.Component:
     )
 
 
-def _edit_link(label: str, on_click) -> rx.Component:
+def _edit_link(label: str, on_click: Callable[..., object]) -> rx.Component:
     return rx.text(
         label,
         size="1",
@@ -143,7 +150,11 @@ def _edit_link(label: str, on_click) -> rx.Component:
 # ourselves so title and X live in the same hstack — zero wasted vertical space.
 
 
-def _dlg_header(title: str, subtitle: str, on_close) -> rx.Component:
+def _dlg_header(
+    title: str,
+    subtitle: str,
+    on_close: Callable[..., object],
+) -> rx.Component:
     return rx.hstack(
         rx.vstack(
             rx.text(
@@ -188,7 +199,7 @@ def _dlg_header(title: str, subtitle: str, on_close) -> rx.Component:
 # ── Card shell ────────────────────────────────────────────────────────────────
 
 
-def _card(*children, border: str = CARD_BORDER) -> rx.Component:
+def _card(*children: rx.Component, border: str = CARD_BORDER) -> rx.Component:
     return rx.box(
         *children,
         background=CARD_BG,
@@ -617,7 +628,7 @@ def _exp_card(label: str, description: str) -> rx.Component:
     return category_toggle_card(
         title=label,
         checked=is_active,
-        on_change=lambda checked: SettingsState.set_experience_level(label),
+        on_change=lambda _checked: SettingsState.set_experience_level(label),
         on_click=SettingsState.set_experience_level(label),
         body=rx.text(
             description,

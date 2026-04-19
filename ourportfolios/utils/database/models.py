@@ -15,7 +15,7 @@ class Base(DeclarativeBase):
 
 class OverviewORM(Base):
     __tablename__ = "overview_df"
-    __table_args__ = {"schema": "tickers"}
+    __table_args__ = ({"schema": "tickers"},)
 
     symbol: Mapped[str] = mapped_column(String, primary_key=True)
     industry: Mapped[str | None] = mapped_column(String)
@@ -25,7 +25,7 @@ class OverviewORM(Base):
 
 class PriceORM(Base):
     __tablename__ = "price_df"
-    __table_args__ = {"schema": "tickers"}
+    __table_args__ = ({"schema": "tickers"},)
 
     symbol: Mapped[str] = mapped_column(String, primary_key=True)
     pct_price_change: Mapped[float | None] = mapped_column(Float)
@@ -35,7 +35,7 @@ class PriceORM(Base):
 
 class ProfileORM(Base):
     __tablename__ = "profile_df"
-    __table_args__ = {"schema": "tickers"}
+    __table_args__ = ({"schema": "tickers"},)
 
     symbol: Mapped[str] = mapped_column(String, primary_key=True)
     company_name: Mapped[str | None] = mapped_column(String)
@@ -43,7 +43,7 @@ class ProfileORM(Base):
 
 class StatsORM(Base):
     __tablename__ = "stats_df"
-    __table_args__ = {"schema": "tickers"}
+    __table_args__ = ({"schema": "tickers"},)
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     symbol: Mapped[str | None] = mapped_column(String)
@@ -66,7 +66,7 @@ class StatsORM(Base):
 
 class VNIndexORM(Base):
     __tablename__ = "vnindex"
-    __table_args__ = {"schema": "market"}
+    __table_args__ = ({"schema": "market"},)
 
     time: Mapped[datetime] = mapped_column(DateTime, primary_key=True)
     close: Mapped[float | None] = mapped_column(Float)
@@ -74,7 +74,7 @@ class VNIndexORM(Base):
 
 class FrameworkORM(Base):
     __tablename__ = "frameworks_df"
-    __table_args__ = {"schema": "frameworks"}
+    __table_args__ = ({"schema": "frameworks"},)
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     title: Mapped[str | None] = mapped_column(Text)
@@ -87,7 +87,9 @@ class FrameworkORM(Base):
     industry: Mapped[str | None] = mapped_column(String(100))
     metrics: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
     framework_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), unique=True, default=uuid.uuid4,
+        UUID(as_uuid=True),
+        unique=True,
+        default=uuid.uuid4,
     )
 
     metric_rows: Mapped[list["FrameworkMetricsORM"]] = relationship(
@@ -100,7 +102,7 @@ class FrameworkORM(Base):
 
 class FrameworkMetricsORM(Base):
     __tablename__ = "framework_metrics_df"
-    __table_args__ = {"schema": "frameworks"}
+    __table_args__ = ({"schema": "frameworks"},)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     category: Mapped[str] = mapped_column(String(100), nullable=False)

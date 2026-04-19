@@ -14,7 +14,9 @@ from ourportfolios.styles import (
 
 def _skel(w: str, h: str) -> rx.Component:
     return rx.skeleton(
-        rx.box(width=w, height=h), loading=True, border_radius="0.375rem",
+        rx.box(width=w, height=h),
+        loading=True,
+        border_radius="0.375rem",
     )
 
 
@@ -66,7 +68,7 @@ def skeleton_card() -> rx.Component:
     )
 
 
-def category_filter_button(category):
+def category_filter_button(category: object) -> rx.Component:
     is_active = FrameworkState.active_category == category.value
 
     return rx.cond(
@@ -86,7 +88,7 @@ def category_filter_button(category):
     )
 
 
-def framework_card(framework):
+def framework_card(framework: object) -> rx.Component:
     return rx.box(
         rx.vstack(
             rx.hstack(

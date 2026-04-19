@@ -1,9 +1,11 @@
-"""Place at: ourportfolios/state/prefs_state.py
-"""
+"""State for user preference loading and application."""
 
 import reflex as rx
 
 from ourportfolios.auth_config import AUTH_AVAILABLE, get_supabase
+from ourportfolios.state.auth_state import AuthState
+from ourportfolios.state.heatmap import HeatmapState
+from ourportfolios.state.home_state import HomeState
 
 _DEFAULT_PERIOD = "1D"
 
@@ -15,8 +17,6 @@ class PrefsState(rx.State):
 
     @rx.event
     async def load(self):
-        from ourportfolios.state.auth_state import AuthState
-
         auth = await self.get_state(AuthState)
         if not auth.is_authenticated or not AUTH_AVAILABLE:
             return
@@ -31,15 +31,11 @@ class PrefsState(rx.State):
                 self.default_chart_period = meta["default_chart_period"]
                 self._pref_explicitly_set = True
             self.experience_level = meta.get("experience_level", "Beginner")
-        except Exception:
+        except (ValueError, RuntimeError, KeyError):
             pass
 
     @rx.event
     async def apply_to_heatmap(self):
-        from ourportfolios.state.auth_state import AuthState
-        from ourportfolios.state.heatmap import HeatmapState
-        from ourportfolios.state.home_state import HomeState
-
         auth = await self.get_state(AuthState)
         if auth.is_authenticated and AUTH_AVAILABLE:
             await self.load()

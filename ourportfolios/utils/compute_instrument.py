@@ -5,7 +5,7 @@ import pandas as pd
 
 
 def compute_ma(df: pd.DataFrame, ma_period: int = 200) -> list[dict[str, Any]]:
-    """Calculates the Moving Average (MA)."""
+    """Calculate the Moving Average (MA)."""
     df = df.copy()
     df["value"] = df["close"].ffill().rolling(window=ma_period).mean()
     df["value"] = round(df["value"], 2)
@@ -15,7 +15,7 @@ def compute_ma(df: pd.DataFrame, ma_period: int = 200) -> list[dict[str, Any]]:
 
 
 def compute_rsi(df: pd.DataFrame, rsi_period: int = 14) -> list[dict[str, Any]]:
-    """Calculates the Relative Strength Index (RSI)."""
+    """Calculate the Relative Strength Index (RSI)."""
     df = df.copy()
     df["diff"] = df["close"].diff()
     df["gains"] = np.where(df["diff"] > 0, df["diff"], 0)

@@ -23,7 +23,7 @@ from ourportfolios.styles import (
 # ── Filter sliders ────────────────────────────────────────────────────────────
 
 
-def _metric_slider(metric_tag: str, option: str):
+def _metric_slider(metric_tag: str, option: str) -> rx.Component:
     return rx.vstack(
         rx.hstack(
             rx.text(
@@ -39,8 +39,8 @@ def _metric_slider(metric_tag: str, option: str):
             rx.text(
                 rx.cond(
                     option == "F",
-                    f"{TickersPageState.fundamentals_current_value[metric_tag][0]} – {TickersPageState.fundamentals_current_value[metric_tag][1]}",
-                    f"{TickersPageState.technicals_current_value[metric_tag][0]} – {TickersPageState.technicals_current_value[metric_tag][1]}",
+                    f"{TickersPageState.fundamentals_current_value[metric_tag][0]} - {TickersPageState.fundamentals_current_value[metric_tag][1]}",
+                    f"{TickersPageState.technicals_current_value[metric_tag][0]} - {TickersPageState.technicals_current_value[metric_tag][1]}",
                 ),
                 size="2",
                 color=white(0.45),
@@ -59,19 +59,23 @@ def _metric_slider(metric_tag: str, option: str):
             on_change=lambda value_range: rx.cond(
                 option == "F",
                 TickersPageState.update_fundamental_value(
-                    metric=metric_tag, value=value_range,
+                    metric=metric_tag,
+                    value=value_range,
                 ),
                 TickersPageState.update_technical_value(
-                    metric=metric_tag, value=value_range,
+                    metric=metric_tag,
+                    value=value_range,
                 ),
             ),
             on_value_commit=lambda value_range: rx.cond(
                 option == "F",
                 TickersPageState.set_fundamental_metric(
-                    metric=metric_tag, value=value_range,
+                    metric=metric_tag,
+                    value=value_range,
                 ),
                 TickersPageState.set_technical_metric(
-                    metric=metric_tag, value=value_range,
+                    metric=metric_tag,
+                    value=value_range,
                 ),
             ),
             key=f"{metric_tag}_{TickersPageState.slider_reset_key}",
@@ -117,7 +121,7 @@ def _metrics_filter(option: str = "F") -> rx.Component:
     )
 
 
-def _categorical_filter():
+def _categorical_filter() -> rx.Component:
     return rx.vstack(
         rx.vstack(
             rx.text("EXCHANGE", style={**LABEL_STYLE, "font_size": "0.8125rem"}),
@@ -128,7 +132,8 @@ def _categorical_filter():
                         item[0],
                         checked=item[1],
                         on_change=lambda value: TickersPageState.set_exchange(
-                            exchange=item[0], value=value,
+                            exchange=item[0],
+                            value=value,
                         ),
                         size="3",
                         color_scheme="violet",
@@ -150,7 +155,8 @@ def _categorical_filter():
                             item[0],
                             checked=item[1],
                             on_change=lambda value: TickersPageState.set_industry(
-                                industry=item[0], value=value,
+                                industry=item[0],
+                                value=value,
                             ),
                             size="3",
                             color_scheme="violet",
@@ -220,13 +226,13 @@ def _filter_tabs() -> rx.Component:
     )
 
 
-def _selected_filter_chip(item: str, filter: str) -> rx.Component:
+def _selected_filter_chip(item: str, filter_name: str) -> rx.Component:
     label = rx.cond(
-        filter == "fundamental",
-        f"{item}: {TickersPageState.fundamentals_current_value.get(item, [0.00, 0.00])[0]}–{TickersPageState.fundamentals_current_value.get(item, [0.00, 0.00])[1]}",
+        filter_name == "fundamental",
+        f"{item}: {TickersPageState.fundamentals_current_value.get(item, [0.00, 0.00])[0]} - {TickersPageState.fundamentals_current_value.get(item, [0.00, 0.00])[1]}",
         rx.cond(
-            filter == "technical",
-            f"{item}: {TickersPageState.technicals_current_value.get(item, [0.00, 0.00])[0]}–{TickersPageState.technicals_current_value.get(item, [0.00, 0.00])[1]}",
+            filter_name == "technical",
+            f"{item}: {TickersPageState.technicals_current_value.get(item, [0.00, 0.00])[0]} - {TickersPageState.technicals_current_value.get(item, [0.00, 0.00])[1]}",
             item,
         ),
     )
@@ -291,7 +297,11 @@ def filter_button() -> rx.Component:
                 },
             ),
             width=rx.breakpoints(
-                initial="27em", xs="30em", sm="40em", md="44em", lg="56em",
+                initial="27em",
+                xs="30em",
+                sm="40em",
+                md="44em",
+                lg="56em",
             ),
             height="30em",
             padding="0",
@@ -513,14 +523,16 @@ def _metric_category_card(category: str) -> rx.Component:
     return category_toggle_card(
         title=category,
         checked=TickersPageState.category_selection_state[category],
-        on_change=lambda checked: TickersPageState.toggle_category(category),
+        on_change=lambda _checked: TickersPageState.toggle_category(category),
         body=rx.box(
             rx.foreach(
                 TickersPageState.all_metrics[category],
                 lambda metric: rx.hstack(
                     rx.checkbox(
                         checked=TickersPageState.metric_selection_state[metric],
-                        on_change=lambda checked: TickersPageState.toggle_metric(metric),
+                        on_change=lambda _checked: TickersPageState.toggle_metric(
+                            metric,
+                        ),
                         size="1",
                         color_scheme="violet",
                     ),

@@ -7,7 +7,7 @@ _GLASS_HOVER_BG = "rgba(255, 255, 255, 0.055)"
 _GLASS_HOVER_BORDER = "rgba(255, 255, 255, 0.13)"
 
 
-def glass_card(*children, **props) -> rx.Component:
+def glass_card(*children: rx.Component, **props: object) -> rx.Component:
     padding = props.pop("padding", "1rem")
     border_radius = props.pop("border_radius", "0.875rem")
     background = props.pop("background", _GLASS_BG)
@@ -35,7 +35,7 @@ def glass_card(*children, **props) -> rx.Component:
     )
 
 
-def card_wrapper(*content, **props):
+def card_wrapper(*content: rx.Component, **props: object) -> rx.Component:
     return rx.card(
         *content,
         border="none",

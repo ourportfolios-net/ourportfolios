@@ -38,26 +38,26 @@ class InstructivenessCard(rx.Component):
     tag = "InstructivenessCard"
 
 
-def transparency_card(**props) -> rx.Component:
+def transparency_card(**props: object) -> rx.Component:
     """Create a transparency interactive bento card."""
     return TransparencyCard.create(**props)
 
 
-def focused_card(**props) -> rx.Component:
+def focused_card(**props: object) -> rx.Component:
     """Create a focused interactive bento card."""
     return FocusedCard.create(**props)
 
 
-def conciseness_card(**props) -> rx.Component:
+def conciseness_card(**props: object) -> rx.Component:
     """Create a conciseness interactive bento card."""
     return ConcisenessCard.create(**props)
 
 
-def reliability_card(**props) -> rx.Component:
+def reliability_card(**props: object) -> rx.Component:
     """Create a reliability interactive bento card."""
     return ReliabilityCard.create(**props)
 
 
-def instructiveness_card(**props) -> rx.Component:
+def instructiveness_card(**props: object) -> rx.Component:
     """Create an instructiveness interactive bento card."""
     return InstructivenessCard.create(**props)

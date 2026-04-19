@@ -1,4 +1,4 @@
-"""Place at: ourportfolios/pages/auth/reset_callback.py"""
+"""Password reset callback page."""
 
 import reflex as rx
 

@@ -37,7 +37,7 @@ _BTN_ACTIVE = {
 }
 
 
-def _ma_toggle(label: str, period_key: str):
+def _ma_toggle(label: str, period_key: str) -> rx.Component:
     """Single MA toggle pill."""
     return rx.box(
         rx.hstack(
@@ -75,7 +75,7 @@ def _ma_toggle(label: str, period_key: str):
     )
 
 
-def _rsi_toggle():
+def _rsi_toggle() -> rx.Component:
     return rx.box(
         rx.text("RSI14", size="1", weight="medium"),
         padding="0.25em 0.6em",
@@ -101,7 +101,7 @@ def _rsi_toggle():
     )
 
 
-def _chart_type_toggle():
+def _chart_type_toggle() -> rx.Component:
     return rx.hstack(
         rx.box(
             rx.icon("chart-candlestick", size=14),
@@ -224,7 +224,9 @@ def price_chart_card():
                             white(0.6),
                         ),
                         font_weight=rx.cond(
-                            PriceChartState.selected_interval == "1D", "600", "500",
+                            PriceChartState.selected_interval == "1D",
+                            "600",
+                            "500",
                         ),
                         font_size="0.8125rem",
                         border_radius="0.5rem",
@@ -251,7 +253,9 @@ def price_chart_card():
                             white(0.6),
                         ),
                         font_weight=rx.cond(
-                            PriceChartState.selected_interval == "1W", "600", "500",
+                            PriceChartState.selected_interval == "1W",
+                            "600",
+                            "500",
                         ),
                         font_size="0.8125rem",
                         border_radius="0.5rem",
@@ -278,7 +282,9 @@ def price_chart_card():
                             white(0.6),
                         ),
                         font_weight=rx.cond(
-                            PriceChartState.selected_interval == "1M", "600", "500",
+                            PriceChartState.selected_interval == "1M",
+                            "600",
+                            "500",
                         ),
                         font_size="0.8125rem",
                         border_radius="0.5rem",

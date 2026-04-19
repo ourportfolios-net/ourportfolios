@@ -11,7 +11,8 @@ async def get_suggest_ticker(
     search_query: str,
     return_type: str,
 ) -> tuple[str, Any] | pd.DataFrame:
-    """Attempt to retrieve data with strategy:
+    """Attempt to retrieve data with strategy.
+
     1. Fetch ticker with full query at first
     2. Fetch with all permutation of the search query if (1) failed to returns any data
     3. Fetch with first letter as the final result if still no data retrieved
@@ -70,7 +71,7 @@ async def get_suggest_ticker(
 
 async def fetch_ticker(
     match_query: str = "all",
-    params: Any = None,
+    params: dict[str, object] | None = None,
     return_type: str = "df",
 ) -> pd.DataFrame:
     """Fetch data from NeonDB.
@@ -112,5 +113,5 @@ async def fetch_ticker(
             result = await session.execute(text(completed_query), params or {})
             rows = result.mappings().all()
             return pd.DataFrame([dict(row) for row in rows])
-    except Exception:
+    except (ValueError, RuntimeError, KeyError):
         return pd.DataFrame()

@@ -42,25 +42,29 @@ _COMPARE_BTN = {
 
 _SKELETON_ROW_COUNT = 12
 _ROW_PADDING = "0.85em 1.25em"
+_THOUSAND = 1_000
+_MILLION = 1_000_000
+_BILLION = 1_000_000_000
+_TRILLION = 1_000_000_000_000
 
 
 # ── Display helpers ────────────────────────────────────────────────────────────
 
 
-def _compact_number(val, size: str = "2") -> rx.Component:
+def _compact_number(val: float, size: str = "2") -> rx.Component:
     """Format a number with K/M/B/T suffix — uses TEXT_SECONDARY."""
     return rx.cond(
-        val >= 1_000_000_000_000,
-        rx.text(f"{val / 1_000_000_000_000:.1f}T", size=size, color=TEXT_SECONDARY),
+        val >= _TRILLION,
+        rx.text(f"{val / _TRILLION:.1f}T", size=size, color=TEXT_SECONDARY),
         rx.cond(
-            val >= 1_000_000_000,
-            rx.text(f"{val / 1_000_000_000:.1f}B", size=size, color=TEXT_SECONDARY),
+            val >= _BILLION,
+            rx.text(f"{val / _BILLION:.1f}B", size=size, color=TEXT_SECONDARY),
             rx.cond(
-                val >= 1_000_000,
-                rx.text(f"{val / 1_000_000:.1f}M", size=size, color=TEXT_SECONDARY),
+                val >= _MILLION,
+                rx.text(f"{val / _MILLION:.1f}M", size=size, color=TEXT_SECONDARY),
                 rx.cond(
-                    val >= 1_000,
-                    rx.text(f"{val / 1_000:.0f}K", size=size, color=TEXT_SECONDARY),
+                    val >= _THOUSAND,
+                    rx.text(f"{val / _THOUSAND:.0f}K", size=size, color=TEXT_SECONDARY),
                     rx.cond(
                         val > 0,
                         rx.text(val, size=size, color=TEXT_SECONDARY),
@@ -273,7 +277,8 @@ def ticker_row(ticker: dict) -> rx.Component:
                     ),
                     rx.box(
                         rx.tooltip(
-                            _compare_btn(symbol), content="Add to comparison board",
+                            _compare_btn(symbol),
+                            content="Add to comparison board",
                         ),
                         on_click=rx.stop_propagation,
                         display="flex",
@@ -306,7 +311,9 @@ def ticker_row(ticker: dict) -> rx.Component:
 
 def _skel(w: str, h: str = "0.8125rem") -> rx.Component:
     return rx.skeleton(
-        rx.box(width=w, height=h), loading=True, border_radius="0.3125rem",
+        rx.box(width=w, height=h),
+        loading=True,
+        border_radius="0.3125rem",
     )
 
 
@@ -314,7 +321,9 @@ def _skeleton_row() -> rx.Component:
     return rx.hstack(
         rx.vstack(
             rx.hstack(
-                _skel("5rem", "1.25rem"), _skel("2.5rem", "1.125rem"), spacing="2",
+                _skel("5rem", "1.25rem"),
+                _skel("2.5rem", "1.125rem"),
+                spacing="2",
             ),
             _skel("12.5rem", "0.8125rem"),
             spacing="2",
@@ -369,7 +378,10 @@ def _empty_state() -> rx.Component:
                 justify_content="center",
             ),
             rx.text(
-                "No tickers found", size="4", weight="medium", color=TEXT_SECONDARY,
+                "No tickers found",
+                size="4",
+                weight="medium",
+                color=TEXT_SECONDARY,
             ),
             rx.text(
                 "Try adjusting your search or filters.",
