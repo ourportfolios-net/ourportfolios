@@ -22,6 +22,8 @@ from ourportfolios.utils.session_manager import (
     session_isolated,
 )
 
+_CATEGORY_DATA_TUPLE_MIN_ITEMS = 2
+
 
 class State(SessionIsolatedStateMixin, rx.State):
     if TYPE_CHECKING:  # for Pylance
@@ -116,7 +118,6 @@ class State(SessionIsolatedStateMixin, rx.State):
     def on_mount(self):
         super().on_mount()
         self._data_loaded = False
-        return State.auto_load_data
 
     def on_unmount(self):
         self._is_mounted = False
@@ -142,48 +143,62 @@ class State(SessionIsolatedStateMixin, rx.State):
         self.error_company = ""
         self.error_financial = ""
 
+    def _reset_data_state(self, ticker: str) -> None:
+        self._current_ticker = ticker
+        self._data_loaded = False
+        self._data_ticker = ""
+
+        self.overview_df = pd.DataFrame()
+        self.profile_df = pd.DataFrame()
+        self.shareholders_df = pd.DataFrame()
+        self.events_df = pd.DataFrame()
+        self.news_df = pd.DataFrame()
+        self.officers_df = pd.DataFrame()
+        self.price_data = pd.DataFrame()
+        self.transformed_dataframes = {}
+        self.income_statement = []
+        self.balance_sheet = []
+        self.cash_flow = []
+        self.available_metrics_by_category = {}
+        self.selected_metrics = {}
+
+        self.error_company = ""
+        self.error_financial = ""
+
+        self.render_key += 1
+
+        self._is_loading_company = True
+        self._is_loading_financial = True
+        self._is_loading_price = True
+
     @rx.event(background=True)
     @session_isolated
     async def auto_load_data(self):
         """Load page data in the background after mount."""
+        # We cannot use self.ticker immediately sometimes if it's still hydrating.
+        # Fall back to router params.
+        ticker = ""
+        for _ in range(15):
+            async with self:
+                if self.ticker:
+                    ticker = self.ticker
+                    break
+                elif self.router.page.params.get("ticker"):
+                    ticker = self.router.page.params.get("ticker")
+                    break
+            await asyncio.sleep(0.1)
+
         async with self:
             if not self.is_mounted():
                 return
 
-            if not self.ticker:
+            if not ticker:
                 self._is_loading_company = False
                 self._is_loading_financial = False
                 self._is_loading_price = False
                 return
 
-            ticker = self.ticker
-
-            self._current_ticker = ticker
-            self._data_loaded = False
-            self._data_ticker = ""
-
-            self.overview_df = pd.DataFrame()
-            self.profile_df = pd.DataFrame()
-            self.shareholders_df = pd.DataFrame()
-            self.events_df = pd.DataFrame()
-            self.news_df = pd.DataFrame()
-            self.officers_df = pd.DataFrame()
-            self.price_data = pd.DataFrame()
-            self.transformed_dataframes = {}
-            self.income_statement = []
-            self.balance_sheet = []
-            self.cash_flow = []
-            self.available_metrics_by_category = {}
-            self.selected_metrics = {}
-
-            self.error_company = ""
-            self.error_financial = ""
-
-            self.render_key += 1
-
-            self._is_loading_company = True
-            self._is_loading_financial = True
-            self._is_loading_price = True
+            self._reset_data_state(ticker)
 
             # Set the chart interval from user prefs BEFORE load_state runs.
             # load_state calls self._resample(df_daily, self.selected_interval),
@@ -395,11 +410,10 @@ class State(SessionIsolatedStateMixin, rx.State):
         all_available_metrics = {}
 
         for category, financial_data in categorized_ratios.items():
-            if financial_data and len(financial_data) > 0:
+            rows = self._extract_category_rows(financial_data)
+            if rows:
                 excluded_columns = {"Year", "Quarter", "Date", "Period"}
-                metrics = [
-                    col for col in financial_data[0] if col not in excluded_columns
-                ]
+                metrics = [col for col in rows[0] if col not in excluded_columns]
                 all_available_metrics[category] = metrics
 
         async with self:
@@ -462,6 +476,21 @@ class State(SessionIsolatedStateMixin, rx.State):
     def set_metric_for_category(self, category: str, metric: str):
         self.selected_metrics[category] = metric
 
+    @staticmethod
+    def _extract_category_rows(financial_data: object) -> list[dict[str, object]]:
+        if isinstance(financial_data, list):
+            rows = financial_data
+        elif (
+            isinstance(financial_data, tuple)
+            and len(financial_data) >= _CATEGORY_DATA_TUPLE_MIN_ITEMS
+            and isinstance(financial_data[1], list)
+        ):
+            rows = financial_data[1]
+        else:
+            return []
+
+        return [cast("dict[str, object]", row) for row in rows if isinstance(row, dict)]
+
     @rx.var(cache=True)
     def get_chart_data_for_category(self) -> dict[str, list[dict[str, object]]]:
         chart_data: dict[str, list[dict[str, object]]] = {}
@@ -472,11 +501,12 @@ class State(SessionIsolatedStateMixin, rx.State):
 
         for category, selected_metric in self.selected_metrics.items():
             data = categorized_ratios_map.get(category)
-            if not isinstance(data, list):
+            rows = self._extract_category_rows(data)
+            if not rows:
                 chart_data[category] = []
                 continue
             chart_data[category] = self._chart_points_from_rows(
-                cast("list[object]", data),
+                cast("list[object]", rows),
                 selected_metric,
             )
 
@@ -505,17 +535,15 @@ class State(SessionIsolatedStateMixin, rx.State):
             row_map = cast("dict[str, object]", row)
             year = row_map.get("Year", "")
             value = row_map.get(selected_metric)
+            value_str = "" if value is None else str(value).strip()
 
             try:
-                if value is not None and str(value).lower() not in ["nan", "none", ""]:
-                    if isinstance(value, (int, float, str)):
-                        value_float = float(value)
-                    else:
-                        value_float = 0
+                if value_str and value_str.lower() not in ["nan", "none"]:
+                    value_float = float(value_str.replace(",", ""))
                 else:
-                    value_float = 0
+                    value_float = 0.0
             except (ValueError, TypeError):
-                value_float = 0
+                value_float = 0.0
 
             chart_points.append({"year": year, "value": value_float})
 
@@ -535,15 +563,15 @@ class State(SessionIsolatedStateMixin, rx.State):
 
         try:
             colors = [
-                "#A855F7AA",
-                "#3B82F6AA",
-                "#10B981AA",
-                "#F59E0BAA",
-                "#EF4444AA",
-                "#14B8A6AA",
-                "#6366F1AA",
-                "#EC4899AA",
-                "#84CC16AA",
+                "var(--violet-7)",
+                "var(--indigo-7)",
+                "var(--blue-7)",
+                "var(--teal-7)",
+                "var(--cyan-7)",
+                "var(--plum-7)",
+                "var(--purple-7)",
+                "var(--gray-7)",
+                "var(--sage-7)",
             ]
 
             pie_data = [

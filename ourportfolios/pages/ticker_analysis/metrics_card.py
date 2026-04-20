@@ -5,7 +5,9 @@ from typing import cast
 import reflex as rx
 
 from ourportfolios.components.financial_statement import financial_statements
-from ourportfolios.pages.ticker_analysis.performance_cards import performance_cards
+from ourportfolios.pages.ticker_analysis.performance_cards import (
+    performance_cards,
+)
 from ourportfolios.pages.ticker_analysis.state import State
 from ourportfolios.state.framework_state import GlobalFrameworkState
 from ourportfolios.styles import CARD_BORDER, TEXT_PURPLE, purple, white
@@ -148,7 +150,10 @@ def key_metrics_card():
                                 *[
                                     rx.vstack(
                                         rx.skeleton(
-                                            rx.box(height="1.75rem", width="11.25rem"),
+                                            rx.box(
+                                                height="1.75rem",
+                                                width="11.25rem",
+                                            ),
                                             loading=True,
                                             style={"border_radius": "0.375rem"},
                                         ),
@@ -171,7 +176,8 @@ def key_metrics_card():
                         ),
                         rx.box(
                             financial_statements(
-                                financial_statement_tabs, show_skeleton=False,
+                                financial_statement_tabs,
+                                show_skeleton=False,
                             ),
                             width="100%",
                             padding_top="2em",

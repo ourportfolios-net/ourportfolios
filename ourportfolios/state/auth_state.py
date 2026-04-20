@@ -386,6 +386,33 @@ class AuthState(rx.State):
     async def require_auth_strict(self) -> None | list[EventSpec] | EventSpec:
         return await self.require_auth()
 
+    @rx.event(background=True)
+    async def check_auth_status(self) -> None | EventSpec:
+        """Silent check for public pages to hydrate auth state from token."""
+        if not AUTH_AVAILABLE:
+            return None
+
+        if self.is_authenticated:
+            return None
+
+        token: str = self.auth_token
+        if not token:
+            async with self:
+                self.is_guest = True
+            return None
+
+        try:
+            supabase: Client = get_supabase()
+            response: UserResponse | None = supabase.auth.get_user(token)
+            if response and response.user:
+                async with self:
+                    self._store_session(response.user)
+                return None
+        except (AttributeError, TypeError, ValueError):
+            async with self:
+                self._clear_session()
+            return None
+
     # ─────────────────────────────────────────────────────────────────────────
     # Guest
     # ─────────────────────────────────────────────────────────────────────────

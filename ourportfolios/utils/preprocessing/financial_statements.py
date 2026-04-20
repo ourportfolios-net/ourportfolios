@@ -241,7 +241,39 @@ async def get_transformed_dataframes(
         return result
 
 
-def _categorize_ratios(  # noqa: C901
+def _extract_category(
+    metrics_list: list[str],
+    combined_df: pd.DataFrame,
+    period: str,
+    available_cols: set[str],
+) -> list[dict[str, Any]]:
+    found = [m for m in metrics_list if m in available_cols]
+    if not found:
+        return []
+    cols = []
+    if "year" in combined_df.columns:
+        cols.append("year")
+    elif "Year" in combined_df.columns:
+        cols.append("Year")
+    if period == "quarter":
+        if "quarter" in combined_df.columns:
+            cols.append("quarter")
+        elif "Quarter" in combined_df.columns:
+            cols.append("Quarter")
+    cols.extend(found)
+    cols = [c for c in cols if c in combined_df.columns]
+    subset = combined_df[cols].copy()
+    rename = {}
+    if "year" in subset.columns:
+        rename["year"] = "Year"
+    if "quarter" in subset.columns:
+        rename["quarter"] = "Quarter"
+    if rename:
+        subset = subset.rename(columns=rename)
+    return subset.to_dict(orient="records")
+
+
+def _categorize_ratios(
     ratios_df: pd.DataFrame,
     period: str,
     income_df: pd.DataFrame | None = None,
@@ -327,39 +359,36 @@ def _categorize_ratios(  # noqa: C901
     time_cols = {"year", "Year", "quarter", "Quarter", "period"}
     available_cols = set(combined_df.columns) - time_cols
 
-    def extract_category(metrics_list: list[str]) -> list[dict[str, Any]]:
-        found = [m for m in metrics_list if m in available_cols]
-        if not found:
-            return []
-        cols = []
-        if "year" in combined_df.columns:
-            cols.append("year")
-        elif "Year" in combined_df.columns:
-            cols.append("Year")
-        if period == "quarter":
-            if "quarter" in combined_df.columns:
-                cols.append("quarter")
-            elif "Quarter" in combined_df.columns:
-                cols.append("Quarter")
-        cols.extend(found)
-        cols = [c for c in cols if c in combined_df.columns]
-        subset = combined_df[cols].copy()
-        rename = {}
-        if "year" in subset.columns:
-            rename["year"] = "Year"
-        if "quarter" in subset.columns:
-            rename["quarter"] = "Quarter"
-        if rename:
-            subset = subset.rename(columns=rename)
-        return subset.to_dict(orient="records")
-
-    categorized_ratios["Per Share Value"] = extract_category(per_share_metrics)
-    categorized_ratios["Profitability"] = extract_category(profitability_metrics)
-    categorized_ratios["Valuation"] = extract_category(valuation_metrics)
-    categorized_ratios["Leverage & Liquidity"] = extract_category(
-        leverage_liquidity_metrics,
+    categorized_ratios["Per Share Value"] = _extract_category(
+        per_share_metrics,
+        combined_df,
+        period,
+        available_cols,
     )
-    categorized_ratios["Efficiency"] = extract_category(efficiency_metrics)
+    categorized_ratios["Profitability"] = _extract_category(
+        profitability_metrics,
+        combined_df,
+        period,
+        available_cols,
+    )
+    categorized_ratios["Valuation"] = _extract_category(
+        valuation_metrics,
+        combined_df,
+        period,
+        available_cols,
+    )
+    categorized_ratios["Leverage & Liquidity"] = _extract_category(
+        leverage_liquidity_metrics,
+        combined_df,
+        period,
+        available_cols,
+    )
+    categorized_ratios["Efficiency"] = _extract_category(
+        efficiency_metrics,
+        combined_df,
+        period,
+        available_cols,
+    )
     categorized_ratios["Growth Rate"] = _compute_growth_rates(combined_df, period)
 
     return categorized_ratios

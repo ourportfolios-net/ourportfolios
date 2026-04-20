@@ -141,7 +141,9 @@ def company_generic_info_card():
                                                     color_scheme="gray",
                                                     variant="surface",
                                                     high_contrast=True,
-                                                    style={"border_radius": "0.375rem"},
+                                                    style={
+                                                        "border_radius": "0.375rem",
+                                                    },
                                                 ),
                                                 align="center",
                                                 justify="between",
@@ -225,7 +227,9 @@ def company_generic_info_card():
                                                 ),
                                                 rx.badge(
                                                     f"{news['price_change_ratio']}%",
-                                                    style={"border_radius": "0.375rem"},
+                                                    style={
+                                                        "border_radius": "0.375rem",
+                                                    },
                                                 ),
                                             ),
                                             align="center",

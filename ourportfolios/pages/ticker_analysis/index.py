@@ -10,11 +10,12 @@ from ourportfolios.pages.ticker_analysis.info_cards import general_info_card, na
 from ourportfolios.pages.ticker_analysis.metrics_card import key_metrics_card
 from ourportfolios.pages.ticker_analysis.price_chart import price_chart_card
 from ourportfolios.pages.ticker_analysis.state import State
+from ourportfolios.state.auth_state import AuthState
 
 
 @rx.page(
     route="/tickers/[ticker]",
-    on_load=State.on_mount,
+    on_load=[State.on_mount, AuthState.check_auth_status, State.auto_load_data],
 )
 def index():
     return rx.box(

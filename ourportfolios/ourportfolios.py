@@ -1,6 +1,6 @@
 import reflex as rx
 
-import ourportfolios.pages  # noqa: F401
+from ourportfolios import pages
 
 app = rx.App(
     style={"font_family": "Outfit"},
@@ -9,3 +9,5 @@ app = rx.App(
     ],
     theme=rx.theme(accent_color="violet"),
 )
+
+__all__ = ["pages"]

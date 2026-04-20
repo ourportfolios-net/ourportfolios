@@ -116,7 +116,7 @@ def _placeholder_chart(label: str) -> rx.Component:
     )
 
 
-def _guest_overlay() -> rx.Component:
+def guest_overlay() -> rx.Component:
     """Frosted overlay that sits above the blurred placeholder grid."""
     return rx.box(
         rx.vstack(
@@ -190,14 +190,14 @@ def _guest_performance_grid() -> rx.Component:
                 "userSelect": "none",
             },
         ),
-        _guest_overlay(),
+        guest_overlay(),
         position="relative",
         width="100%",
     )
 
 
 def create_dynamic_chart(category: str):
-    has_no_chart_data = State.get_chart_data_for_category[category].length() == 0
+    has_no_chart_data = State.get_chart_data_for_category[category] == []
 
     return rx.cond(
         has_no_chart_data,
@@ -275,8 +275,8 @@ def performance_cards():
     categories = State.get_categories_list
 
     return rx.cond(
-        AuthState.is_guest,
-        # ── Guest: placeholder grid + lock overlay, no data fetched ──────────
+        ~AuthState.is_authenticated,
+        # ── Guest & Loading: placeholder grid + lock overlay ──────────
         _guest_performance_grid(),
         # ── Authenticated: real charts ────────────────────────────────────────
         rx.cond(

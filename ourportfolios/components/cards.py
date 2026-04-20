@@ -1,3 +1,5 @@
+import typing
+
 import reflex as rx
 
 # Shared base for all right-column and market overview cards
@@ -9,10 +11,10 @@ _GLASS_HOVER_BORDER = "rgba(255, 255, 255, 0.13)"
 
 def glass_card(
     *children: rx.Component,
-    padding: rx.Var[str] | str | dict[str, str] = "1rem",
-    width: rx.Var[str] | str | dict[str, str] | None = None,
-    _hover: dict[str, rx.Var[str] | str] | None = None,
-    on_mount: list[rx.EventHandler] | rx.EventHandler | None = None,
+    padding: str | int = "1rem",
+    width: str | int | None = None,
+    _hover: dict[str, str | int] | None = None,
+    **kwargs: typing.Any,  # noqa: ANN401
 ) -> rx.Component:
     hover_style = (
         {
@@ -31,7 +33,7 @@ def glass_card(
         border=_GLASS_BORDER,
         width=width,
         _hover=hover_style,
-        on_mount=on_mount,
+        **kwargs,
     )
 
 
