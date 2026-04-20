@@ -168,7 +168,10 @@ def _ticker_content(t: TickerSubtile) -> rx.Component:
                 text_align="center",
             ),
             rx.badge(
-                t.pct_label, color_scheme=t.pct_color_scheme, variant="soft", size="1",
+                t.pct_label,
+                color_scheme=t.pct_color_scheme,
+                variant="soft",
+                size="1",
             ),
             spacing="1",
             align="center",
@@ -431,8 +434,8 @@ def _mobile_chip_row(c: HeatmapChip) -> rx.Component:
             rx.text(
                 c.name,
                 size="2",
-                weight="medium",
-                color=white(0.65),
+                weight="bold",
+                color=white(0.78),
                 flex="1",
                 overflow="hidden",
                 text_overflow="ellipsis",
@@ -454,13 +457,13 @@ def _mobile_chip_row(c: HeatmapChip) -> rx.Component:
         href=c.url,
         text_decoration="none",
         display="flex",
-        padding="0.5rem 0.75rem",
+        padding="0.6rem 0.75rem",
         border_radius="0.5rem",
-        background=white(0.02),
+        background=white(0.03),
         border=_TILE_BORDER,
         width="100%",
         transition="border-color 0.12s ease, background 0.12s ease",
-        _hover={"border_color": _TILE_HOVER_BORDER, "background": white(0.04)},
+        _hover={"border_color": _TILE_HOVER_BORDER, "background": white(0.05)},
     )
 
 
@@ -491,12 +494,18 @@ def _mobile_industry_view() -> rx.Component:
         ),
         rx.vstack(
             rx.foreach(HeatmapState.tiles, _mobile_tile_row),
-            rx.box(
+            rx.vstack(
                 rx.cond(
                     HeatmapState.chips,
-                    rx.foreach(HeatmapState.chips, _mobile_chip_row),
+                    rx.vstack(
+                        rx.foreach(HeatmapState.chips, _mobile_chip_row),
+                        spacing="2",
+                        width="100%",
+                    ),
                     rx.box(),
                 ),
+                spacing="2",
+                width="100%",
             ),
             spacing="2",
             width="100%",

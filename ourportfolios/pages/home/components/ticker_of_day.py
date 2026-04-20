@@ -50,102 +50,99 @@ def ticker_of_the_day_card() -> rx.Component:
 
 
 def _ticker_real() -> rx.Component:
-    return rx.box(
-        glass_card(
-            rx.box(
-                rx.link(
-                    rx.box(
-                        position="absolute",
-                        top="0",
-                        left="0",
-                        height="100%",
-                        width="100%",
-                        z_index="1",
-                    ),
-                    href=f"/tickers/{HomeState.ticker_of_day_symbol}",
+    return glass_card(
+        rx.box(
+            rx.link(
+                rx.box(
+                    position="absolute",
+                    top="0",
+                    left="0",
+                    height="100%",
+                    width="100%",
+                    z_index="1",
+                ),
+                href=f"/tickers/{HomeState.ticker_of_day_symbol}",
+            ),
+            rx.vstack(
+                rx.text(
+                    rx.el.span("Ticker of the "),
+                    rx.el.span(HomeState.ticker_period_label),
+                    size="1",
+                    weight="medium",
+                    color=white(0.35),
                 ),
                 rx.vstack(
-                    rx.text(
-                        rx.el.span("Ticker of the "),
-                        rx.el.span(HomeState.ticker_period_label),
-                        size="1",
-                        weight="medium",
-                        color=white(0.35),
-                    ),
-                    rx.vstack(
+                    rx.hstack(
                         rx.hstack(
-                            rx.hstack(
-                                rx.text(
-                                    HomeState.ticker_of_day_symbol,
-                                    size=rx.breakpoints(initial="7", sm="8"),
-                                    weight="bold",
-                                    color="white",
-                                    letter_spacing="-0.03em",
-                                    line_height="1",
-                                ),
-                                rx.button(
-                                    rx.icon("plus", size=13),
-                                    size="2",
-                                    variant="outline",
-                                    on_click=CartState.add_item(
-                                        HomeState.ticker_of_day_symbol,
-                                    ),
-                                    cursor="pointer",
-                                    position="relative",
-                                    z_index="10",
-                                    border_radius="0.4375rem",
-                                ),
-                                spacing="2",
-                                align="end",
-                            ),
-                            rx.spacer(),
                             rx.text(
-                                HomeState.ticker_of_day_price,
-                                size=rx.breakpoints(initial="5", sm="6"),
+                                HomeState.ticker_of_day_symbol,
+                                size=rx.breakpoints(initial="7", sm="8"),
                                 weight="bold",
                                 color="white",
-                                letter_spacing="-0.02em",
+                                letter_spacing="-0.03em",
                                 line_height="1",
                             ),
-                            width="100%",
+                            rx.button(
+                                rx.icon("plus", size=13),
+                                size="2",
+                                variant="outline",
+                                on_click=CartState.add_item(
+                                    HomeState.ticker_of_day_symbol,
+                                ),
+                                cursor="pointer",
+                                position="relative",
+                                z_index="10",
+                                border_radius="0.4375rem",
+                            ),
+                            spacing="2",
                             align="end",
-                            position="relative",
-                            z_index="2",
-                            pointer_events="none",
-                            style={"& button": {"pointer-events": "auto"}},
                         ),
-                        rx.hstack(
-                            rx.text(
-                                HomeState.ticker_of_day_name,
-                                size="1",
-                                color=white(0.28),
-                                white_space="nowrap",
-                                overflow="hidden",
-                                text_overflow="ellipsis",
-                                min_width="0",
-                            ),
-                            rx.spacer(),
-                            rx.badge(
-                                HomeState.ticker_of_day_change,
-                                color_scheme="green",
-                                size="1",
-                                weight="bold",
-                                flex_shrink="0",
-                            ),
-                            width="100%",
-                            align="center",
+                        rx.spacer(),
+                        rx.text(
+                            HomeState.ticker_of_day_price,
+                            size=rx.breakpoints(initial="5", sm="6"),
+                            weight="bold",
+                            color="white",
+                            letter_spacing="-0.02em",
+                            line_height="1",
                         ),
-                        spacing="1",
                         width="100%",
+                        align="end",
+                        position="relative",
+                        z_index="2",
+                        pointer_events="none",
+                        style={"& button": {"pointer-events": "auto"}},
                     ),
-                    spacing="3",
+                    rx.hstack(
+                        rx.text(
+                            HomeState.ticker_of_day_name,
+                            size="1",
+                            color=white(0.28),
+                            white_space="nowrap",
+                            overflow="hidden",
+                            text_overflow="ellipsis",
+                            min_width="0",
+                        ),
+                        rx.spacer(),
+                        rx.badge(
+                            HomeState.ticker_of_day_change,
+                            color_scheme="green",
+                            size="1",
+                            weight="bold",
+                            flex_shrink="0",
+                        ),
+                        width="100%",
+                        align="center",
+                    ),
+                    spacing="1",
                     width="100%",
                 ),
-                position="relative",
+                spacing="3",
                 width="100%",
             ),
-            padding=rx.breakpoints(initial="0.875rem 1rem", md="1rem 1.125rem"),
+            position="relative",
             width="100%",
         ),
-        cursor="pointer",
+        padding=rx.breakpoints(initial="0.875rem 1rem", md="1rem 1.125rem"),
+        width="100%",
     )
