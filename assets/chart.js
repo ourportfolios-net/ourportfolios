@@ -1,5 +1,6 @@
 function render_price_chart(chart_options, chart_data) {
-  container = document.getElementById("price_chart");
+  const containers = document.querySelectorAll("#price_chart");
+  container = Array.from(containers).find((element) => element.offsetParent !== null) ?? containers[0];
 
   // Defensive check - element might not be ready yet
   if (!container) {

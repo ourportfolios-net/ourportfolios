@@ -7,6 +7,11 @@ from ourportfolios.styles import CARD_BORDER, white
 
 _CARD_RADIUS = "0.625rem"
 
+# Responsive heights: [mobile, desktop]
+_SCROLL_HEIGHT_SHARES = ["18em", "24.3em"]
+_SCROLL_HEIGHT_EVENTS = ["37em", "45.3em"]
+_SCROLL_HEIGHT_NEWS = ["37em", "45.3em"]
+
 
 def _skel(w: str, h: str) -> rx.Component:
     return rx.skeleton(
@@ -16,10 +21,9 @@ def _skel(w: str, h: str) -> rx.Component:
     )
 
 
-def company_info_card_skeleton():
+def company_info_card_skeleton() -> rx.Component:
     return rx.box(
         rx.vstack(
-            # Segmented control placeholder
             rx.hstack(
                 _skel("3.75rem", "1.75rem"),
                 _skel("3.75rem", "1.75rem"),
@@ -28,7 +32,6 @@ def company_info_card_skeleton():
                 width="100%",
                 justify="center",
             ),
-            # Pie chart placeholder
             rx.box(
                 rx.skeleton(
                     rx.box(width="10rem", height="10rem"),
@@ -41,7 +44,6 @@ def company_info_card_skeleton():
                 align_items="center",
                 style={"marginTop": "1.5em", "marginBottom": "1.5em"},
             ),
-            # List rows
             rx.box(
                 rx.vstack(
                     *[
@@ -71,13 +73,13 @@ def company_info_card_skeleton():
         border_radius=_CARD_RADIUS,
         padding="1.25rem",
         width="100%",
-        flex="0.6",
-        min_width="14rem",
-        max_width="20em",
+        flex=["1", "1", "0.6"],
+        min_width="0",
+        max_width=["100%", "100%", "20em"],
     )
 
 
-def shareholders_pie_chart():
+def shareholders_pie_chart() -> rx.Component:
     return rx.recharts.PieChart.create(
         rx.recharts.Pie.create(
             data=State.pie_data,
@@ -94,7 +96,7 @@ def shareholders_pie_chart():
     )
 
 
-def company_generic_info_card():
+def company_generic_info_card() -> rx.Component:
     return rx.cond(
         State.is_loading_company,
         company_info_card_skeleton(),
@@ -107,7 +109,7 @@ def company_generic_info_card():
                         rx.segmented_control.item("News", value="news"),
                         on_change=State.set_company_control,
                         value=State.company_control,
-                        size="3",
+                        size="2",
                     ),
                     width="100%",
                     display="flex",
@@ -122,7 +124,7 @@ def company_generic_info_card():
                             display="flex",
                             justify_content="center",
                             align_items="center",
-                            style={"marginTop": "2.5em", "marginBottom": "2.5em"},
+                            style={"marginTop": "1.5em", "marginBottom": "1.5em"},
                         ),
                         rx.box(
                             rx.scroll_area(
@@ -160,7 +162,10 @@ def company_generic_info_card():
                                     spacing="3",
                                     width="100%",
                                 ),
-                                style={"height": "24.3em"},
+                                style={
+                                    "height": _SCROLL_HEIGHT_SHARES,
+                                    "minHeight": _SCROLL_HEIGHT_SHARES[0],
+                                },
                             ),
                             background=white(0.02),
                             border=f"1px solid {white(0.05)}",
@@ -206,7 +211,10 @@ def company_generic_info_card():
                                 ),
                                 spacing="3",
                             ),
-                            style={"height": "45.3em"},
+                            style={
+                                "height": _SCROLL_HEIGHT_EVENTS,
+                                "minHeight": _SCROLL_HEIGHT_SHARES[0],
+                            },
                         ),
                         rx.scroll_area(
                             rx.vstack(
@@ -246,7 +254,10 @@ def company_generic_info_card():
                             ),
                             spacing="2",
                             width="100%",
-                            style={"height": "45.3em"},
+                            style={
+                                "height": _SCROLL_HEIGHT_NEWS,
+                                "minHeight": _SCROLL_HEIGHT_SHARES[0],
+                            },
                         ),
                     ),
                 ),
@@ -260,9 +271,9 @@ def company_generic_info_card():
             border_radius=_CARD_RADIUS,
             padding="1.25rem",
             width="100%",
-            flex="0.6",
-            min_width="14rem",
-            max_width="20em",
+            flex=["1", "1", "0.6"],
+            min_width="0",
+            max_width=["100%", "100%", "20em"],
             style={"height": "100%"},
         ),
     )

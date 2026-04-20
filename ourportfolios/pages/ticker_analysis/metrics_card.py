@@ -15,6 +15,54 @@ from ourportfolios.styles import CARD_BORDER, TEXT_PURPLE, purple, white
 _CARD_RADIUS = "0.625rem"
 
 
+def _financial_statement_content(
+    financial_statement_tabs: list[list[dict[str, str | int | float | None]]],
+) -> rx.Component:
+    return rx.cond(
+        State.is_loading_financial,
+        # Skeleton for all three statements while loading
+        rx.box(
+            rx.vstack(
+                *[
+                    rx.vstack(
+                        rx.skeleton(
+                            rx.box(
+                                height="1.75rem",
+                                width="11.25rem",
+                            ),
+                            loading=True,
+                            style={"border_radius": "0.375rem"},
+                        ),
+                        rx.skeleton(
+                            rx.box(height="7.5rem", width="100%"),
+                            loading=True,
+                            style={"border_radius": "0.375rem"},
+                        ),
+                        spacing="2",
+                        width="100%",
+                    )
+                    for _ in range(3)
+                ],
+                spacing="6",
+                width="100%",
+            ),
+            width="100%",
+            padding_top="2em",
+            padding_left="0.5em",
+        ),
+        rx.box(
+            financial_statements(
+                financial_statement_tabs,
+                show_skeleton=False,
+            ),
+            width="100%",
+            padding_top="2em",
+            padding_left="0.5em",
+            style={"display": "block", "textAlign": "left"},
+        ),
+    )
+
+
 def key_metrics_card():
     financial_statement_tabs = [
         cast("list[dict[str, str | int | float | None]]", State.income_statement),
@@ -142,47 +190,28 @@ def key_metrics_card():
                     padding_top="1em",
                 ),
                 rx.tabs.content(
-                    rx.cond(
-                        State.is_loading_financial,
-                        # Skeleton for all three statements while loading
+                    rx.fragment(
                         rx.box(
-                            rx.vstack(
-                                *[
-                                    rx.vstack(
-                                        rx.skeleton(
-                                            rx.box(
-                                                height="1.75rem",
-                                                width="11.25rem",
-                                            ),
-                                            loading=True,
-                                            style={"border_radius": "0.375rem"},
-                                        ),
-                                        rx.skeleton(
-                                            rx.box(height="7.5rem", width="100%"),
-                                            loading=True,
-                                            style={"border_radius": "0.375rem"},
-                                        ),
-                                        spacing="2",
-                                        width="100%",
-                                    )
-                                    for _ in range(3)
-                                ],
-                                spacing="6",
-                                width="100%",
+                            rx.scroll_area(
+                                rx.box(
+                                    _financial_statement_content(
+                                        financial_statement_tabs,
+                                    ),
+                                    width="max-content",
+                                ),
+                                scrollbars="horizontal",
+                                type="hover",
+                                height="100%",
                             ),
+                            display=["block", "block", "none"],
+                            height="calc(100vh - 17rem)",
                             width="100%",
-                            padding_top="2em",
-                            padding_left="0.5em",
+                            padding_left="1rem",
                         ),
                         rx.box(
-                            financial_statements(
-                                financial_statement_tabs,
-                                show_skeleton=False,
-                            ),
+                            _financial_statement_content(financial_statement_tabs),
+                            display=["none", "none", "block"],
                             width="100%",
-                            padding_top="2em",
-                            padding_left="0.5em",
-                            style={"display": "block", "textAlign": "left"},
                         ),
                     ),
                     value="statement",

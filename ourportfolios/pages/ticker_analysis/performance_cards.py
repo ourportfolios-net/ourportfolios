@@ -193,6 +193,11 @@ def _guest_performance_grid() -> rx.Component:
         guest_overlay(),
         position="relative",
         width="100%",
+        height="100%",
+        max_height="calc(100vh - 22rem)",
+        min_height="25rem",
+        overflow="hidden",
+        border_radius=_CARD_RADIUS,
     )
 
 
@@ -271,7 +276,7 @@ def create_dynamic_chart(category: str):
     )
 
 
-def performance_cards():
+def _performance_cards_content() -> rx.Component:
     categories = State.get_categories_list
 
     return rx.cond(
@@ -309,5 +314,35 @@ def performance_cards():
                 overflow="visible",
                 style={"min_width": "0"},
             ),
+        ),
+    )
+
+
+def performance_cards():
+    return rx.fragment(
+        rx.box(
+            rx.cond(
+                AuthState.is_authenticated,
+                rx.scroll_area(
+                    _performance_cards_content(),
+                    scrollbars="vertical",
+                    type="hover",
+                    height="100%",
+                ),
+                rx.box(
+                    _performance_cards_content(),
+                    height="100%",
+                    width="100%",
+                    overflow="hidden",
+                ),
+            ),
+            display=["block", "block", "none"],
+            height="calc(100vh - 17rem)",
+            width="100%",
+        ),
+        rx.box(
+            _performance_cards_content(),
+            display=["none", "none", "block"],
+            width="100%",
         ),
     )

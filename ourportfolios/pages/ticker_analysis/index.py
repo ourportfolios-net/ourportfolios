@@ -13,11 +13,59 @@ from ourportfolios.pages.ticker_analysis.state import State
 from ourportfolios.state.auth_state import AuthState
 
 
+def _desktop_layout() -> rx.Component:
+    """Two-column layout shown on md+ screens."""
+    return rx.vstack(
+        rx.hstack(
+            rx.vstack(
+                name_card(),
+                general_info_card(),
+                spacing="4",
+                align="center",
+                flex="0 0 auto",
+            ),
+            price_chart_card(),
+            spacing="4",
+            width="100%",
+            align="stretch",
+            min_height="28rem",
+            style={"flexWrap": "wrap"},
+        ),
+        rx.hstack(
+            key_metrics_card(),
+            company_generic_info_card(),
+            spacing="4",
+            width="100%",
+            align="stretch",
+            style={"flexWrap": "wrap"},
+        ),
+        spacing="4",
+        width="100%",
+        justify="between",
+        align="start",
+        display=["none", "none", "flex"],
+    )
+
+
+def _mobile_layout() -> rx.Component:
+    """Single-column layout shown on xs/sm screens."""
+    return rx.vstack(
+        name_card(),
+        price_chart_card(),
+        key_metrics_card(),
+        company_generic_info_card(),
+        spacing="4",
+        width="100%",
+        align="stretch",
+        display=["flex", "flex", "none"],
+    )
+
+
 @rx.page(
     route="/tickers/[ticker]",
     on_load=[State.on_mount, AuthState.check_auth_status, State.auto_load_data],
 )
-def index():
+def index() -> rx.Component:
     return rx.box(
         rx.fragment(
             navbar(),
@@ -25,33 +73,10 @@ def index():
                 rx.box(
                     rx.vstack(
                         breadcrumb("/tickers/[ticker]", tail_label=State.ticker),
-                        rx.hstack(
-                            rx.vstack(
-                                name_card(),
-                                general_info_card(),
-                                spacing="4",
-                                align="center",
-                                flex="0 0 auto",
-                            ),
-                            price_chart_card(),
-                            spacing="4",
-                            width="100%",
-                            align="stretch",
-                            min_height="28rem",
-                            style={"flexWrap": "wrap"},
-                        ),
-                        rx.hstack(
-                            key_metrics_card(),
-                            company_generic_info_card(),
-                            spacing="4",
-                            width="100%",
-                            align="stretch",
-                            style={"flexWrap": "wrap"},
-                        ),
+                        _desktop_layout(),
+                        _mobile_layout(),
                         spacing="4",
                         width="100%",
-                        justify="between",
-                        align="start",
                         key=State.render_key,
                     ),
                     width="86vw",
@@ -59,8 +84,8 @@ def index():
                     style={"minHeight": "80vh"},
                 ),
                 width="100%",
-                padding="2em",
-                padding_top="5em",
+                padding=["1em", "1.5em", "2em"],
+                padding_top=["4em", "4.5em", "5em"],
                 position="relative",
             ),
             drawer_button(),
