@@ -7,7 +7,7 @@ import inspect
 import logging
 import uuid
 from functools import wraps
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, TypeVar, cast, overload
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable
@@ -24,6 +24,8 @@ LOGGER = logging.getLogger(__name__)
 SESSION_WAIT_ATTEMPTS = 6
 SESSION_WAIT_DELAY_SECONDS = 0.05
 MISSING_TOKEN_VALUES = {"none", "null"}
+
+_T = TypeVar("_T")
 
 
 class SessionCancelledError(Exception):
@@ -216,17 +218,17 @@ async def _wait_for_session_id(state: object, func_name: str) -> str | None:
     return None
 
 
-async def _iterate_isolated(
-    func: Callable[..., object],
+async def _iterate_isolated[T](
+    func: Callable[..., AsyncIterator[T]],
     state: object,
     call_args: tuple[tuple[object, ...], dict[str, object]],
     call_context: tuple[SessionManager, str],
-) -> AsyncIterator[object]:
+) -> AsyncIterator[T]:
     args, kwargs = call_args
     manager, session_id = call_context
 
     try:
-        iterator = cast("AsyncIterator[object]", func(state, *args, **kwargs))
+        iterator = func(state, *args, **kwargs)
         async for item in iterator:
             if not _state_is_session_valid(state, manager, session_id):
                 return
@@ -235,18 +237,17 @@ async def _iterate_isolated(
         return
 
 
-async def _await_isolated(
-    func: Callable[..., object],
+async def _await_isolated[T](
+    func: Callable[..., Awaitable[T]],
     state: object,
     call_args: tuple[tuple[object, ...], dict[str, object]],
     call_context: tuple[SessionManager, str],
-) -> object | None:
+) -> T | None:
     args, kwargs = call_args
     manager, session_id = call_context
 
     try:
-        awaitable = cast("Awaitable[object]", func(state, *args, **kwargs))
-        result = await awaitable
+        result = await func(state, *args, **kwargs)
     except asyncio.CancelledError:
         return None
 
@@ -263,15 +264,15 @@ def get_session_manager() -> SessionManager:
     return _session_manager
 
 
-def _make_asyncgen_wrapper(
-    func: Callable[..., object],
-) -> Callable[..., AsyncIterator[object]]:
+def _make_asyncgen_wrapper[T](
+    func: Callable[..., AsyncIterator[T]],
+) -> Callable[..., AsyncIterator[T]]:
     @wraps(func)
     async def asyncgen_wrapper(
         self: object,
         *args: object,
         **kwargs: object,
-    ) -> AsyncIterator[object]:
+    ) -> AsyncIterator[T]:
         func_name = getattr(func, "__name__", "session_handler")
         session_id = await _wait_for_session_id(self, func_name)
         if not session_id:
@@ -293,15 +294,15 @@ def _make_asyncgen_wrapper(
     return asyncgen_wrapper
 
 
-def _make_async_wrapper(
-    func: Callable[..., object],
-) -> Callable[..., Awaitable[object | None]]:
+def _make_async_wrapper[T](
+    func: Callable[..., Awaitable[T]],
+) -> Callable[..., Awaitable[T | None]]:
     @wraps(func)
     async def async_wrapper(
         self: object,
         *args: object,
         **kwargs: object,
-    ) -> object | None:
+    ) -> T | None:
         func_name = getattr(func, "__name__", "session_handler")
         session_id = await _wait_for_session_id(self, func_name)
         if not session_id:
@@ -322,11 +323,29 @@ def _make_async_wrapper(
     return async_wrapper
 
 
+@overload
+def session_isolated[T](
+    func: Callable[..., AsyncIterator[T]],
+) -> Callable[..., AsyncIterator[T]]: ...
+
+
+@overload
+def session_isolated[T](
+    func: Callable[..., Awaitable[T]],
+) -> Callable[..., Awaitable[T | None]]: ...
+
+
+@overload
+def session_isolated(func: Callable[..., object]) -> Callable[..., object]: ...
+
+
 def session_isolated(func: Callable[..., object]) -> Callable[..., object]:
     """Wrap an async handler so it respects the active page session."""
     if inspect.isasyncgenfunction(func):
-        return cast("Callable[..., object]", _make_asyncgen_wrapper(func))
-    return cast("Callable[..., object]", _make_async_wrapper(func))
+        asyncgen_func = cast("Callable[..., AsyncIterator[_T]]", func)
+        return cast("Callable[..., object]", _make_asyncgen_wrapper(asyncgen_func))
+    async_func = cast("Callable[..., Awaitable[_T]]", func)
+    return cast("Callable[..., object]", _make_async_wrapper(async_func))
 
 
 def check_session_active(state: object) -> bool:

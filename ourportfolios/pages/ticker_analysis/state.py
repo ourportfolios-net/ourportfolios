@@ -17,9 +17,8 @@ from ourportfolios.utils.preprocessing.financial_statements import (
     get_transformed_dataframes,
 )
 from ourportfolios.utils.session_manager import (
-    SessionCancelledError,
     SessionIsolatedStateMixin,
-    session_isolated,
+    check_session_active,
 )
 
 _CATEGORY_DATA_TUPLE_MIN_ITEMS = 2
@@ -171,66 +170,118 @@ class State(SessionIsolatedStateMixin, rx.State):
         self._is_loading_financial = True
         self._is_loading_price = True
 
-    @rx.event(background=True)
-    @session_isolated
-    async def auto_load_data(self):
-        """Load page data in the background after mount."""
-        # We cannot use self.ticker immediately sometimes if it's still hydrating.
-        # Fall back to router params.
+    # ============================================================================
+    # BACKGROUND TASKS
+    # Per Reflex docs: state mutations ONLY inside `async with self` blocks.
+    # Plain async helpers (_load_financial_data) can be awaited directly from
+    # background tasks because they are not event handlers — just coroutines
+    # that themselves use `async with self` for every state write.
+    # ============================================================================
+
+    async def _await_hydrated_ticker(self) -> str:
         ticker = ""
-        for _ in range(15):
+        for _ in range(20):
             async with self:
-                if self.ticker:
-                    ticker = self.ticker
-                    break
-                elif self.router.page.params.get("ticker"):
-                    ticker = self.router.page.params.get("ticker")
-                    break
+                ticker = self.ticker or self.router.page.params.get("ticker", "")
+            if ticker:
+                return ticker
             await asyncio.sleep(0.1)
+        return ""
+
+    async def _apply_company_and_price_data(
+        self,
+        *,
+        ticker: str,
+        company_data: dict[str, pd.DataFrame],
+        price_data: pd.DataFrame,
+    ) -> None:
+        async with self:
+            if not self._is_mounted:
+                return
+            self.overview_df = company_data.get("overview", pd.DataFrame())
+            self.shareholders_df = company_data.get("shareholders", pd.DataFrame())
+            self.events_df = company_data.get("events", pd.DataFrame())
+            self.news_df = company_data.get("news", pd.DataFrame())
+            self.profile_df = company_data.get("profile", pd.DataFrame())
+            self.officers_df = company_data.get("officers", pd.DataFrame())
+            self.price_data = price_data
+            self._data_ticker = ticker
+            self._is_loading_company = False
+            self._is_loading_price = False
+            self.error_company = ""
+
+    async def _set_company_and_price_error(
+        self,
+        *,
+        ticker: str,
+        error: Exception,
+    ) -> None:
+        async with self:
+            self.overview_df = pd.DataFrame()
+            self.shareholders_df = pd.DataFrame()
+            self.events_df = pd.DataFrame()
+            self.news_df = pd.DataFrame()
+            self.profile_df = pd.DataFrame()
+            self.officers_df = pd.DataFrame()
+            self.price_data = pd.DataFrame()
+            self._data_ticker = ticker
+            self._is_loading_company = False
+            self._is_loading_price = False
+            self.error_company = str(error)
+
+    @rx.event(background=True)
+    async def auto_load_data(self):
+        # Wait for ticker to hydrate from the router
+        ticker = await self._await_hydrated_ticker()
 
         async with self:
-            if not self.is_mounted():
+            if not self._is_mounted:
                 return
-
             if not ticker:
                 self._is_loading_company = False
                 self._is_loading_financial = False
                 self._is_loading_price = False
                 return
-
             self._reset_data_state(ticker)
-
-            # Set the chart interval from user prefs BEFORE load_state runs.
-            # load_state calls self._resample(df_daily, self.selected_interval),
-            # so we only need selected_interval set on PriceChartState — no need
-            # to yield set_interval (which would wastefully trigger render_price_chart
-            # while df_daily is still empty).
             prefs = await self.get_state(PrefsState)
             price_chart = await self.get_state(PriceChartState)
             price_chart.selected_interval = prefs.default_chart_period or "1M"
 
-        await self.load_company_data()
+        # ── Company + price data ──────────────────────────────────────────────
+        try:
+            company_data = fetch_company_data(ticker)
+            price_data = await fetch_price_data_async(ticker)
+            await self._apply_company_and_price_data(
+                ticker=ticker,
+                company_data=company_data,
+                price_data=price_data,
+            )
+
+        except (AttributeError, ValueError, KeyError, RuntimeError) as e:
+            await self._set_company_and_price_error(ticker=ticker, error=e)
 
         async with self:
-            if not self.is_mounted():
+            if not self._is_mounted:
                 return
+            switch_value = self.switch_value
 
-        await self.load_transformed_dataframes()
+        # ── Financial / transformed dataframes ───────────────────────────────
+        await self._load_financial_data(ticker, switch_value)
 
         async with self:
-            if not self.is_mounted():
+            if not self._is_mounted:
                 return
-            ticker_for_chart = ticker
 
-        yield PriceChartState.load_state(ticker_for_chart)
+        yield PriceChartState.load_state(ticker)
 
         async with self:
             self._data_loaded = True
 
-    @rx.event
-    @session_isolated
+    @rx.event(background=True)
     async def toggle_switch(self, *, value: bool):
         async with self:
+            if not check_session_active(self):
+                return
             self.switch_value = "year" if value else "quarter"
             self.transformed_dataframes = {}
             self.available_metrics_by_category = {}
@@ -240,130 +291,31 @@ class State(SessionIsolatedStateMixin, rx.State):
             self.cash_flow = []
             self._is_loading_financial = True
             self.error_financial = ""
-        await self.load_transformed_dataframes()
-
-    @rx.event
-    @session_isolated
-    async def load_company_data(self):
-        async with self:
             ticker = self.ticker
-
-        if not ticker:
-            async with self:
-                self._is_loading_company = False
-                self._is_loading_price = False
-            return
-
-        if not self.is_mounted():
-            return
-
-        try:
-            await asyncio.sleep(0)
-
-            if not self.is_mounted():
-                return
-
-            company_data = fetch_company_data(ticker)
-
-            if not self.is_mounted():
-                return
-
-            price_data = await fetch_price_data_async(ticker)
-
-            async with self:
-                self.overview_df = company_data.get("overview", pd.DataFrame())
-                self.shareholders_df = company_data.get("shareholders", pd.DataFrame())
-                self.events_df = company_data.get("events", pd.DataFrame())
-                self.news_df = company_data.get("news", pd.DataFrame())
-                self.profile_df = company_data.get("profile", pd.DataFrame())
-                self.officers_df = company_data.get("officers", pd.DataFrame())
-                self.price_data = price_data
-
-                self._data_ticker = ticker
-                self._is_loading_company = False
-                self._is_loading_price = False
-                self.error_company = ""
-
-        except SessionCancelledError:
-            return
-        except (AttributeError, ValueError, KeyError, RuntimeError) as e:
-            async with self:
-                self.overview_df = pd.DataFrame()
-                self.shareholders_df = pd.DataFrame()
-                self.events_df = pd.DataFrame()
-                self.news_df = pd.DataFrame()
-                self.profile_df = pd.DataFrame()
-                self.officers_df = pd.DataFrame()
-                self.price_data = pd.DataFrame()
-                self._data_ticker = ticker
-                self._is_loading_company = False
-                self._is_loading_price = False
-                self.error_company = str(e)
-
-    @rx.var
-    def overview(self) -> dict:
-        if self.overview_df.empty:
-            return {}
-        try:
-            return self.overview_df.iloc[0].to_dict()
-        except (IndexError, ValueError, KeyError):
-            return {}
-
-    @rx.var
-    def profile(self) -> dict:
-        if self.profile_df.empty:
-            return {}
-        try:
-            return self.profile_df.iloc[0].to_dict()
-        except (IndexError, ValueError, KeyError):
-            return {}
-
-    @rx.var
-    def shareholders(self) -> list[dict]:
-        if self.shareholders_df.empty:
-            return []
-        try:
-            return self.shareholders_df.to_dict("records")
-        except (ValueError, KeyError, TypeError):
-            return []
-
-    @rx.var
-    def events(self) -> list[dict]:
-        if self.events_df.empty:
-            return []
-        try:
-            return self.events_df.to_dict("records")
-        except (ValueError, KeyError, TypeError):
-            return []
-
-    @rx.var
-    def news(self) -> list[dict]:
-        if self.news_df.empty:
-            return []
-        try:
-            return self.news_df.to_dict("records")
-        except (ValueError, KeyError, TypeError):
-            return []
-
-    @rx.var
-    def officers(self) -> list[dict]:
-        if self.officers_df.empty:
-            return []
-        try:
-            return self.officers_df.to_dict("records")
-        except (ValueError, KeyError, TypeError):
-            return []
-
-    @rx.event
-    @session_isolated
-    async def load_transformed_dataframes(self):  # noqa: C901,PLR0912,PLR0915
-        ticker = self.ticker
-        if not self.is_mounted():
-            return
-
-        async with self:
             switch_value = self.switch_value
 
+        await self._load_financial_data(ticker, switch_value)
+
+    @rx.event(background=True)
+    async def reload_for_framework_change(self):
+        async with self:
+            if not check_session_active(self):
+                return
+            self.transformed_dataframes = {}
+            self.available_metrics_by_category = {}
+            self.selected_metrics = {}
+            self._last_framework_id = None
+            ticker = self.ticker
+            switch_value = self.switch_value
+
+        await self._load_financial_data(ticker, switch_value)
+
+    async def _load_financial_data(self, ticker: str, switch_value: str) -> None:  # noqa: C901,PLR0912,PLR0915
+        """Fetch and process financial data, writing results to state.
+
+        Plain coroutine (no @rx.event) so it can be directly awaited from
+        background tasks. All state writes use `async with self`.
+        """
         try:
             result = await get_transformed_dataframes(ticker, period=switch_value)
 
@@ -373,10 +325,9 @@ class State(SessionIsolatedStateMixin, rx.State):
                     self.error_financial = result["error"]
                 return
 
-            if not self.is_mounted():
-                return
-
             async with self:
+                if not self._is_mounted:
+                    return
                 self.transformed_dataframes = result
                 self.income_statement = result.get("transformed_income_statement", [])
                 self.balance_sheet = result.get("transformed_balance_sheet", [])
@@ -399,15 +350,16 @@ class State(SessionIsolatedStateMixin, rx.State):
                 self.error_financial = str(e)
             return
 
+        # Read what we need under the lock, then process outside it
         async with self:
             global_state = await self.get_state(GlobalFrameworkState)
-            current_framework_id = global_state.selected_framework_id
-            self._last_framework_id = current_framework_id
             has_selected_framework = global_state.has_selected_framework
             framework_metrics = global_state.framework_metrics
+            self._last_framework_id = global_state.selected_framework_id
+            transformed_dataframes = self.transformed_dataframes
 
-        categorized_ratios = self.transformed_dataframes.get("categorized_ratios", {})
-        all_available_metrics = {}
+        categorized_ratios = transformed_dataframes.get("categorized_ratios", {})
+        all_available_metrics: dict[str, list[str]] = {}
 
         for category, financial_data in categorized_ratios.items():
             rows = self._extract_category_rows(financial_data)
@@ -454,23 +406,16 @@ class State(SessionIsolatedStateMixin, rx.State):
             else:
                 self.available_metrics_by_category = all_available_metrics
                 self.selected_metrics = {}
-
                 for category, metrics in all_available_metrics.items():
-                    if metrics and len(metrics) > 0:
+                    if metrics:
                         self.selected_metrics[category] = metrics[0]
 
             self._is_loading_financial = False
             self.error_financial = ""
 
-    @rx.event
-    @session_isolated
-    async def reload_for_framework_change(self):
-        async with self:
-            self.transformed_dataframes = {}
-            self.available_metrics_by_category = {}
-            self.selected_metrics = {}
-            self._last_framework_id = None
-        await self.load_transformed_dataframes()
+    # ============================================================================
+    # REGULAR EVENT HANDLERS
+    # ============================================================================
 
     @rx.event
     def set_metric_for_category(self, category: str, metric: str):
@@ -581,10 +526,63 @@ class State(SessionIsolatedStateMixin, rx.State):
             for idx, d in enumerate(pie_data):
                 d["fill"] = colors[idx % len(colors)]
         except (ValueError, KeyError, IndexError):
-            # print(f"Error: {e}")
             return []
         else:
             return pie_data
+
+    @rx.var
+    def overview(self) -> dict:
+        if self.overview_df.empty:
+            return {}
+        try:
+            return self.overview_df.iloc[0].to_dict()
+        except (IndexError, ValueError, KeyError):
+            return {}
+
+    @rx.var
+    def profile(self) -> dict:
+        if self.profile_df.empty:
+            return {}
+        try:
+            return self.profile_df.iloc[0].to_dict()
+        except (IndexError, ValueError, KeyError):
+            return {}
+
+    @rx.var
+    def shareholders(self) -> list[dict]:
+        if self.shareholders_df.empty:
+            return []
+        try:
+            return self.shareholders_df.to_dict("records")
+        except (ValueError, KeyError, TypeError):
+            return []
+
+    @rx.var
+    def events(self) -> list[dict]:
+        if self.events_df.empty:
+            return []
+        try:
+            return self.events_df.to_dict("records")
+        except (ValueError, KeyError, TypeError):
+            return []
+
+    @rx.var
+    def news(self) -> list[dict]:
+        if self.news_df.empty:
+            return []
+        try:
+            return self.news_df.to_dict("records")
+        except (ValueError, KeyError, TypeError):
+            return []
+
+    @rx.var
+    def officers(self) -> list[dict]:
+        if self.officers_df.empty:
+            return []
+        try:
+            return self.officers_df.to_dict("records")
+        except (ValueError, KeyError, TypeError):
+            return []
 
     @rx.event
     def set_profile_dialog_open(self, *, value: bool):
