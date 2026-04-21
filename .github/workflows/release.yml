@@ -2,7 +2,7 @@ name: our_check (release)
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -23,6 +23,8 @@ jobs:
           python-version: "3.13"
       - name: Ruff
         uses: astral-sh/ruff-action@v3.5.0
+      - name: Ty
+        uses: JacobCoffee/ty-action@v0.0.1
 
       - name: Semantic Release
         uses: python-semantic-release/python-semantic-release@v10.3.1

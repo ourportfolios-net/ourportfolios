@@ -2,7 +2,7 @@ name: our_check (pr)
 
 on:
   pull_request:
-    branches: [main]
+    branches: [ main ]
 
 jobs:
   release:
@@ -24,3 +24,5 @@ jobs:
           python-version: "3.13"
       - name: Ruff
         uses: astral-sh/ruff-action@v3.5.0
+      - name: Ty
+        uses: JacobCoffee/ty-action@v0.0.1
