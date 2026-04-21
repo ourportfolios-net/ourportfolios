@@ -1,5 +1,7 @@
 """Shared auth UI components."""
 
+from typing import Literal
+
 import reflex as rx
 
 from ourportfolios.state.auth_state import AuthState
@@ -57,9 +59,9 @@ def text_input(
     placeholder: str,
     value: str | rx.Var[str],
     on_change: object,
-    field_type: str = "text",
+    field_type: Literal["text", "email", "password"] = "text",
     *,
-    auto_complete: bool = False,
+    auto_complete: str | None = None,
 ) -> rx.Component:
     return rx.input(
         placeholder=placeholder,

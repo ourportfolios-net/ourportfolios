@@ -1,5 +1,7 @@
 """Framework detail dialog."""
 
+from typing import cast
+
 import reflex as rx
 
 from ourportfolios.components.common_dialog import CommonDialogConfig, common_dialog
@@ -58,10 +60,13 @@ def framework_dialog():
                         spacing="1",
                         align="center",
                     ),
-                    href=rx.cond(
-                        FrameworkState.selected_framework.source_url,
-                        FrameworkState.selected_framework.source_url,
-                        "#",
+                    href=cast(
+                        "str",
+                        rx.cond(
+                            FrameworkState.selected_framework.source_url,
+                            FrameworkState.selected_framework.source_url,
+                            "#",
+                        ),
                     ),
                     is_external=True,
                     text_decoration="none",

@@ -1,12 +1,14 @@
 """Badge button component."""
 
+from typing import Literal
+
 import reflex as rx
 
 
 def badge_button(
     text: str,
     *,
-    size: str = "2",
+    size: Literal["1", "2", "3", "4"] = "2",
     padding_x: str = "1rem",
     padding_y: str = "0.375rem",
 ) -> rx.Component:

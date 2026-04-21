@@ -1,6 +1,7 @@
 """Settings page state management."""
 
 import reflex as rx
+from supabase_auth.errors import AuthApiError
 
 from ourportfolios.auth_config import AUTH_AVAILABLE, get_supabase
 from ourportfolios.state.auth_state import AuthState
@@ -25,7 +26,25 @@ class SettingsStateError(Exception):
 
 
 def _restore_session(auth: AuthState) -> None:
+    """Restore the session, refreshing the token if necessary."""
     supabase = get_supabase()
+
+    # Try to refresh the token first in case it expired
+    if auth.auth_refresh_token:
+        try:
+            refresh_response = supabase.auth.refresh_session(auth.auth_refresh_token)
+            if refresh_response.session:
+                auth.auth_token = (
+                    refresh_response.session.access_token or auth.auth_token
+                )
+                auth.auth_refresh_token = (
+                    refresh_response.session.refresh_token or auth.auth_refresh_token
+                )
+        except (AuthApiError, AttributeError):
+            # If refresh fails, try with existing token anyway
+            pass
+
+    # Set the session with potentially refreshed tokens
     supabase.auth.set_session(auth.auth_token, auth.auth_refresh_token)
 
 

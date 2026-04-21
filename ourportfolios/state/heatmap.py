@@ -1,6 +1,7 @@
 """Heatmap state — squarified nested treemap."""
 
 from collections.abc import Sequence
+from typing import Literal
 from urllib.parse import quote
 
 import reflex as rx
@@ -94,7 +95,7 @@ def _ind_bg(direction: str) -> str:
     return _DARK_BG
 
 
-def _pct_color_scheme(direction: str) -> str:
+def _pct_color_scheme(direction: str) -> Literal["green", "red", "gray"]:
     if direction == "up":
         return "green"
     if direction == "down":
@@ -213,7 +214,7 @@ def _size_hint(min_dim: float) -> str:
 class TickerSubtile(BaseModel):
     symbol: str = ""
     pct_label: str = ""
-    pct_color_scheme: str = "gray"
+    pct_color_scheme: Literal["green", "red", "gray"] = "gray"
     bg: str = _DARK_BG
     url: str = ""
     x: float = 0.0
@@ -227,7 +228,7 @@ class HeatmapTile(BaseModel):
     name: str = ""
     pct_label: str = ""
     bg: str = _DARK_BG
-    pct_color_scheme: str = "gray"
+    pct_color_scheme: Literal["green", "red", "gray"] = "gray"
     url: str = ""
     tickers: list[TickerSubtile] = Field(default_factory=list)
     x: float = 0.0
@@ -240,7 +241,7 @@ class HeatmapChip(BaseModel):
     name: str = ""
     pct_label: str = ""
     bg: str = _DARK_BG
-    pct_color_scheme: str = "gray"
+    pct_color_scheme: Literal["green", "red", "gray"] = "gray"
     url: str = ""
 
 

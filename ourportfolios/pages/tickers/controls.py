@@ -1,5 +1,7 @@
 """Controls, filters, and compare toolbar for the tickers page."""
 
+from typing import cast
+
 import reflex as rx
 
 from ourportfolios.components.category_toggle_card import category_toggle_card
@@ -24,6 +26,19 @@ from ourportfolios.styles import (
 
 
 def _metric_slider(metric_tag: str, option: str) -> rx.Component:
+    is_fundamental = option == "F"
+    current_value = (
+        TickersPageState.fundamentals_current_value[metric_tag]
+        if is_fundamental
+        else TickersPageState.technicals_current_value[metric_tag]
+    )
+    default_max = cast(
+        "float",
+        TickersPageState.fundamentals_default_value[metric_tag][1]
+        if is_fundamental
+        else TickersPageState.technicals_default_value[metric_tag][1],
+    )
+    default_step = default_max / 100
     return rx.vstack(
         rx.hstack(
             rx.text(
@@ -37,11 +52,7 @@ def _metric_slider(metric_tag: str, option: str) -> rx.Component:
             ),
             rx.spacer(),
             rx.text(
-                rx.cond(
-                    option == "F",
-                    f"{TickersPageState.fundamentals_current_value[metric_tag][0]} - {TickersPageState.fundamentals_current_value[metric_tag][1]}",
-                    f"{TickersPageState.technicals_current_value[metric_tag][0]} - {TickersPageState.technicals_current_value[metric_tag][1]}",
-                ),
+                f"{current_value[0]} - {current_value[1]}",
                 size="2",
                 color=white(0.45),
                 weight="medium",
@@ -51,45 +62,37 @@ def _metric_slider(metric_tag: str, option: str) -> rx.Component:
             align="center",
         ),
         rx.slider(
-            default_value=rx.cond(
-                option == "F",
-                TickersPageState.fundamentals_current_value[metric_tag],
-                TickersPageState.technicals_current_value[metric_tag],
+            default_value=current_value,
+            on_change=(
+                lambda value_range: (
+                    TickersPageState.update_fundamental_value(
+                        metric=metric_tag,
+                        value=value_range,
+                    )
+                    if is_fundamental
+                    else TickersPageState.update_technical_value(
+                        metric=metric_tag,
+                        value=value_range,
+                    )
+                )
             ),
-            on_change=lambda value_range: rx.cond(
-                option == "F",
-                TickersPageState.update_fundamental_value(
-                    metric=metric_tag,
-                    value=value_range,
-                ),
-                TickersPageState.update_technical_value(
-                    metric=metric_tag,
-                    value=value_range,
-                ),
-            ),
-            on_value_commit=lambda value_range: rx.cond(
-                option == "F",
-                TickersPageState.set_fundamental_metric(
-                    metric=metric_tag,
-                    value=value_range,
-                ),
-                TickersPageState.set_technical_metric(
-                    metric=metric_tag,
-                    value=value_range,
-                ),
+            on_value_commit=(
+                lambda value_range: (
+                    TickersPageState.set_fundamental_metric(
+                        metric=metric_tag,
+                        value=value_range,
+                    )
+                    if is_fundamental
+                    else TickersPageState.set_technical_metric(
+                        metric=metric_tag,
+                        value=value_range,
+                    )
+                )
             ),
             key=f"{metric_tag}_{TickersPageState.slider_reset_key}",
             min_=0.00,
-            max=rx.cond(
-                option == "F",
-                TickersPageState.fundamentals_default_value[metric_tag][1],
-                TickersPageState.technicals_default_value[metric_tag][1],
-            ),
-            step=rx.cond(
-                option == "F",
-                TickersPageState.fundamentals_default_value[metric_tag][1] / 100,
-                TickersPageState.technicals_default_value[metric_tag][1] / 100,
-            ),
+            max=default_max,
+            step=default_step,
             variant="surface",
             size="2",
             radius="full",
