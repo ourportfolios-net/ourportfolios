@@ -165,8 +165,9 @@ def auth_card(*children: rx.Component) -> rx.Component:
         background=CARD_BG,
         border=CARD_BORDER,
         border_radius="1rem",
-        padding="2rem",
-        width="27rem",
+        padding=rx.breakpoints(initial="1.25rem", sm="2rem"),
+        width="100%",
+        max_width=rx.breakpoints(initial="22rem", sm="28rem"),
         flex_shrink="0",
     )
 
@@ -206,6 +207,7 @@ def auth_page_shell(*children: rx.Component) -> rx.Component:
         min_height="100vh",
         width="100%",
         overflow_x="hidden",
+        overflow_y="auto",
     )
 
 
@@ -215,7 +217,7 @@ def auth_centered(
     pointer_events: object | None = None,
     transition: object | None = None,
 ) -> rx.Component:
-    """Absolutely centered card slot."""
+    """Centered card slot — flex-start align on mobile to allow scrolling."""
     return rx.box(
         *children,
         position="absolute",
@@ -223,6 +225,7 @@ def auth_centered(
         display="flex",
         align_items="center",
         justify_content="center",
+        padding=rx.breakpoints(initial="2rem 1rem 2rem", sm="0"),
         opacity=opacity,
         pointer_events=pointer_events,
         transition=transition,

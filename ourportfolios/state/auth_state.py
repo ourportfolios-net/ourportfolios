@@ -286,7 +286,7 @@ class AuthState(rx.State):
 
     def _parse_url_param(self, key: str) -> str:
         try:
-            params = self.router.page.params
+            params = self.router.url.query_parameters
             value = params.get(key, "")
             if isinstance(value, list):
                 return value[0] if value else ""

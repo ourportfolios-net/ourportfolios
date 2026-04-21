@@ -18,7 +18,7 @@ def _page_body() -> rx.Component:
             rx.vstack(
                 rx.text(
                     "Settings",
-                    font_size="1.625rem",
+                    font_size=rx.breakpoints(initial="1.375rem", md="1.625rem"),
                     font_weight="700",
                     color=TEXT_PRIMARY,
                     letter_spacing="-0.025em",
@@ -30,14 +30,14 @@ def _page_body() -> rx.Component:
                 ),
                 spacing="1",
                 align="start",
-                margin_bottom="2rem",
+                margin_bottom=rx.breakpoints(initial="1.25rem", md="2rem"),
             ),
             settings_layout(),
             max_width="56rem",
             width="100%",
             margin="0 auto",
-            padding_x="2rem",
-            padding_y="2.5rem",
+            padding_x=rx.breakpoints(initial="1rem", sm="1.5rem", md="2rem"),
+            padding_y=rx.breakpoints(initial="1.5rem", md="2.5rem"),
         ),
     )
 

@@ -1,6 +1,7 @@
 """Settings page UI components."""
 
 from collections.abc import Callable
+from typing import Any
 
 import reflex as rx
 
@@ -25,6 +26,9 @@ from ourportfolios.styles import (
     white,
 )
 
+# Type Aliases for cleaner code
+StyleDict = dict[str, Any]
+EventHandler = rx.event.EventSpec | list[rx.event.EventSpec] | Callable | Any
 # ── Primitives ────────────────────────────────────────────────────────────────
 
 
@@ -32,7 +36,7 @@ def _divider() -> rx.Component:
     return rx.box(height="1px", background=DIVIDER, width="100%")
 
 
-def _input_compact_style() -> dict:
+def _input_compact_style() -> StyleDict:
     return {
         **INPUT_STYLE,
         "height": "2.125rem",
@@ -41,7 +45,7 @@ def _input_compact_style() -> dict:
     }
 
 
-def _input_dialog_style() -> dict:
+def _input_dialog_style() -> StyleDict:
     return {
         **INPUT_STYLE,
         "height": "2.625rem",
@@ -50,7 +54,7 @@ def _input_dialog_style() -> dict:
     }
 
 
-def _ghost_btn_style() -> dict:
+def _ghost_btn_style() -> StyleDict:
     return {
         **BTN_GHOST_SM,
         "height": "2.125rem",
@@ -64,11 +68,11 @@ def _ghost_btn_style() -> dict:
     }
 
 
-def _label(text: str) -> rx.Component:
+def _label(text: str | rx.Var[str]) -> rx.Component:
     return rx.text(text, style=LABEL_STYLE)
 
 
-def _dialog_label(text: str) -> rx.Component:
+def _dialog_label(text: str | rx.Var[str]) -> rx.Component:
     return rx.text(
         text,
         size="2",
@@ -77,7 +81,7 @@ def _dialog_label(text: str) -> rx.Component:
     )
 
 
-def _ghost_btn(label: str, on_click: Callable[..., object]) -> rx.Component:
+def _ghost_btn(label: str, on_click: EventHandler) -> rx.Component:
     return rx.box(
         rx.text(label, size="2", font_weight="500"),
         on_click=on_click,
@@ -87,7 +91,7 @@ def _ghost_btn(label: str, on_click: Callable[..., object]) -> rx.Component:
 
 def _loading_btn(
     label: str,
-    on_click: Callable[..., object],
+    on_click: EventHandler,
     *,
     loading_var: bool | rx.Var[bool],
 ) -> rx.Component:
@@ -107,7 +111,7 @@ def _loading_btn(
     )
 
 
-def _feedback(msg: str, *, is_error: bool = False) -> rx.Component:
+def _feedback(msg: str | rx.Var[str], *, is_error: bool = False) -> rx.Component:
     color = ERROR_COLOR if is_error else "rgba(52,211,153,0.9)"
     return rx.hstack(
         rx.icon("circle-alert" if is_error else "check-check", size=12, color=color),
@@ -131,7 +135,7 @@ def _password_action_btn() -> rx.Component:
     )
 
 
-def _edit_link(label: str, on_click: Callable[..., object]) -> rx.Component:
+def _edit_link(label: str, on_click: EventHandler) -> rx.Component:
     return rx.text(
         label,
         size="1",
@@ -145,15 +149,10 @@ def _edit_link(label: str, on_click: Callable[..., object]) -> rx.Component:
     )
 
 
-# ── Dialog header (title + X, no extra row wasted) ────────────────────────────
-# We always use show_close_button=False in common_dialog and build the header
-# ourselves so title and X live in the same hstack — zero wasted vertical space.
-
-
 def _dlg_header(
     title: str,
     subtitle: str,
-    on_close: Callable[..., object],
+    on_close: EventHandler,
 ) -> rx.Component:
     return rx.hstack(
         rx.vstack(
@@ -231,7 +230,7 @@ def _card_header(
         ),
         spacing="3",
         align="center",
-        padding="1.25rem 1.5rem",
+        padding=rx.breakpoints(initial="0.875rem 1rem", md="1.25rem 1.5rem"),
         width="100%",
     )
 
@@ -241,8 +240,6 @@ def _card_header(
 
 def _password_dialog() -> rx.Component:
     password_input_attrs = {
-        # Use non-standard name and non-credential autocomplete value
-        # to reduce browser/password-manager autofill heuristics.
         "autocomplete": "new-password",
         "name": "op_security_pwd_field",
         "autocapitalize": "none",
@@ -355,7 +352,7 @@ def _delete_dialog() -> rx.Component:
             color=white(0.62),
         ),
         rx.vstack(
-            rx.hstack(
+            rx.flex(
                 rx.text("Type", size="2", color=white(0.58)),
                 rx.text(
                     SettingsState.delete_confirmation_token,
@@ -366,10 +363,10 @@ def _delete_dialog() -> rx.Component:
                     letter_spacing="0.02em",
                 ),
                 rx.text("to confirm.", size="2", color=white(0.58)),
-                spacing="1",
+                gap="0.35rem",
                 align="center",
                 width="100%",
-                flex_wrap="wrap",
+                wrap="wrap",
             ),
             rx.input(
                 placeholder=SettingsState.delete_confirmation_token,
@@ -450,7 +447,7 @@ def profile_panel() -> rx.Component:
             rx.vstack(
                 rx.box(
                     rx.vstack(
-                        rx.hstack(
+                        rx.flex(
                             rx.hstack(
                                 rx.vstack(
                                     rx.text("Display name", size="1", color=TEXT_MUTED),
@@ -472,11 +469,12 @@ def profile_panel() -> rx.Component:
                                     spacing="1",
                                     align="start",
                                     min_width="0",
+                                    flex="1",
                                 ),
                                 min_width="0",
                                 align="start",
+                                flex="1",
                             ),
-                            rx.spacer(),
                             rx.cond(
                                 SettingsState.display_name_editing,
                                 rx.hstack(
@@ -491,6 +489,7 @@ def profile_panel() -> rx.Component:
                                     ),
                                     spacing="3",
                                     align="center",
+                                    flex_shrink="0",
                                 ),
                                 _edit_link(
                                     "Edit",
@@ -500,8 +499,9 @@ def profile_panel() -> rx.Component:
                             align="center",
                             width="100%",
                             gap="1rem",
+                            justify="between",
                         ),
-                        rx.hstack(
+                        rx.flex(
                             rx.hstack(
                                 rx.icon("mail", size=13, color=white(0.28)),
                                 rx.text("Email", size="1", color=TEXT_MUTED),
@@ -513,20 +513,22 @@ def profile_panel() -> rx.Component:
                                 spacing="2",
                                 align="center",
                                 min_width="0",
+                                flex="1",
                             ),
-                            rx.spacer(),
                             rx.text(
                                 "Edit",
                                 size="1",
                                 color=TEXT_MUTED,
                                 _hover={"cursor": "not-allowed"},
+                                flex_shrink="0",
                             ),
                             align="center",
                             width="100%",
                             gap="1rem",
-                            flex_wrap="wrap",
+                            justify="between",
+                            wrap="wrap",
                         ),
-                        rx.hstack(
+                        rx.flex(
                             rx.hstack(
                                 rx.icon("lock-keyhole", size=13, color=white(0.28)),
                                 rx.text("Password", size="1", color=TEXT_MUTED),
@@ -534,11 +536,11 @@ def profile_panel() -> rx.Component:
                                 spacing="2",
                                 align="center",
                             ),
-                            rx.spacer(),
                             _password_action_btn(),
                             align="center",
                             width="100%",
                             gap="1rem",
+                            justify="between",
                         ),
                         spacing="3",
                         width="100%",
@@ -548,12 +550,12 @@ def profile_panel() -> rx.Component:
                     background=white(0.015),
                     border=f"1px solid {white(0.06)}",
                     border_radius="0.75rem",
-                    padding="1rem",
+                    padding=rx.breakpoints(initial="0.75rem", md="1rem"),
                 ),
                 spacing="3",
                 width="100%",
             ),
-            padding="1.25rem 1.5rem",
+            padding=rx.breakpoints(initial="0.875rem 1rem", md="1.25rem 1.5rem"),
         ),
         rx.box(
             rx.cond(
@@ -565,7 +567,10 @@ def profile_panel() -> rx.Component:
                     rx.fragment(),
                 ),
             ),
-            padding="0 1.5rem 1.125rem 1.5rem",
+            padding=rx.breakpoints(
+                initial="0 1rem 0.875rem 1rem",
+                md="0 1.5rem 1.125rem 1.5rem",
+            ),
             width="100%",
         ),
         _password_dialog(),
@@ -577,7 +582,7 @@ def profile_panel() -> rx.Component:
 
 def delete_card() -> rx.Component:
     return _card(
-        rx.hstack(
+        rx.flex(
             rx.vstack(
                 rx.text(
                     "Delete account",
@@ -611,7 +616,10 @@ def delete_card() -> rx.Component:
             ),
             align="center",
             width="100%",
-            padding="1.125rem 1.5rem",
+            padding=rx.breakpoints(initial="0.875rem 1rem", md="1.125rem 1.5rem"),
+            gap="0.75rem",
+            justify="between",
+            wrap="wrap",
         ),
         _delete_dialog(),
         border=f"1px solid {red(0.1)}",
@@ -626,7 +634,7 @@ def _exp_card(label: str, description: str) -> rx.Component:
     return category_toggle_card(
         title=label,
         checked=is_active,
-        on_change=lambda _checked: SettingsState.set_experience_level(label),
+        on_change=lambda _: SettingsState.set_experience_level(label),
         on_click=SettingsState.set_experience_level(label),
         body=rx.text(
             description,
@@ -702,18 +710,18 @@ def preferences_panel() -> rx.Component:
                         "Experienced",
                         "Full data density, advanced metrics, raw mode unlocked.",
                     ),
-                    columns="2",
+                    columns=rx.breakpoints(initial="1", sm="2"),
                     spacing="3",
                     width="100%",
                 ),
                 spacing="3",
                 width="100%",
             ),
-            padding="1.25rem 1.5rem",
+            padding=rx.breakpoints(initial="0.875rem 1rem", md="1.25rem 1.5rem"),
             width="100%",
         ),
         rx.box(
-            rx.hstack(
+            rx.flex(
                 rx.vstack(
                     rx.text(
                         "Default chart period",
@@ -741,13 +749,15 @@ def preferences_panel() -> rx.Component:
                     flex_shrink="0",
                 ),
                 align="center",
-                spacing="4",
+                gap="1rem",
                 width="100%",
+                wrap="wrap",
+                justify="between",
             ),
-            padding="1.25rem 1.5rem",
+            padding=rx.breakpoints(initial="0.875rem 1rem", md="1.25rem 1.5rem"),
             width="100%",
         ),
-        rx.hstack(
+        rx.flex(
             rx.cond(
                 SettingsState.save_msg != "",
                 _feedback(SettingsState.save_msg),
@@ -769,7 +779,8 @@ def preferences_panel() -> rx.Component:
             ),
             align="center",
             width="100%",
-            padding="1.125rem 1.5rem",
+            padding=rx.breakpoints(initial="0.875rem 1rem", md="1.125rem 1.5rem"),
+            gap="0.75rem",
         ),
     )
 
@@ -796,23 +807,25 @@ def _nav_item(tab: str, icon_name: str, label: str) -> rx.Component:
             align="center",
         ),
         on_click=SettingsState.set_active_tab(tab),
-        padding="0.5rem 0.75rem",
+        padding=rx.breakpoints(initial="0.4rem 0.625rem", md="0.5rem 0.75rem"),
         border_radius="0.5rem",
         background=rx.cond(is_active, white(0.05), "transparent"),
         border=rx.cond(is_active, f"1px solid {white(0.09)}", "1px solid transparent"),
         cursor="pointer",
         transition="all 0.15s ease",
         _hover={"background": white(0.04)},
-        width="100%",
+        width=rx.breakpoints(initial="auto", md="100%"),
+        flex_shrink="0",
     )
 
 
 def sidebar() -> rx.Component:
-    return rx.vstack(
+    return rx.flex(
         _nav_item("profile", "user", "Profile"),
         _nav_item("preferences", "sliders-horizontal", "Preferences"),
-        spacing="1",
-        width="10.5rem",
+        direction=rx.breakpoints(initial="row", md="column"),
+        gap="0.375rem",
+        width=rx.breakpoints(initial="100%", md="10.5rem"),
         flex_shrink="0",
         align="start",
     )
@@ -822,7 +835,7 @@ def sidebar() -> rx.Component:
 
 
 def settings_layout() -> rx.Component:
-    return rx.hstack(
+    return rx.flex(
         sidebar(),
         rx.box(
             rx.cond(
@@ -838,7 +851,8 @@ def settings_layout() -> rx.Component:
             flex="1",
             min_width="0",
         ),
-        spacing="8",
+        direction=rx.breakpoints(initial="column", md="row"),
+        gap=rx.breakpoints(initial="1rem", md="2rem"),
         align="start",
         width="100%",
     )
