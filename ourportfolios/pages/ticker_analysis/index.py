@@ -47,7 +47,7 @@ def _desktop_layout() -> rx.Component:
         rx.hstack(
             key_metrics_card(),
             company_generic_info_card(),
-            spacing="8",
+            spacing="4",
             width="100%",
             align="stretch",
             style={"flexWrap": "wrap"},
