@@ -65,6 +65,8 @@ def name_card() -> rx.Component:
                         },
                     ),
                     loading=State.is_loading_company,
+                    style={"border_radius": "0.375rem"},
+                    border_radius="0.5rem",
                 ),
                 position="absolute",
                 top="1.25rem",
@@ -74,13 +76,17 @@ def name_card() -> rx.Component:
                 rx.skeleton(
                     rx.heading(
                         rx.cond(
-                            State.is_loading_company, "AGG", overview.get("symbol", ""),
+                            State.is_loading_company,
+                            "AGG",
+                            overview.get("symbol", ""),
                         ),
                         size="9",
                         weight="bold",
                         line_height="1",
                     ),
                     loading=State.is_loading_company,
+                    style={"border_radius": "0.375rem"},
+                    border_radius="0.5rem",
                 ),
                 rx.hstack(
                     rx.skeleton(
@@ -96,6 +102,7 @@ def name_card() -> rx.Component:
                             style={"border_radius": "0.375rem"},
                         ),
                         loading=State.is_loading_company,
+                        style={"border_radius": "0.375rem"},
                     ),
                     rx.skeleton(
                         rx.badge(
@@ -110,6 +117,7 @@ def name_card() -> rx.Component:
                             style={"border_radius": "0.375rem"},
                         ),
                         loading=State.is_loading_company,
+                        style={"border_radius": "0.375rem"},
                     ),
                     spacing="2",
                 ),
@@ -130,7 +138,9 @@ def name_card() -> rx.Component:
 def general_info_card() -> rx.Component:
     overview = State.overview
     website = rx.cond(
-        State.is_loading_company, "www.angia.com.vn", overview.get("website", ""),
+        State.is_loading_company,
+        "www.angia.com.vn",
+        overview.get("website", ""),
     )
 
     return rx.cond(
@@ -166,6 +176,7 @@ def general_info_card() -> rx.Component:
                             style={"flexWrap": "wrap"},
                         ),
                         loading=State.is_loading_company,
+                        style={"border_radius": "0.375rem"},
                     ),
                     rx.skeleton(
                         rx.link(
@@ -179,6 +190,7 @@ def general_info_card() -> rx.Component:
                             is_external=True,
                         ),
                         loading=State.is_loading_company,
+                        style={"border_radius": "0.375rem"},
                     ),
                     spacing="1",
                     align="start",
@@ -200,6 +212,7 @@ def general_info_card() -> rx.Component:
                                 weight="medium",
                             ),
                             loading=State.is_loading_company,
+                            style={"border_radius": "0.375rem"},
                         ),
                         width="100%",
                     ),
@@ -218,6 +231,7 @@ def general_info_card() -> rx.Component:
                                 weight="medium",
                             ),
                             loading=State.is_loading_company,
+                            style={"border_radius": "0.375rem"},
                         ),
                         width="100%",
                     ),
@@ -236,6 +250,7 @@ def general_info_card() -> rx.Component:
                                 weight="medium",
                             ),
                             loading=State.is_loading_company,
+                            style={"border_radius": "0.375rem"},
                         ),
                         width="100%",
                     ),
@@ -254,6 +269,7 @@ def general_info_card() -> rx.Component:
                                 weight="medium",
                             ),
                             loading=State.is_loading_company,
+                            style={"border_radius": "0.375rem"},
                         ),
                         width="100%",
                     ),
@@ -272,6 +288,7 @@ def general_info_card() -> rx.Component:
                                 weight="medium",
                             ),
                             loading=State.is_loading_company,
+                            style={"border_radius": "0.375rem"},
                         ),
                         width="100%",
                     ),

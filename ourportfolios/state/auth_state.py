@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 import httpx
 import reflex as rx
 from reflex.event import EventCallback, EventSpec
+from supabase_auth.errors import AuthApiError
 
 from ourportfolios.auth_config import (
     AUTH_AVAILABLE,
@@ -408,7 +409,7 @@ class AuthState(rx.State):
                 async with self:
                     self._store_session(response.user)
                 return None
-        except (AttributeError, TypeError, ValueError):
+        except (AttributeError, TypeError, ValueError, AuthApiError):
             async with self:
                 self._clear_session()
             return None
