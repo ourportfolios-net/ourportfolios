@@ -16,20 +16,27 @@ def pct_change_badge(diff: float):
                 ),
             ),
             rx.hstack(
-                rx.cond(
-                    diff > 0, rx.text("+", size="1", weight="medium"), rx.fragment(),
+                rx.text(
+                    rx.cond(diff > 0, "+", ""),
+                    diff,
+                    "%",
+                    size="1",
+                    weight="medium",
+                    white_space="nowrap",
                 ),
-                rx.text(diff, size="1", weight="medium"),
-                rx.text("%", size="1", weight="medium"),
                 spacing="0",
                 align="center",
             ),
             spacing="1",
             align="center",
             justify="center",
+            width="100%",
         ),
         color_scheme=color_scheme,
         size="1",
-        padding="0.1em 0.3em",
-        height="1.55vw",
+        variant="soft",
+        padding="2px 6px",  # Use fixed pixels for consistent UI
+        height="1.5rem",  # Use rem or em for accessibility/consistency
+        min_width="fit-content",
+        flex_shrink="0",
     )
