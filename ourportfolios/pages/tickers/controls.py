@@ -22,16 +22,21 @@ from ourportfolios.styles import (
     white,
 )
 
-# ── Filter sliders ────────────────────────────────────────────────────────────
+# ── Filter sliders ─────────────────────────────────────────────────────────────
+#
+# metric_tag is a Reflex Var[str] inside rx.foreach — never use it in a Python
+# boolean expression.  option is a plain Python str so "option == 'F'" is safe.
 
 
 def _metric_slider(metric_tag: str, option: str) -> rx.Component:
-    is_fundamental = option == "F"
+    is_fundamental: bool = option == "F"
+
     current_value = (
         TickersPageState.fundamentals_current_value[metric_tag]
         if is_fundamental
         else TickersPageState.technicals_current_value[metric_tag]
     )
+
     default_max = cast(
         "float",
         TickersPageState.fundamentals_default_value[metric_tag][1]
@@ -39,27 +44,37 @@ def _metric_slider(metric_tag: str, option: str) -> rx.Component:
         else TickersPageState.technicals_default_value[metric_tag][1],
     )
     default_step = default_max / 100
+
     return rx.vstack(
         rx.hstack(
             rx.text(
-                metric_tag.upper(),
+                metric_tag,
                 style={
                     **LABEL_STYLE,
                     "font_size": "0.8125rem",
                     "color": white(0.55),
                     "white_space": "nowrap",
+                    "text_transform": "uppercase",
+                    "overflow": "hidden",
+                    "text_overflow": "ellipsis",
+                    "flex": "1",
+                    "min_width": "0",
                 },
             ),
-            rx.spacer(),
             rx.text(
-                f"{current_value[0]} - {current_value[1]}",
+                current_value[0],
+                " – ",
+                current_value[1],
                 size="2",
                 color=white(0.45),
                 weight="medium",
                 white_space="nowrap",
+                flex_shrink="0",
+                min_width="3rem",
             ),
             width="100%",
             align="center",
+            overflow="hidden",
         ),
         rx.slider(
             default_value=current_value,
@@ -89,8 +104,8 @@ def _metric_slider(metric_tag: str, option: str) -> rx.Component:
                     )
                 )
             ),
-            key=f"{metric_tag}_{TickersPageState.slider_reset_key}",
-            min_=0.00,
+            key=f"slider_{option}_{TickersPageState.slider_reset_key}",
+            min_=0.0,
             max=default_max,
             step=default_step,
             variant="surface",
@@ -108,16 +123,14 @@ def _metric_slider(metric_tag: str, option: str) -> rx.Component:
 
 
 def _metrics_filter(option: str = "F") -> rx.Component:
+    keys = rx.cond(
+        option == "F",
+        TickersPageState.fundamentals_default_value.keys(),
+        TickersPageState.technicals_default_value.keys(),
+    )
     return rx.grid(
-        rx.foreach(
-            rx.cond(
-                option == "F",
-                TickersPageState.fundamentals_default_value.keys(),
-                TickersPageState.technicals_default_value.keys(),
-            ),
-            lambda metric_tag: _metric_slider(metric_tag, option),
-        ),
-        columns=rx.breakpoints(xs="1", sm="2", md="3", lg="4"),
+        rx.foreach(keys, lambda metric_tag: _metric_slider(metric_tag, option)),
+        columns=rx.breakpoints(initial="1", sm="2", md="3", lg="4"),
         gap="0.75em",
         width="100%",
         padding="0.85em",
@@ -140,7 +153,6 @@ def _categorical_filter() -> rx.Component:
                         ),
                         size="3",
                         color_scheme="violet",
-                        style={"font_size": "0.9375rem"},
                     ),
                 ),
                 gap="1em",
@@ -163,7 +175,6 @@ def _categorical_filter() -> rx.Component:
                             ),
                             size="3",
                             color_scheme="violet",
-                            style={"font_size": "0.9375rem"},
                         ),
                     ),
                     gap="1em",
@@ -182,15 +193,26 @@ def _categorical_filter() -> rx.Component:
     )
 
 
+# ── Filter tab structure ───────────────────────────────────────────────────────
+
+
 def _filter_tabs() -> rx.Component:
+    """Tabs header + content in one component, filling whatever height the menu gives."""
     return rx.tabs.root(
+        # Header row — tabs list scrolls horizontally on narrow screens so
+        # "Technical" and "Clear all" are never clipped.
         rx.hstack(
-            rx.tabs.list(
-                rx.tabs.trigger("Fundamental", value="fundamental"),
-                rx.tabs.trigger("Categorical", value="categorical"),
-                rx.tabs.trigger("Technical", value="technical"),
+            rx.box(
+                rx.tabs.list(
+                    rx.tabs.trigger("Fundamental", value="fundamental"),
+                    rx.tabs.trigger("Categorical", value="categorical"),
+                    rx.tabs.trigger("Technical", value="technical"),
+                ),
+                overflow_x="auto",
+                flex_shrink="1",
+                min_width="0",
+                style={"scrollbarWidth": "none", "WebkitOverflowScrolling": "touch"},
             ),
-            rx.spacer(),
             rx.button(
                 rx.hstack(
                     rx.icon("filter-x", size=12),
@@ -201,26 +223,44 @@ def _filter_tabs() -> rx.Component:
                 on_click=TickersPageState.clear_all_filters,
                 size="2",
                 style=BTN_GHOST_SM,
+                flex_shrink="0",
             ),
             width="100%",
             align="center",
+            spacing="2",
             padding_x="0.75em",
             padding_top="0.5em",
             padding_bottom="0",
             flex_shrink="0",
         ),
+        # Tab contents — scroll vertically so cards are never clipped on mobile
         rx.tabs.content(
-            _metrics_filter(option="F"),
+            rx.scroll_area(
+                _metrics_filter(option="F"),
+                scrollbars="vertical",
+                type="hover",
+                style={**FLEX_COL_FILL},
+            ),
             value="fundamental",
             style={**FLEX_COL_FILL, "overflow": "hidden"},
         ),
         rx.tabs.content(
-            _categorical_filter(),
+            rx.scroll_area(
+                _categorical_filter(),
+                scrollbars="vertical",
+                type="hover",
+                style={**FLEX_COL_FILL},
+            ),
             value="categorical",
-            style={**FLEX_COL_FILL, "overflow": "auto"},
+            style={**FLEX_COL_FILL, "overflow": "hidden"},
         ),
         rx.tabs.content(
-            _metrics_filter(option="T"),
+            rx.scroll_area(
+                _metrics_filter(option="T"),
+                scrollbars="vertical",
+                type="hover",
+                style={**FLEX_COL_FILL},
+            ),
             value="technical",
             style={**FLEX_COL_FILL, "overflow": "hidden"},
         ),
@@ -229,31 +269,7 @@ def _filter_tabs() -> rx.Component:
     )
 
 
-def _selected_filter_chip(item: str, filter_name: str) -> rx.Component:
-    label = rx.cond(
-        filter_name == "fundamental",
-        item,
-        rx.cond(
-            filter_name == "technical",
-            item,
-            item,
-        ),
-    )
-    return rx.hstack(
-        rx.text(label, size="1", weight="medium", color=white(0.7)),
-        rx.box(
-            rx.icon("x", size=10, color=white(0.3)),
-            cursor="pointer",
-            display="flex",
-            align_items="center",
-            on_click=TickersPageState.remove_filter_chip(item, filter),
-        ),
-        spacing="2",
-        align="center",
-        padding="0 0.625rem",
-        flex_shrink="0",
-        style=CHIP_STYLE,
-    )
+# ── Filter button (menu trigger + dropdown) ────────────────────────────────────
 
 
 def filter_button() -> rx.Component:
@@ -280,6 +296,7 @@ def filter_button() -> rx.Component:
                 font_size="0.8125rem",
                 cursor="pointer",
                 transition="all 0.15s ease",
+                flex_shrink="0",
             ),
         ),
         rx.menu.content(
@@ -288,6 +305,7 @@ def filter_button() -> rx.Component:
                 direction="column",
                 style={**FLEX_COL_FILL, "overflow": "hidden"},
             ),
+            # Apply Filters floats at the bottom-right inside the menu
             rx.button(
                 "Apply Filters",
                 on_click=TickersPageState.apply_filters,
@@ -299,91 +317,101 @@ def filter_button() -> rx.Component:
                     "right": "0.75em",
                 },
             ),
+            # Responsive width and height so the menu never swamps mobile screens
             width=rx.breakpoints(
-                initial="27em",
-                xs="30em",
+                initial="min(95vw, 27em)",
                 sm="40em",
-                md="44em",
-                lg="56em",
+                md="52em",
+                lg="72em",
             ),
-            height="30em",
+            height=rx.breakpoints(
+                initial="min(75vh, 26em)",
+                sm="30em",
+            ),
+            max_height="85vh",
             padding="0",
             style={
                 **MODAL_PANEL_STYLE,
                 "border_radius": "0.75rem",
                 "position": "relative",
+                "overflow": "hidden",
             },
             side="bottom",
+            align="end",
         ),
         modal=False,
     )
 
 
-def _sort_button() -> rx.Component:
-    asc_icon = rx.icon("arrow-down-a-z", size=14)
-    desc_icon = rx.icon("arrow-down-z-a", size=14)
-    return rx.menu.root(
-        rx.menu.trigger(
-            rx.button(
-                rx.hstack(
-                    rx.cond(
-                        TickersPageState.selected_sort_order == "ASC",
-                        asc_icon,
-                        desc_icon,
-                    ),
-                    rx.text("Sort"),
-                    spacing="2",
-                    align="center",
-                ),
-                size="2",
-                style=BTN_SECONDARY,
-            ),
+# ── Active filter chips ────────────────────────────────────────────────────────
+
+
+def _selected_filter_chip(item: str, filter_name: str) -> rx.Component:
+    """Chip for a categorical filter (industry / exchange)."""
+    return rx.hstack(
+        rx.text(item, size="1", weight="medium", color=white(0.7)),
+        rx.box(
+            rx.icon("x", size=10, color=white(0.3)),
+            cursor="pointer",
+            display="flex",
+            align_items="center",
+            on_click=TickersPageState.remove_filter_chip(item, filter_name),
         ),
-        rx.menu.content(
-            rx.foreach(
-                TickersPageState.sort_options.keys(),
-                lambda option: rx.menu.sub(
-                    rx.menu.sub_trigger(option),
-                    rx.menu.sub_content(
-                        rx.foreach(
-                            TickersPageState.sort_orders,
-                            lambda order: rx.menu.item(
-                                rx.hstack(
-                                    rx.cond(order == "ASC", asc_icon, desc_icon),
-                                    rx.text(order),
-                                    spacing="2",
-                                    align="center",
-                                ),
-                                on_click=[
-                                    TickersPageState.set_sort_option(option),
-                                    TickersPageState.set_sort_order(order),
-                                ],
-                            ),
-                        ),
-                    ),
-                ),
-            ),
+        spacing="2",
+        align="center",
+        padding="0 0.625rem",
+        flex_shrink="0",
+        style=CHIP_STYLE,
+    )
+
+
+def _metric_filter_chip(item: list, filter_type: str) -> rx.Component:
+    """Chip for a numeric metric filter, showing 'metric: lo–hi'."""
+    metric = item[0]
+    label = item[1]
+    return rx.hstack(
+        rx.text(
+            metric,
+            ": ",
+            label,
+            size="1",
+            weight="medium",
+            color=white(0.7),
+            white_space="nowrap",
         ),
+        rx.box(
+            rx.icon("x", size=10, color=white(0.3)),
+            cursor="pointer",
+            display="flex",
+            align_items="center",
+            on_click=TickersPageState.remove_filter_chip(metric, filter_type),
+        ),
+        spacing="2",
+        align="center",
+        padding="0 0.625rem",
+        flex_shrink="0",
+        style=CHIP_STYLE,
     )
 
 
 def _active_filter_chips() -> rx.Component:
+    """Row of chips reflecting the APPLIED (committed) filters only."""
     return rx.flex(
         rx.foreach(
-            TickersPageState.selected_industry,
+            TickersPageState.applied_industry,
             lambda item: _selected_filter_chip(item, "industry"),
         ),
         rx.foreach(
-            TickersPageState.selected_exchange,
+            TickersPageState.applied_exchange,
             lambda item: _selected_filter_chip(item, "exchange"),
         ),
         rx.foreach(
-            TickersPageState.selected_fundamental_metric,
-            lambda item: _selected_filter_chip(item, "fundamental"),
+            TickersPageState.fundamental_chip_items,
+            lambda item: _metric_filter_chip(item, "fundamental"),
         ),
         rx.foreach(
-            TickersPageState.selected_technical_metric,
-            lambda item: _selected_filter_chip(item, "technical"),
+            TickersPageState.technical_chip_items,
+            lambda item: _metric_filter_chip(item, "technical"),
         ),
         direction="row",
         wrap="nowrap",
@@ -394,8 +422,12 @@ def _active_filter_chips() -> rx.Component:
     )
 
 
+# ── Board toolbar ──────────────────────────────────────────────────────────────
+
+
 def board_toolbar() -> rx.Component:
     return rx.hstack(
+        # Search input — natural clamp width, never grows
         rx.box(
             rx.icon("search", size=14, color=white(0.25), style=SEARCH_ICON_STYLE),
             rx.input(
@@ -408,7 +440,9 @@ def board_toolbar() -> rx.Component:
             position="relative",
             display="flex",
             align_items="center",
+            flex_shrink="0",
         ),
+        # Active filter chips — shown inline, capped at 40em, scrollable
         rx.cond(
             TickersPageState.has_filter,
             rx.box(
@@ -421,9 +455,11 @@ def board_toolbar() -> rx.Component:
                 align_items="center",
                 flex_shrink="1",
                 min_width="0",
+                style={"scrollbarWidth": "none", "WebkitOverflowScrolling": "touch"},
             ),
             rx.fragment(),
         ),
+        # Spacer pushes filter button to the far right
         rx.spacer(),
         filter_button(),
         spacing="2",
@@ -433,7 +469,7 @@ def board_toolbar() -> rx.Component:
     )
 
 
-# ── Compare toolbar ───────────────────────────────────────────────────────────
+# ── Compare toolbar ────────────────────────────────────────────────────────────
 
 
 def _compare_search_suggestion(ticker_value: dict) -> rx.Component:
@@ -450,8 +486,11 @@ def _compare_search_suggestion(ticker_value: dict) -> rx.Component:
             rx.spacer(),
             rx.button(
                 rx.icon("plus", size=13),
-                on_mouse_down=[
-                    TickersPageState.set_view_mode("compare"),
+                # prevent_default stops mousedown from stealing focus so the
+                # input's on_blur never fires, keeping the dropdown open until
+                # clear_comparison_search explicitly closes it.
+                on_mouse_down=rx.prevent_default,
+                on_click=[
                     TickersPageState.add_ticker_to_compare(ticker),
                     SearchBarState.clear_comparison_search(),
                 ],
@@ -512,7 +551,8 @@ def _compare_search_bar() -> rx.Component:
                     background=MODAL_BG,
                     overflow="hidden",
                     box_shadow="0 0.5rem 2rem rgba(0,0,0,0.6)",
-                    min_width="17.5rem",
+                    # min_width matches input instead of stretching full toolbar
+                    min_width=rx.breakpoints(initial="17.5rem", sm="20rem"),
                 ),
                 rx.fragment(),
             ),
@@ -520,6 +560,9 @@ def _compare_search_bar() -> rx.Component:
             spacing="0",
         ),
     )
+
+
+# ── Metrics settings dialog ────────────────────────────────────────────────────
 
 
 def _metric_category_card(category: str) -> rx.Component:
@@ -563,6 +606,7 @@ def _metrics_settings_dialog() -> rx.Component:
                 rx.icon("settings-2", size=14),
                 size="2",
                 style=BTN_SECONDARY,
+                flex_shrink="0",
             ),
         ),
         rx.dialog.content(
@@ -644,7 +688,7 @@ def _metrics_settings_dialog() -> rx.Component:
                     ),
                     type="auto",
                     scrollbars="vertical",
-                    style={"height": "68vh"},
+                    style={"height": "65vh"},
                 ),
                 rx.hstack(
                     rx.spacer(),
@@ -662,13 +706,16 @@ def _metrics_settings_dialog() -> rx.Component:
                     ),
                     spacing="2",
                     width="100%",
+                    flex_shrink="0",
                 ),
                 spacing="4",
                 width="100%",
+                overflow="hidden",
             ),
-            width="82vw",
+            width=rx.breakpoints(initial="95vw", md="82vw"),
             max_width="100rem",
-            style=MODAL_PANEL_STYLE,
+            overflow="hidden",
+            style={**MODAL_PANEL_STYLE, "overflowX": "hidden"},
         ),
         open=TickersPageState.metrics_dialog_open,
         on_open_change=TickersPageState.handle_metrics_dialog_change,
@@ -686,7 +733,11 @@ def compare_toolbar() -> rx.Component:
                     rx.icon("eye", size=13),
                 ),
                 rx.text(
-                    rx.cond(TickersPageState.show_graphs, "Hide Graphs", "Show Graphs"),
+                    rx.cond(
+                        TickersPageState.show_graphs,
+                        "Hide Graphs",
+                        "Show Graphs",
+                    ),
                 ),
                 spacing="2",
                 align="center",
@@ -694,6 +745,7 @@ def compare_toolbar() -> rx.Component:
             on_click=TickersPageState.toggle_graphs,
             size="2",
             style=BTN_SECONDARY,
+            flex_shrink="0",
         ),
         _metrics_settings_dialog(),
         flex="1",

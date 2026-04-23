@@ -9,32 +9,20 @@ from ourportfolios.pages.tickers.compare_table import compare_table, empty_compa
 from ourportfolios.pages.tickers.controls import board_toolbar, compare_toolbar
 from ourportfolios.pages.tickers.state import TickersPageState
 from ourportfolios.pages.tickers.ticker_board import new_ticker_board
-from ourportfolios.styles import (
-    DIVIDER,
-    PAGE_BG,
-    overlay_style,
-    white,
-)
-
-# ── View toggle ────────────────────────────────────────────────────────────────
+from ourportfolios.styles import DIVIDER, PAGE_BG, overlay_style, white
 
 
 def _toggle_btn(label: str, icon_name: str, mode: str) -> rx.Component:
     is_active = TickersPageState.view_mode == mode
     return rx.button(
         rx.hstack(
-            rx.icon(icon_name, size=13),
-            rx.text(label),
-            spacing="2",
-            align="center",
+            rx.icon(icon_name, size=13), rx.text(label), spacing="2", align="center",
         ),
         on_click=TickersPageState.set_view_mode(mode),
         size="2",
         background=rx.cond(is_active, white(0.09), white(0.05)),
         border=rx.cond(
-            is_active,
-            f"1px solid {white(0.18)}",
-            f"1px solid {white(0.1)}",
+            is_active, f"1px solid {white(0.18)}", f"1px solid {white(0.1)}",
         ),
         color=rx.cond(is_active, white(0.9), white(0.6)),
         font_weight=rx.cond(is_active, "600", "500"),
@@ -42,10 +30,11 @@ def _toggle_btn(label: str, icon_name: str, mode: str) -> rx.Component:
         border_radius="0.5rem",
         cursor="pointer",
         transition="all 0.15s ease",
+        flex_shrink="0",
     )
 
 
-def view_toggle():
+def view_toggle() -> rx.Component:
     return rx.hstack(
         _toggle_btn("Board", "layout_dashboard", "board"),
         _toggle_btn("Compare", "between_horizontal_start", "compare"),
@@ -54,12 +43,17 @@ def view_toggle():
     )
 
 
-def page_header():
+def page_header() -> rx.Component:
     return rx.vstack(
         breadcrumb("/tickers"),
         rx.hstack(
             rx.vstack(
-                rx.heading("Tickers", size="7", weight="bold", color="white"),
+                rx.heading(
+                    "Tickers",
+                    size=rx.breakpoints(initial="6", md="7"),
+                    weight="bold",
+                    color="white",
+                ),
                 rx.text(
                     "Browse, filter and compare stocks across all markets.",
                     size="2",
@@ -67,11 +61,13 @@ def page_header():
                 ),
                 spacing="1",
                 align="start",
+                flex="1",
+                min_width="0",
             ),
-            rx.spacer(),
             view_toggle(),
-            width="100%",
             align="center",
+            width="100%",
+            spacing="3",
         ),
         spacing="2",
         align="start",
@@ -79,20 +75,24 @@ def page_header():
     )
 
 
-def toolbar_row():
+def toolbar_row() -> rx.Component:
+    """Wraps both toolbars in overlapping absolute boxes.
+    Using a plain rx.box (not rx.hstack with fixed height) so the active
+    toolbar can grow vertically on mobile without clipping.
+    """
     _is_board = TickersPageState.view_mode == "board"
     _is_compare = TickersPageState.view_mode == "compare"
-    return rx.hstack(
+    return rx.box(
         rx.box(board_toolbar(), style=overlay_style(_is_board)),
         rx.box(compare_toolbar(), style=overlay_style(_is_compare)),
-        rx.box(height="2.125rem", flex="1"),
-        width="100%",
-        align="center",
         position="relative",
+        width="100%",
+        # min-height prevents the container collapsing when both overlays are opacity:0
+        min_height="2.5rem",
     )
 
 
-def content_area():
+def content_area() -> rx.Component:
     _is_board = TickersPageState.view_mode == "board"
     _is_compare = TickersPageState.view_mode == "compare"
     return rx.box(
@@ -112,7 +112,7 @@ def content_area():
     )
 
 
-def main_content():
+def main_content() -> rx.Component:
     return rx.vstack(
         page_header(),
         rx.box(height="1px", width="100%", background=DIVIDER),
@@ -124,20 +124,23 @@ def main_content():
 
 
 @rx.page(route="/tickers", on_load=TickersPageState.on_mount)
-def index():
+def index() -> rx.Component:
     return rx.box(
         navbar(),
         rx.box(
             rx.box(
                 main_content(),
-                width="86vw",
+                # Full width on mobile with padding; constrained vw on large screens
+                width=rx.breakpoints(initial="100%", lg="86vw"),
                 max_width="90rem",
                 margin="0 auto",
+                padding_x=rx.breakpoints(initial="1rem", lg="0"),
             ),
             width="100%",
-            padding_top="5em",
+            padding_top=rx.breakpoints(initial="4em", md="5em"),
             padding_bottom="1.8em",
-            padding_x="0",
+            # Prevent inner content from creating a page-level horizontal scrollbar
+            overflow_x="hidden",
         ),
         drawer_button(),
         on_unmount=TickersPageState.on_unmount,
@@ -145,4 +148,6 @@ def index():
         color="white",
         min_height="100vh",
         width="100%",
+        # Hard-stop any horizontal overflow at the root
+        overflow_x="hidden",
     )

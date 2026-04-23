@@ -89,7 +89,7 @@ def suggestion_card(value: dict[str, Any]) -> rx.Component:
     industry = value["industry"].to(str)
     pct_price_change: float = value["pct_price_change"].to(float)
 
-    return rx.box(
+    return rx.link(
         rx.hstack(
             rx.vstack(
                 # ticker tag
@@ -125,7 +125,11 @@ def suggestion_card(value: dict[str, Any]) -> rx.Component:
             align="center",
             spacing="1",
         ),
-        on_click=[rx.redirect(f"/tickers/{ticker}"), SearchBarState.set_query("")],
+        href=f"/tickers/{ticker}",
+        on_click=SearchBarState.set_query(""),
+        text_decoration="none",
+        color="inherit",
+        display="block",
         width="100%",
         padding="0.625rem 0.75rem",
         border_radius="0.5rem",

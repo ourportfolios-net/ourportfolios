@@ -15,10 +15,10 @@ from ourportfolios.utils.database.models import (
 class TickerBoardState(rx.State):
     search_query: str = ""
 
-    _all_tickers_cache: rx.Field[list[dict[str, object]]] = rx.Field(
+    tickers_data: rx.Field[list[dict[str, object]]] = rx.Field(
         default_factory=list,
     )
-    _cache_loaded: bool = False
+    load_error: str = ""
 
     selected_exchange: rx.Field[set[str]] = rx.Field(default_factory=set)
     selected_industry: rx.Field[set[str]] = rx.Field(default_factory=set)
@@ -35,11 +35,11 @@ class TickerBoardState(rx.State):
     @rx.event
     def apply_filters(self, filters: dict[str, object]) -> None:
         exchange = filters.get("exchange")
-        if isinstance(exchange, list):
+        if isinstance(exchange, list | set | tuple):
             self.selected_exchange = {str(item) for item in exchange}
 
         industry = filters.get("industry")
-        if isinstance(industry, list):
+        if isinstance(industry, list | set | tuple):
             self.selected_industry = {str(item) for item in industry}
 
         fundamental = filters.get("fundamental")
@@ -71,7 +71,7 @@ class TickerBoardState(rx.State):
 
     @staticmethod
     async def _fetch_tickers_data() -> list[dict[str, object]]:
-        """Execute the raw DB query outside any state lock and return the rows."""
+        """Execute the full ticker query (with stats) and return rows."""
         async with get_company_session() as session:
             # Subquery: latest stats row id per symbol
             latest_stats = (
@@ -103,8 +103,9 @@ class TickerBoardState(rx.State):
                     OverviewORM.exchange,
                     *stats_columns,
                 )
-                .join(ProfileORM, PriceORM.symbol == ProfileORM.symbol)
-                .join(OverviewORM, PriceORM.symbol == OverviewORM.symbol)
+                # Keep price rows visible even when profile/overview lag behind.
+                .outerjoin(ProfileORM, PriceORM.symbol == ProfileORM.symbol)
+                .outerjoin(OverviewORM, PriceORM.symbol == OverviewORM.symbol)
                 .outerjoin(
                     latest_stats,
                     PriceORM.symbol == latest_stats.c.stats_symbol,
@@ -121,16 +122,42 @@ class TickerBoardState(rx.State):
             result = await session.execute(stmt)
             return [dict(row) for row in result.mappings().all()]
 
+    @staticmethod
+    async def _fetch_tickers_data_fallback() -> list[dict[str, object]]:
+        """Fallback query that avoids stats table dependencies."""
+        async with get_company_session() as session:
+            stmt = (
+                select(
+                    PriceORM.symbol,
+                    PriceORM.current_price,
+                    PriceORM.accumulated_volume,
+                    PriceORM.pct_price_change,
+                    ProfileORM.company_name,
+                    OverviewORM.market_cap,
+                    OverviewORM.industry,
+                    OverviewORM.exchange,
+                )
+                .outerjoin(ProfileORM, PriceORM.symbol == ProfileORM.symbol)
+                .outerjoin(OverviewORM, PriceORM.symbol == OverviewORM.symbol)
+                .order_by(PriceORM.accumulated_volume.desc())
+            )
+            result = await session.execute(stmt)
+            return [dict(row) for row in result.mappings().all()]
+
     @rx.event
-    async def load_all_tickers_cache(self) -> None:
-        if self._cache_loaded:
-            return
+    async def load_tickers(self) -> None:
         try:
             rows = await TickerBoardState._fetch_tickers_data()
-            self._all_tickers_cache = rows
-            self._cache_loaded = True
-        except (ValueError, RuntimeError, KeyError):
-            pass
+            self.tickers_data = rows
+            self.load_error = ""
+        except Exception:  # noqa: BLE001
+            try:
+                rows = await TickerBoardState._fetch_tickers_data_fallback()
+                self.tickers_data = rows
+                self.load_error = ""
+            except Exception:  # noqa: BLE001
+                self.tickers_data = []
+                self.load_error = "Failed to load ticker data."
 
     @rx.event
     def set_sort_option(self, option: str) -> None:
@@ -163,12 +190,20 @@ class TickerBoardState(rx.State):
                 return False
         return True
 
-    @rx.var(cache=True)
+    @rx.var
+    def cache_size(self) -> int:
+        return len(self.tickers_data)
+
+    @rx.var
+    def cache_error(self) -> str:
+        return self.load_error
+
+    @rx.var
     def get_all_tickers(self) -> list[dict[str, object]]:
-        if not self._cache_loaded or not self._all_tickers_cache:
+        if not self.tickers_data:
             return []
 
-        results: list[dict[str, object]] = list(self._all_tickers_cache)
+        results: list[dict[str, object]] = list(self.tickers_data)
 
         if self.search_query:
             search_upper = self.search_query.upper()
