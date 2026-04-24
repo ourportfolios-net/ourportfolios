@@ -1,12 +1,13 @@
 import os
+from importlib import import_module
 from logging.config import fileConfig
 
 from dotenv import load_dotenv
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
+from sqlalchemy import engine_from_config, pool
 
-from alembic import context
 from ourportfolios.utils.database.models import Base
+
+context = import_module("alembic.context")
 
 load_dotenv()
 
