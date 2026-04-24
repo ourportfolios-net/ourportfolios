@@ -324,6 +324,41 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
     def on_unmount(self) -> None:
         super().on_unmount()
 
+    def _apply_board_load_result(
+        self,
+        tbs: TickerBoardState,
+        industry_filter: dict[str, bool],
+        exchange_filter: dict[str, bool],
+        board_rows: list,
+    ) -> str:
+        """Apply fetched board data to self and tbs; return a non-empty error string on failure."""
+        tbs.search_query = ""
+        tbs.selected_exchange = set()
+        tbs.selected_industry = set()
+        tbs.selected_fundamental_metric = {}
+        tbs.selected_technical_metric = {}
+        tbs.tickers_data = board_rows
+        tbs.load_error = ""
+        self.industry_filter = industry_filter
+        self.exchange_filter = exchange_filter
+        self._reset_fundamentals()
+        self._reset_technicals()
+        self.selected_fundamental_metric = set()
+        self.selected_technical_metric = set()
+        self.selected_industry = set()
+        self.selected_exchange = set()
+        self.applied_fundamental_filters = {}
+        self.applied_technical_filters = {}
+        self.applied_industry = set()
+        self.applied_exchange = set()
+        self.slider_reset_key += 1
+        self.search_query = ""
+        self._data_loaded = True
+        if not board_rows:
+            tbs.load_error = "Failed to load ticker data."
+            return "Unable to load ticker data. Please retry in a few seconds."
+        return ""
+
     @rx.event(background=True)
     async def auto_load_data(self) -> None:
         load_error = ""
@@ -346,34 +381,10 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
             except Exception:  # noqa: BLE001
                 board_rows = await TickerBoardState._fetch_tickers_data_fallback()  # noqa: SLF001
             async with self:
-                ticker_board_state = await self.get_state(TickerBoardState)
-                ticker_board_state.search_query = ""
-                ticker_board_state.selected_exchange = set()
-                ticker_board_state.selected_industry = set()
-                ticker_board_state.selected_fundamental_metric = {}
-                ticker_board_state.selected_technical_metric = {}
-                ticker_board_state.tickers_data = board_rows
-                ticker_board_state.load_error = ""
-                self.industry_filter = industry_filter
-                self.exchange_filter = exchange_filter
-                self._reset_fundamentals()
-                self._reset_technicals()
-                self.selected_fundamental_metric = set()
-                self.selected_technical_metric = set()
-                self.selected_industry = set()
-                self.selected_exchange = set()
-                self.applied_fundamental_filters = {}
-                self.applied_technical_filters = {}
-                self.applied_industry = set()
-                self.applied_exchange = set()
-                self.slider_reset_key += 1
-                self.search_query = ""
-                self._data_loaded = True
-                if not board_rows:
-                    ticker_board_state.load_error = "Failed to load ticker data."
-                    load_error = (
-                        "Unable to load ticker data. Please retry in a few seconds."
-                    )
+                tbs = await self.get_state(TickerBoardState)
+                load_error = self._apply_board_load_result(
+                    tbs, industry_filter, exchange_filter, board_rows,
+                )
         except asyncio.CancelledError:
             load_error = "Loading interrupted. Retrying may help."
         except Exception:  # noqa: BLE001
@@ -1082,6 +1093,8 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
             return format_integer(int(value))
         if isinstance(value, float):
             return format_ratio(value)
-        if isinstance(value, int):
-            return format_large_number(float(value), decimals=2)
-        return str(value)
+        return (
+            format_large_number(float(value), decimals=2)
+            if isinstance(value, int)
+            else str(value)
+        )
