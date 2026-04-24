@@ -383,7 +383,10 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
             async with self:
                 tbs = await self.get_state(TickerBoardState)
                 load_error = self._apply_board_load_result(
-                    tbs, industry_filter, exchange_filter, board_rows,
+                    tbs,
+                    industry_filter,
+                    exchange_filter,
+                    board_rows,
                 )
         except asyncio.CancelledError:
             load_error = "Loading interrupted. Retrying may help."
@@ -1087,8 +1090,9 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
             )
         ) and isinstance(value, (int, float)):
             return format_percentage(float(value))
-        if "share" in metric_lower or (
-            "mil" in metric_lower and isinstance(value, (int, float))
+        if ("share" in metric_lower or "mil" in metric_lower) and isinstance(
+            value,
+            (int, float),
         ):
             return format_integer(int(value))
         if isinstance(value, float):
