@@ -11,7 +11,6 @@ from ourportfolios.styles import (
     BTN_GHOST_SM,
     BTN_SECONDARY,
     CHIP_STYLE,
-    FLEX_COL_FILL,
     LABEL_STYLE,
     MODAL_BG,
     MODAL_PANEL_STYLE,
@@ -23,9 +22,6 @@ from ourportfolios.styles import (
 )
 
 # ── Filter sliders ─────────────────────────────────────────────────────────────
-#
-# metric_tag is a Reflex Var[str] inside rx.foreach — never use it in a Python
-# boolean expression.  option is a plain Python str so "option == 'F'" is safe.
 
 
 def _metric_slider(metric_tag: str, option: str) -> rx.Component:
@@ -45,35 +41,40 @@ def _metric_slider(metric_tag: str, option: str) -> rx.Component:
     )
     default_step = default_max / 100
 
+    # minWidth:0 is critical — CSS Grid children default to min-width:auto
+    # which lets them expand past the column boundary. This fixes overflow.
     return rx.vstack(
         rx.hstack(
             rx.text(
                 metric_tag,
                 style={
                     **LABEL_STYLE,
-                    "font_size": "0.8125rem",
-                    "color": white(0.55),
+                    "font_size": "0.6875rem",
+                    "color": white(0.5),
                     "white_space": "nowrap",
                     "text_transform": "uppercase",
                     "overflow": "hidden",
                     "text_overflow": "ellipsis",
                     "flex": "1",
                     "min_width": "0",
+                    "letter_spacing": "0.04em",
                 },
             ),
             rx.text(
                 current_value[0],
-                " – ",
+                " - ",
                 current_value[1],
-                size="2",
-                color=white(0.45),
-                weight="medium",
-                white_space="nowrap",
-                flex_shrink="0",
-                min_width="3rem",
+                style={
+                    "font_size": "0.6875rem",
+                    "color": white(0.4),
+                    "font_weight": "500",
+                    "white_space": "nowrap",
+                    "flex_shrink": "0",
+                },
             ),
             width="100%",
             align="center",
+            spacing="2",
             overflow="hidden",
         ),
         rx.slider(
@@ -114,11 +115,19 @@ def _metric_slider(metric_tag: str, option: str) -> rx.Component:
             width="100%",
         ),
         width="100%",
-        spacing="3",
-        padding="0.75em 1em",
-        border_radius="0.625rem",
+        spacing="2",
+        padding="0.5em 0.7em",
+        border_radius="0.5rem",
         background=white(0.025),
-        border=f"1px solid {white(0.07)}",
+        border=f"1px solid {white(0.06)}",
+        # minWidth:0 stops grid items expanding past column width.
+        # clip:hidden clips the Radix thumb that extends slightly beyond the track.
+        style={
+            "minWidth": "0",
+            "boxSizing": "border-box",
+            "overflow": "hidden",
+            "contain": "layout",
+        },
     )
 
 
@@ -128,19 +137,32 @@ def _metrics_filter(option: str = "F") -> rx.Component:
         TickersPageState.fundamentals_default_value.keys(),
         TickersPageState.technicals_default_value.keys(),
     )
-    return rx.grid(
+    # Use minmax(0, 1fr) columns — unlike 1fr, minmax(0,1fr) allows grid items
+    # to shrink below their content size, preventing horizontal overflow.
+    return rx.box(
         rx.foreach(keys, lambda metric_tag: _metric_slider(metric_tag, option)),
-        columns=rx.breakpoints(initial="1", sm="2", md="3", lg="4"),
-        gap="0.75em",
+        style={
+            "display": "grid",
+            "gridTemplateColumns": rx.breakpoints(
+                initial="minmax(0, 1fr)",
+                sm="repeat(2, minmax(0, 1fr))",
+                md="repeat(3, minmax(0, 1fr))",
+                lg="repeat(4, minmax(0, 1fr))",
+            ),
+            "gap": "0.45em",
+            "width": "100%",
+            "boxSizing": "border-box",
+            "overflow": "hidden",
+        },
+        padding=rx.breakpoints(initial="0.6em", sm="0.85em"),
         width="100%",
-        padding="0.85em",
     )
 
 
 def _categorical_filter() -> rx.Component:
     return rx.vstack(
         rx.vstack(
-            rx.text("EXCHANGE", style={**LABEL_STYLE, "font_size": "0.8125rem"}),
+            rx.text("EXCHANGE", style={**LABEL_STYLE, "font_size": "0.75rem"}),
             rx.flex(
                 rx.foreach(
                     TickersPageState.exchange_filter.items(),
@@ -151,18 +173,18 @@ def _categorical_filter() -> rx.Component:
                             exchange=item[0],
                             value=value,
                         ),
-                        size="3",
+                        size="2",
                         color_scheme="violet",
                     ),
                 ),
-                gap="1em",
+                gap="0.85em",
                 wrap="wrap",
             ),
-            spacing="3",
+            spacing="2",
         ),
         rx.vstack(
-            rx.text("INDUSTRY", style={**LABEL_STYLE, "font_size": "0.8125rem"}),
-            rx.scroll_area(
+            rx.text("INDUSTRY", style={**LABEL_STYLE, "font_size": "0.75rem"}),
+            rx.box(
                 rx.flex(
                     rx.foreach(
                         TickersPageState.industry_filter.items(),
@@ -173,22 +195,22 @@ def _categorical_filter() -> rx.Component:
                                 industry=item[0],
                                 value=value,
                             ),
-                            size="3",
+                            size="2",
                             color_scheme="violet",
                         ),
                     ),
-                    gap="1em",
+                    gap="0.85em",
                     wrap="wrap",
                 ),
-                scrollbars="vertical",
-                type="hover",
-                height="12em",
+                height="10em",
+                overflow_y="auto",
+                overflow_x="hidden",
                 width="100%",
             ),
-            spacing="3",
+            spacing="2",
         ),
-        padding="0.85em",
-        spacing="5",
+        padding=rx.breakpoints(initial="0.6em", sm="0.85em"),
+        spacing="4",
         width="100%",
     )
 
@@ -196,76 +218,71 @@ def _categorical_filter() -> rx.Component:
 # ── Filter tab structure ───────────────────────────────────────────────────────
 
 
+def _filter_tab_panel(option: str, value: str) -> rx.Component:
+    body = _categorical_filter() if option == "C" else _metrics_filter(option=option)
+    return rx.tabs.content(
+        body,
+        value=value,
+        style={"overflow": "hidden"},
+    )
+
+
 def _filter_tabs() -> rx.Component:
-    """Tabs header + content in one component, filling whatever height the menu gives."""
     return rx.tabs.root(
-        # Header row — tabs list scrolls horizontally on narrow screens so
-        # "Technical" and "Clear all" are never clipped.
         rx.hstack(
-            rx.box(
-                rx.tabs.list(
-                    rx.tabs.trigger("Fundamental", value="fundamental"),
-                    rx.tabs.trigger("Categorical", value="categorical"),
-                    rx.tabs.trigger("Technical", value="technical"),
+            rx.tabs.list(
+                rx.tabs.trigger(
+                    "Fundamental",
+                    value="fundamental",
+                    style={
+                        "fontSize": rx.breakpoints(initial="0.72rem", sm="0.8125rem"),
+                        "padding": "0 0.5em",
+                    },
                 ),
-                overflow_x="auto",
-                flex_shrink="1",
-                min_width="0",
-                style={"scrollbarWidth": "none", "WebkitOverflowScrolling": "touch"},
+                rx.tabs.trigger(
+                    "Categorical",
+                    value="categorical",
+                    style={
+                        "fontSize": rx.breakpoints(initial="0.72rem", sm="0.8125rem"),
+                        "padding": "0 0.5em",
+                    },
+                ),
+                rx.tabs.trigger(
+                    "Technical",
+                    value="technical",
+                    style={
+                        "fontSize": rx.breakpoints(initial="0.72rem", sm="0.8125rem"),
+                        "padding": "0 0.5em",
+                    },
+                ),
+                style={"flexShrink": "1", "minWidth": "0", "overflow": "hidden"},
             ),
             rx.button(
                 rx.hstack(
-                    rx.icon("filter-x", size=12),
-                    rx.text("Clear all"),
+                    rx.icon("filter-x", size=11),
+                    rx.text("Clear", style={"fontSize": "0.72rem"}),
                     spacing="1",
                     align="center",
                 ),
                 on_click=TickersPageState.clear_all_filters,
-                size="2",
+                size="1",
                 style=BTN_GHOST_SM,
                 flex_shrink="0",
             ),
             width="100%",
             align="center",
-            spacing="2",
-            padding_x="0.75em",
-            padding_top="0.5em",
+            justify="between",
+            padding_x="0.65em",
+            padding_top="0.4em",
             padding_bottom="0",
             flex_shrink="0",
+            overflow="hidden",
         ),
-        # Tab contents — scroll vertically so cards are never clipped on mobile
-        rx.tabs.content(
-            rx.scroll_area(
-                _metrics_filter(option="F"),
-                scrollbars="vertical",
-                type="hover",
-                style={**FLEX_COL_FILL},
-            ),
-            value="fundamental",
-            style={**FLEX_COL_FILL, "overflow": "hidden"},
-        ),
-        rx.tabs.content(
-            rx.scroll_area(
-                _categorical_filter(),
-                scrollbars="vertical",
-                type="hover",
-                style={**FLEX_COL_FILL},
-            ),
-            value="categorical",
-            style={**FLEX_COL_FILL, "overflow": "hidden"},
-        ),
-        rx.tabs.content(
-            rx.scroll_area(
-                _metrics_filter(option="T"),
-                scrollbars="vertical",
-                type="hover",
-                style={**FLEX_COL_FILL},
-            ),
-            value="technical",
-            style={**FLEX_COL_FILL, "overflow": "hidden"},
-        ),
+        _filter_tab_panel("F", "fundamental"),
+        _filter_tab_panel("C", "categorical"),
+        _filter_tab_panel("T", "technical"),
         default_value="fundamental",
-        style=FLEX_COL_FILL,
+        width="100%",
     )
 
 
@@ -300,41 +317,59 @@ def filter_button() -> rx.Component:
             ),
         ),
         rx.menu.content(
-            rx.flex(
+            # Scrollable tab area - stops before the Apply Filters footer
+            rx.box(
                 _filter_tabs(),
-                direction="column",
-                style={**FLEX_COL_FILL, "overflow": "hidden"},
-            ),
-            # Apply Filters floats at the bottom-right inside the menu
-            rx.button(
-                "Apply Filters",
-                on_click=TickersPageState.apply_filters,
-                size="2",
+                overflow_y="auto",
+                overflow_x="hidden",
                 style={
-                    **BTN_GHOST_SM,
                     "position": "absolute",
-                    "bottom": "0.75em",
-                    "right": "0.75em",
+                    "top": "0",
+                    "left": "0",
+                    "right": "0",
+                    "bottom": "2.75em",
                 },
             ),
-            # Responsive width and height so the menu never swamps mobile screens
+            # Apply Filters footer - always visible, solid bg, above scroll content
+            rx.box(
+                rx.button(
+                    "Apply Filters",
+                    on_click=TickersPageState.apply_filters,
+                    size="2",
+                    style=BTN_GHOST_SM,
+                ),
+                display="flex",
+                justify_content="flex-end",
+                align_items="center",
+                padding_x="0.75em",
+                border_top=f"1px solid {white(0.07)}",
+                style={
+                    "position": "absolute",
+                    "bottom": "0",
+                    "left": "0",
+                    "right": "0",
+                    "height": "2.75em",
+                    "background": "rgb(13,13,15)",
+                    "zIndex": "10",
+                },
+            ),
             width=rx.breakpoints(
-                initial="min(95vw, 27em)",
-                sm="40em",
-                md="52em",
-                lg="72em",
+                initial="min(96vw, 22em)",
+                sm="34em",
+                md="44em",
+                lg="56em",
             ),
             height=rx.breakpoints(
-                initial="min(75vh, 26em)",
-                sm="30em",
+                initial="min(72vh, 26em)",
+                sm="28em",
             ),
             max_height="85vh",
             padding="0",
             style={
                 **MODAL_PANEL_STYLE,
-                "border_radius": "0.75rem",
-                "position": "relative",
+                "borderRadius": "0.75rem",
                 "overflow": "hidden",
+                "position": "relative",
             },
             side="bottom",
             align="end",
@@ -347,7 +382,6 @@ def filter_button() -> rx.Component:
 
 
 def _selected_filter_chip(item: str, filter_name: str) -> rx.Component:
-    """Chip for a categorical filter (industry / exchange)."""
     return rx.hstack(
         rx.text(item, size="1", weight="medium", color=white(0.7)),
         rx.box(
@@ -366,7 +400,6 @@ def _selected_filter_chip(item: str, filter_name: str) -> rx.Component:
 
 
 def _metric_filter_chip(item: list, filter_type: str) -> rx.Component:
-    """Chip for a numeric metric filter, showing 'metric: lo–hi'."""
     metric = item[0]
     label = item[1]
     return rx.hstack(
@@ -395,7 +428,6 @@ def _metric_filter_chip(item: list, filter_type: str) -> rx.Component:
 
 
 def _active_filter_chips() -> rx.Component:
-    """Row of chips reflecting the APPLIED (committed) filters only."""
     return rx.flex(
         rx.foreach(
             TickersPageState.applied_industry,
@@ -427,7 +459,6 @@ def _active_filter_chips() -> rx.Component:
 
 def board_toolbar() -> rx.Component:
     return rx.hstack(
-        # Search input — natural clamp width, never grows
         rx.box(
             rx.icon("search", size=14, color=white(0.25), style=SEARCH_ICON_STYLE),
             rx.input(
@@ -442,7 +473,6 @@ def board_toolbar() -> rx.Component:
             align_items="center",
             flex_shrink="0",
         ),
-        # Active filter chips — shown inline, capped at 40em, scrollable
         rx.cond(
             TickersPageState.has_filter,
             rx.box(
@@ -459,7 +489,6 @@ def board_toolbar() -> rx.Component:
             ),
             rx.fragment(),
         ),
-        # Spacer pushes filter button to the far right
         rx.spacer(),
         filter_button(),
         spacing="2",
@@ -486,9 +515,6 @@ def _compare_search_suggestion(ticker_value: dict) -> rx.Component:
             rx.spacer(),
             rx.button(
                 rx.icon("plus", size=13),
-                # prevent_default stops mousedown from stealing focus so the
-                # input's on_blur never fires, keeping the dropdown open until
-                # clear_comparison_search explicitly closes it.
                 on_mouse_down=rx.prevent_default,
                 on_click=[
                     TickersPageState.add_ticker_to_compare(ticker),
@@ -551,7 +577,6 @@ def _compare_search_bar() -> rx.Component:
                     background=MODAL_BG,
                     overflow="hidden",
                     box_shadow="0 0.5rem 2rem rgba(0,0,0,0.6)",
-                    # min_width matches input instead of stretching full toolbar
                     min_width=rx.breakpoints(initial="17.5rem", sm="20rem"),
                 ),
                 rx.fragment(),

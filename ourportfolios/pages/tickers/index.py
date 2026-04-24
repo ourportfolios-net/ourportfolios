@@ -16,13 +16,18 @@ def _toggle_btn(label: str, icon_name: str, mode: str) -> rx.Component:
     is_active = TickersPageState.view_mode == mode
     return rx.button(
         rx.hstack(
-            rx.icon(icon_name, size=13), rx.text(label), spacing="2", align="center",
+            rx.icon(icon_name, size=13),
+            rx.text(label),
+            spacing="2",
+            align="center",
         ),
         on_click=TickersPageState.set_view_mode(mode),
         size="2",
         background=rx.cond(is_active, white(0.09), white(0.05)),
         border=rx.cond(
-            is_active, f"1px solid {white(0.18)}", f"1px solid {white(0.1)}",
+            is_active,
+            f"1px solid {white(0.18)}",
+            f"1px solid {white(0.1)}",
         ),
         color=rx.cond(is_active, white(0.9), white(0.6)),
         font_weight=rx.cond(is_active, "600", "500"),
@@ -76,7 +81,8 @@ def page_header() -> rx.Component:
 
 
 def toolbar_row() -> rx.Component:
-    """Wraps both toolbars in overlapping absolute boxes.
+    """Wrap both toolbars in overlapping absolute boxes.
+
     Using a plain rx.box (not rx.hstack with fixed height) so the active
     toolbar can grow vertically on mobile without clipping.
     """

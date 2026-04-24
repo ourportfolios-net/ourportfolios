@@ -327,7 +327,6 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
     @rx.event(background=True)
     async def auto_load_data(self) -> None:
         load_error = ""
-        board_rows: list[dict[str, object]] = []
         try:
             async with self:
                 if self._data_loaded or self._data_loading or not self.is_mounted():
@@ -348,7 +347,6 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                 board_rows = await TickerBoardState._fetch_tickers_data_fallback()  # noqa: SLF001
             async with self:
                 ticker_board_state = await self.get_state(TickerBoardState)
-                # Keep board state and dialog state synchronised on each mount.
                 ticker_board_state.search_query = ""
                 ticker_board_state.selected_exchange = set()
                 ticker_board_state.selected_industry = set()
@@ -360,7 +358,6 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                 self.exchange_filter = exchange_filter
                 self._reset_fundamentals()
                 self._reset_technicals()
-                # Reset applied/pending filter state on each fresh mount
                 self.selected_fundamental_metric = set()
                 self.selected_technical_metric = set()
                 self.selected_industry = set()
@@ -1069,18 +1066,20 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
             "vnd" in metric_lower
             or "revenue" in metric_lower
             or "asset" in metric_lower
+        ) and isinstance(value, (int, float)):
+            return format_currency_vnd(float(value))
+        if (
+            "%" in metric_name
+            or any(
+                k in metric_lower
+                for k in ("margin", "yield", "return", "growth", "rate", "ratio")
+            )
+        ) and isinstance(value, (int, float)):
+            return format_percentage(float(value))
+        if "share" in metric_lower or (
+            "mil" in metric_lower and isinstance(value, (int, float))
         ):
-            if isinstance(value, (int, float)):
-                return format_currency_vnd(float(value))
-        if "%" in metric_name or any(
-            k in metric_lower
-            for k in ("margin", "yield", "return", "growth", "rate", "ratio")
-        ):
-            if isinstance(value, (int, float)):
-                return format_percentage(float(value))
-        if "share" in metric_lower or "mil" in metric_lower:
-            if isinstance(value, (int, float)):
-                return format_integer(int(value))
+            return format_integer(int(value))
         if isinstance(value, float):
             return format_ratio(value)
         if isinstance(value, int):
