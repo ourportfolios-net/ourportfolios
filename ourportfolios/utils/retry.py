@@ -9,14 +9,19 @@ Reference: https://activeno.de/blog/2025-06/properly-connecting-with-a-database-
 
 import asyncio
 import time
-from typing import Any, Callable
+from collections.abc import Awaitable, Callable
 
 
-async def retry_async(
-    function: Callable[..., Any],
+async def retry_async[T](
+    function: Callable[[], Awaitable[T]],
     max_attempts: int = 5,
     wait_ms: int = 1000,
-) -> Any:
+    exceptions: tuple[type[Exception], ...] = (
+        ConnectionError,
+        TimeoutError,
+        OSError,
+    ),
+) -> T:
     """Retry an async function with a fixed wait interval.
 
     Useful for database operations that may fail due to connection exhaustion
@@ -26,31 +31,38 @@ async def retry_async(
         function: Async callable to retry (e.g., a database operation)
         max_attempts: Total attempts before failing
         wait_ms: Wait time in milliseconds between retries
+        exceptions: Exception types eligible for retry
 
     Returns:
         The result of function
 
     Raises:
         The last exception if all retry attempts fail
+
     """
     last_error: Exception | None = None
 
     for attempt in range(max_attempts):
         try:
             return await function()
-        except Exception as error:
+        except exceptions as error:
             last_error = error
             if attempt < max_attempts - 1:
                 await asyncio.sleep(wait_ms / 1000)
 
-    raise last_error if last_error else RuntimeError("Retry failed with unknown error")
+    raise last_error or RuntimeError("Retry failed with unknown error")
 
 
-def retry_sync(
-    function: Callable[..., Any],
+def retry_sync[T](
+    function: Callable[[], T],
     max_attempts: int = 5,
     wait_ms: int = 1000,
-) -> Any:
+    exceptions: tuple[type[Exception], ...] = (
+        ConnectionError,
+        TimeoutError,
+        OSError,
+    ),
+) -> T:
     """Retry a sync function with a fixed wait interval.
 
     Useful for synchronous database operations (e.g., pandas to_sql).
@@ -59,21 +71,23 @@ def retry_sync(
         function: Callable to retry
         max_attempts: Total attempts before failing
         wait_ms: Wait time in milliseconds between retries
+        exceptions: Exception types eligible for retry
 
     Returns:
         The result of function
 
     Raises:
         The last exception if all retry attempts fail
+
     """
     last_error: Exception | None = None
 
     for attempt in range(max_attempts):
         try:
             return function()
-        except Exception as error:
+        except exceptions as error:
             last_error = error
             if attempt < max_attempts - 1:
                 time.sleep(wait_ms / 1000)
 
-    raise last_error if last_error else RuntimeError("Retry failed with unknown error")
+    raise last_error or RuntimeError("Retry failed with unknown error")

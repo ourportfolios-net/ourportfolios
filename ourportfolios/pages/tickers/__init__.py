@@ -1,5 +1,5 @@
 """Compare page module."""
 
-from .index import index
+from ourportfolios.pages.tickers.index import index
 
 __all__ = ["index"]

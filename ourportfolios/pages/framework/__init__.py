@@ -1,5 +1,5 @@
 """Recommend page module."""
 
-from .index import index
+from ourportfolios.pages.framework.index import index
 
 __all__ = ["index"]

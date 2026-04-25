@@ -1,3 +1,3 @@
-from .index import index
+from ourportfolios.pages.settings.index import index
 
 __all__ = ["index"]

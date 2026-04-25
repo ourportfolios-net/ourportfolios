@@ -2,7 +2,7 @@
 
 import reflex as rx
 
-from ..components import scroll_reveal, badge_button
+from ourportfolios.pages.landing.components import badge_button, scroll_reveal
 
 
 def cta_section() -> rx.Component:

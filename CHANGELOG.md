@@ -2,44 +2,6 @@
 
 <!-- version list -->
 
-## v0.16.1 (2026-04-16)
-
-### Bug Fixes
-
-- Wrap engine to not expose psycopg2
-  ([`68449b5`](https://github.com/ourportfolios-net/ourportfolios/commit/68449b59390c9d6f87f1de2b0b2da25c3ab245cd))
-
-
-## v0.16.0 (2026-04-16)
-
-### Chores
-
-- **deps**: Update lockfile
-  ([`ff9bce8`](https://github.com/ourportfolios-net/ourportfolios/commit/ff9bce8a68d5ca5556dfc2708e3c7cc0c9da33ec))
-
-- **deps**: Upgrade
-  ([`2076daa`](https://github.com/ourportfolios-net/ourportfolios/commit/2076daa3107a71a69be49c806e3f1f4b597b9217))
-
-### Documentation
-
-- Update README and database docs
-  ([`2076fff`](https://github.com/ourportfolios-net/ourportfolios/commit/2076fff6b0df95c24e7c48266ef93a12831221d8))
-
-- Update README and database.py for connection pooling instructions and session management
-  ([`d11993f`](https://github.com/ourportfolios-net/ourportfolios/commit/d11993f5041220dc95115d1de89e23924af9602a))
-
-- Update README and database.py for connection pooling instructions and session management
-  ([`ce82a7b`](https://github.com/ourportfolios-net/ourportfolios/commit/ce82a7be4b9ef84b13c1ea8495c54cb94230cc68))
-
-### Features
-
-- Implement retry logic for async database sessions in serverless environments
-  ([`c1269a0`](https://github.com/ourportfolios-net/ourportfolios/commit/c1269a05f2b38dc418245c9e434b6613a1ceba7a))
-
-- **alembic**: Add proper database migration
-  ([`0ceba44`](https://github.com/ourportfolios-net/ourportfolios/commit/0ceba44f14bac56d8930840a054a1d847ba214d5))
-
-
 ## v0.15.4 (2026-03-21)
 
 ### Bug Fixes

@@ -1,22 +1,32 @@
-"""
-Place at: ourportfolios/state/auth_state.py
-"""
+"""Place at: ourportfolios/state/auth_state.py."""
 
-import secrets
-import hashlib
 import base64
+import hashlib
+import secrets
+import urllib.parse
+from typing import TYPE_CHECKING
+
 import httpx
 import reflex as rx
+from reflex.event import EventCallback, EventSpec
+from supabase_auth.errors import AuthApiError
 
-from ..auth_config import (
+from ourportfolios.auth_config import (
     AUTH_AVAILABLE,
+    SUPABASE_ANON_KEY,
+    SUPABASE_URL,
     get_supabase,
     oauth_redirect_url,
-    SUPABASE_URL,
-    SUPABASE_ANON_KEY,
 )
 
-_BLOCKED_DESTINATIONS = frozenset({"/auth", "/auth/callback", "/loading"})
+if TYPE_CHECKING:
+    from supabase import Client
+    from supabase_auth import AuthResponse, UserResponse
+
+
+_BLOCKED_DESTINATIONS: frozenset[str] = frozenset(
+    {"/auth", "/auth/callback", "/loading"},
+)
 
 _AUTH_ONLY_PREFIXES = (
     "/framework",
@@ -24,26 +34,27 @@ _AUTH_ONLY_PREFIXES = (
     "/settings",
 )
 
+_MIN_PASSWORD_LENGTH = 8
+
 
 def _safe_destination(route: str) -> str:
     if not route:
         return "/home"
-    path = route.split("?")[0].split("#")[0]
+    path: str = route.split("?", maxsplit=1)[0].split("#", maxsplit=1)[0]
     if path in _BLOCKED_DESTINATIONS or not path.startswith("/"):
         return "/home"
     return path
 
 
 def _is_auth_only(path: str) -> bool:
-    for prefix in _AUTH_ONLY_PREFIXES:
-        if path.startswith(prefix):
-            return True
-    return False
+    return any(path.startswith(prefix) for prefix in _AUTH_ONLY_PREFIXES)
 
 
 def _generate_pkce() -> tuple[str, str]:
-    verifier = base64.urlsafe_b64encode(secrets.token_bytes(32)).rstrip(b"=").decode()
-    challenge = (
+    verifier: str = (
+        base64.urlsafe_b64encode(secrets.token_bytes(32)).rstrip(b"=").decode()
+    )
+    challenge: str = (
         base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest())
         .rstrip(b"=")
         .decode()
@@ -51,7 +62,7 @@ def _generate_pkce() -> tuple[str, str]:
     return verifier, challenge
 
 
-_TOAST = dict(position="bottom-right", duration=4000)
+_TOAST: dict[str, str | int] = {"position": "bottom-right", "duration": 4000}
 
 
 class AuthState(rx.State):
@@ -132,7 +143,7 @@ class AuthState(rx.State):
 
     @rx.var
     def user_initial(self) -> str:
-        src = self.user_display_name or self.user_email
+        src: str = self.user_display_name or self.user_email
         return src[0].upper() if src else "?"
 
     # ─────────────────────────────────────────────────────────────────────────
@@ -140,7 +151,7 @@ class AuthState(rx.State):
     # ─────────────────────────────────────────────────────────────────────────
 
     @rx.event
-    def set_mode_login(self):
+    def set_mode_login(self) -> None:
         self.auth_mode = "login"
         self.email = ""
         self.password = ""
@@ -149,7 +160,7 @@ class AuthState(rx.State):
         self.error = ""
 
     @rx.event
-    def set_mode_register(self):
+    def set_mode_register(self) -> None:
         self.auth_mode = "register"
         self.email = ""
         self.password = ""
@@ -158,67 +169,69 @@ class AuthState(rx.State):
         self.error = ""
 
     @rx.event
-    def set_email(self, value: str):
+    def set_email(self, value: str) -> None:
         self.email = value
         self.error = ""
 
     @rx.event
-    def set_password(self, value: str):
+    def set_password(self, value: str) -> None:
         self.password = value
         self.error = ""
 
     @rx.event
-    def set_confirm_password(self, value: str):
+    def set_confirm_password(self, value: str) -> None:
         self.confirm_password = value
         self.error = ""
 
     @rx.event
-    def set_full_name(self, value: str):
+    def set_full_name(self, value: str) -> None:
         self.full_name = value
 
     @rx.event
-    def set_user_display_name(self, value: str):
+    def set_user_display_name(self, value: str) -> None:
         self.user_display_name = value
 
     # ── Reset password setters ────────────────────────────────────────────────
 
     @rx.event
-    def set_reset_new_password(self, value: str):
+    def set_reset_new_password(self, value: str) -> None:
         self.reset_new_password = value
         self.reset_error = ""
 
     @rx.event
-    def set_reset_confirm_password(self, value: str):
+    def set_reset_confirm_password(self, value: str) -> None:
         self.reset_confirm_password = value
         self.reset_error = ""
 
     # ── Enter-key submit helpers ──────────────────────────────────────────────
 
     @rx.event
-    def handle_login_on_enter(self, key: str):
+    def handle_login_on_enter(self, key: str) -> EventCallback[*tuple[()]] | None:
         if key == "Enter":
             return AuthState.handle_login()
+        return None
 
     @rx.event
-    def handle_register_on_enter(self, key: str):
+    def handle_register_on_enter(self, key: str) -> EventCallback[*tuple[()]] | None:
         if key == "Enter":
             return AuthState.handle_register()
+        return None
 
     # ── Forgot password setters ───────────────────────────────────────────────
 
     @rx.event
-    def open_forgot(self):
+    def open_forgot(self) -> None:
         self.forgot_open = True
         self.forgot_email = ""
         self.forgot_error = ""
         self.forgot_sent = False
 
     @rx.event
-    def close_forgot(self):
+    def close_forgot(self) -> None:
         self.forgot_open = False
 
     @rx.event
-    def set_forgot_email(self, value: str):
+    def set_forgot_email(self, value: str) -> None:
         self.forgot_email = value
         self.forgot_error = ""
 
@@ -226,19 +239,28 @@ class AuthState(rx.State):
     # Internal helpers
     # ─────────────────────────────────────────────────────────────────────────
 
-    def _store_session(self, user, session=None) -> None:
-        self.user_id = str(user.id)
-        self.user_email = user.email or ""
-        self.user_display_name = (
-            (user.user_metadata or {}).get("full_name", "")
-            or (user.user_metadata or {}).get("name", "")
-            or ""
-        )
+    def _store_session(
+        self,
+        user: object,
+        session: object | None = None,
+    ) -> None:
+        user_id = getattr(user, "id", "")
+        user_email = getattr(user, "email", "")
+        user_metadata = getattr(user, "user_metadata", None)
+        metadata = user_metadata if isinstance(user_metadata, dict) else {}
+        full_name = metadata.get("full_name", "")
+        fallback_name = metadata.get("name", "")
+
+        self.user_id = str(user_id)
+        self.user_email = str(user_email or "")
+        self.user_display_name = str(full_name or fallback_name or "")
         self.is_authenticated = True
         self.is_guest = False
         if session:
-            self.auth_token = session.access_token
-            self.auth_refresh_token = session.refresh_token or ""
+            access_token = getattr(session, "access_token", "")
+            refresh_token = getattr(session, "refresh_token", "")
+            self.auth_token = str(access_token)
+            self.auth_refresh_token = str(refresh_token or "")
 
     def _clear_session(self) -> None:
         self.auth_token = ""
@@ -258,31 +280,32 @@ class AuthState(rx.State):
         self.error = ""
 
     def _consume_intended_route(self) -> str:
-        destination = _safe_destination(self.intended_route)
+        destination: str = _safe_destination(self.intended_route)
         self.intended_route = ""
         return destination
 
     def _parse_url_param(self, key: str) -> str:
         try:
-            params = self.router.page.params
+            params = self.router.url.query_parameters
             value = params.get(key, "")
             if isinstance(value, list):
                 return value[0] if value else ""
-            return value or ""
-        except Exception:
+        except (AttributeError, TypeError, ValueError):
             return ""
+        else:
+            return value or ""
 
     # ─────────────────────────────────────────────────────────────────────────
     # Navbar locked-link helpers
     # ─────────────────────────────────────────────────────────────────────────
 
     @rx.event
-    def redirect_to_login_from_current_page(self):
+    def redirect_to_login_from_current_page(self) -> EventSpec:
         self.intended_route = self.router.url.path
         return rx.redirect("/auth")
 
     @rx.event
-    def redirect_to_login_with_destination(self, destination: str):
+    def redirect_to_login_with_destination(self, destination: str) -> EventSpec:
         self.intended_route = _safe_destination(destination)
         return rx.redirect("/auth")
 
@@ -291,63 +314,65 @@ class AuthState(rx.State):
     # ─────────────────────────────────────────────────────────────────────────
 
     @rx.event
-    async def check_existing_session(self):
+    async def check_existing_session(self) -> None | EventSpec:
         self.session_checked = False
         self.auth_mode = "login"
 
         if not AUTH_AVAILABLE:
             self.session_checked = True
-            return
+            return None
 
-        token = self.auth_token
+        token: str = self.auth_token
         if not token:
             self.session_checked = True
-            return
+            return None
 
         try:
-            supabase = get_supabase()
-            response = supabase.auth.get_user(token)
+            supabase: Client = get_supabase()
+            response: UserResponse | None = supabase.auth.get_user(token)
             if response and response.user:
                 self._store_session(response.user)
-                destination = self._consume_intended_route()
+                destination: str = self._consume_intended_route()
                 return rx.redirect(destination)
-        except Exception:
+        except (AttributeError, TypeError, ValueError):
             self._clear_session()
 
         self.session_checked = True
+        return None
 
     # ─────────────────────────────────────────────────────────────────────────
     # Protected-page guard
     # ─────────────────────────────────────────────────────────────────────────
 
     @rx.event
-    async def require_auth(self):
+    async def require_auth(self) -> None | list[EventSpec] | EventSpec:
         self.auth_checked = False
 
         if not AUTH_AVAILABLE:
             self.auth_checked = True
-            return
+            return None
 
         if self.is_authenticated:
             self.auth_checked = True
-            return
+            return None
 
-        token = self.auth_token
+        token: str = self.auth_token
         if token:
             try:
-                supabase = get_supabase()
-                response = supabase.auth.get_user(token)
+                supabase: Client = get_supabase()
+                response: UserResponse | None = supabase.auth.get_user(token)
                 if response and response.user:
                     self._store_session(response.user)
                     self.auth_checked = True
-                    return
-            except Exception:
+                    return None
+            except (AttributeError, TypeError, ValueError):
                 self._clear_session()
                 self.intended_route = self.router.url.path
                 return [
                     rx.redirect("/auth"),
                     rx.toast.warning(
-                        "Your session expired. Please sign in again.", **_TOAST
+                        "Your session expired. Please sign in again.",
+                        **_TOAST,
                     ),
                 ]
 
@@ -355,26 +380,51 @@ class AuthState(rx.State):
         return rx.redirect("/auth")
 
     @rx.event
-    async def require_account(self):
-        async for update in self.require_auth():
-            yield update
+    async def require_account(self) -> None | list[EventSpec] | EventSpec:
+        return await self.require_auth()
 
     @rx.event
-    async def require_auth_strict(self):
-        async for update in self.require_auth():
-            yield update
+    async def require_auth_strict(self) -> None | list[EventSpec] | EventSpec:
+        return await self.require_auth()
+
+    @rx.event(background=True)
+    async def check_auth_status(self) -> None | EventSpec:
+        """Silent check for public pages to hydrate auth state from token."""
+        if not AUTH_AVAILABLE:
+            return None
+
+        if self.is_authenticated:
+            return None
+
+        token: str = self.auth_token
+        if not token:
+            async with self:
+                self.is_guest = True
+            return None
+
+        try:
+            supabase: Client = get_supabase()
+            response: UserResponse | None = supabase.auth.get_user(token)
+            if response and response.user:
+                async with self:
+                    self._store_session(response.user)
+                return None
+        except (AttributeError, TypeError, ValueError, AuthApiError):
+            async with self:
+                self._clear_session()
+            return None
 
     # ─────────────────────────────────────────────────────────────────────────
     # Guest
     # ─────────────────────────────────────────────────────────────────────────
 
     @rx.event
-    def continue_as_guest(self):
+    def continue_as_guest(self) -> list[EventSpec] | EventSpec:
         self._clear_form()
         self.is_guest = True
         self.is_authenticated = False
 
-        raw = _safe_destination(self.intended_route)
+        raw: str = _safe_destination(self.intended_route)
         self.intended_route = ""
 
         if _is_auth_only(raw):
@@ -390,14 +440,14 @@ class AuthState(rx.State):
     # ─────────────────────────────────────────────────────────────────────────
 
     @rx.event
-    async def handle_login(self):
+    async def handle_login(self) -> list[EventSpec] | EventSpec | None:
         if not AUTH_AVAILABLE:
             self._clear_form()
             self.is_authenticated = True
             self.is_guest = False
             self.user_email = "dev@local"
             self.user_id = "dev"
-            destination = self._consume_intended_route()
+            destination: str = self._consume_intended_route()
             return [
                 rx.redirect(destination),
                 rx.toast.success("Welcome back!", **_TOAST),
@@ -407,24 +457,23 @@ class AuthState(rx.State):
         self.error = ""
         self.show_resend = False
         try:
-            supabase = get_supabase()
-            response = supabase.auth.sign_in_with_password(
-                {"email": self.email, "password": self.password}
+            supabase: Client = get_supabase()
+            response: AuthResponse = supabase.auth.sign_in_with_password(
+                {"email": self.email, "password": self.password},
             )
-            if response.session:
+            if response.session and response.user:
                 self._store_session(response.user, response.session)
                 self._clear_form()
-                name = self.user_display_name or response.user.email or "back"
-                destination = self._consume_intended_route()
+                name: str = self.user_display_name or response.user.email or "back"
+                destination: str = self._consume_intended_route()
                 return [
                     rx.redirect(destination),
                     rx.toast.success(f"Welcome back, {name}!", **_TOAST),
                 ]
-            else:
-                self.error = "Invalid credentials."
-                return rx.toast.error("Invalid email or password.", **_TOAST)
-        except Exception as e:
-            msg = str(e).lower()
+            self.error = "Invalid credentials."
+            return rx.toast.error("Invalid email or password.", **_TOAST)
+        except (ValueError, RuntimeError) as e:
+            msg: str = str(e).lower()
             if "email not confirmed" in msg:
                 self.show_resend = True
                 self.error = "Please confirm your email before signing in."
@@ -435,10 +484,10 @@ class AuthState(rx.State):
             self.loading = False
 
     @rx.event
-    async def handle_register(self):
+    async def handle_register(self) -> list[EventSpec] | EventSpec:
         if not AUTH_AVAILABLE:
             self._clear_form()
-            destination = self._consume_intended_route()
+            destination: str = self._consume_intended_route()
             return [
                 rx.redirect(destination),
                 rx.toast.success("Account created! Welcome.", **_TOAST),
@@ -451,170 +500,202 @@ class AuthState(rx.State):
         self.loading = True
         self.error = ""
         try:
-            supabase = get_supabase()
-            response = supabase.auth.sign_up(
+            supabase: Client = get_supabase()
+            response: AuthResponse = supabase.auth.sign_up(
                 {
                     "email": self.email,
                     "password": self.password,
                     "options": {"email_redirect_to": oauth_redirect_url()},
-                }
+                },
             )
             if response.user:
                 if response.session:
                     self._store_session(response.user, response.session)
                     self._clear_form()
-                    destination = self._consume_intended_route()
+                    destination: str = self._consume_intended_route()
                     return [
                         rx.redirect(destination),
                         rx.toast.success("Welcome! Your account is ready.", **_TOAST),
                     ]
-                else:
-                    self._clear_form()
-                    return [
-                        rx.redirect("/auth"),
-                        rx.toast.info(
-                            "Check your email to confirm your account.", **_TOAST
-                        ),
-                    ]
-            else:
-                self.error = "Registration failed."
-                return rx.toast.error(
-                    "Registration failed. Please try again.", **_TOAST
-                )
-        except Exception as e:
+                self._clear_form()
+                return [
+                    rx.redirect("/auth"),
+                    rx.toast.info(
+                        "Check your email to confirm your account.",
+                        **_TOAST,
+                    ),
+                ]
+            self.error = "Registration failed."
+            return rx.toast.error(
+                "Registration failed. Please try again.",
+                **_TOAST,
+            )
+        except (ValueError, RuntimeError) as e:
             self.error = str(e)
             return rx.toast.error(f"Registration failed: {e}", **_TOAST)
         finally:
             self.loading = False
 
     @rx.event
-    async def resend_confirmation(self):
+    async def resend_confirmation(self) -> None | EventSpec:
         if not self.email:
             self.error = "Enter your email above first."
-            return
+            return None
         self.resend_loading = True
         try:
-            supabase = get_supabase()
+            supabase: Client = get_supabase()
             supabase.auth.resend({"type": "signup", "email": self.email})
             self.resend_sent = True
             self.show_resend = False
             return rx.toast.success(
-                "Confirmation email resent. Check your inbox.", **_TOAST
+                "Confirmation email resent. Check your inbox.",
+                **_TOAST,
             )
-        except Exception as e:
+        except (ValueError, RuntimeError) as e:
             self.error = str(e)
             return rx.toast.error(f"Failed to resend: {e}", **_TOAST)
         finally:
             self.resend_loading = False
 
     @rx.event
-    async def handle_google_login(self):
+    async def handle_google_login(self) -> None | EventSpec:
         if not AUTH_AVAILABLE:
-            return
+            return None
         try:
             verifier, challenge = _generate_pkce()
             self._pkce_verifier = verifier
 
-            import urllib.parse
-
-            params = urllib.parse.urlencode(
+            params: str = urllib.parse.urlencode(
                 {
                     "provider": "google",
                     "redirect_to": oauth_redirect_url(),
                     "code_challenge": challenge,
                     "code_challenge_method": "S256",
-                }
+                },
             )
-            url = f"{SUPABASE_URL}/auth/v1/authorize?{params}"
+            url: str = f"{SUPABASE_URL}/auth/v1/authorize?{params}"
             return rx.redirect(url)
-        except Exception as e:
+        except (ValueError, RuntimeError) as e:
             self.error = str(e)
             return rx.toast.error(f"Google sign in failed: {e}", **_TOAST)
 
-    @rx.event
-    async def handle_oauth_callback(self):
-        if not AUTH_AVAILABLE:
-            return rx.redirect("/home")
-
-        token_hash = self._parse_url_param("token_hash")
-        token_type = self._parse_url_param("type")
-        if token_hash and token_type:
-            try:
-                supabase = get_supabase()
-                response = supabase.auth.verify_otp(
-                    {"token_hash": token_hash, "type": token_type}
-                )
-                if response.session:
-                    self._store_session(response.user, response.session)
-                    if token_type == "recovery":
-                        return rx.redirect("/auth/reset-callback")
-                    destination = self._consume_intended_route()
-                    return [
-                        rx.redirect(destination),
-                        rx.toast.success(
-                            f"Email confirmed! Welcome, {self.user_display_name or self.user_email}!",
-                            **_TOAST,
-                        ),
-                    ]
-            except Exception as e:
-                self.error = str(e)
-            return [
-                rx.redirect("/auth"),
-                rx.toast.error(
-                    "Confirmation link expired. Please request a new one.", **_TOAST
-                ),
-            ]
-
-        code = self._parse_url_param("code")
-        if code:
-            verifier = self._pkce_verifier
-            self._pkce_verifier = ""
-            if not verifier:
-                return [
-                    rx.redirect("/auth"),
-                    rx.toast.warning("Sign in timed out. Please try again.", **_TOAST),
-                ]
-            try:
-                async with httpx.AsyncClient() as client:
-                    resp = await client.post(
-                        f"{SUPABASE_URL}/auth/v1/token?grant_type=pkce",
-                        json={"auth_code": code, "code_verifier": verifier},
-                        headers={
-                            "apikey": SUPABASE_ANON_KEY,
-                            "Content-Type": "application/json",
-                        },
-                    )
-                data = resp.json()
-                if "error" in data:
-                    raise Exception(data.get("error_description", data["error"]))
-
-                access_token = data.get("access_token", "")
-                refresh_token = data.get("refresh_token", "")
-                if not access_token:
-                    raise Exception("No access token returned.")
-
-                supabase = get_supabase()
-                user_response = supabase.auth.get_user(access_token)
-                if not user_response or not user_response.user:
-                    raise Exception("Could not retrieve user.")
-
-                self.auth_token = access_token
-                self.auth_refresh_token = refresh_token
-                self._store_session(user_response.user)
-                destination = self._consume_intended_route()
+    async def _handle_oauth_otp_callback(
+        self,
+        token_hash: str,
+        callback_type: str,
+    ) -> EventSpec | list[EventSpec]:
+        try:
+            supabase: Client = get_supabase()
+            otp_type = "recovery" if callback_type == "recovery" else "signup"
+            response: AuthResponse = supabase.auth.verify_otp(
+                {"token_hash": token_hash, "type": otp_type},
+            )
+            if response.session and response.user:
+                self._store_session(response.user, response.session)
+                if callback_type == "recovery":
+                    return rx.redirect("/auth/reset-callback")
+                destination: str = self._consume_intended_route()
                 return [
                     rx.redirect(destination),
                     rx.toast.success(
-                        f"Welcome, {self.user_display_name or self.user_email}!",
+                        f"Email confirmed! Welcome, {self.user_display_name or self.user_email}!",
                         **_TOAST,
                     ),
                 ]
-            except Exception as e:
-                self.error = str(e)
+        except (ValueError, RuntimeError) as e:
+            self.error = str(e)
+
+        return [
+            rx.redirect("/auth"),
+            rx.toast.error(
+                "Confirmation link expired. Please request a new one.",
+                **_TOAST,
+            ),
+        ]
+
+    async def _handle_pkce_callback(self, code: str) -> EventSpec | list[EventSpec]:
+        verifier: str = self._pkce_verifier
+        self._pkce_verifier = ""
+        if not verifier:
+            return [
+                rx.redirect("/auth"),
+                rx.toast.warning("Sign in timed out. Please try again.", **_TOAST),
+            ]
+
+        try:
+            async with httpx.AsyncClient() as client:
+                resp: httpx.Response = await client.post(
+                    f"{SUPABASE_URL}/auth/v1/token?grant_type=pkce",
+                    json={"auth_code": code, "code_verifier": verifier},
+                    headers={
+                        "apikey": SUPABASE_ANON_KEY,
+                        "Content-Type": "application/json",
+                    },
+                )
+            data = resp.json()
+            if "error" in data:
+                error_message: str = data.get("error_description") or str(data["error"])
+                self.error = error_message
                 return [
                     rx.redirect("/auth"),
-                    rx.toast.error(f"Sign in failed: {e}", **_TOAST),
+                    rx.toast.error(f"Sign in failed: {error_message}", **_TOAST),
                 ]
+
+            access_token = data.get("access_token", "")
+            refresh_token = data.get("refresh_token", "")
+            if not access_token:
+                self.error = "No access token returned."
+                return [
+                    rx.redirect("/auth"),
+                    rx.toast.error(
+                        "Sign in failed: No access token returned.",
+                        **_TOAST,
+                    ),
+                ]
+
+            supabase: Client = get_supabase()
+            user_response: UserResponse | None = supabase.auth.get_user(access_token)
+            if not user_response or not user_response.user:
+                self.error = "Could not retrieve user."
+                return [
+                    rx.redirect("/auth"),
+                    rx.toast.error(
+                        "Sign in failed: Could not retrieve user.",
+                        **_TOAST,
+                    ),
+                ]
+
+            self.auth_token = access_token
+            self.auth_refresh_token = refresh_token
+            self._store_session(user_response.user)
+            destination: str = self._consume_intended_route()
+            return [
+                rx.redirect(destination),
+                rx.toast.success(
+                    f"Welcome, {self.user_display_name or self.user_email}!",
+                    **_TOAST,
+                ),
+            ]
+        except (ValueError, RuntimeError) as e:
+            self.error = str(e)
+            return [
+                rx.redirect("/auth"),
+                rx.toast.error(f"Sign in failed: {e}", **_TOAST),
+            ]
+
+    @rx.event
+    async def handle_oauth_callback(self) -> EventSpec | list[EventSpec]:
+        if not AUTH_AVAILABLE:
+            return rx.redirect("/home")
+
+        token_hash: str = self._parse_url_param("token_hash")
+        callback_type: str = self._parse_url_param("type")
+        if token_hash and callback_type:
+            return await self._handle_oauth_otp_callback(token_hash, callback_type)
+
+        code: str = self._parse_url_param("code")
+        if code:
+            return await self._handle_pkce_callback(code)
 
         return [
             rx.redirect("/auth"),
@@ -622,14 +703,14 @@ class AuthState(rx.State):
         ]
 
     @rx.event
-    async def logout(self):
+    async def logout(self) -> list[EventSpec] | EventSpec:
         if AUTH_AVAILABLE:
             try:
-                supabase = get_supabase()
+                supabase: Client = get_supabase()
                 supabase.auth.sign_out()
-            except Exception:
-                pass
-        current_path = self.router.url.path
+            except (RuntimeError, ValueError):
+                self.error = "Failed to sign out cleanly."
+        current_path: str = self.router.url.path
         self._clear_session()
         self._clear_form()
         if _is_auth_only(current_path):
@@ -642,7 +723,7 @@ class AuthState(rx.State):
     # ── Forgot password ───────────────────────────────────────────────────────
 
     @rx.event
-    async def handle_forgot_password(self):
+    async def handle_forgot_password(self) -> None:
         if not self.forgot_email.strip():
             self.forgot_error = "Enter your email address."
             return
@@ -651,10 +732,10 @@ class AuthState(rx.State):
         self.forgot_error = ""
         try:
             if AUTH_AVAILABLE:
-                supabase = get_supabase()
+                supabase: Client = get_supabase()
                 supabase.auth.reset_password_email(self.forgot_email.strip())
             self.forgot_sent = True
-        except Exception as e:
+        except (ValueError, RuntimeError) as e:
             self.forgot_error = str(e)
         finally:
             self.forgot_loading = False
@@ -662,12 +743,12 @@ class AuthState(rx.State):
     # ── Reset password ────────────────────────────────────────────────────────
 
     @rx.event
-    async def handle_reset_callback(self):
+    async def handle_reset_callback(self) -> EventSpec | list[EventSpec]:
         """Dedicated callback for password reset emails — no ambiguity with email confirmation."""
         if not AUTH_AVAILABLE:
             return rx.redirect("/auth/reset-password")
 
-        token_hash = self._parse_url_param("token_hash")
+        token_hash: str = self._parse_url_param("token_hash")
         if not token_hash:
             return [
                 rx.redirect("/auth"),
@@ -675,15 +756,15 @@ class AuthState(rx.State):
             ]
 
         try:
-            supabase = get_supabase()
-            response = supabase.auth.verify_otp(
-                {"token_hash": token_hash, "type": "recovery"}
+            supabase: Client = get_supabase()
+            response: AuthResponse = supabase.auth.verify_otp(
+                {"token_hash": token_hash, "type": "recovery"},
             )
-            if response.session:
+            if response.session and response.user:
                 self._store_session(response.user, response.session)
                 return rx.redirect("/auth/reset-password")
-        except Exception:
-            pass
+        except (ValueError, RuntimeError):
+            self._clear_session()
 
         return [
             rx.redirect("/auth"),
@@ -691,25 +772,25 @@ class AuthState(rx.State):
         ]
 
     @rx.event
-    async def handle_reset_password(self):
+    async def handle_reset_password(self) -> None | EventSpec:
         if self.reset_new_password != self.reset_confirm_password:
             self.reset_error = "Passwords do not match."
-            return
+            return None
 
-        if len(self.reset_new_password) < 8:
+        if len(self.reset_new_password) < _MIN_PASSWORD_LENGTH:
             self.reset_error = "Password must be at least 8 characters."
-            return
+            return None
 
         self.reset_loading = True
         self.reset_error = ""
         try:
-            supabase = get_supabase()
+            supabase: Client = get_supabase()
             supabase.auth.update_user({"password": self.reset_new_password})
             self.reset_done = True
             self.reset_new_password = ""
             self.reset_confirm_password = ""
             return rx.toast.success("Password updated! Please sign in.", **_TOAST)
-        except Exception as e:
+        except (ValueError, RuntimeError) as e:
             self.reset_error = str(e)
             return rx.toast.error(f"Failed to update password: {e}", **_TOAST)
         finally:

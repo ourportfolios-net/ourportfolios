@@ -1,326 +1,405 @@
-"""Session management utilities for page isolation and lifecycle control.
+"""Manage state sessions and task isolation for Reflex pages."""
 
-Provides synchronous session management with immediate task cancellation on navigation,
-preventing cross-page data contamination and ensuring responsive page transitions.
-"""
+from __future__ import annotations
 
 import asyncio
+import inspect
+import logging
 import uuid
 from functools import wraps
-from collections.abc import Callable
-import reflex as rx
+from typing import TYPE_CHECKING, TypeVar, cast, overload
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator, Awaitable, Callable
+    from types import ModuleType
+
+try:
+    from reflex.utils.prerequisites import get_app as _get_app
+
+    get_app: Callable[[bool], ModuleType] | None = _get_app
+except ImportError:  # pragma: no cover
+    get_app: Callable[[bool], ModuleType] | None = None
+
+LOGGER = logging.getLogger(__name__)
+SESSION_WAIT_ATTEMPTS = 6
+SESSION_WAIT_DELAY_SECONDS = 0.05
+MISSING_TOKEN_VALUES = {"none", "null"}
+
+_T = TypeVar("_T")
 
 
 class SessionCancelledError(Exception):
-    """Raised when an operation is cancelled due to session termination."""
+    """Raise when an operation is cancelled due to session termination."""
 
 
 class SessionManager:
-    """Manages page session lifecycles to prevent cross-page data contamination."""
+    """Manage page sessions to prevent cross-page data contamination."""
 
-    def __init__(self):
-        # Track active page sessions per state instance
-        self._active_sessions: dict[str, str] = {}  # state_id -> session_id
-        # Track cancelled sessions to prevent their operations from completing
+    CANCELLED_SESSION_LIMIT = 100
+    CANCELLED_SESSION_KEEP = 50
+
+    def __init__(self) -> None:
+        self._active_sessions: dict[str, str] = {}
         self._cancelled_sessions: set[str] = set()
-        # Track running tasks per session for IMMEDIATE cancellation
-        self._session_tasks: dict[str, set[asyncio.Task]] = {}
+        self._session_tasks: dict[str, set[asyncio.Task[object]]] = {}
+        self._state_cache: dict[int, str] = {}
 
-    def start_session(self, state_id: str, force_new: bool = False) -> str:
-        """Start a new page session and immediately cancel previous sessions.
-
-        Args:
-            state_id: Unique identifier for the state instance
-            force_new: If True, cancels sessions from other pages
-
-        Returns:
-            Session ID for the new or existing session
-        """
+    def start_session(self, state_id: str, *, force_new: bool = False) -> str:
+        """Start a session and optionally cancel sessions from other pages."""
         if force_new:
-            current_state_class = (
-                state_id.rsplit("_", 1)[0] if "_" in state_id else state_id
-            )
-
-            sessions_to_cancel = []
-            states_to_remove = []
-
-            for sid, session_id in self._active_sessions.items():
-                other_state_class = sid.rsplit("_", 1)[0] if "_" in sid else sid
-
-                if other_state_class != current_state_class:
-                    sessions_to_cancel.append(session_id)
-                    states_to_remove.append(sid)
-                    if session_id not in self._cancelled_sessions:
-                        self._cancelled_sessions.add(session_id)
-                        self._cancel_tasks_immediately(session_id)
-
-            for sid in states_to_remove:
-                del self._active_sessions[sid]
-
-            if state_id in self._active_sessions:
-                existing_session_id = self._active_sessions[state_id]
-                if existing_session_id not in self._cancelled_sessions:
-                    return existing_session_id
-                else:
-                    del self._active_sessions[state_id]
+            self._cancel_other_page_sessions(state_id)
+            existing_session = self._active_sessions.get(state_id)
+            if existing_session and self.is_session_active(existing_session):
+                return existing_session
+            self._active_sessions.pop(state_id, None)
         else:
-            if state_id in self._active_sessions:
-                existing_session_id = self._active_sessions[state_id]
-                if existing_session_id not in self._cancelled_sessions:
-                    return existing_session_id
+            existing_session = self._active_sessions.get(state_id)
+            if existing_session and self.is_session_active(existing_session):
+                return existing_session
 
         session_id = str(uuid.uuid4())
         self._active_sessions[state_id] = session_id
         self._session_tasks[session_id] = set()
-
         return session_id
 
-    def _cancel_tasks_immediately(self, session_id: str):
-        """Immediately cancel all tasks for a session.
+    def _cancel_other_page_sessions(self, state_id: str) -> None:
+        current_state_class = (
+            state_id.rsplit("_", 1)[0] if "_" in state_id else state_id
+        )
+        states_to_remove: list[str] = []
 
-        Args:
-            session_id: The session whose tasks should be cancelled
-        """
-        if session_id not in self._session_tasks:
-            return
+        for other_state_id, session_id in self._active_sessions.items():
+            other_state_class = (
+                other_state_id.rsplit("_", 1)[0]
+                if "_" in other_state_id
+                else other_state_id
+            )
+            if other_state_class == current_state_class:
+                continue
+            self.cancel_session(session_id)
+            states_to_remove.append(other_state_id)
 
-        tasks = list(self._session_tasks[session_id])
-        active_tasks = [t for t in tasks if not t.done()]
+        for other_state_id in states_to_remove:
+            self._active_sessions.pop(other_state_id, None)
 
-        if active_tasks:
-            for task in active_tasks:
-                try:
-                    task.cancel()
-                except Exception as e:
-                    print(f"Error: {e}")
-                    pass
-
-        if session_id in self._session_tasks:
-            del self._session_tasks[session_id]
+    def _cancel_tasks_immediately(self, session_id: str) -> None:
+        """Cancel all tasks currently tracked for a session."""
+        tasks = list(self._session_tasks.get(session_id, set()))
+        for task in tasks:
+            if not task.done():
+                task.cancel()
+        self._session_tasks.pop(session_id, None)
 
     def is_session_active(self, session_id: str) -> bool:
-        """Check if a session is still active.
-
-        Args:
-            session_id: The session to check
-
-        Returns:
-            True if the session is active, False if cancelled
-        """
+        """Return whether a session has not been cancelled."""
         return session_id not in self._cancelled_sessions
 
-    def register_task(self, session_id: str, task: asyncio.Task):
-        """Register a task with a session for immediate cancellation on navigation."""
+    def register_task(self, session_id: str, task: asyncio.Task[object]) -> None:
+        """Register a task for cancellation when its session is ended."""
         if session_id in self._session_tasks:
             self._session_tasks[session_id].add(task)
-            # Remove task when done
-            task.add_done_callback(lambda t: self._remove_task(session_id, t))
+            task.add_done_callback(
+                lambda done_task: self._remove_task(session_id, done_task),
+            )
 
-    def _remove_task(self, session_id: str, task: asyncio.Task):
-        """Remove a completed task from tracking."""
+    def _remove_task(self, session_id: str, task: asyncio.Task[object]) -> None:
+        """Remove a completed task from session tracking."""
         if session_id in self._session_tasks:
             self._session_tasks[session_id].discard(task)
 
-    def get_state_id(self, state) -> str:
-        """Get a unique identifier for a state instance."""
-        # Cache on state instance if possible
-        if hasattr(state, "_cached_state_id") and state._cached_state_id:
-            return state._cached_state_id
+    def get_state_id(self, state: object) -> str:
+        """Return a stable identifier for a state instance."""
+        state_key = id(state)
+        cached_state_id = self._state_cache.get(state_key)
+        if cached_state_id:
+            return cached_state_id
 
-        # Get client token
-        try:
-            client_token = state.router.session.client_token
-        except (AttributeError, KeyError):
-            client_token = None
+        client_token = _get_client_token(state)
+        if _is_missing_client_token(client_token):
+            client_token = _make_server_session_token()
 
-        # Handle None or empty string
-        if not client_token or client_token == "None" or client_token == "null":
-            client_token = f"ssr_{uuid.uuid4().hex[:8]}"
-
-        # Use the state's token and full module path
         state_class = state.__class__
         class_identifier = f"{state_class.__module__}.{state_class.__name__}"
         state_id = f"{class_identifier}_{client_token}"
-
-        # Cache it
-        try:
-            state._cached_state_id = state_id
-        except (AttributeError, TypeError):
-            pass
-
+        self._state_cache[state_key] = state_id
         return state_id
 
+    def cancel_session(self, session_id: str) -> None:
+        """Cancel a session and all its tracked tasks."""
+        self._cancelled_sessions.add(session_id)
+        self._cancel_tasks_immediately(session_id)
 
-# Global session manager instance
+    def clear_state_session(self, state_id: str, expected_session_id: str) -> None:
+        """Remove active mapping when it still points to the expected session."""
+        if self._active_sessions.get(state_id) == expected_session_id:
+            self._active_sessions.pop(state_id, None)
+
+    def prune_cancelled_sessions(self) -> None:
+        """Keep cancelled-session tracking bounded to recent entries."""
+        if len(self._cancelled_sessions) <= self.CANCELLED_SESSION_LIMIT:
+            return
+        recent_cancelled = list(self._cancelled_sessions)[
+            -self.CANCELLED_SESSION_KEEP :
+        ]
+        self._cancelled_sessions = set(recent_cancelled)
+
+
+def _make_server_session_token() -> str:
+    return f"ssr_{uuid.uuid4().hex[:8]}"
+
+
+def _is_missing_client_token(token: str | None) -> bool:
+    if token is None:
+        return True
+    stripped = token.strip()
+    if stripped == "":
+        return True
+    return stripped.lower() in MISSING_TOKEN_VALUES
+
+
+def _get_client_token(state: object) -> str | None:
+    router = getattr(state, "router", None)
+    if router is None:
+        return None
+    session = getattr(router, "session", None)
+    if session is None:
+        return None
+    token = getattr(session, "client_token", None)
+    return None if token is None else str(token)
+
+
+def _is_runtime_client_connected(token: str) -> bool:
+    if get_app is None:
+        return True
+
+    try:
+        dry_run = False
+        app_module = get_app(dry_run)
+    except (AttributeError, KeyError, RuntimeError, TypeError):
+        return True
+
+    app = getattr(app_module, "app", None)
+    namespace = getattr(app, "event_namespace", None) if app is not None else None
+    if namespace is None:
+        return True
+
+    token_manager = getattr(namespace, "_token_manager", None)
+    token_to_socket = getattr(token_manager, "token_to_socket", None)
+    if token_to_socket is not None:
+        return token in token_to_socket
+
+    token_to_sid = getattr(namespace, "token_to_sid", None)
+    if token_to_sid is None:
+        return True
+    return token in token_to_sid
+
+
+def _state_is_session_valid(
+    state: object,
+    manager: SessionManager,
+    session_id: str,
+) -> bool:
+    return manager.is_session_active(session_id) and is_client_connected(state)
+
+
+async def _wait_for_session_id(state: object, func_name: str) -> str | None:
+    """Wait briefly for a state session id to become available."""
+    session_id = getattr(state, "_session_id", None)
+    if isinstance(session_id, str) and session_id:
+        return session_id
+
+    for _attempt in range(SESSION_WAIT_ATTEMPTS):
+        await asyncio.sleep(SESSION_WAIT_DELAY_SECONDS)
+        candidate = getattr(state, "_session_id", None)
+        if isinstance(candidate, str) and candidate:
+            return candidate
+
+    LOGGER.warning("session_id not available for %s; skipping execution", func_name)
+    return None
+
+
+async def _iterate_isolated[T](
+    func: Callable[..., AsyncIterator[T]],
+    state: object,
+    call_args: tuple[tuple[object, ...], dict[str, object]],
+    call_context: tuple[SessionManager, str],
+) -> AsyncIterator[T]:
+    args, kwargs = call_args
+    manager, session_id = call_context
+
+    try:
+        iterator = func(state, *args, **kwargs)
+        async for item in iterator:
+            if not _state_is_session_valid(state, manager, session_id):
+                return
+            yield item
+    except asyncio.CancelledError:
+        return
+
+
+async def _await_isolated[T](
+    func: Callable[..., Awaitable[T]],
+    state: object,
+    call_args: tuple[tuple[object, ...], dict[str, object]],
+    call_context: tuple[SessionManager, str],
+) -> T | None:
+    args, kwargs = call_args
+    manager, session_id = call_context
+
+    try:
+        result = await func(state, *args, **kwargs)
+    except asyncio.CancelledError:
+        return None
+
+    if not _state_is_session_valid(state, manager, session_id):
+        return None
+    return result
+
+
 _session_manager = SessionManager()
 
 
 def get_session_manager() -> SessionManager:
-    """Get the global session manager instance."""
+    """Return the process-wide session manager instance."""
     return _session_manager
 
 
-def session_isolated(func: Callable) -> Callable:
-    """Decorator to isolate async event handlers by page session.
+def _make_asyncgen_wrapper[T](
+    func: Callable[..., AsyncIterator[T]],
+) -> Callable[..., AsyncIterator[T]]:
+    @wraps(func)
+    async def asyncgen_wrapper(
+        self: object,
+        *args: object,
+        **kwargs: object,
+    ) -> AsyncIterator[T]:
+        func_name = getattr(func, "__name__", "session_handler")
+        session_id = await _wait_for_session_id(self, func_name)
+        if not session_id:
+            return
 
-    Ensures that background tasks are cancelled when users navigate away,
-    preventing cross-page data contamination and resource leaks.
+        manager = get_session_manager()
+        if not _state_is_session_valid(self, manager, session_id):
+            return
 
-    Args:
-        func: The async function to wrap
+        current_task = asyncio.current_task()
+        if current_task is not None:
+            manager.register_task(session_id, current_task)
 
-    Returns:
-        Wrapped function with session isolation
-    """
-    import inspect
+        call_args = (args, kwargs)
+        call_context = (manager, session_id)
+        async for item in _iterate_isolated(func, self, call_args, call_context):
+            yield item
 
-    async def _wait_for_session_id(state: rx.State, func_name: str) -> str | None:
-        """Helper to wait for session_id to be available.
+    return asyncgen_wrapper
 
-        Args:
-            state: The state instance
-            func_name: Name of the function for logging
 
-        Returns:
-            session_id if available, None otherwise
-        """
-        session_id = getattr(state, "_session_id", None)
-
-        if not session_id or session_id == "":
-            for attempt in range(6):
-                await asyncio.sleep(0.05)
-                session_id = getattr(state, "_session_id", None)
-                if session_id and session_id != "":
-                    return session_id
-
-            print(
-                f"Warning: session_id not available for {func_name}, skipping execution"
-            )
+def _make_async_wrapper[T](
+    func: Callable[..., Awaitable[T]],
+) -> Callable[..., Awaitable[T | None]]:
+    @wraps(func)
+    async def async_wrapper(
+        self: object,
+        *args: object,
+        **kwargs: object,
+    ) -> T | None:
+        func_name = getattr(func, "__name__", "session_handler")
+        session_id = await _wait_for_session_id(self, func_name)
+        if not session_id:
             return None
 
-        return session_id
+        manager = get_session_manager()
+        if not _state_is_session_valid(self, manager, session_id):
+            return None
 
-    # Check if the original function is a generator function
+        current_task = asyncio.current_task()
+        if current_task is not None:
+            manager.register_task(session_id, current_task)
+
+        call_args = (args, kwargs)
+        call_context = (manager, session_id)
+        return await _await_isolated(func, self, call_args, call_context)
+
+    return async_wrapper
+
+
+@overload
+def session_isolated[T](
+    func: Callable[..., AsyncIterator[T]],
+) -> Callable[..., AsyncIterator[T]]: ...
+
+
+@overload
+def session_isolated[T](
+    func: Callable[..., Awaitable[T]],
+) -> Callable[..., Awaitable[T | None]]: ...
+
+
+@overload
+def session_isolated(func: Callable[..., object]) -> Callable[..., object]: ...
+
+
+def session_isolated(func: Callable[..., object]) -> Callable[..., object]:
+    """Wrap an async handler so it respects the active page session."""
     if inspect.isasyncgenfunction(func):
-
-        @wraps(func)
-        async def wrapper(self: rx.State, *args, **kwargs):
-            session_id = await _wait_for_session_id(self, func.__name__)
-            if not session_id:
-                return
-
-            manager = get_session_manager()
-
-            if not manager.is_session_active(session_id):
-                return
-
-            current_task = asyncio.current_task()
-            if current_task:
-                manager.register_task(session_id, current_task)
-
-            try:
-                async for item in func(self, *args, **kwargs):
-                    if not manager.is_session_active(session_id):
-                        return
-                    yield item
-            except asyncio.CancelledError:
-                return
-    else:
-
-        @wraps(func)
-        async def wrapper(self: rx.State, *args, **kwargs):
-            session_id = await _wait_for_session_id(self, func.__name__)
-            if not session_id:
-                return
-
-            manager = get_session_manager()
-
-            if not manager.is_session_active(session_id):
-                return
-
-            current_task = asyncio.current_task()
-            if current_task:
-                manager.register_task(session_id, current_task)
-
-            try:
-                result = await func(self, *args, **kwargs)
-
-                if not manager.is_session_active(session_id):
-                    return
-
-                return result
-            except asyncio.CancelledError:
-                return
-
-    return wrapper
+        asyncgen_func = cast("Callable[..., AsyncIterator[_T]]", func)
+        return cast("Callable[..., object]", _make_asyncgen_wrapper(asyncgen_func))
+    async_func = cast("Callable[..., Awaitable[_T]]", func)
+    return cast("Callable[..., object]", _make_async_wrapper(async_func))
 
 
-def check_session_active(state) -> bool:
-    """Helper to check if current state's session is still active."""
+def check_session_active(state: object) -> bool:
+    """Return whether the state's session is still active."""
     session_id = getattr(state, "_session_id", None)
     if session_id is None:
         return True
-
     manager = get_session_manager()
     return manager.is_session_active(session_id)
 
 
+def is_client_connected(state: object) -> bool:
+    """Return whether the state's client token is still websocket-bound."""
+    token = _get_client_token(state)
+    if _is_missing_client_token(token):
+        return False
+    return _is_runtime_client_connected(token or "")
+
+
+def is_state_live(state: object) -> bool:
+    """Return whether both session and websocket client are active."""
+    return check_session_active(state) and is_client_connected(state)
+
+
 class SessionIsolatedStateMixin:
-    """Mixin to add session isolation to Reflex State classes.
-
-    Provides synchronous session lifecycle management with immediate
-    task cancellation on navigation for responsive page transitions.
-
-    Usage:
-        class MyState(SessionIsolatedStateMixin, rx.State):
-            def on_mount(self):
-                super().on_mount()
-                # Optional: trigger background data loading
-
-            def on_unmount(self):
-                super().on_unmount()
-    """
+    """Add session isolation lifecycle hooks to a Reflex state class."""
 
     _session_id: str = ""
     _is_mounted: bool = False
     _cached_state_id: str | None = None
 
-    def on_mount(self):
-        """Initialize page session when mounted.
-
-        Creates a new session and cancels tasks from other pages synchronously.
-        """
+    def on_mount(self) -> object | None:
+        """Initialize page session and cancel stale sessions from other pages."""
         manager = get_session_manager()
         state_id = manager.get_state_id(self)
-
         self._session_id = manager.start_session(state_id, force_new=True)
         self._is_mounted = True
+        return None
 
-    def on_unmount(self):
-        """Cleanup page session when unmounted.
-
-        Cancels all running tasks synchronously for instant navigation.
-        """
+    def on_unmount(self) -> object | None:
+        """Cancel running tasks and clean up the active session mapping."""
         self._is_mounted = False
+        if not self._session_id:
+            return None
 
-        if hasattr(self, "_session_id") and self._session_id:
-            manager = get_session_manager()
-            session_id = self._session_id
+        manager = get_session_manager()
+        session_id = self._session_id
+        manager.cancel_session(session_id)
 
-            if session_id not in manager._cancelled_sessions:
-                manager._cancelled_sessions.add(session_id)
-
-            manager._cancel_tasks_immediately(session_id)
-
-            state_id = manager.get_state_id(self)
-            if state_id in manager._active_sessions:
-                if manager._active_sessions[state_id] == session_id:
-                    del manager._active_sessions[state_id]
-
-            if len(manager._cancelled_sessions) > 100:
-                recent_cancelled = list(manager._cancelled_sessions)[-50:]
-                manager._cancelled_sessions = set(recent_cancelled)
+        state_id = manager.get_state_id(self)
+        manager.clear_state_session(state_id, session_id)
+        manager.prune_cancelled_sessions()
+        return None
 
     def is_mounted(self) -> bool:
-        """Check if page is currently mounted."""
+        """Return whether the page is mounted and its session is active."""
         return self._is_mounted and check_session_active(self)

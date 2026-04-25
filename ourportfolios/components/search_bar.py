@@ -1,9 +1,11 @@
 """Search bar UI component with ticker suggestions."""
 
-import reflex as rx
 from typing import Any
-from .graph import pct_change_badge
-from ..state import SearchBarState
+
+import reflex as rx
+
+from ourportfolios.components.graph import pct_change_badge
+from ourportfolios.state import SearchBarState
 
 
 def search_bar():
@@ -49,7 +51,7 @@ def search_bar():
                             rx.foreach(
                                 SearchBarState.suggest_tickers,
                                 lambda ticker_value: suggestion_card(
-                                    value=ticker_value
+                                    value=ticker_value,
                                 ),
                             ),
                             scrollbars="vertical",
@@ -76,7 +78,8 @@ def search_bar():
             ),
             position="relative",
             width="18rem",
-            on_mount=SearchBarState.load_state,
+            on_mount=SearchBarState.on_mount,
+            on_unmount=SearchBarState.on_unmount,
         ),
     )
 
@@ -86,7 +89,7 @@ def suggestion_card(value: dict[str, Any]) -> rx.Component:
     industry = value["industry"].to(str)
     pct_price_change: float = value["pct_price_change"].to(float)
 
-    return rx.box(
+    return rx.link(
         rx.hstack(
             rx.vstack(
                 # ticker tag
@@ -122,7 +125,11 @@ def suggestion_card(value: dict[str, Any]) -> rx.Component:
             align="center",
             spacing="1",
         ),
-        on_click=[rx.redirect(f"/tickers/{ticker}"), SearchBarState.set_query("")],
+        href=f"/tickers/{ticker}",
+        on_click=SearchBarState.set_query(""),
+        text_decoration="none",
+        color="inherit",
+        display="block",
         width="100%",
         padding="0.625rem 0.75rem",
         border_radius="0.5rem",

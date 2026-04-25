@@ -1,19 +1,56 @@
-"""Place at: ourportfolios/pages/settings/state.py"""
+"""Settings page state management."""
 
 import reflex as rx
-from ...auth_config import get_supabase, AUTH_AVAILABLE
-from ...state.auth_state import AuthState
-from ...state.prefs_state import PrefsState
+from supabase_auth.errors import AuthApiError
+
+from ourportfolios.auth_config import AUTH_AVAILABLE, get_supabase
+from ourportfolios.state.auth_state import AuthState
+from ourportfolios.state.prefs_state import PrefsState
 
 EXPERIENCE_OPTIONS = ["Beginner", "Experienced"]
 DEFAULT_PERIOD_OPTIONS = ["1D", "1W", "1M"]
 
-_TOAST = dict(position="bottom-right", duration=4000)
+_TOAST = {"position": "bottom-right", "duration": 4000}
+
+MIN_PASSWORD_LEN = 8
+ERR_UPDATE_NO_USER = "Update failed: Supabase returned no user."
+MSG_CURR_CRED_REQUIRED = "Enter your current password."
+MSG_CRED_TOO_SHORT = "New password must be at least 8 characters."
+MSG_CRED_MISMATCH = "Passwords do not match."
+MSG_CURR_CRED_INVALID = "Current password is incorrect."
+MSG_CRED_UPDATED = "Password updated."
 
 
-def _restore_session(auth) -> None:
+class SettingsStateError(Exception):
+    """Domain exception for settings state actions."""
+
+
+def _restore_session(auth: AuthState) -> None:
+    """Restore the session, refreshing the token if necessary."""
     supabase = get_supabase()
+
+    # Try to refresh the token first in case it expired
+    if auth.auth_refresh_token:
+        try:
+            refresh_response = supabase.auth.refresh_session(auth.auth_refresh_token)
+            if refresh_response.session:
+                auth.auth_token = (
+                    refresh_response.session.access_token or auth.auth_token
+                )
+                auth.auth_refresh_token = (
+                    refresh_response.session.refresh_token or auth.auth_refresh_token
+                )
+        except (AuthApiError, AttributeError):
+            # If refresh fails, try with existing token anyway
+            pass
+
+    # Set the session with potentially refreshed tokens
     supabase.auth.set_session(auth.auth_token, auth.auth_refresh_token)
+
+
+def _require_user(user_obj: object | None, message: str) -> None:
+    if user_obj is None:
+        raise SettingsStateError(message)
 
 
 class SettingsState(rx.State):
@@ -149,8 +186,8 @@ class SettingsState(rx.State):
         self.password_dialog_open = False
 
     @rx.event
-    def set_password_dialog_open(self, v: bool):
-        self.password_dialog_open = v
+    def set_password_dialog_open(self, *, value: bool) -> None:
+        self.password_dialog_open = value
 
     # ── Delete dialog setters ─────────────────────────────────────────────────
 
@@ -165,8 +202,8 @@ class SettingsState(rx.State):
         self.delete_dialog_open = False
 
     @rx.event
-    def set_delete_dialog_open(self, v: bool):
-        self.delete_dialog_open = v
+    def set_delete_dialog_open(self, *, value: bool) -> None:
+        self.delete_dialog_open = value
 
     @rx.event
     def set_delete_confirm_text(self, v: str):
@@ -195,6 +232,9 @@ class SettingsState(rx.State):
         try:
             supabase = get_supabase()
             result = supabase.auth.get_user(auth.auth_token)
+            if result is None:
+                yield rx.redirect("/")
+                return
             user = result.user
             if user is None:
                 yield rx.redirect("/")
@@ -225,8 +265,8 @@ class SettingsState(rx.State):
             prefs.experience_level = exp
             prefs.default_chart_period = period
 
-        except Exception as e:
-            self.save_error = str(e)
+        except (SettingsStateError, ValueError, TypeError, AttributeError) as exc:
+            self.save_error = str(exc)
 
     # ─────────────────────────────────────────────────────────────────────────
     # Save display name
@@ -249,8 +289,7 @@ class SettingsState(rx.State):
                 _restore_session(auth)
                 supabase = get_supabase()
                 result = supabase.auth.update_user({"data": {"full_name": name}})
-                if result.user is None:
-                    raise Exception("Update failed — Supabase returned no user.")
+                _require_user(result.user, ERR_UPDATE_NO_USER)
 
             auth.user_display_name = name
             self.display_name = name
@@ -259,9 +298,9 @@ class SettingsState(rx.State):
             self.display_name_editing = False
             self.save_msg = "Saved"
             yield rx.toast.success("Display name updated.", **_TOAST)
-        except Exception as e:
-            self.save_error = str(e)
-            yield rx.toast.error(f"Failed to save: {e}", **_TOAST)
+        except (SettingsStateError, ValueError, TypeError, AttributeError) as exc:
+            self.save_error = str(exc)
+            yield rx.toast.error(f"Failed to save: {exc}", **_TOAST)
         finally:
             self.loading_save = False
 
@@ -285,11 +324,10 @@ class SettingsState(rx.State):
                         "data": {
                             "experience_level": self.experience_level,
                             "default_chart_period": self.default_chart_period,
-                        }
-                    }
+                        },
+                    },
                 )
-                if result.user is None:
-                    raise Exception("Update failed — Supabase returned no user.")
+                _require_user(result.user, ERR_UPDATE_NO_USER)
 
             self._orig_exp = self.experience_level
             self._orig_period = self.default_chart_period
@@ -302,9 +340,9 @@ class SettingsState(rx.State):
 
             self.save_msg = "Saved"
             yield rx.toast.success("Preferences saved.", **_TOAST)
-        except Exception as e:
-            self.save_error = str(e)
-            yield rx.toast.error(f"Failed to save: {e}", **_TOAST)
+        except (SettingsStateError, ValueError, TypeError, AttributeError) as exc:
+            self.save_error = str(exc)
+            yield rx.toast.error(f"Failed to save: {exc}", **_TOAST)
         finally:
             self.loading_save = False
 
@@ -315,13 +353,13 @@ class SettingsState(rx.State):
     @rx.event
     async def save_password(self):
         if not self.old_password:
-            self.password_error = "Enter your current password."
+            self.password_error = MSG_CURR_CRED_REQUIRED
             return
-        if len(self.new_password) < 8:
-            self.password_error = "New password must be at least 8 characters."
+        if len(self.new_password) < MIN_PASSWORD_LEN:
+            self.password_error = MSG_CRED_TOO_SHORT
             return
         if self.new_password != self.confirm_password:
-            self.password_error = "Passwords do not match."
+            self.password_error = MSG_CRED_MISMATCH
             return
 
         self.loading_password = True
@@ -333,10 +371,10 @@ class SettingsState(rx.State):
                 supabase = get_supabase()
 
                 verify = supabase.auth.sign_in_with_password(
-                    {"email": auth.user_email, "password": self.old_password}
+                    {"email": auth.user_email, "password": self.old_password},
                 )
                 if verify.user is None:
-                    self.password_error = "Current password is incorrect."
+                    self.password_error = MSG_CURR_CRED_INVALID
                     return
 
                 if verify.session:
@@ -346,21 +384,18 @@ class SettingsState(rx.State):
                     )
 
                 result = supabase.auth.update_user({"password": self.new_password})
-                if result.user is None:
-                    raise Exception(
-                        "Password update failed — Supabase returned no user."
-                    )
+                _require_user(result.user, ERR_UPDATE_NO_USER)
 
             self.old_password = ""
             self.new_password = ""
             self.confirm_password = ""
             self.password_dialog_open = False
-            self.password_msg = "Password updated."
+            self.password_msg = MSG_CRED_UPDATED
             yield rx.toast.success("Password changed successfully.", **_TOAST)
-        except Exception as e:
-            msg = str(e)
+        except (SettingsStateError, ValueError, TypeError, AttributeError) as exc:
+            msg = str(exc)
             if any(k in msg.lower() for k in ("invalid", "credentials", "wrong")):
-                self.password_error = "Current password is incorrect."
+                self.password_error = MSG_CURR_CRED_INVALID
             else:
                 self.password_error = msg
             yield rx.toast.error("Failed to change password.", **_TOAST)
@@ -399,8 +434,8 @@ class SettingsState(rx.State):
             self.delete_dialog_open = False
             yield rx.redirect("/")
             yield rx.toast.info("Your account has been deleted.", **_TOAST)
-        except Exception as e:
-            self.delete_error = str(e)
-            yield rx.toast.error(f"Failed to delete account: {e}", **_TOAST)
+        except (SettingsStateError, ValueError, TypeError, AttributeError) as exc:
+            self.delete_error = str(exc)
+            yield rx.toast.error(f"Failed to delete account: {exc}", **_TOAST)
         finally:
             self.loading_delete = False

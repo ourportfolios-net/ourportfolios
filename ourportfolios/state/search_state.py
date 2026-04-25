@@ -1,15 +1,19 @@
 """Search bar state for ticker search and suggestions."""
 
-import reflex as rx
-import time
 import asyncio
 import itertools
 from collections.abc import Callable
-from typing import Any
 
-from sqlalchemy import Select, select, or_
-from ..utils.database.database import get_company_session
-from ..utils.database.models import PriceORM, OverviewORM
+import reflex as rx
+from sqlalchemy import Select, or_, select
+
+from ourportfolios.utils.database.database import get_company_session
+from ourportfolios.utils.database.models import OverviewORM, PriceORM
+from ourportfolios.utils.session_manager import (
+    SessionIsolatedStateMixin,
+    is_state_live,
+    session_isolated,
+)
 
 _TickerSelect = Select[tuple[str, float | None, float | None, str | None]]
 
@@ -19,15 +23,25 @@ _TickerSelect = Select[tuple[str, float | None, float | None, str | None]]
 _load_tasks: dict[str, asyncio.Task] = {}
 
 
-class SearchBarState(rx.State):
+class SearchBarState(SessionIsolatedStateMixin, rx.State):
     search_query: str = ""
     comparison_search_query: str = ""
     display_suggestion: bool = False
     empty_state_display_suggestion: bool = False
-    outstanding_tickers: dict[str, Any] = {}
-    ticker_list: list[dict[str, Any]] = []
-    comparison_suggestions: list[dict[str, Any]] = []
-    suggest_tickers: list[dict[str, Any]] = []
+    outstanding_tickers: rx.Field[dict[str, bool]] = rx.Field(default_factory=dict)
+    ticker_list: rx.Field[list[dict[str, object]]] = rx.Field(default_factory=list)
+    comparison_suggestions: rx.Field[list[dict[str, object]]] = rx.Field(
+        default_factory=list,
+    )
+    suggest_tickers: rx.Field[list[dict[str, object]]] = rx.Field(default_factory=list)
+
+    @rx.event
+    def on_mount(self):
+        super().on_mount()
+        return SearchBarState.load_state
+
+    def on_unmount(self):
+        super().on_unmount()
 
     @rx.event
     def set_query(self, text: str = "") -> None:
@@ -57,8 +71,8 @@ class SearchBarState(rx.State):
             self.comparison_suggestions = list(self.ticker_list[:30])
 
     @rx.event
-    def blur_comparison_search(self) -> None:
-        yield time.sleep(0.15)
+    async def blur_comparison_search(self) -> None:
+        await asyncio.sleep(0.15)
         self.empty_state_display_suggestion = False
 
     @rx.event
@@ -86,33 +100,34 @@ class SearchBarState(rx.State):
             self.suggest_tickers = result
 
     @rx.event
-    def set_display_suggestions(self, state: bool):
-        yield time.sleep(0.2)
+    async def set_display_suggestions(self, *, state: bool):
+        await asyncio.sleep(0.2)
         self.display_suggestion = state
         if state:
             return SearchBarState.fetch_suggest_tickers
+        return None
 
     @rx.event
-    def set_empty_state_display_suggestions(self, state: bool):
-        yield time.sleep(0.2)
+    async def set_empty_state_display_suggestions(self, *, state: bool):
+        await asyncio.sleep(0.2)
         self.empty_state_display_suggestion = state
 
-    async def _fetch_by_prefix(self, prefix: str) -> list[dict[str, Any]]:
+    async def _fetch_by_prefix(self, prefix: str) -> list[dict[str, object]]:
         return await self._fetch_tickers(
-            lambda q: q.where(PriceORM.symbol.like(f"{prefix}%"))
+            lambda q: q.where(PriceORM.symbol.like(f"{prefix}%")),
         )
 
-    async def _fetch_by_permutations(self, query: str) -> list[dict[str, Any]]:
+    async def _fetch_by_permutations(self, query: str) -> list[dict[str, object]]:
         combos = list(itertools.permutations(list(query), len(query)))
         patterns = list({"".join(c) + "%" for c in combos})
         return await self._fetch_tickers(
-            lambda q: q.where(or_(*(PriceORM.symbol.like(p) for p in patterns)))
+            lambda q: q.where(or_(*(PriceORM.symbol.like(p) for p in patterns))),
         )
 
     async def _fetch_tickers(
         self,
         filter_fn: Callable[[_TickerSelect], _TickerSelect] | None = None,
-    ) -> list[dict[str, Any]]:
+    ) -> list[dict[str, object]]:
         try:
             async with get_company_session() as session:
                 stmt: _TickerSelect = (
@@ -129,11 +144,12 @@ class SearchBarState(rx.State):
                     stmt = filter_fn(stmt)
                 result = await session.execute(stmt)
                 return [dict(row) for row in result.mappings().all()]
-        except Exception as e:
-            print(f"Database error in _fetch_tickers: {e}")
+        except (ValueError, RuntimeError, KeyError, AttributeError):
+            # print(f"Database error in _fetch_tickers: {e}")
             return []
 
     @rx.event(background=True)
+    @session_isolated
     async def load_state(self) -> None:
         async with self:
             token = self.router.session.client_token
@@ -143,25 +159,32 @@ class SearchBarState(rx.State):
         if existing is not None and not existing.done():
             return
 
-        async def _load_loop() -> None:
-            try:
-                while True:
-                    try:
-                        rows = await self._fetch_tickers()
-                        async with self:
-                            self.ticker_list = rows
-                            self.outstanding_tickers = {
-                                item["symbol"]: 1 for item in rows[:3]
-                            }
-                    except asyncio.CancelledError:
-                        return
-                    except Exception as e:
-                        print(f"Error in load_state: {e}")
-                    try:
-                        await asyncio.sleep(60)
-                    except asyncio.CancelledError:
-                        return
-            finally:
-                _load_tasks.pop(token, None)
+        current_task = asyncio.current_task()
+        if current_task is None:
+            return
 
-        _load_tasks[token] = asyncio.create_task(_load_loop())
+        _load_tasks[token] = current_task
+
+        try:
+            while is_state_live(self):
+                try:
+                    rows = await self._fetch_tickers()
+                    if not is_state_live(self):
+                        return
+                    async with self:
+                        self.ticker_list = rows
+                        self.outstanding_tickers = {
+                            str(item["symbol"]): True for item in rows[:3]
+                        }
+                except asyncio.CancelledError:
+                    return
+                except (ValueError, RuntimeError, KeyError):
+                    pass
+
+                try:
+                    await asyncio.sleep(60)
+                except asyncio.CancelledError:
+                    return
+        finally:
+            if _load_tasks.get(token) is current_task:
+                _load_tasks.pop(token, None)

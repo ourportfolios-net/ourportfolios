@@ -2,9 +2,9 @@
 
 import reflex as rx
 
-from ...styles import white, CARD_BORDER
-from ...state.auth_state import AuthState
-from .state import State
+from ourportfolios.pages.ticker_analysis.state import State
+from ourportfolios.state.auth_state import AuthState
+from ourportfolios.styles import CARD_BORDER, white
 
 _CARD_RADIUS = "0.625rem"
 
@@ -116,7 +116,7 @@ def _placeholder_chart(label: str) -> rx.Component:
     )
 
 
-def _guest_overlay() -> rx.Component:
+def guest_overlay() -> rx.Component:
     """Frosted overlay that sits above the blurred placeholder grid."""
     return rx.box(
         rx.vstack(
@@ -190,14 +190,19 @@ def _guest_performance_grid() -> rx.Component:
                 "userSelect": "none",
             },
         ),
-        _guest_overlay(),
+        guest_overlay(),
         position="relative",
         width="100%",
+        height="100%",
+        max_height="calc(100vh - 22rem)",
+        min_height="25rem",
+        overflow="hidden",
+        border_radius=_CARD_RADIUS,
     )
 
 
 def create_dynamic_chart(category: str):
-    has_no_chart_data = State.get_chart_data_for_category[category].length() == 0
+    has_no_chart_data = State.get_chart_data_for_category[category] == []
 
     return rx.cond(
         has_no_chart_data,
@@ -208,12 +213,13 @@ def create_dynamic_chart(category: str):
                     rx.heading(category, size="4", weight="medium"),
                     rx.spacer(),
                     rx.cond(
-                        State.available_metrics_by_category.contains(category),
+                        State.available_metrics_by_category.get(category, []) != [],
                         rx.select(
                             State.available_metrics_by_category[category],
                             value=State.selected_metrics.get(category, ""),
                             on_change=lambda value: State.set_metric_for_category(
-                                category, value
+                                category,
+                                value,
                             ),
                             size="1",
                             style={
@@ -270,12 +276,12 @@ def create_dynamic_chart(category: str):
     )
 
 
-def performance_cards():
+def _performance_cards_content() -> rx.Component:
     categories = State.get_categories_list
 
     return rx.cond(
-        AuthState.is_guest,
-        # ── Guest: placeholder grid + lock overlay, no data fetched ──────────
+        ~AuthState.is_authenticated,
+        # ── Guest & Loading: placeholder grid + lock overlay ──────────
         _guest_performance_grid(),
         # ── Authenticated: real charts ────────────────────────────────────────
         rx.cond(
@@ -298,7 +304,7 @@ def performance_cards():
             rx.box(
                 rx.foreach(
                     categories,
-                    lambda category: create_dynamic_chart(category),
+                    create_dynamic_chart,
                 ),
                 display="grid",
                 grid_template_columns="repeat(auto-fill, minmax(min(18rem, 100%), 1fr))",
@@ -308,5 +314,35 @@ def performance_cards():
                 overflow="visible",
                 style={"min_width": "0"},
             ),
+        ),
+    )
+
+
+def performance_cards():
+    return rx.fragment(
+        rx.box(
+            rx.cond(
+                AuthState.is_authenticated,
+                rx.scroll_area(
+                    _performance_cards_content(),
+                    scrollbars="vertical",
+                    type="hover",
+                    height="100%",
+                ),
+                rx.box(
+                    _performance_cards_content(),
+                    height="100%",
+                    width="100%",
+                    overflow="hidden",
+                ),
+            ),
+            display=["block", "block", "none"],
+            height="calc(100vh - 17rem)",
+            width="100%",
+        ),
+        rx.box(
+            _performance_cards_content(),
+            display=["none", "none", "block"],
+            width="100%",
         ),
     )

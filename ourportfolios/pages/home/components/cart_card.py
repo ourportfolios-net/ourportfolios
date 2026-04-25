@@ -1,23 +1,34 @@
 import reflex as rx
-from ...state.cart_state import CartState
-from ...components.cards import glass_card
-from ...styles import white
+
+from ourportfolios.components.cards import glass_card
+from ourportfolios.state.cart_state import CartState
+from ourportfolios.styles import white
 
 
 def _cart_item_row(item: dict, index: int) -> rx.Component:
     return rx.hstack(
         rx.link(
-            rx.text(item["name"], size="3", weight="bold", color="white"),
+            rx.text(
+                item["name"],
+                size="3",
+                weight="bold",
+                color="white",
+                white_space="nowrap",
+                overflow="hidden",
+                text_overflow="ellipsis",
+            ),
             href=f"/analyze/{item['name']}",
             underline="none",
+            min_width="0",
+            flex="1",
         ),
         rx.badge(
             item.get("industry", "Unknown"),
             variant="outline",
             color_scheme="gray",
             size="1",
+            flex_shrink="0",
         ),
-        rx.spacer(),
         rx.box(
             rx.icon("x", size=13, color=white(0.25)),
             on_click=lambda: CartState.remove_item(index),
@@ -55,7 +66,7 @@ def cart_card() -> rx.Component:
                 rx.vstack(
                     rx.foreach(
                         CartState.cart_items,
-                        lambda item, i: _cart_item_row(item, i),
+                        _cart_item_row,
                     ),
                     spacing="2",
                     width="100%",
@@ -74,6 +85,6 @@ def cart_card() -> rx.Component:
             spacing="3",
             width="100%",
         ),
-        padding="1.125rem 1.25rem",
+        padding=rx.breakpoints(initial="0.875rem 1rem", md="1.125rem 1.25rem"),
         width="100%",
     )

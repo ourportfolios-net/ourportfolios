@@ -2,9 +2,9 @@
 
 import reflex as rx
 
-from ...styles import white, purple, CARD_BORDER, TEXT_PURPLE
-from ...components.price_chart import PriceChartState
-from .state import State
+from ourportfolios.components.price_chart import PriceChartState
+from ourportfolios.pages.ticker_analysis.state import State
+from ourportfolios.styles import CARD_BORDER, TEXT_PURPLE, purple, white
 
 _CARD_RADIUS = "0.625rem"
 _CHART_MIN_W = "20rem"
@@ -37,7 +37,7 @@ _BTN_ACTIVE = {
 }
 
 
-def _ma_toggle(label: str, period_key: str):
+def _ma_toggle(label: str, period_key: str) -> rx.Component:
     """Single MA toggle pill."""
     return rx.box(
         rx.hstack(
@@ -75,7 +75,7 @@ def _ma_toggle(label: str, period_key: str):
     )
 
 
-def _rsi_toggle():
+def _rsi_toggle() -> rx.Component:
     return rx.box(
         rx.text("RSI14", size="1", weight="medium"),
         padding="0.25em 0.6em",
@@ -101,7 +101,7 @@ def _rsi_toggle():
     )
 
 
-def _chart_type_toggle():
+def _chart_type_toggle() -> rx.Component:
     return rx.hstack(
         rx.box(
             rx.icon("chart-candlestick", size=14),
@@ -162,6 +162,101 @@ def _chart_type_toggle():
     )
 
 
+def _interval_buttons() -> rx.Component:
+    return rx.hstack(
+        rx.button(
+            "1D",
+            size="2",
+            on_click=PriceChartState.set_interval("1D"),
+            background=rx.cond(
+                PriceChartState.selected_interval == "1D",
+                white(0.09),
+                white(0.05),
+            ),
+            border=rx.cond(
+                PriceChartState.selected_interval == "1D",
+                f"1px solid {white(0.18)}",
+                f"1px solid {white(0.1)}",
+            ),
+            color=rx.cond(
+                PriceChartState.selected_interval == "1D",
+                white(0.9),
+                white(0.6),
+            ),
+            font_weight=rx.cond(
+                PriceChartState.selected_interval == "1D",
+                "600",
+                "500",
+            ),
+            font_size="0.8125rem",
+            border_radius="0.5rem",
+            cursor="pointer",
+            transition="all 0.15s ease",
+        ),
+        rx.button(
+            "1W",
+            size="2",
+            on_click=PriceChartState.set_interval("1W"),
+            background=rx.cond(
+                PriceChartState.selected_interval == "1W",
+                white(0.09),
+                white(0.05),
+            ),
+            border=rx.cond(
+                PriceChartState.selected_interval == "1W",
+                f"1px solid {white(0.18)}",
+                f"1px solid {white(0.1)}",
+            ),
+            color=rx.cond(
+                PriceChartState.selected_interval == "1W",
+                white(0.9),
+                white(0.6),
+            ),
+            font_weight=rx.cond(
+                PriceChartState.selected_interval == "1W",
+                "600",
+                "500",
+            ),
+            font_size="0.8125rem",
+            border_radius="0.5rem",
+            cursor="pointer",
+            transition="all 0.15s ease",
+        ),
+        rx.button(
+            "1M",
+            size="2",
+            on_click=PriceChartState.set_interval("1M"),
+            background=rx.cond(
+                PriceChartState.selected_interval == "1M",
+                white(0.09),
+                white(0.05),
+            ),
+            border=rx.cond(
+                PriceChartState.selected_interval == "1M",
+                f"1px solid {white(0.18)}",
+                f"1px solid {white(0.1)}",
+            ),
+            color=rx.cond(
+                PriceChartState.selected_interval == "1M",
+                white(0.9),
+                white(0.6),
+            ),
+            font_weight=rx.cond(
+                PriceChartState.selected_interval == "1M",
+                "600",
+                "500",
+            ),
+            font_size="0.8125rem",
+            border_radius="0.5rem",
+            cursor="pointer",
+            transition="all 0.15s ease",
+        ),
+        spacing="1",
+        align="center",
+        flex_shrink="0",
+    )
+
+
 def price_chart_card():
     return rx.box(
         rx.vstack(
@@ -175,13 +270,13 @@ def price_chart_card():
                     State.is_loading_company | (State.price_data.length() <= 1),
                     rx.box(
                         rx.skeleton(
-                            height="21.875rem",
+                            height="100%",
                             width="calc(100% - 3.75rem)",
                             border_radius="0.5rem",
                         ),
                         position="absolute",
                         width="100%",
-                        height="21.875rem",
+                        height="100%",
                         z_index="1",
                         pointer_events="none",
                         top="0",
@@ -195,100 +290,15 @@ def price_chart_card():
                     key=State.render_key,
                 ),
                 width="100%",
-                height="21.875rem",
-                max_height="21.875rem",
+                flex=["none", "none", "1"],
+                height=["21.875rem", "21.875rem", "100%"],
+                min_height="21.875rem",
                 overflow="hidden",
                 position="relative",
             ),
-            # Bottom controls row
+            # Desktop Bottom controls
             rx.hstack(
-                # Left: interval buttons
-                rx.hstack(
-                    rx.button(
-                        "1D",
-                        size="2",
-                        on_click=PriceChartState.set_interval("1D"),
-                        background=rx.cond(
-                            PriceChartState.selected_interval == "1D",
-                            white(0.09),
-                            white(0.05),
-                        ),
-                        border=rx.cond(
-                            PriceChartState.selected_interval == "1D",
-                            f"1px solid {white(0.18)}",
-                            f"1px solid {white(0.1)}",
-                        ),
-                        color=rx.cond(
-                            PriceChartState.selected_interval == "1D",
-                            white(0.9),
-                            white(0.6),
-                        ),
-                        font_weight=rx.cond(
-                            PriceChartState.selected_interval == "1D", "600", "500"
-                        ),
-                        font_size="0.8125rem",
-                        border_radius="0.5rem",
-                        cursor="pointer",
-                        transition="all 0.15s ease",
-                    ),
-                    rx.button(
-                        "1W",
-                        size="2",
-                        on_click=PriceChartState.set_interval("1W"),
-                        background=rx.cond(
-                            PriceChartState.selected_interval == "1W",
-                            white(0.09),
-                            white(0.05),
-                        ),
-                        border=rx.cond(
-                            PriceChartState.selected_interval == "1W",
-                            f"1px solid {white(0.18)}",
-                            f"1px solid {white(0.1)}",
-                        ),
-                        color=rx.cond(
-                            PriceChartState.selected_interval == "1W",
-                            white(0.9),
-                            white(0.6),
-                        ),
-                        font_weight=rx.cond(
-                            PriceChartState.selected_interval == "1W", "600", "500"
-                        ),
-                        font_size="0.8125rem",
-                        border_radius="0.5rem",
-                        cursor="pointer",
-                        transition="all 0.15s ease",
-                    ),
-                    rx.button(
-                        "1M",
-                        size="2",
-                        on_click=PriceChartState.set_interval("1M"),
-                        background=rx.cond(
-                            PriceChartState.selected_interval == "1M",
-                            white(0.09),
-                            white(0.05),
-                        ),
-                        border=rx.cond(
-                            PriceChartState.selected_interval == "1M",
-                            f"1px solid {white(0.18)}",
-                            f"1px solid {white(0.1)}",
-                        ),
-                        color=rx.cond(
-                            PriceChartState.selected_interval == "1M",
-                            white(0.9),
-                            white(0.6),
-                        ),
-                        font_weight=rx.cond(
-                            PriceChartState.selected_interval == "1M", "600", "500"
-                        ),
-                        font_size="0.8125rem",
-                        border_radius="0.5rem",
-                        cursor="pointer",
-                        transition="all 0.15s ease",
-                    ),
-                    spacing="1",
-                    align="center",
-                    flex_shrink="0",
-                ),
+                _interval_buttons(),
                 rx.spacer(),
                 # Right: inline indicator toggles
                 rx.hstack(
@@ -305,22 +315,50 @@ def price_chart_card():
                     _chart_type_toggle(),
                     spacing="2",
                     align="center",
-                    style={"flexWrap": "wrap"},
                 ),
                 width="100%",
                 align="center",
                 padding_top="0.5em",
-                style={"flexWrap": "wrap"},
+                display=["none", "none", "flex"],
+            ),
+            # Mobile Bottom controls
+            rx.vstack(
+                rx.hstack(
+                    _interval_buttons(),
+                    rx.spacer(),
+                    _rsi_toggle(),
+                    _chart_type_toggle(),
+                    align="center",
+                    width="100%",
+                ),
+                rx.hstack(
+                    rx.spacer(),
+                    _ma_toggle("MA20", "20"),
+                    _ma_toggle("MA50", "50"),
+                    _ma_toggle("MA100", "100"),
+                    _ma_toggle("MA200", "200"),
+                    align="center",
+                    spacing="2",
+                    width="100%",
+                    style={"flexWrap": "wrap"},
+                    justify="end",
+                ),
+                width="100%",
+                spacing="2",
+                padding_top="0.5em",
+                display=["flex", "flex", "none"],
             ),
             spacing="0",
             width="100%",
+            height="100%",
         ),
         background=white(0.025),
         border=CARD_BORDER,
         border_radius=_CARD_RADIUS,
         padding="1rem",
-        flex="1",
+        flex=["none", "none", "1"],
         min_width="0",
         width="100%",
-        height="fit-content",
+        display="flex",
+        flex_direction="column",
     )

@@ -2,7 +2,7 @@ name: our_check (pr)
 
 on:
   pull_request:
-    branches: [main]
+    branches: [ main ]
 
 jobs:
   release:
@@ -18,9 +18,15 @@ jobs:
           fetch-tags: true
           token: ${{ secrets.GITHUB_TOKEN }}
           ref: ${{ github.head_ref || github.ref }}
-      - name: Set up Python
-        uses: actions/setup-python@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
         with:
+          enable-cache: true
           python-version: "3.13"
+
       - name: Ruff
-        uses: astral-sh/ruff-action@v3.5.0
+        uses: astral-sh/ruff-action@v4.0.0
+
+      - name: Run Ty Check
+        run: uv run ty check

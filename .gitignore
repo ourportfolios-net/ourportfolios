@@ -4,6 +4,7 @@
 *.ipynb
 .web
 .env
+*.zip
 assets/external/
 # Python-generated files
 __pycache__/

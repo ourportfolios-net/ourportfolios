@@ -1,13 +1,16 @@
 """Framework detail dialog."""
 
+from typing import cast
+
 import reflex as rx
 
-from .state import FrameworkState
-from ...components.common_dialog import common_dialog
-from ...styles import BTN_GHOST, white
+from ourportfolios.components.common_dialog import CommonDialogConfig, common_dialog
+from ourportfolios.pages.framework.state import FrameworkState
+from ourportfolios.styles import BTN_GHOST, white
 
 
-def metric_badge(metric):
+def metric_badge(metric: dict[str, object]) -> rx.Component:
+    # metric is a Reflex Var inside rx.foreach — must use [] not .get()
     return rx.badge(
         metric["name"],
         variant="soft",
@@ -17,22 +20,28 @@ def metric_badge(metric):
     )
 
 
-def framework_dialog():
+def framework_dialog() -> rx.Component:
     content = rx.vstack(
+        # Header
         rx.vstack(
             rx.heading(
-                FrameworkState.selected_framework.title, size="8", weight="bold"
+                FrameworkState.selected_framework.title,
+                size=rx.breakpoints(initial="5", sm="6", lg="8"),
+                weight="bold",
             ),
             rx.hstack(
                 rx.text("by", size="2", color=white(0.4)),
                 rx.text(
-                    FrameworkState.selected_framework.author, size="2", weight="bold"
+                    FrameworkState.selected_framework.author,
+                    size="2",
+                    weight="bold",
                 ),
                 spacing="2",
             ),
             spacing="2",
             width="100%",
         ),
+        # Badges / source link
         rx.hstack(
             rx.badge(FrameworkState.selected_framework.scope, variant="soft", size="2"),
             rx.badge(
@@ -54,10 +63,13 @@ def framework_dialog():
                         spacing="1",
                         align="center",
                     ),
-                    href=rx.cond(
-                        FrameworkState.selected_framework.source_url,
-                        FrameworkState.selected_framework.source_url,
-                        "#",
+                    href=cast(
+                        "str",
+                        rx.cond(
+                            FrameworkState.selected_framework.source_url,
+                            FrameworkState.selected_framework.source_url,
+                            "#",
+                        ),
                     ),
                     is_external=True,
                     text_decoration="none",
@@ -71,6 +83,7 @@ def framework_dialog():
             wrap="wrap",
         ),
         rx.divider(color=white(0.07)),
+        # Scrollable body — this is the ONLY scroll container
         rx.scroll_area(
             rx.vstack(
                 rx.text(
@@ -80,14 +93,18 @@ def framework_dialog():
                     color=white(0.7),
                 ),
                 rx.cond(
-                    FrameworkState.selected_framework.metrics.length() > 0,
+                    FrameworkState.selected_framework_has_metrics,
                     rx.vstack(
                         rx.text(
-                            "Framework Metrics", size="3", weight="bold", color="white"
+                            "Framework Metrics",
+                            size="3",
+                            weight="bold",
+                            color="white",
                         ),
                         rx.box(
                             rx.foreach(
-                                FrameworkState.selected_framework.metrics, metric_badge
+                                FrameworkState.selected_framework.metrics,
+                                metric_badge,
                             ),
                             display="flex",
                             flex_wrap="wrap",
@@ -101,17 +118,15 @@ def framework_dialog():
                 spacing="4",
                 width="100%",
             ),
-            height="100%",
+            # flex="1" lets this grow to fill available height between
+            # header and footer, preventing the outer dialog from scrolling.
+            flex="1",
             width="100%",
+            overflow_y="auto",
         ),
         rx.divider(color=white(0.07)),
+        # Footer
         rx.hstack(
-            rx.button(
-                "Cancel",
-                on_click=FrameworkState.close_dialog,
-                size="3",
-                **BTN_GHOST,
-            ),
             rx.spacer(),
             rx.button(
                 rx.hstack(
@@ -119,23 +134,27 @@ def framework_dialog():
                     rx.icon("arrow-right", size=18),
                     spacing="2",
                 ),
-                on_click=lambda: FrameworkState.select_and_navigate_framework(),
+                on_click=FrameworkState.select_and_navigate_framework,
                 size="3",
-                **BTN_GHOST,
+                style=BTN_GHOST,
             ),
             width="100%",
         ),
         spacing="4",
         width="100%",
         height="100%",
+        # Prevent the outer dialog container from growing its own scrollbar.
+        overflow="hidden",
     )
 
     return common_dialog(
-        content=content,
-        is_open=FrameworkState.show_dialog,
-        on_close=FrameworkState.close_dialog,
-        on_open_change=FrameworkState.handle_dialog_open,
-        width="65vw",
-        height="70vh",
-        max_width="56.25rem",
+        content,
+        CommonDialogConfig(
+            is_open=cast("bool", FrameworkState.show_dialog),
+            on_close=FrameworkState.close_dialog,
+            on_open_change=FrameworkState.handle_dialog_open,
+            width="75vw",
+            height="80vh",
+            max_width="68.75rem",
+        ),
     )

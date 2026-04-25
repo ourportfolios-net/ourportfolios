@@ -1,13 +1,18 @@
 """Badge button component."""
 
+from typing import Literal
+
 import reflex as rx
 
 
-def badge_button(text: str, **props) -> rx.Component:
+def badge_button(
+    text: str,
+    *,
+    size: Literal["1", "2", "3", "4"] = "2",
+    padding_x: str = "1rem",
+    padding_y: str = "0.375rem",
+) -> rx.Component:
     """Create a badge-style button with pulsing dot."""
-    padding_x = props.pop("padding_x", "1rem")
-    padding_y = props.pop("padding_y", "0.375rem")
-
     return rx.button(
         rx.hstack(
             rx.box(
@@ -26,6 +31,7 @@ def badge_button(text: str, **props) -> rx.Component:
             spacing="2",
             align="center",
         ),
+        size=size,
         padding_x=padding_x,
         padding_y=padding_y,
         border_radius="0.75rem",
@@ -38,5 +44,4 @@ def badge_button(text: str, **props) -> rx.Component:
         },
         transition="all 0.2s",
         cursor="pointer",
-        **props,
     )

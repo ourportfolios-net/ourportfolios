@@ -1,19 +1,21 @@
 """Financial statements transformation and ratio computation."""
 
 import asyncio
-import pandas as pd
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
+import pandas as pd
+
 from ourportfolios.utils.database.fetch_data import (
-    fetch_income_statement_async,
     fetch_balance_sheet_async,
     fetch_cash_flow_async,
+    fetch_income_statement_async,
     fetch_ratios_async,
 )
 
 _cache = {}
 _cache_duration = timedelta(minutes=30)
+_MIN_POINTS_FOR_GROWTH = 2
 
 # ---------------------------------------------------------------------------
 # Column ordering: (display_name, db_column_name)
@@ -106,7 +108,9 @@ _QUARTER_COLS = ["year", "quarter"]
 
 
 def _reorder(
-    df: pd.DataFrame, spec: list[tuple[str, str]], period: str
+    df: pd.DataFrame,
+    spec: list[tuple[str, str]],
+    period: str,
 ) -> pd.DataFrame:
     """Reorder + rename columns per spec in O(n) time.
 
@@ -132,7 +136,7 @@ def _reorder(
     # Step 2: ordered column list
     ordered = [c for c in period_cols if c in existing_after_rename]
     seen = set(ordered)
-    for display, db in spec:
+    for display, _db in spec:
         col = display  # after rename, column is now display name
         if col in existing_after_rename and col not in seen:
             ordered.append(col)
@@ -151,19 +155,20 @@ def _compute_free_cash_flow(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def calculate_yoy_growth(series):
-    if len(series) < 2:
+def calculate_yoy_growth(series: pd.Series) -> pd.Series:
+    if len(series) < _MIN_POINTS_FOR_GROWTH:
         return pd.Series(dtype=float, index=series.index)
     return series.sort_index().pct_change(fill_method=None) * 100
 
 
 async def get_transformed_dataframes(
-    ticker_symbol: str, period: str = "year"
+    ticker_symbol: str,
+    period: str = "year",
 ) -> dict[str, Any]:
     cache_key = f"{ticker_symbol}_{period}"
     if cache_key in _cache:
         cached_data, cached_time = _cache[cache_key]
-        if datetime.now() - cached_time < _cache_duration:
+        if datetime.now(UTC) - cached_time < _cache_duration:
             return cached_data
 
     try:
@@ -194,7 +199,11 @@ async def get_transformed_dataframes(
             }
         else:
             categorized_ratios = _categorize_ratios(
-                ratios_df, period, income_df, balance_df, cashflow_df
+                ratios_df,
+                period,
+                income_df,
+                balance_df,
+                cashflow_df,
             )
 
         result = {
@@ -210,11 +219,10 @@ async def get_transformed_dataframes(
             "categorized_ratios": categorized_ratios,
         }
 
-        _cache[cache_key] = (result, datetime.now())
-        return result
+        _cache[cache_key] = (result, datetime.now(UTC))
 
-    except Exception as e:
-        error_msg = f"{type(e).__name__}: {str(e)}"
+    except (ValueError, TypeError, KeyError, RuntimeError) as e:
+        error_msg = f"{type(e).__name__}: {e!s}"
         return {
             "transformed_income_statement": [],
             "transformed_balance_sheet": [],
@@ -229,14 +237,48 @@ async def get_transformed_dataframes(
             },
             "error": error_msg,
         }
+    else:
+        return result
+
+
+def _extract_category(
+    metrics_list: list[str],
+    combined_df: pd.DataFrame,
+    period: str,
+    available_cols: set[str],
+) -> list[dict[str, Any]]:
+    found = [m for m in metrics_list if m in available_cols]
+    if not found:
+        return []
+    cols = []
+    if "year" in combined_df.columns:
+        cols.append("year")
+    elif "Year" in combined_df.columns:
+        cols.append("Year")
+    if period == "quarter":
+        if "quarter" in combined_df.columns:
+            cols.append("quarter")
+        elif "Quarter" in combined_df.columns:
+            cols.append("Quarter")
+    cols.extend(found)
+    cols = [c for c in cols if c in combined_df.columns]
+    subset = combined_df[cols].copy()
+    rename = {}
+    if "year" in subset.columns:
+        rename["year"] = "Year"
+    if "quarter" in subset.columns:
+        rename["quarter"] = "Quarter"
+    if rename:
+        subset = subset.rename(columns=rename)
+    return subset.to_dict(orient="records")
 
 
 def _categorize_ratios(
     ratios_df: pd.DataFrame,
     period: str,
-    income_df: pd.DataFrame = None,
-    balance_df: pd.DataFrame = None,
-    cashflow_df: pd.DataFrame = None,
+    income_df: pd.DataFrame | None = None,
+    balance_df: pd.DataFrame | None = None,
+    cashflow_df: pd.DataFrame | None = None,
 ) -> dict[str, list]:
     categorized_ratios = {
         "Per Share Value": [],
@@ -317,39 +359,36 @@ def _categorize_ratios(
     time_cols = {"year", "Year", "quarter", "Quarter", "period"}
     available_cols = set(combined_df.columns) - time_cols
 
-    def extract_category(metrics_list):
-        found = [m for m in metrics_list if m in available_cols]
-        if not found:
-            return []
-        cols = []
-        if "year" in combined_df.columns:
-            cols.append("year")
-        elif "Year" in combined_df.columns:
-            cols.append("Year")
-        if period == "quarter":
-            if "quarter" in combined_df.columns:
-                cols.append("quarter")
-            elif "Quarter" in combined_df.columns:
-                cols.append("Quarter")
-        cols.extend(found)
-        cols = [c for c in cols if c in combined_df.columns]
-        subset = combined_df[cols].copy()
-        rename = {}
-        if "year" in subset.columns:
-            rename["year"] = "Year"
-        if "quarter" in subset.columns:
-            rename["quarter"] = "Quarter"
-        if rename:
-            subset = subset.rename(columns=rename)
-        return subset.to_dict(orient="records")
-
-    categorized_ratios["Per Share Value"] = extract_category(per_share_metrics)
-    categorized_ratios["Profitability"] = extract_category(profitability_metrics)
-    categorized_ratios["Valuation"] = extract_category(valuation_metrics)
-    categorized_ratios["Leverage & Liquidity"] = extract_category(
-        leverage_liquidity_metrics
+    categorized_ratios["Per Share Value"] = _extract_category(
+        per_share_metrics,
+        combined_df,
+        period,
+        available_cols,
     )
-    categorized_ratios["Efficiency"] = extract_category(efficiency_metrics)
+    categorized_ratios["Profitability"] = _extract_category(
+        profitability_metrics,
+        combined_df,
+        period,
+        available_cols,
+    )
+    categorized_ratios["Valuation"] = _extract_category(
+        valuation_metrics,
+        combined_df,
+        period,
+        available_cols,
+    )
+    categorized_ratios["Leverage & Liquidity"] = _extract_category(
+        leverage_liquidity_metrics,
+        combined_df,
+        period,
+        available_cols,
+    )
+    categorized_ratios["Efficiency"] = _extract_category(
+        efficiency_metrics,
+        combined_df,
+        period,
+        available_cols,
+    )
     categorized_ratios["Growth Rate"] = _compute_growth_rates(combined_df, period)
 
     return categorized_ratios
@@ -381,14 +420,14 @@ def _compute_growth_rates(ratios_df: pd.DataFrame, period: str) -> list:
 
     df = df.sort_values(sort_cols)
     growth_df = pd.DataFrame()
-    growth_df["Year"] = df[year_col].values
+    growth_df["Year"] = df[year_col].to_numpy()
     if quarter_col and quarter_col in df.columns:
-        growth_df["Quarter"] = df[quarter_col].values
+        growth_df["Quarter"] = df[quarter_col].to_numpy()
 
     for growth_name, source_metric in growth_mappings.items():
         if source_metric in df.columns:
             series = df[source_metric].apply(
-                lambda x: float(x) if x is not None else None
+                lambda x: float(x) if x is not None else None,
             )
             growth_df[growth_name] = series.pct_change() * 100
 
@@ -399,7 +438,7 @@ def _compute_growth_rates(ratios_df: pd.DataFrame, period: str) -> list:
     return growth_df.to_dict(orient="records")
 
 
-def format_quarter_data(data_list):
+def format_quarter_data(data_list: list[dict[str, Any]]) -> list[dict[str, Any]]:
     processed_data = []
     for item in data_list:
         processed_item = item.copy()

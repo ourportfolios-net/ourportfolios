@@ -2,9 +2,9 @@
 
 import reflex as rx
 
-from ...components.navbar import navbar
-from ...components.drawer import drawer_button
-from ...utils.session_manager import SessionIsolatedStateMixin
+from ourportfolios.components.drawer import drawer_button
+from ourportfolios.components.navbar import navbar
+from ourportfolios.utils.session_manager import SessionIsolatedStateMixin
 
 
 class State(SessionIsolatedStateMixin, rx.State):
@@ -42,13 +42,13 @@ def index():
             rx.center(
                 rx.box(
                     rx.text("Industry landing page content goes here."),
-                    width="100%",
-                    style={"maxWidth": "clamp(70vw, 90vw, 96vw)", "margin": "0 auto"},
+                    width="86vw",
+                    max_width="90rem",
+                    margin="0 auto",
                 ),
                 width="100%",
                 padding="2em",
                 padding_top="5em",
-                style={"maxWidth": "clamp(70vw, 90vw, 96vw)", "margin": "0 auto"},
                 position="relative",
             ),
             drawer_button(),

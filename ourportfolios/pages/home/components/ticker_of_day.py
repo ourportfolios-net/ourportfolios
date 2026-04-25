@@ -1,8 +1,9 @@
 import reflex as rx
-from ...state.home_state import HomeState
-from ...state.cart_state import CartState
-from ...components.cards import glass_card
-from ...styles import white
+
+from ourportfolios.components.cards import glass_card
+from ourportfolios.state.cart_state import CartState
+from ourportfolios.state.home_state import HomeState
+from ourportfolios.styles import white
 
 
 def _skel(w: str = "100%", h: str = "0.75rem", r: str = "0.375rem") -> rx.Component:
@@ -35,12 +36,12 @@ def _ticker_skeleton() -> rx.Component:
             spacing="3",
             width="100%",
         ),
-        padding="1rem 1.125rem",
+        padding=rx.breakpoints(initial="0.875rem 1rem", md="1rem 1.125rem"),
         width="100%",
     )
 
 
-def ticker_of_the_day_card():
+def ticker_of_the_day_card() -> rx.Component:
     return rx.cond(
         HomeState.ticker_of_day_symbol,
         _ticker_real(),
@@ -48,7 +49,7 @@ def ticker_of_the_day_card():
     )
 
 
-def _ticker_real():
+def _ticker_real() -> rx.Component:
     return glass_card(
         rx.box(
             rx.link(
@@ -64,19 +65,18 @@ def _ticker_real():
             ),
             rx.vstack(
                 rx.text(
-                    "Ticker of the Day",
+                    rx.el.span("Ticker of the "),
+                    rx.el.span(HomeState.ticker_period_label),
                     size="1",
                     weight="medium",
                     color=white(0.35),
                 ),
-                # Main content block — more space from the label above
                 rx.vstack(
-                    # Single line: symbol + cart LEFT, price RIGHT — aligned to bottom edge
                     rx.hstack(
                         rx.hstack(
                             rx.text(
                                 HomeState.ticker_of_day_symbol,
-                                size="8",
+                                size=rx.breakpoints(initial="7", sm="8"),
                                 weight="bold",
                                 color="white",
                                 letter_spacing="-0.03em",
@@ -87,7 +87,7 @@ def _ticker_real():
                                 size="2",
                                 variant="outline",
                                 on_click=CartState.add_item(
-                                    HomeState.ticker_of_day_symbol
+                                    HomeState.ticker_of_day_symbol,
                                 ),
                                 cursor="pointer",
                                 position="relative",
@@ -100,22 +100,19 @@ def _ticker_real():
                         rx.spacer(),
                         rx.text(
                             HomeState.ticker_of_day_price,
-                            size="6",
+                            size=rx.breakpoints(initial="5", sm="6"),
                             weight="bold",
                             color="white",
                             letter_spacing="-0.02em",
                             line_height="1",
                         ),
                         width="100%",
-                        # align="end" anchors both sides to their bottom edge
-                        # so the large symbol and the price share the same baseline
                         align="end",
                         position="relative",
                         z_index="2",
                         pointer_events="none",
                         style={"& button": {"pointer-events": "auto"}},
                     ),
-                    # Second line: company name LEFT, badge RIGHT
                     rx.hstack(
                         rx.text(
                             HomeState.ticker_of_day_name,
@@ -124,6 +121,7 @@ def _ticker_real():
                             white_space="nowrap",
                             overflow="hidden",
                             text_overflow="ellipsis",
+                            min_width="0",
                         ),
                         rx.spacer(),
                         rx.badge(
@@ -145,7 +143,6 @@ def _ticker_real():
             position="relative",
             width="100%",
         ),
-        padding="1rem 1.125rem",
+        padding=rx.breakpoints(initial="0.875rem 1rem", md="1rem 1.125rem"),
         width="100%",
-        cursor="pointer",
     )

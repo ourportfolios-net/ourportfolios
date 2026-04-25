@@ -2,73 +2,22 @@
 
 import reflex as rx
 
-from ...components.drawer import CartState
-from ...styles import white, CARD_BORDER
-from .state import State
-from .dialog import company_profile_dialog
+from ourportfolios.components.drawer import CartState
+from ourportfolios.pages.ticker_analysis.state import State
+from ourportfolios.styles import CARD_BORDER, white
 
 _CARD_RADIUS = "0.625rem"
 
 
-def _skel(w: str, h: str) -> rx.Component:
+def _skel(w: str, h: str, radius: str = "0.5rem") -> rx.Component:
     return rx.skeleton(
         rx.box(width=w, height=h),
         loading=True,
-        style={"border_radius": "0.375rem"},
+        style={"border_radius": radius},
     )
 
 
-def name_card_skeleton():
-    return rx.box(
-        rx.vstack(
-            rx.hstack(
-                rx.skeleton(
-                    rx.box(width="1.9375rem", height="1.9375rem"),
-                    loading=True,
-                    style={"border_radius": "0.5rem"},
-                ),
-                rx.spacer(),
-                _skel("4.375rem", "1.125rem"),
-                width="100%",
-                align="center",
-            ),
-            rx.vstack(
-                _skel("55%", "2.25rem"),
-                rx.hstack(
-                    _skel("3.75rem", "1.375rem"),
-                    _skel("5rem", "1.375rem"),
-                    spacing="2",
-                ),
-                spacing="3",
-                width="100%",
-            ),
-            spacing="4",
-            width="100%",
-        ),
-        background=white(0.025),
-        border=CARD_BORDER,
-        border_radius=_CARD_RADIUS,
-        padding="1.25rem",
-        width="100%",
-    )
-
-
-def general_info_card_skeleton():
-    return rx.box(
-        rx.vstack(
-            *[_skel("90%", "0.875rem") for _ in range(5)],
-            spacing="2",
-            width="100%",
-        ),
-        background=white(0.025),
-        border=CARD_BORDER,
-        border_radius=_CARD_RADIUS,
-        padding="1.25rem",
-        width="100%",
-    )
-
-
-def error_card(message: str):
+def error_card(message: str) -> rx.Component:
     return rx.box(
         rx.vstack(
             rx.icon("triangle-alert", size=28, color="tomato"),
@@ -85,129 +34,278 @@ def error_card(message: str):
     )
 
 
-def name_card():
+def name_card() -> rx.Component:
     overview = State.overview
 
     return rx.cond(
-        State.is_loading_company,
-        name_card_skeleton(),
-        rx.cond(
-            State.error_company != "",
-            error_card(State.error_company),
+        State.error_company != "",
+        error_card(State.error_company),
+        rx.box(
             rx.box(
-                rx.vstack(
-                    rx.hstack(
-                        rx.heading(overview.get("symbol", ""), size="9"),
-                        rx.button(
-                            rx.icon("plus", size=14),
-                            size="2",
-                            on_click=lambda: CartState.add_item(
-                                overview.get("symbol", "")
-                            ),
-                            style={
-                                "background": white(0.05),
-                                "border": f"1px solid {white(0.1)}",
-                                "border_radius": "0.5rem",
-                                "color": white(0.7),
-                                "cursor": "pointer",
-                                "transition": "all 0.15s ease",
-                                "_hover": {
-                                    "background": white(0.09),
-                                    "border_color": white(0.18),
-                                    "color": "white",
-                                },
-                            },
+                rx.skeleton(
+                    rx.button(
+                        rx.icon("plus", size=14),
+                        size="2",
+                        on_click=lambda: CartState.add_item(
+                            overview.get("symbol", ""),
                         ),
-                        justify="center",
-                        align="center",
+                        style={
+                            "background": white(0.05),
+                            "border": f"1px solid {white(0.1)}",
+                            "border_radius": "0.5rem",
+                            "color": white(0.7),
+                            "cursor": "pointer",
+                            "padding": "0.4rem",
+                            "transition": "all 0.15s ease",
+                            "_hover": {
+                                "background": white(0.09),
+                                "border_color": white(0.18),
+                                "color": "white",
+                            },
+                        },
                     ),
-                    rx.hstack(
+                    loading=State.is_loading_company,
+                    style={"border_radius": "0.375rem"},
+                    border_radius="0.5rem",
+                ),
+                position="absolute",
+                top="1.25rem",
+                right="1.25rem",
+            ),
+            rx.vstack(
+                rx.skeleton(
+                    rx.heading(
+                        rx.cond(
+                            State.is_loading_company,
+                            "AGG",
+                            overview.get("symbol", ""),
+                        ),
+                        size="9",
+                        weight="bold",
+                        line_height="1",
+                    ),
+                    loading=State.is_loading_company,
+                    style={"border_radius": "0.375rem"},
+                    border_radius="0.5rem",
+                ),
+                rx.hstack(
+                    rx.skeleton(
                         rx.badge(
-                            f"{overview.get('exchange', '')}",
+                            rx.cond(
+                                State.is_loading_company,
+                                "HOSE",
+                                overview.get("exchange", ""),
+                            ),
                             variant="soft",
                             color_scheme="gray",
                             size="1",
                             style={"border_radius": "0.375rem"},
                         ),
+                        loading=State.is_loading_company,
+                        style={"border_radius": "0.375rem"},
+                    ),
+                    rx.skeleton(
                         rx.badge(
-                            f"{overview.get('industry', '')}",
+                            rx.cond(
+                                State.is_loading_company,
+                                "Real Estate",
+                                overview.get("industry", ""),
+                            ),
                             variant="soft",
                             color_scheme="violet",
                             size="1",
                             style={"border_radius": "0.375rem"},
                         ),
-                        spacing="2",
+                        loading=State.is_loading_company,
+                        style={"border_radius": "0.375rem"},
                     ),
-                    spacing="3",
-                    align="center",
+                    spacing="2",
                 ),
-                background=white(0.025),
-                border=CARD_BORDER,
-                border_radius=_CARD_RADIUS,
-                padding="1.25rem",
-                width="100%",
+                align="start",
+                spacing="3",
             ),
+            flex_shrink="0",
+            position="relative",
+            background=white(0.025),
+            border=CARD_BORDER,
+            border_radius=_CARD_RADIUS,
+            padding="1.25rem",
+            width="100%",
         ),
     )
 
 
-def general_info_card():
+def general_info_card() -> rx.Component:
     overview = State.overview
-    website = overview.get("website", "")
+    website = rx.cond(
+        State.is_loading_company,
+        "www.angia.com.vn",
+        overview.get("website", ""),
+    )
 
     return rx.cond(
-        State.is_loading_company,
-        general_info_card_skeleton(),
-        rx.cond(
-            State.error_company != "",
-            error_card(State.error_company),
+        State.error_company != "",
+        error_card(State.error_company),
+        rx.box(
             rx.vstack(
-                rx.box(
-                    rx.vstack(
-                        rx.text(
-                            f"{overview.get('short_name', '')} (Est. {overview.get('established_year', '')})",
-                            size="2",
-                            color=white(0.8),
+                # Header group: name + website tightly spaced
+                rx.vstack(
+                    rx.skeleton(
+                        rx.hstack(
+                            rx.text(
+                                rx.cond(
+                                    State.is_loading_company,
+                                    "An Gia Real Estate",
+                                    overview.get("short_name", ""),
+                                ),
+                                size="2",
+                                weight="bold",
+                                color=white(0.9),
+                            ),
+                            rx.text(
+                                rx.cond(
+                                    State.is_loading_company,
+                                    "(Est. 2012)",
+                                    f"(Est. {overview.get('established_year', '')})",
+                                ),
+                                size="2",
+                                color=white(0.45),
+                            ),
+                            spacing="1",
+                            align="center",
+                            style={"flexWrap": "wrap"},
                         ),
+                        loading=State.is_loading_company,
+                        style={"border_radius": "0.375rem"},
+                    ),
+                    rx.skeleton(
                         rx.link(
-                            website,
+                            rx.hstack(
+                                rx.text(website, size="2", color=rx.color("accent", 9)),
+                                rx.icon("link", size=8, color=white(0.4)),
+                                align="center",
+                                spacing="1",
+                            ),
                             href=f"https://{website}",
                             is_external=True,
-                            size="2",
-                            color="var(--accent-9)",
                         ),
-                        rx.text(
-                            f"Market cap: {overview.get('market_cap', '')} B. VND",
-                            size="2",
-                            color=white(0.6),
-                        ),
-                        rx.text(
-                            f"Issue Shares: {overview.get('issue_share', '')}",
-                            size="2",
-                            color=white(0.6),
-                        ),
-                        rx.text(
-                            f"Outstanding Shares: {overview.get('outstanding_share', '')}",
-                            size="2",
-                            color=white(0.6),
-                        ),
-                        rx.text(
-                            f"{overview.get('no_shareholders', '')} shareholders ({overview.get('foreign_percent', '')}% foreign)",
-                            size="2",
-                            color=white(0.6),
-                        ),
-                        spacing="2",
-                        width="100%",
+                        loading=State.is_loading_company,
+                        style={"border_radius": "0.375rem"},
                     ),
-                    background=white(0.025),
-                    border=CARD_BORDER,
-                    border_radius=_CARD_RADIUS,
-                    padding="1.25rem",
+                    spacing="1",
+                    align="start",
                     width="100%",
                 ),
-                company_profile_dialog(),
+                rx.vstack(
+                    rx.hstack(
+                        rx.text("Market Cap", size="2", color=white(0.5)),
+                        rx.spacer(),
+                        rx.skeleton(
+                            rx.text(
+                                rx.cond(
+                                    State.is_loading_company,
+                                    "2576 B. VND",
+                                    f"{overview.get('market_cap', '')} B. VND",
+                                ),
+                                size="2",
+                                color=white(0.85),
+                                weight="medium",
+                            ),
+                            loading=State.is_loading_company,
+                            style={"border_radius": "0.375rem"},
+                        ),
+                        width="100%",
+                    ),
+                    rx.hstack(
+                        rx.text("Issue Shares", size="2", color=white(0.5)),
+                        rx.spacer(),
+                        rx.skeleton(
+                            rx.text(
+                                rx.cond(
+                                    State.is_loading_company,
+                                    "162.5",
+                                    f"{overview.get('issue_share', '')}",
+                                ),
+                                size="2",
+                                color=white(0.85),
+                                weight="medium",
+                            ),
+                            loading=State.is_loading_company,
+                            style={"border_radius": "0.375rem"},
+                        ),
+                        width="100%",
+                    ),
+                    rx.hstack(
+                        rx.text("Outstanding", size="2", color=white(0.5)),
+                        rx.spacer(),
+                        rx.skeleton(
+                            rx.text(
+                                rx.cond(
+                                    State.is_loading_company,
+                                    "162.5",
+                                    f"{overview.get('outstanding_share', '')}",
+                                ),
+                                size="2",
+                                color=white(0.85),
+                                weight="medium",
+                            ),
+                            loading=State.is_loading_company,
+                            style={"border_radius": "0.375rem"},
+                        ),
+                        width="100%",
+                    ),
+                    rx.hstack(
+                        rx.text("Shareholders", size="2", color=white(0.5)),
+                        rx.spacer(),
+                        rx.skeleton(
+                            rx.text(
+                                rx.cond(
+                                    State.is_loading_company,
+                                    "5921",
+                                    f"{overview.get('no_shareholders', '')}",
+                                ),
+                                size="2",
+                                color=white(0.85),
+                                weight="medium",
+                            ),
+                            loading=State.is_loading_company,
+                            style={"border_radius": "0.375rem"},
+                        ),
+                        width="100%",
+                    ),
+                    rx.hstack(
+                        rx.text("Foreign Owned", size="2", color=white(0.5)),
+                        rx.spacer(),
+                        rx.skeleton(
+                            rx.text(
+                                rx.cond(
+                                    State.is_loading_company,
+                                    "0.8%",
+                                    f"{overview.get('foreign_percent', '')}%",
+                                ),
+                                size="2",
+                                color=white(0.85),
+                                weight="medium",
+                            ),
+                            loading=State.is_loading_company,
+                            style={"border_radius": "0.375rem"},
+                        ),
+                        width="100%",
+                    ),
+                    spacing="2",
+                    width="100%",
+                ),
                 spacing="3",
                 width="100%",
+                align="start",
             ),
+            background=white(0.025),
+            border=CARD_BORDER,
+            border_radius=_CARD_RADIUS,
+            padding="1.25rem",
+            width="100%",
+            flex="1",
+            min_height="0",
+            overflow="hidden",
         ),
     )

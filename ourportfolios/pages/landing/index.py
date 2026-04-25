@@ -2,15 +2,16 @@
 
 import reflex as rx
 
-from .sections import (
-    hero_section,
-    showcase_section,
+from ourportfolios.components.navbar import navbar
+from ourportfolios.pages.landing.sections import (
     bento_section,
     cta_section,
     footer,
+    hero_section,
+    showcase_section,
 )
-from ...utils.session_manager import SessionIsolatedStateMixin
-from ...components.navbar import navbar
+from ourportfolios.ui.layout import app_shell
+from ourportfolios.utils.session_manager import SessionIsolatedStateMixin
 
 
 class LandingState(SessionIsolatedStateMixin, rx.State):
@@ -27,19 +28,16 @@ class LandingState(SessionIsolatedStateMixin, rx.State):
 def index() -> rx.Component:
     """Render the landing page."""
     return rx.box(
-        navbar(),
-        hero_section(),
-        rx.box(id="showcase"),
-        showcase_section(),
-        rx.box(id="features"),
-        bento_section(),
-        rx.box(id="pricing"),
-        cta_section(),
-        footer(),
+        app_shell(
+            navbar(),
+            hero_section(),
+            rx.box(id="showcase"),
+            showcase_section(),
+            rx.box(id="features"),
+            bento_section(),
+            rx.box(id="pricing"),
+            cta_section(),
+            footer(),
+        ),
         on_unmount=LandingState.on_unmount,
-        background="#090909",
-        color="white",
-        min_height="100vh",
-        width="100%",
-        overflow_x="hidden",
     )

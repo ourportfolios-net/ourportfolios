@@ -9,17 +9,17 @@ class ScrollRevealComponent(rx.Component):
     library = "$/public/ScrollReveal"
     tag = "ScrollReveal"
 
-    blur_amount: rx.Var[int] = 10
-    initial_opacity: rx.Var[float] = 0.4
-    initial_scale: rx.Var[float] = 0.98
-    duration: rx.Var[float] = 0.4
-    delay: rx.Var[float] = 0
-    threshold: rx.Var[float] = 0.1
-    trigger_once: rx.Var[bool] = True
+    blur_amount: int = 10
+    initial_opacity: float = 0.4
+    initial_scale: float = 0.98
+    duration: float = 0.4
+    delay: float = 0
+    threshold: float = 0.1
+    trigger_once: bool = True
 
 
-def scroll_reveal(
-    *children,
+def scroll_reveal(  # noqa: PLR0913
+    *children: rx.Component,
     blur_amount: int = 10,
     initial_opacity: float = 0.4,
     initial_scale: float = 0.98,
@@ -27,7 +27,7 @@ def scroll_reveal(
     delay: float = 0,
     threshold: float = 0.1,
     trigger_once: bool = True,
-    **props,
+    **props: object,
 ) -> rx.Component:
     """Animate children from blurry to sharp on scroll into view."""
     return ScrollRevealComponent.create(

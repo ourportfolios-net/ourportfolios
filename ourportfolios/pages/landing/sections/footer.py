@@ -2,7 +2,7 @@
 
 import reflex as rx
 
-from ..components import scroll_reveal
+from ourportfolios.pages.landing.components import scroll_reveal
 
 
 def footer() -> rx.Component:

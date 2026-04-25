@@ -1,7 +1,8 @@
 """Global navigation state that cancels sessions on route changes."""
 
 import reflex as rx
-from ..utils.session_manager import get_session_manager
+
+from ourportfolios.utils.session_manager import get_session_manager
 
 
 class GlobalNavigationState(rx.State):
@@ -9,11 +10,11 @@ class GlobalNavigationState(rx.State):
 
     _last_route: str = ""
 
-    def _on_state_update(self):
-        """Called on every state update. Check for route changes."""
+    def _on_state_update(self) -> None:
+        """Handle each state update and check for route changes."""
         try:
             current_route = self.router.page.path
-            if current_route != self._last_route and self._last_route != "":
+            if self._last_route not in ("", current_route):
                 # Cancel all sessions immediately
                 manager = get_session_manager()
                 cancel_all = getattr(manager, "cancel_all_sessions", None)

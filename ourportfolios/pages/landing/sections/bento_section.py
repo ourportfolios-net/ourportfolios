@@ -2,13 +2,13 @@
 
 import reflex as rx
 
-from ..components import scroll_reveal, shiny_text
-from ..components.bento_cards import (
-    transparency_card,
-    focused_card,
+from ourportfolios.pages.landing.components import scroll_reveal, shiny_text
+from ourportfolios.pages.landing.components.bento_cards import (
     conciseness_card,
-    reliability_card,
+    focused_card,
     instructiveness_card,
+    reliability_card,
+    transparency_card,
 )
 
 

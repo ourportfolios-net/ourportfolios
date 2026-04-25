@@ -1,9 +1,10 @@
 """Company profile dialog component for displaying detailed company information."""
 
 import reflex as rx
-from ...styles import white, CARD_BORDER
-from ...components.common_dialog import common_dialog
-from .state import State
+
+from ourportfolios.components.common_dialog import CommonDialogConfig, common_dialog
+from ourportfolios.pages.ticker_analysis.state import State
+from ourportfolios.styles import CARD_BORDER, white
 
 _CARD_RADIUS = "0.625rem"
 
@@ -11,7 +12,7 @@ _CARD_RADIUS = "0.625rem"
 def company_profile_dialog():
     profile_data = State.profile
 
-    def create_profile_tab_content(content_key: str, tab_value: str):
+    def create_profile_tab_content(content_key: str, tab_value: str) -> rx.Component:
         return rx.tabs.content(
             rx.text(
                 profile_data.get(content_key, ""),
@@ -75,12 +76,14 @@ def company_profile_dialog():
             },
         ),
         common_dialog(
-            content=dialog_content,
-            is_open=State.profile_dialog_open,
-            on_close=State.set_profile_dialog_open(False),
-            width="86vw",
-            height="85vh",
-            max_width="75rem",
-            show_close_button=True,
+            dialog_content,
+            CommonDialogConfig(
+                is_open=State.profile_dialog_open,
+                on_close=State.set_profile_dialog_open(False),
+                width="86vw",
+                height="85vh",
+                max_width="75rem",
+                show_close_button=True,
+            ),
         ),
     )

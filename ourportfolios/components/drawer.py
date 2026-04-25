@@ -1,10 +1,11 @@
 """Cart drawer UI component."""
 
 import reflex as rx
-from ..state import CartState
+
+from ourportfolios.state import CartState
 
 
-def _cart_item(item, i):
+def _cart_item(item: dict[str, str], i: int) -> rx.Component:
     """Single cart item card — shared by scroll and non-scroll layouts."""
     return rx.card(
         rx.hstack(
@@ -39,7 +40,7 @@ def _cart_item(item, i):
     )
 
 
-def _cart_items_list():
+def _cart_items_list() -> rx.Component:
     """Cart item list, scrollable when there are many items."""
     items_vstack = rx.vstack(
         rx.foreach(CartState.cart_items, _cart_item),
@@ -67,7 +68,7 @@ def cart_drawer_content():
                             user_select="none",
                             color=rx.color("accent", 10),
                             _hover={"color": rx.color("accent", 7)},
-                        )
+                        ),
                     ),
                     width="100%",
                     display="flex",
@@ -122,7 +123,7 @@ def drawer_button():
                 bottom="2em",
                 left="2em",
                 z_index="1000",
-            )
+            ),
         ),
         rx.drawer.overlay(on_click=CartState.toggle_cart),
         rx.drawer.portal(cart_drawer_content()),

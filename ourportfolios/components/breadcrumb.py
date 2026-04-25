@@ -1,7 +1,5 @@
 """Reusable breadcrumb component that auto-generates from the current route."""
 
-from typing import Optional
-
 import reflex as rx
 
 
@@ -36,7 +34,7 @@ def _active_segment(label: rx.Var[str] | str) -> rx.Component:
 
 def breadcrumb(
     route: str,
-    tail_label: Optional[rx.Var[str] | str] = None,
+    tail_label: rx.Var[str] | str | None = None,
 ) -> rx.Component:
     """Build a breadcrumb trail from a route string.
 
@@ -44,6 +42,7 @@ def breadcrumb(
         route: The page route, e.g. "/tickers" or "/tickers/[ticker]".
         tail_label: If given, replaces the last segment label. Useful for
             dynamic segments like a ticker symbol resolved at runtime.
+
     """
     parts = [p for p in route.strip("/").split("/") if p]
 

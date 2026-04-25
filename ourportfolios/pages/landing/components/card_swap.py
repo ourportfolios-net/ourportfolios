@@ -10,7 +10,7 @@ class CardSwapComponent(rx.Component):
     tag = "CardSwap"
     is_default = True
 
-    lib_dependencies: list[str] = ["gsap@3.12.5"]
+    lib_dependencies: tuple[str, ...] = ("gsap@3.12.5",)
 
     # Component props
     width: rx.Var[int]
