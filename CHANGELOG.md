@@ -2,6 +2,154 @@
 
 <!-- version list -->
 
+## v0.17.0 (2026-04-25)
+
+### Bug Fixes
+
+- **database**: Add retry mechanism
+  ([#30](https://github.com/ourportfolios-net/ourportfolios/pull/30),
+  [`920408b`](https://github.com/ourportfolios-net/ourportfolios/commit/920408b053e5b2550de842ea141223db6dbb32d8))
+
+### Chores
+
+- Add ann201 to ignore list
+  ([`2e7b440`](https://github.com/ourportfolios-net/ourportfolios/commit/2e7b4408f1447d0c0a6c183c99411d2a2a105e4e))
+
+- Add breakpoints
+  ([`17f70f1`](https://github.com/ourportfolios-net/ourportfolios/commit/17f70f1197dc893ca3aba30fd1a85fd73d78e466))
+
+- Checkpoint
+  ([`1240af4`](https://github.com/ourportfolios-net/ourportfolios/commit/1240af4b038e82ecb41cd33b1bfaa19cf4b4e436))
+
+- Fix type checks
+  ([`f6c733e`](https://github.com/ourportfolios-net/ourportfolios/commit/f6c733e2082f0ae2402fd534a68f5ed3dd3c4871))
+
+- Fix type checks
+  ([`545c909`](https://github.com/ourportfolios-net/ourportfolios/commit/545c909eb6ae4af2f904b7f192ba0c05dd0b22d3))
+
+- Handle overflow
+  ([`f958e0c`](https://github.com/ourportfolios-net/ourportfolios/commit/f958e0c67b6e7405a3dad497fe001d35690a4bec))
+
+- Ignore .zip files
+  ([`371ecb3`](https://github.com/ourportfolios-net/ourportfolios/commit/371ecb3bfba387d73f8eceba8b882ff4a3df7742))
+
+- Pass all checks
+  ([`99a6395`](https://github.com/ourportfolios-net/ourportfolios/commit/99a639515e927a6dfb6f6346c7089bd2f6e32085))
+
+- Readd migrations
+  ([`4d0c8cc`](https://github.com/ourportfolios-net/ourportfolios/commit/4d0c8ccd3b70eebd94de3bf28f485d512e63510d))
+
+- Readjust spacing
+  ([`9dfe6f2`](https://github.com/ourportfolios-net/ourportfolios/commit/9dfe6f2c6625a8b682ebd41f0db41c779f4f37b5))
+
+- Reformat
+  ([`658a4b4`](https://github.com/ourportfolios-net/ourportfolios/commit/658a4b41068e3c64ebfde006acfe9807775853ee))
+
+- Rename variables
+  ([`392edde`](https://github.com/ourportfolios-net/ourportfolios/commit/392eddeef14f25f7a3f55bfd97ea356ee9b1458c))
+
+- Reorganize supabase client
+  ([`9bdf3e5`](https://github.com/ourportfolios-net/ourportfolios/commit/9bdf3e5c483c5556bd3adc828f00d1340940c924))
+
+- Restore heatmaps skeleton
+  ([`36a38ff`](https://github.com/ourportfolios-net/ourportfolios/commit/36a38ffc098ffba13843ba298e9e3a7538272620))
+
+- Satisfy ty for migrations
+  ([`d445e8e`](https://github.com/ourportfolios-net/ourportfolios/commit/d445e8e3971e0195aeb5d25117d4f20b774d7a2b))
+
+- **badge**: Ensure badge stays the same size
+  ([`062c15d`](https://github.com/ourportfolios-net/ourportfolios/commit/062c15d1f835efe985fce2a13c60725b78be0428))
+
+- **deps**: Add ty as type checks
+  ([`b6f7ca9`](https://github.com/ourportfolios-net/ourportfolios/commit/b6f7ca9f5d92cb65b3790a7ea4d052b0c4351b89))
+
+- **deps**: Add ty for type checks
+  ([`846c399`](https://github.com/ourportfolios-net/ourportfolios/commit/846c3992645830aea71a6f9c16b75cb16a497e5f))
+
+- **deps**: Update lockfile
+  ([`124d6dc`](https://github.com/ourportfolios-net/ourportfolios/commit/124d6dc5164599f45642f254a2cbecaff8592e62))
+
+- **deps**: Update lockfile
+  ([`0420821`](https://github.com/ourportfolios-net/ourportfolios/commit/0420821dc7e2839edaf6e1d5f60b02518170ad7d))
+
+- **frameworks**: Add mobile view
+  ([`d852ab7`](https://github.com/ourportfolios-net/ourportfolios/commit/d852ab7c1fa35d763dff304a7b00d3e29c68d93d))
+
+- **frameworks**: Pass all checks
+  ([`0a13a38`](https://github.com/ourportfolios-net/ourportfolios/commit/0a13a38a8f0dc690afbe22956eba03c974fdf9b4))
+
+- **home**: Fix small discrepancies for mobile view
+  ([`ad9690b`](https://github.com/ourportfolios-net/ourportfolios/commit/ad9690bf57fee45c88c9f92444ad83be2dbd8fee))
+
+- **home**: Redesign upper components
+  ([`ef76a89`](https://github.com/ourportfolios-net/ourportfolios/commit/ef76a89f457effba31ac8b84c8c74ad254a3bc05))
+
+- **mobike**: Add mobile view for settings and auth
+  ([`8c1186c`](https://github.com/ourportfolios-net/ourportfolios/commit/8c1186cc1af85a4b77f0c52efb59d4bb4d8817ce))
+
+- **ruff**: Add exclusions
+  ([`abeceff`](https://github.com/ourportfolios-net/ourportfolios/commit/abeceff01edd134ad8e7c1099a2874665965195f))
+
+- **ruff**: Add lint checks
+  ([`e882557`](https://github.com/ourportfolios-net/ourportfolios/commit/e882557e9407e16650c30ab7b03301a8b6b18a66))
+
+- **ruff**: Comply with all checks
+  ([`973b875`](https://github.com/ourportfolios-net/ourportfolios/commit/973b8758092685a131f9c10f3fbeae73772e9219))
+
+- **ruff**: Comply with check (884)
+  ([`a828ff3`](https://github.com/ourportfolios-net/ourportfolios/commit/a828ff36dcaeafb25d75b89118fc0e4be1fa5004))
+
+- **ruff**: Comply with check(403)
+  ([`aa32fe9`](https://github.com/ourportfolios-net/ourportfolios/commit/aa32fe9e6704dc155c71e790ef0b57464223d95d))
+
+- **ruff**: Comply with checks (222)
+  ([`2ec4e06`](https://github.com/ourportfolios-net/ourportfolios/commit/2ec4e06e6b18e331ef46f296fc87cfab8c3c210e))
+
+- **ruff**: Pass checks
+  ([`be9278f`](https://github.com/ourportfolios-net/ourportfolios/commit/be9278f72e57a5d5681f3641f0b03a7b3f9c7f92))
+
+- **ty**: Check for type errors
+  ([`6d7cc31`](https://github.com/ourportfolios-net/ourportfolios/commit/6d7cc31e4d8f51b260665af4fd121e77c436886a))
+
+- **ty**: Fix all type errors
+  ([`deb43ed`](https://github.com/ourportfolios-net/ourportfolios/commit/deb43ed4f3adf6dc9ea148c6e430a23183298c6a))
+
+- **ty**: Pass all checks
+  ([`25f9f4a`](https://github.com/ourportfolios-net/ourportfolios/commit/25f9f4aa0d234c624b250ad72c67a719cd23bfdd))
+
+### Continuous Integration
+
+- Add uv and ty to workflow
+  ([`49f0c8c`](https://github.com/ourportfolios-net/ourportfolios/commit/49f0c8c5a91fa04825a4100a62acb552296e17d1))
+
+### Features
+
+- Add initial schema migration for database tables
+  ([`ba24e99`](https://github.com/ourportfolios-net/ourportfolios/commit/ba24e993ce6137fe1da485662da6ebcf0e34af4d))
+
+- Add responsiveness to mobile view
+  ([`b79915c`](https://github.com/ourportfolios-net/ourportfolios/commit/b79915c5abe2aa99de86f8ff9ebeebe3c3a8296a))
+
+- **auth**: Handle AuthApiError in exception block
+  ([`7acddc7`](https://github.com/ourportfolios-net/ourportfolios/commit/7acddc7ca6600f26d9e82efa7a39b89a58b50602))
+
+- **filter**: Add mobile view
+  ([`5d7ea6e`](https://github.com/ourportfolios-net/ourportfolios/commit/5d7ea6e2fa55dccf08cb4f0d05aaa45fa4229beb))
+
+- **ticker-analysis**: Add mobile view
+  ([`55e9640`](https://github.com/ourportfolios-net/ourportfolios/commit/55e9640d69376df06040546a145a0a7fd639b3e7))
+
+### Performance Improvements
+
+- **ticker-analysis**: Handle refreshes
+  ([`52f6a9d`](https://github.com/ourportfolios-net/ourportfolios/commit/52f6a9d93b7374768b01a6dd013c7f5d814f7bd4))
+
+### Refactoring
+
+- **/home**: Reorganize files
+  ([`efc5937`](https://github.com/ourportfolios-net/ourportfolios/commit/efc5937f163b8d6310d55a117c354c1ef33f6b1e))
+
+
 ## v0.15.4 (2026-03-21)
 
 ### Bug Fixes
