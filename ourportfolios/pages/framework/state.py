@@ -153,7 +153,10 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
 
     selected_framework: rx.Field[FrameworkModel] = rx.field(
         default_factory=lambda: FrameworkModel(
-            id=0, title="", description="", author="",
+            id=0,
+            title="",
+            description="",
+            author="",
         ),
     )
     show_dialog: rx.Field[bool] = rx.field(default=False)

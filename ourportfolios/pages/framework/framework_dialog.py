@@ -26,7 +26,7 @@ def framework_dialog() -> rx.Component:
         rx.vstack(
             rx.heading(
                 FrameworkState.selected_framework.title,
-                size="8",
+                size=rx.breakpoints(initial="5", sm="6", lg="8"),
                 weight="bold",
             ),
             rx.hstack(

@@ -90,10 +90,7 @@ SELECT_STYLE = {
 
 LABEL_STYLE = {
     "font_size": "0.625rem",
-    "font_weight": "700",
     "color": white(0.35),
-    "letter_spacing": "0.08em",
-    "text_transform": "uppercase",
 }
 
 SEARCH_ICON_STYLE = {

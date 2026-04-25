@@ -1,5 +1,3 @@
-"""Add framework dialog and metrics management."""
-
 from collections.abc import Callable
 from typing import cast
 
@@ -20,6 +18,9 @@ from ourportfolios.styles import (
     SELECT_STYLE,
     white,
 )
+
+# Character limit for ~500 words
+DESC_CHAR_LIMIT = 3000
 
 
 def field(label: str, control: rx.Component) -> rx.Component:
@@ -115,37 +116,47 @@ def metric_item(metric: MetricModel, index: int) -> rx.Component:
 
 def add_metric_selector() -> rx.Component:
     content = rx.vstack(
-        field(
-            "Category",
-            rx.select(
-                FrameworkState.available_categories,
-                value=FrameworkState.new_metric_category,
-                on_change=FrameworkState.set_new_metric_category,
-                size="3",
-                style=SELECT_STYLE,
-            ),
-        ),
-        field(
-            "Metric",
-            rx.select(
-                rx.match(
-                    FrameworkState.new_metric_category,
-                    ("Per Share Value", FrameworkState.per_share_metrics),
-                    ("Growth Rate", FrameworkState.growth_rate_metrics),
-                    ("Profitability", FrameworkState.profitability_metrics),
-                    ("Valuation", FrameworkState.valuation_metrics),
-                    ("Leverage & Liquidity", FrameworkState.leverage_liquidity_metrics),
-                    ("Efficiency", FrameworkState.efficiency_metrics),
-                    FrameworkState.per_share_metrics,
+        rx.vstack(
+            field(
+                "Category",
+                rx.select(
+                    FrameworkState.available_categories,
+                    value=FrameworkState.new_metric_category,
+                    on_change=FrameworkState.set_new_metric_category,
+                    size="3",
+                    width="100%",
+                    style=SELECT_STYLE,
                 ),
-                placeholder="Choose a metric...",
-                value=FrameworkState.new_metric_name,
-                on_change=FrameworkState.set_new_metric_name,
-                size="3",
-                style=SELECT_STYLE,
             ),
+            field(
+                "Metric",
+                rx.select(
+                    rx.match(
+                        FrameworkState.new_metric_category,
+                        ("Per Share Value", FrameworkState.per_share_metrics),
+                        ("Growth Rate", FrameworkState.growth_rate_metrics),
+                        ("Profitability", FrameworkState.profitability_metrics),
+                        ("Valuation", FrameworkState.valuation_metrics),
+                        (
+                            "Leverage & Liquidity",
+                            FrameworkState.leverage_liquidity_metrics,
+                        ),
+                        ("Efficiency", FrameworkState.efficiency_metrics),
+                        FrameworkState.per_share_metrics,
+                    ),
+                    placeholder="Choose a metric...",
+                    value=FrameworkState.new_metric_name,
+                    on_change=FrameworkState.set_new_metric_name,
+                    size="3",
+                    width="100%",
+                    style=SELECT_STYLE,
+                ),
+            ),
+            spacing="4",
+            width="100%",
         ),
         rx.hstack(
+            rx.spacer(),
             rx.button(
                 "Cancel",
                 on_click=FrameworkState.close_add_metric_dialog,
@@ -159,23 +170,23 @@ def add_metric_selector() -> rx.Component:
                 disabled=FrameworkState.new_metric_name == "",
                 style=BTN_GHOST_SM,
             ),
-            spacing="2",
+            spacing="3",
             width="100%",
+            padding_top="1rem",
+            border_top=f"1px solid {white(0.06)}",
         ),
-        spacing="3",
+        spacing="5",
         width="100%",
     )
 
     return common_dialog(
         content,
         CommonDialogConfig(
-            # BooleanVar is not assignable to bool per ty; cast to satisfy the checker.
             is_open=cast("bool", FrameworkState.show_add_metric_dialog),
             on_close=FrameworkState.close_add_metric_dialog,
             on_open_change=FrameworkState.handle_add_metric_dialog_open,
-            width="23.75rem",
+            width="28rem",
             height="auto",
-            padding="1.5rem",
             title="Add Metric",
             title_size="5",
         ),
@@ -197,29 +208,22 @@ def metrics_management_panel() -> rx.Component:
             width="100%",
             align="center",
         ),
-        rx.scroll_area(
-            rx.vstack(
-                rx.foreach(
-                    FrameworkState.form_metrics,
-                    metric_item,
-                ),
-                spacing="0",
-                width="100%",
-                gap="0",
+        rx.vstack(
+            rx.foreach(
+                FrameworkState.form_metrics,
+                metric_item,
             ),
-            height="18.75rem",
+            spacing="0",
             width="100%",
-            scrollbars="vertical",
+            gap="0",
         ),
         spacing="3",
         width="100%",
-        height="100%",
     )
 
 
 def _input_with_error(
     placeholder: str,
-    # StringVar is not assignable to str per ty; accept either.
     value: rx.Var[str] | str,
     on_change: Callable[..., object],
     error_key: str,
@@ -248,107 +252,119 @@ def _input_with_error(
 
 def add_framework_dialog() -> rx.Component:
     content = rx.vstack(
-        rx.hstack(
-            rx.vstack(
-                rx.hstack(
+        rx.scroll_area(
+            rx.flex(
+                rx.vstack(
+                    rx.flex(
+                        field(
+                            "Title *",
+                            _input_with_error(
+                                "Framework title",
+                                FrameworkState.form_title,
+                                FrameworkState.set_form_title,
+                                "title",
+                            ),
+                        ),
+                        field(
+                            "Author *",
+                            _input_with_error(
+                                "Author name",
+                                FrameworkState.form_author,
+                                FrameworkState.set_form_author,
+                                "author",
+                            ),
+                        ),
+                        spacing="4",
+                        width="100%",
+                        flex_direction=["column", "row", "row"],
+                    ),
+                    rx.flex(
+                        field(
+                            "Industry *",
+                            rx.select(
+                                ["general", "bank", "financial_services"],
+                                value=FrameworkState.form_industry,
+                                on_change=FrameworkState.set_form_industry,
+                                size="3",
+                                style=SELECT_STYLE,
+                            ),
+                        ),
+                        field(
+                            "Scope *",
+                            rx.select(
+                                ["fundamental", "technical"],
+                                value=FrameworkState.form_scope,
+                                on_change=FrameworkState.set_form_scope,
+                                size="3",
+                                style=SELECT_STYLE,
+                            ),
+                        ),
+                        field(
+                            "Complexity *",
+                            rx.select(
+                                ["beginner-friendly", "complex"],
+                                value=FrameworkState.form_complexity,
+                                on_change=FrameworkState.set_form_complexity,
+                                size="3",
+                                style=SELECT_STYLE,
+                            ),
+                        ),
+                        gap="1rem",
+                        width="100%",
+                        flex_direction=["column", "row", "row"],
+                    ),
                     rx.vstack(
-                        rx.text("Title *", style=LABEL_STYLE),
-                        _input_with_error(
-                            "Framework title",
-                            FrameworkState.form_title,
-                            FrameworkState.set_form_title,
-                            "title",
+                        rx.hstack(
+                            rx.text("Description", style=LABEL_STYLE),
+                            rx.spacer(),
+                            rx.text(
+                                f"{FrameworkState.form_description.length()} / {DESC_CHAR_LIMIT}",
+                                size="1",
+                                color=white(0.3),
+                            ),
+                            width="100%",
+                        ),
+                        rx.text_area(
+                            placeholder="Describe this framework's strategy and goals...",
+                            value=FrameworkState.form_description,
+                            on_change=FrameworkState.set_form_description,
+                            size="3",
+                            style=INPUT_STYLE,
+                            max_length=DESC_CHAR_LIMIT,
+                            min_height="12rem",
+                            resize="vertical",
+                            width="100%",
                         ),
                         spacing="1",
                         width="100%",
                     ),
-                    rx.vstack(
-                        rx.text("Author *", style=LABEL_STYLE),
-                        _input_with_error(
-                            "Author name",
-                            FrameworkState.form_author,
-                            FrameworkState.set_form_author,
-                            "author",
-                        ),
-                        spacing="1",
-                        width="100%",
-                    ),
-                    spacing="3",
+                    spacing="5",
                     width="100%",
+                    flex="1.5",
                 ),
-                rx.hstack(
-                    rx.vstack(
-                        rx.text("Industry *", style=LABEL_STYLE),
-                        rx.select(
-                            ["general", "bank", "financial_services"],
-                            value=FrameworkState.form_industry,
-                            on_change=FrameworkState.set_form_industry,
-                            size="3",
-                            style=SELECT_STYLE,
-                        ),
-                        spacing="1",
-                        width="100%",
-                    ),
-                    rx.vstack(
-                        rx.text("Scope *", style=LABEL_STYLE),
-                        rx.select(
-                            ["fundamental", "technical"],
-                            value=FrameworkState.form_scope,
-                            on_change=FrameworkState.set_form_scope,
-                            size="3",
-                            style=SELECT_STYLE,
-                        ),
-                        spacing="1",
-                        width="100%",
-                    ),
-                    rx.vstack(
-                        rx.text("Complexity *", style=LABEL_STYLE),
-                        rx.select(
-                            ["beginner-friendly", "complex"],
-                            value=FrameworkState.form_complexity,
-                            on_change=FrameworkState.set_form_complexity,
-                            size="3",
-                            style=SELECT_STYLE,
-                        ),
-                        spacing="1",
-                        width="100%",
-                    ),
-                    spacing="3",
-                    width="100%",
+                rx.box(
+                    width=["100%", "1px", "1px"],
+                    height=["1px", "auto", "auto"],
+                    background=white(0.06),
+                    align_self="stretch",
+                    flex_shrink="0",
                 ),
                 rx.vstack(
-                    rx.text("Description", style=LABEL_STYLE),
-                    rx.text_area(
-                        placeholder="Describe this framework's strategy and goals...",
-                        value=FrameworkState.form_description,
-                        on_change=FrameworkState.set_form_description,
-                        size="3",
-                        style=INPUT_STYLE,
-                        flex="1",
-                        min_height="7em",
-                        resize="none",
-                    ),
-                    spacing="1",
+                    metrics_management_panel(),
                     width="100%",
                     flex="1",
+                    min_width=["100%", "20rem", "20rem"],
                 ),
-                spacing="3",
+                flex_direction=["column", "row", "row"],
+                gap=["2.5rem", "2.5rem", "3rem"],
                 width="100%",
-                flex="2",
-                height="100%",
+                align="start",
+                padding_right="0.5rem",
             ),
-            rx.box(
-                width="1px",
-                background=white(0.06),
-                align_self="stretch",
-                flex_shrink="0",
-            ),
-            rx.vstack(metrics_management_panel(), width="100%", flex="1"),
-            spacing="5",
-            width="100%",
-            align="start",
-            height="100%",
+            type="hover",
             flex="1",
+            width="100%",
+            scrollbars="vertical",
         ),
         rx.hstack(
             rx.spacer(),
@@ -366,13 +382,15 @@ def add_framework_dialog() -> rx.Component:
                 | (FrameworkState.form_author == ""),
                 style=BTN_GHOST,
             ),
-            spacing="2",
+            spacing="3",
             width="100%",
-            padding_top="0.75rem",
+            padding_top="1.25rem",
+            border_top=f"1px solid {white(0.06)}",
         ),
-        spacing="4",
+        spacing="0",
         width="100%",
         height="100%",
+        overflow="hidden",
     )
 
     return common_dialog(
@@ -381,9 +399,8 @@ def add_framework_dialog() -> rx.Component:
             is_open=cast("bool", FrameworkState.show_add_dialog),
             on_close=FrameworkState.close_add_dialog,
             on_open_change=FrameworkState.handle_add_dialog_open,
-            width="75vw",
+            width="95vw",
             height="75vh",
-            max_width="112.5rem",
-            padding="1.5rem 2rem 2rem 2rem",
+            max_width="72rem",
         ),
     )
