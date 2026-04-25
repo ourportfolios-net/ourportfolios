@@ -7,12 +7,11 @@ Create Date: 2026-04-16 21:52:25.042486
 """
 
 from collections.abc import Sequence
-from importlib import import_module
 
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
-op = import_module("alembic.op")
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "b79536310b3b"

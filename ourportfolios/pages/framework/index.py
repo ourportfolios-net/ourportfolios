@@ -20,7 +20,7 @@ from ourportfolios.state.auth_state import AuthState
 from ourportfolios.ui.layout import app_shell
 
 
-def page_header():
+def page_header() -> rx.Component:
     return rx.vstack(
         breadcrumb("/framework", tail_label="Frameworks"),
         rx.heading(
@@ -40,72 +40,91 @@ def page_header():
     )
 
 
-def toolbar():
-    return rx.hstack(
-        rx.hstack(
-            rx.foreach(FrameworkState.categories, category_filter_button),
-            spacing="2",
-            wrap="wrap",
+def _search_box() -> rx.Component:
+    return rx.box(
+        rx.icon(
+            "search",
+            size=14,
+            color="rgba(255,255,255,0.25)",
+            position="absolute",
+            left="0.625rem",
+            top="50%",
+            transform="translateY(-50%)",
+            pointer_events="none",
         ),
-        rx.spacer(),
+        rx.input(
+            placeholder="Search frameworks...",
+            value=FrameworkState.search_query,
+            on_change=FrameworkState.set_search_query,
+            size="2",
+            background="rgba(255,255,255,0.04)",
+            border="1px solid rgba(255,255,255,0.08)",
+            border_radius="0.5rem",
+            color="white",
+            padding_left="2rem",
+            width="100%",
+            _placeholder={"color": "rgba(255,255,255,0.22)"},
+            _focus={
+                "border_color": "rgba(139,92,246,0.4)",
+                "outline": "none",
+            },
+        ),
+        position="relative",
+        display="flex",
+        align_items="center",
+        # Shrink on desktop but never clip the input content
+        width=["100%", "100%", "17.5rem"],
+        flex_shrink="0",
+    )
+
+
+def _add_framework_btn() -> rx.Component:
+    return rx.button(
+        rx.icon("plus", size=14),
+        "Add Framework",
+        on_click=FrameworkState.open_add_dialog,
+        size="2",
+        background="rgba(255,255,255,0.05)",
+        border="1px solid rgba(255,255,255,0.1)",
+        border_radius="0.5rem",
+        color="rgba(255,255,255,0.7)",
+        font_weight="500",
+        white_space="nowrap",
+        flex_shrink="0",
+        cursor="pointer",
+        transition="all 0.15s ease",
+        _hover={
+            "background": "rgba(255,255,255,0.09)",
+            "border_color": "rgba(255,255,255,0.18)",
+            "color": "white",
+        },
+    )
+
+
+def toolbar() -> rx.Component:
+    return rx.flex(
+        # Left — category pills; grow to fill available space
+        rx.flex(
+            rx.foreach(FrameworkState.categories, category_filter_button),
+            wrap="wrap",
+            gap="0.5rem",
+            align="center",
+            flex="1",
+            min_width="0",
+        ),
+        # Right — search input + add button; never truncate or overflow
         rx.hstack(
-            rx.box(
-                rx.icon(
-                    "search",
-                    size=14,
-                    color="rgba(255,255,255,0.25)",
-                    position="absolute",
-                    left="0.625rem",
-                    top="50%",
-                    transform="translateY(-50%)",
-                    pointer_events="none",
-                ),
-                rx.input(
-                    placeholder="Search frameworks...",
-                    value=FrameworkState.search_query,
-                    on_change=FrameworkState.set_search_query,
-                    size="2",
-                    background="rgba(255,255,255,0.04)",
-                    border="1px solid rgba(255,255,255,0.08)",
-                    border_radius="0.5rem",
-                    color="white",
-                    padding_left="2rem",
-                    width="17.5rem",
-                    _placeholder={"color": "rgba(255,255,255,0.22)"},
-                    _focus={
-                        "border_color": "rgba(139,92,246,0.4)",
-                        "outline": "none",
-                    },
-                ),
-                position="relative",
-                display="flex",
-                align_items="center",
-            ),
-            rx.button(
-                rx.icon("plus", size=14),
-                "Add Framework",
-                on_click=FrameworkState.open_add_dialog,
-                size="2",
-                background="rgba(255,255,255,0.05)",
-                border="1px solid rgba(255,255,255,0.1)",
-                border_radius="0.5rem",
-                color="rgba(255,255,255,0.7)",
-                font_weight="500",
-                cursor="pointer",
-                transition="all 0.15s ease",
-                _hover={
-                    "background": "rgba(255,255,255,0.09)",
-                    "border_color": "rgba(255,255,255,0.18)",
-                    "color": "white",
-                },
-            ),
+            _search_box(),
+            _add_framework_btn(),
             spacing="2",
             align="center",
             flex_shrink="0",
         ),
         width="100%",
         align="center",
-        style={"flexWrap": "wrap", "gap": "0.75rem"},
+        # wrap so narrow viewports push the right group to the next row
+        wrap="wrap",
+        gap="0.75rem",
     )
 
 
@@ -119,7 +138,7 @@ def skeleton_grid() -> rx.Component:
     )
 
 
-def frameworks_grid():
+def frameworks_grid() -> rx.Component:
     return rx.cond(
         FrameworkState.loading_frameworks,
         skeleton_grid(),
@@ -137,7 +156,7 @@ def frameworks_grid():
     )
 
 
-def main_content():
+def main_content() -> rx.Component:
     return rx.vstack(
         page_header(),
         rx.box(height="1px", width="100%", background="rgba(255,255,255,0.06)"),
