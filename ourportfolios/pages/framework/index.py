@@ -17,6 +17,7 @@ from ourportfolios.pages.framework.framework_cards import (
 from ourportfolios.pages.framework.framework_dialog import framework_dialog
 from ourportfolios.pages.framework.state import FrameworkState
 from ourportfolios.state.auth_state import AuthState
+from ourportfolios.styles import white
 from ourportfolios.ui.layout import app_shell
 
 
@@ -72,7 +73,6 @@ def _search_box() -> rx.Component:
         position="relative",
         display="flex",
         align_items="center",
-        # Shrink on desktop but never clip the input content
         width=["100%", "100%", "17.5rem"],
         flex_shrink="0",
     )
@@ -103,7 +103,6 @@ def _add_framework_btn() -> rx.Component:
 
 def toolbar() -> rx.Component:
     return rx.flex(
-        # Left — category pills; grow to fill available space
         rx.flex(
             rx.foreach(FrameworkState.categories, category_filter_button),
             wrap="wrap",
@@ -112,7 +111,6 @@ def toolbar() -> rx.Component:
             flex="1",
             min_width="0",
         ),
-        # Right — search input + add button; never truncate or overflow
         rx.hstack(
             _search_box(),
             _add_framework_btn(),
@@ -122,7 +120,6 @@ def toolbar() -> rx.Component:
         ),
         width="100%",
         align="center",
-        # wrap so narrow viewports push the right group to the next row
         wrap="wrap",
         gap="0.75rem",
     )
@@ -135,6 +132,30 @@ def skeleton_grid() -> rx.Component:
         grid_template_columns="repeat(auto-fill, minmax(22.5rem, 1fr))",
         gap="1rem",
         width="100%",
+    )
+
+
+def _empty_state() -> rx.Component:
+    """Shown when loading is complete but no frameworks match the current filters."""
+    return rx.center(
+        rx.vstack(
+            rx.icon("inbox", size=36, color=white(0.2)),
+            rx.text(
+                "No frameworks found",
+                size="4",
+                weight="medium",
+                color=white(0.4),
+            ),
+            rx.text(
+                "Try adjusting your search or filter.",
+                size="2",
+                color=white(0.25),
+            ),
+            spacing="2",
+            align="center",
+        ),
+        width="100%",
+        padding_y="5rem",
     )
 
 
@@ -151,7 +172,9 @@ def frameworks_grid() -> rx.Component:
                 gap="1rem",
                 width="100%",
             ),
-            skeleton_grid(),
+            # Loading finished — genuinely empty or filter yielded nothing.
+            # Never show the skeleton here; it looked like an infinite load.
+            _empty_state(),
         ),
     )
 

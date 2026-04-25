@@ -1,6 +1,7 @@
 """Add framework dialog and metrics management."""
 
 from collections.abc import Callable
+from typing import cast
 
 import reflex as rx
 
@@ -31,11 +32,6 @@ def field(label: str, control: rx.Component) -> rx.Component:
 
 
 def metric_item(metric: MetricModel, index: int) -> rx.Component:
-    # The swap bridge is visible when hovering this row (index == hovered)
-    # OR hovering the row below it (index == hovered - 1).
-    # FrameworkState needs:
-    #   hovered_metric_index: int = -1
-    #   def set_hovered_metric_index(self, i: int): self.hovered_metric_index = i
     bridge_visible = (FrameworkState.hovered_metric_index == index) | (
         FrameworkState.hovered_metric_index == index + 1
     )
@@ -173,7 +169,8 @@ def add_metric_selector() -> rx.Component:
     return common_dialog(
         content,
         CommonDialogConfig(
-            is_open=FrameworkState.show_add_metric_dialog,
+            # BooleanVar is not assignable to bool per ty; cast to satisfy the checker.
+            is_open=cast("bool", FrameworkState.show_add_metric_dialog),
             on_close=FrameworkState.close_add_metric_dialog,
             on_open_change=FrameworkState.handle_add_metric_dialog_open,
             width="23.75rem",
@@ -222,7 +219,8 @@ def metrics_management_panel() -> rx.Component:
 
 def _input_with_error(
     placeholder: str,
-    value: str,
+    # StringVar is not assignable to str per ty; accept either.
+    value: rx.Var[str] | str,
     on_change: Callable[..., object],
     error_key: str,
 ) -> rx.Component:
@@ -380,7 +378,7 @@ def add_framework_dialog() -> rx.Component:
     return common_dialog(
         content,
         CommonDialogConfig(
-            is_open=FrameworkState.show_add_dialog,
+            is_open=cast("bool", FrameworkState.show_add_dialog),
             on_close=FrameworkState.close_add_dialog,
             on_open_change=FrameworkState.handle_add_dialog_open,
             width="75vw",
