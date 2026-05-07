@@ -119,3 +119,20 @@ class FrameworkMetricsORM(Base):
         primaryjoin="FrameworkMetricsORM.framework_uuid == FrameworkORM.framework_id",
         foreign_keys="[FrameworkMetricsORM.framework_uuid]",
     )
+
+
+class ContactSubmissionORM(Base):
+    __tablename__ = "contact_submissions"
+    __table_args__ = ({"schema": "public"},)
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4,
+    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    email: Mapped[str] = mapped_column(String(255), nullable=False)
+    subject: Mapped[str | None] = mapped_column(String(255))
+    message: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=datetime.now,
+    )
+    is_resolved: Mapped[bool] = mapped_column(default=False)

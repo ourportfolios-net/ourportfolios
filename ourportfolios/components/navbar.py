@@ -158,6 +158,10 @@ def _portfolio_link() -> rx.Component:
     )
 
 
+def _contact_link() -> rx.Component:
+    return _nav_link("Contact", "/contacts")
+
+
 # ── User menu ─────────────────────────────────────────────────────────────────
 
 
@@ -371,6 +375,7 @@ def navbar() -> rx.Component:
                     _portfolio_link(),
                     _nav_hover_dropdown("Analyze", _analyze_dropdown()),
                     _nav_hover_dropdown("About", _about_dropdown()),
+                    _contact_link(),
                     spacing="6",
                     align="center",
                     style={"flexWrap": "wrap"},

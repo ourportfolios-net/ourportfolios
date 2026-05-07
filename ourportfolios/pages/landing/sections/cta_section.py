@@ -52,7 +52,7 @@ def cta_section() -> rx.Component:
                                 padding_x="2rem",
                                 padding_y="0.875rem",
                             ),
-                            href="/contact",
+                            href="/contacts",
                         ),
                         spacing="4",
                         flex_direction=["column", "row"],
