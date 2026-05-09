@@ -1,5 +1,3 @@
-"""Contact form components built with shared auth UI primitives."""
-
 import reflex as rx
 
 from ourportfolios.pages.auth.components import (
@@ -8,20 +6,33 @@ from ourportfolios.pages.auth.components import (
     label,
     text_input,
 )
-from ourportfolios.state.contact import ContactState
+from ourportfolios.state.contact_state import ContactState
 from ourportfolios.styles import (
     TEXT_PRIMARY,
     TEXT_TERTIARY,
     white,
 )
 
+# ── Intent chip selector state ─────────────────────────────────────────────
+
+
+class ContactIntentState(rx.State):
+    selected: rx.Field[str] = rx.field(default="")
+
+    @rx.event
+    def pick(self, intent: str) -> None:
+        self.selected = intent
+
+
+# ── Form sub-components ────────────────────────────────────────────────────
+
 
 def _name_row() -> rx.Component:
     return rx.hstack(
         rx.vstack(
-            label("First name"),
+            label("First Name"),
             text_input(
-                "Jane",
+                "Our",
                 ContactState.first_name,
                 ContactState.set_first_name,
                 "text",
@@ -31,9 +42,9 @@ def _name_row() -> rx.Component:
             align="start",
         ),
         rx.vstack(
-            label("Last name"),
+            label("Last Name"),
             text_input(
-                "Smith",
+                "Portfolios",
                 ContactState.last_name,
                 ContactState.set_last_name,
                 "text",
@@ -50,9 +61,9 @@ def _name_row() -> rx.Component:
 
 def _email_field() -> rx.Component:
     return rx.vstack(
-        label("Email address"),
+        label("Email"),
         text_input(
-            "you@example.com",
+            "op@example.com",
             ContactState.email,
             ContactState.set_email,
             "email",
@@ -87,9 +98,10 @@ def _message_field() -> rx.Component:
             on_change=ContactState.set_message,
             style={
                 **INPUT_OVERRIDE,
-                "height": "9rem",
+                "min_height": "9rem",
+                "max_height": "24rem",  # Sets the expansion limit
                 "padding_y": "0.75rem",
-                "resize": "none",
+                "resize": "vertical",  # Allows vertical expansion
             },
         ),
         spacing="0",
@@ -128,7 +140,6 @@ def _submit_button() -> rx.Component:
 
 
 def contact_form() -> rx.Component:
-    """Render the form fields + submit button."""
     return rx.vstack(
         _form_fields(),
         _submit_button(),
@@ -139,18 +150,11 @@ def contact_form() -> rx.Component:
 
 
 def contact_success() -> rx.Component:
-    """Success state — shown after form submission."""
     return rx.vstack(
-        rx.text(
-            "✓",
-            font_size="2rem",
-            font_weight="700",
-            color=white(0.6),
-        ),
+        rx.icon("check_check", size=32, color=white(0.6)),
         rx.text(
             "Message sent!",
-            font_size="1.4rem",
-            font_weight="700",
+            size="6",
             color=TEXT_PRIMARY,
         ),
         rx.text(
@@ -165,14 +169,13 @@ def contact_success() -> rx.Component:
             loading=False,
             loading_label="",
         ),
-        spacing="3",
+        spacing="2",
         align="center",
-        padding_y="1rem",
         width="100%",
     )
 
 
-# ── Left column: marketing content ──────────────────────────────────
+# ── Left column: marketing content ──────────────────────────────────────────
 
 
 def _hero_text() -> rx.Component:
@@ -180,7 +183,7 @@ def _hero_text() -> rx.Component:
         rx.text(
             "Let's connect",
             font_size=["2.5rem", "3.5rem"],
-            font_weight="800",
+            font_weight="750",
             color=TEXT_PRIMARY,
             line_height="1.1",
             letter_spacing="-0.04em",
@@ -197,73 +200,106 @@ def _hero_text() -> rx.Component:
     )
 
 
-def _steps() -> rx.Component:
-    items = [
-        ("1", "Send us a message using the form"),
-        ("2", "We review and route it to the right person"),
-        ("3", "We'll follow up with next steps"),
-    ]
-    return rx.vstack(
-        *[
-            rx.hstack(
-                rx.box(
-                    rx.text(
-                        num,
-                        font_size="0.75rem",
-                        font_weight="700",
-                        color=white(0.7),
-                    ),
-                    background=white(0.05),
-                    border_radius="0.375rem",
-                    width="1.5rem",
-                    height="1.5rem",
-                    display="flex",
-                    align_items="center",
-                    justify_content="center",
-                    flex_shrink="0",
-                ),
-                rx.text(
-                    text,
-                    size="2",
-                    color=white(0.5),
-                    line_height="1.5",
-                ),
-                spacing="3",
-                align="center",
-                width="100%",
-            )
-            for num, text in items
+_INTENTS: list[tuple[str, str, str, str]] = [
+    (
+        "message-circle",
+        "Quick question",
+        "Question regarding...",
+        "Hi team!\n\nI was browsing through the platform and was curious about [Topic]. Specifically, I wanted to know...",
+    ),
+    (
+        "lightbulb",
+        "Feature request",
+        "Idea for the platform",
+        "I've been using the platform and thought this would be a cool addition:\n\n[Describe feature]\n\nIt would be helpful because...",
+    ),
+    (
+        "sparkles",
+        "Let's team up",
+        "Collaboration inquiry",
+        "Hey! I'm [Name/Role] and I'm working on [Project]. I think there's some cool overlap with what you're building. Would love to chat about...",
+    ),
+    (
+        "hammer",
+        "Something's broken",
+        "Bug report",
+        "I ran into a snag. Here is what happened:\n\n1. I went to...\n2. I clicked...\n\nExpected: [Behavior]\nActual: [What happened]",
+    ),
+    (
+        "thumbs-up",
+        "General feedback",
+        "Feedback on ourportfolios",
+        "Just wanted to share some thoughts on the site. I really like [X], but I found [Y] a bit confusing because...",
+    ),
+]
+
+
+def _intent_chip(
+    icon_name: str,
+    label_text: str,
+    subject_text: str,
+    message_text: str,
+) -> rx.Component:
+    is_selected = ContactIntentState.selected == label_text
+    return rx.box(
+        rx.hstack(
+            rx.icon(icon_name, size=16),
+            rx.text(label_text, size="2", weight="medium"),
+            spacing="2",
+            align="center",
+        ),
+        on_click=[
+            ContactIntentState.pick(label_text),
+            ContactState.set_subject(subject_text),
+            ContactState.set_message(message_text),
         ],
+        cursor="pointer",
+        padding="0.45rem 0.85rem",
+        border_radius="0.5rem",
+        border=rx.cond(
+            is_selected,
+            f"1px solid {white(0.25)}",
+            f"1px solid {white(0.08)}",
+        ),
+        background=rx.cond(is_selected, white(0.08), white(0.03)),
+        color=rx.cond(is_selected, white(0.9), white(0.45)),
+        transition="all 0.15s ease",
+        _hover={
+            "background": white(0.07),
+            "border_color": white(0.18),
+            "color": white(0.8),
+        },
+        user_select="none",
+    )
+
+
+def _intent_selector() -> rx.Component:
+    return rx.vstack(
+        rx.text(
+            "Start with a message template",
+            size="2",
+            color=white(0.3),
+            weight="medium",
+            letter_spacing="0.02em",
+        ),
+        rx.flex(
+            *[_intent_chip(icon, lbl, sub, msg) for icon, lbl, sub, msg in _INTENTS],
+            gap="0.5rem",
+            flex_wrap="wrap",
+        ),
         spacing="3",
         align="start",
         width="100%",
     )
 
 
-def _fun_footer() -> rx.Component:
-    """Creative footer text at bottom left of marketing column."""
+def marketing_column() -> rx.Component:
     return rx.vstack(
-        rx.text(
-            "P.S. We're real people, promise — no bots here (except the trading ones).",
-            size="2",
-            color=white(0.35),
-            line_height="1.5",
-        ),
+        _hero_text(),
+        rx.spacer(),
+        _intent_selector(),
         spacing="0",
         align="start",
         width="100%",
-        margin_top="4",
-    )
-
-
-def marketing_column() -> rx.Component:
-    """Left column content for the two-column layout."""
-    return rx.vstack(
-        _hero_text(),
-        _steps(),
-        _fun_footer(),
-        spacing="8",
-        align="start",
-        width="100%",
-        max_width="28rem",
+        height="100%",
     )

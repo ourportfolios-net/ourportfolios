@@ -1,5 +1,5 @@
 """Contact page package."""
 
-from ourportfolios.pages.contacts.index import contact_page
+from ourportfolios.pages.contacts.index import index
 
-__all__ = ["contact_page"]
+__all__ = ["index"]
