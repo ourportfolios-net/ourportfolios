@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v0.18.0 (2026-05-09)
+
+### Chores
+
+- Add license
+  ([`a717d00`](https://github.com/ourportfolios-net/ourportfolios/commit/a717d00a81d1cd7a753b42bc71e894bac9f66e91))
+
+### Features
+
+- **page**: Add /contacts ([#32](https://github.com/ourportfolios-net/ourportfolios/pull/32),
+  [`7ac2897`](https://github.com/ourportfolios-net/ourportfolios/commit/7ac28974eeb7b6943a81f5377ccf1761b4d0d34c))
+
+
 ## v0.17.0 (2026-04-25)
 
 ### Bug Fixes
