@@ -5,7 +5,7 @@ import reflex as rx
 from ourportfolios.components.common_dialog import CommonDialogConfig, common_dialog
 from ourportfolios.pages.auth.components import (
     INPUT_OVERRIDE,
-    action_btn,
+    action_button,
     auth_card,
     auth_centered,
     auth_page_shell,
@@ -16,13 +16,9 @@ from ourportfolios.pages.auth.components import (
     text_input,
 )
 from ourportfolios.state.auth_state import AuthState
-from ourportfolios.styles import (
-    ERROR_COLOR,
-    TEXT_MUTED,
-    TEXT_PRIMARY,
-    TEXT_TERTIARY,
-    white,
-)
+from ourportfolios.ui.primitives import body_text, heading, label_text, muted_text
+from ourportfolios.ui.theme.colors import ERROR_COLOR, white
+from ourportfolios.ui.theme.surfaces import RADIUS_INPUT
 
 
 def _inline_link(label_text: str, on_click: object) -> rx.Component:
@@ -40,7 +36,7 @@ def _inline_link(label_text: str, on_click: object) -> rx.Component:
 
 def _footer_row(prompt: str, link_text: str, on_click: object) -> rx.Component:
     return rx.hstack(
-        rx.text(prompt, size="1", color=TEXT_MUTED),
+        muted_text(prompt),
         _inline_link(link_text, on_click),
         spacing="2",
         align="center",
@@ -55,24 +51,22 @@ def _forgot_password_content() -> rx.Component:
         rx.vstack(
             rx.hstack(
                 rx.icon("circle-check", size=15, color=white(0.4)),
-                rx.text("Reset link sent", size="2", weight="medium", color=white(0.6)),
+                body_text("Reset link sent", weight="medium", color=white(0.6)),
                 spacing="2",
                 align="center",
                 padding="0.6rem 0.875rem",
                 background=white(0.04),
                 border=f"1px solid {white(0.09)}",
-                border_radius="0.625rem",
+                border_radius=RADIUS_INPUT,
                 width="100%",
                 justify="center",
             ),
-            rx.text(
+            muted_text(
                 "Check your inbox — if that address is registered you'll get the link shortly.",
-                size="1",
-                color=white(0.35),
                 line_height="1.65",
                 text_align="center",
             ),
-            action_btn(
+            action_button(
                 "Done",
                 AuthState.close_forgot,
                 loading=False,
@@ -83,10 +77,8 @@ def _forgot_password_content() -> rx.Component:
             align="center",
         ),
         rx.vstack(
-            rx.text(
+            muted_text(
                 "We'll send a reset link to your email address.",
-                size="1",
-                color=white(0.35),
                 line_height="1.6",
             ),
             rx.vstack(
@@ -106,7 +98,7 @@ def _forgot_password_content() -> rx.Component:
                 rx.text(AuthState.forgot_error, size="1", color=ERROR_COLOR),
                 rx.text(" ", size="1"),
             ),
-            action_btn(
+            action_button(
                 "Send reset link",
                 AuthState.handle_forgot_password,
                 loading=AuthState.forgot_loading,
@@ -135,19 +127,8 @@ def _forgot_password_modal() -> rx.Component:
 def _login_form() -> rx.Component:
     return rx.vstack(
         rx.vstack(
-            rx.text(
-                "Welcome back",
-                font_size="1.625rem",
-                weight="bold",
-                color=TEXT_PRIMARY,
-                letter_spacing="-0.025em",
-            ),
-            rx.text(
-                "Sign in to your account to continue.",
-                size="2",
-                color=TEXT_TERTIARY,
-                line_height="1.6",
-            ),
+            heading("Welcome back"),
+            muted_text("Sign in to your account to continue."),
             spacing="1",
             align="start",
             width="100%",
@@ -156,7 +137,7 @@ def _login_form() -> rx.Component:
         rx.vstack(
             label("Email"),
             text_input(
-                "you@example.com",
+                "our@email.com",
                 AuthState.email,
                 AuthState.set_email,
                 "email",
@@ -167,7 +148,7 @@ def _login_form() -> rx.Component:
         ),
         rx.vstack(
             rx.hstack(
-                rx.text("Password", size="1", color=white(0.5), weight="medium"),
+                label_text("Password"),
                 rx.spacer(),
                 _inline_link("Forgot password?", AuthState.open_forgot),
                 width="100%",
@@ -208,7 +189,7 @@ def _login_form() -> rx.Component:
             ),
             rx.text(" ", size="1"),
         ),
-        action_btn(
+        action_button(
             "Sign in",
             AuthState.handle_login,
             loading=AuthState.loading,
@@ -226,7 +207,7 @@ def _login_form() -> rx.Component:
             "Be ourguest",
             AuthState.continue_as_guest,
         ),
-        spacing="4",
+        spacing="5",
         width="100%",
         align="start",
     )
@@ -235,19 +216,8 @@ def _login_form() -> rx.Component:
 def _register_form() -> rx.Component:
     return rx.vstack(
         rx.vstack(
-            rx.text(
-                "Create an account",
-                font_size="1.625rem",
-                weight="bold",
-                color=TEXT_PRIMARY,
-                letter_spacing="-0.025em",
-            ),
-            rx.text(
-                "Start building your portfolio today.",
-                size="2",
-                color=TEXT_TERTIARY,
-                line_height="1.6",
-            ),
+            heading("Create an account"),
+            muted_text("Start building your portfolio today."),
             spacing="1",
             align="start",
             width="100%",
@@ -311,9 +281,9 @@ def _register_form() -> rx.Component:
         rx.cond(
             AuthState.error != "",
             rx.text(AuthState.error, size="1", color=ERROR_COLOR),
-            rx.text("At least 8 characters.", size="1", color=TEXT_MUTED),
+            muted_text("At least 8 characters."),
         ),
-        action_btn(
+        action_button(
             "Create account",
             AuthState.handle_register,
             loading=AuthState.loading,
@@ -321,15 +291,12 @@ def _register_form() -> rx.Component:
         ),
         divider_with_text("or"),
         google_button(),
-        rx.text(
+        muted_text(
             "By creating an account you agree to our terms of service and privacy policy.",
-            size="1",
-            color=TEXT_MUTED,
             text_align="center",
-            line_height="1.6",
         ),
         _footer_row("Already have an account?", "Sign in", AuthState.set_mode_login),
-        spacing="4",
+        spacing="5",
         width="100%",
         align="start",
     )

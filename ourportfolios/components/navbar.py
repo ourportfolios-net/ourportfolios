@@ -4,45 +4,60 @@ import reflex as rx
 
 from ourportfolios.components.search_bar import search_bar
 from ourportfolios.state.auth_state import AuthState
-from ourportfolios.styles import TEXT_PRIMARY, purple, white
+from ourportfolios.ui.primitives import (
+    divider,
+    dropdown_panel,
+    locked_link,
+    nav_link,
+    truncated_text,
+    user_avatar,
+)
+from ourportfolios.ui.theme.colors import TEXT_PRIMARY, purple, white
+from ourportfolios.ui.tokens import (
+    BLUR_NAVBAR,
+    FONT_BASE,
+    FONT_XL,
+    LETTER_SNUG,
+    RADIUS_2XS,
+    RADIUS_MD,
+    RADIUS_XS,
+    SHADOW_DROPDOWN,
+    SHADOW_NAVBAR,
+    SPACE_3XL,
+    SPACE_LG,
+    SPACE_SM,
+    TRANS_BG,
+    TRANS_COLOR,
+    TRANS_DEFAULT,
+    WEIGHT_MEDIUM,
+    WEIGHT_SEMIBOLD,
+)
 
 
 def _nav_link(label: str, href: str) -> rx.Component:
-    return rx.link(
-        label,
-        href=href,
-        font_size="0.875rem",
-        font_weight="400",
-        color=white(0.5),
-        text_decoration="none",
-        _hover={"color": "white"},
-        transition="color 0.2s",
-    )
+    """Navigation link with hover transition."""
+    return nav_link(label, href=href)
 
 
 def _locked_nav_link(label: str, href: str) -> rx.Component:
-    return rx.hstack(
-        rx.text(label, font_size="0.875rem", color=white(0.2)),
-        rx.icon("lock", size=10, color=white(0.15)),
-        spacing="1",
-        align="center",
+    """Locked nav link that redirects to login."""
+    return locked_link(
+        label,
+        _href=href,
         on_click=AuthState.redirect_to_login_with_destination(href),
-        cursor="pointer",
-        title="Sign in to access",
-        _hover={"opacity": "0.6"},
-        transition="opacity 0.15s",
     )
 
 
 def _dropdown_item(icon: str, label: str, description: str, href: str) -> rx.Component:
+    """Dropdown menu item with icon and description."""
     return rx.link(
         rx.hstack(
             rx.icon(tag=icon, size=17, color=purple(0.75), flex_shrink="0"),
             rx.vstack(
                 rx.text(
                     label,
-                    font_size="0.875rem",
-                    font_weight="500",
+                    font_size=FONT_BASE,
+                    font_weight=WEIGHT_MEDIUM,
                     color=TEXT_PRIMARY,
                 ),
                 rx.text(
@@ -56,9 +71,9 @@ def _dropdown_item(icon: str, label: str, description: str, href: str) -> rx.Com
             spacing="3",
             align="start",
             padding="0.55rem 0.65rem",
-            border_radius="0.5rem",
+            border_radius=RADIUS_XS,
             _hover={"background": white(0.05)},
-            transition="background 0.12s",
+            transition=TRANS_BG,
             width="100%",
         ),
         href=href,
@@ -68,33 +83,32 @@ def _dropdown_item(icon: str, label: str, description: str, href: str) -> rx.Com
 
 
 def _nav_hover_dropdown(label: str, content: rx.Component) -> rx.Component:
+    """Hover-triggered dropdown with glass panel."""
     return rx.hover_card.root(
         rx.hover_card.trigger(
             rx.hstack(
-                rx.text(label, font_size="0.875rem"),
+                rx.text(label, font_size=FONT_BASE),
                 rx.icon("chevron-down", size=13),
                 spacing="1",
                 align="center",
                 color=white(0.5),
                 _hover={"color": "white"},
-                transition="color 0.2s",
+                transition=TRANS_COLOR,
                 cursor="pointer",
             ),
         ),
         rx.hover_card.content(
-            content,
+            dropdown_panel(content),
             side="bottom",
             align="start",
             side_offset=28,
-            background="rgba(13, 13, 15, 0.97)",
-            backdrop_filter="blur(1.5rem)",
-            border=f"1px solid {white(0.07)}",
-            border_radius="0.75rem",
-            padding="0.375rem",
-            box_shadow="0 1rem 2.5rem rgba(0,0,0,0.55)",
+            open_delay=0,
+            close_delay=0,
+            background="transparent",
+            border="none",
+            box_shadow="none",
+            padding="0",
         ),
-        open_delay=60,
-        close_delay=180,
     )
 
 
@@ -137,6 +151,12 @@ def _about_dropdown() -> rx.Component:
             "Learn more about the project",
             "/about",
         ),
+        _dropdown_item(
+            "mail",
+            "Contact",
+            "Get in touch with us",
+            "/contacts",
+        ),
         spacing="0",
         width="17rem",
     )
@@ -158,11 +178,11 @@ def _portfolio_link() -> rx.Component:
     )
 
 
-def _contact_link() -> rx.Component:
-    return _nav_link("Contact", "/contacts")
-
-
 # ── User menu ─────────────────────────────────────────────────────────────────
+
+
+_menu_item_danger_fg = "rgba(239,68,68,0.75)"
+_menu_item_danger_hover = "rgba(239,68,68,0.07)"
 
 
 def _menu_item(
@@ -173,8 +193,8 @@ def _menu_item(
     *,
     danger: bool = False,
 ) -> rx.Component:
-    fg = "rgba(239,68,68,0.75)" if danger else white(0.6)
-    hover_bg = "rgba(239,68,68,0.07)" if danger else white(0.05)
+    fg = _menu_item_danger_fg if danger else white(0.6)
+    hover_bg = _menu_item_danger_hover if danger else white(0.05)
     click_handler = rx.redirect(href) if href else on_click
     return rx.box(
         rx.hstack(
@@ -185,37 +205,17 @@ def _menu_item(
         ),
         on_click=click_handler,
         padding="0.45rem 0.6rem",
-        border_radius="0.4375rem",
+        border_radius=RADIUS_2XS,
         cursor="pointer",
-        transition="background 0.12s",
+        transition=TRANS_BG,
         _hover={"background": hover_bg},
         width="100%",
     )
 
 
 def _user_square() -> rx.Component:
-    return rx.box(
-        rx.text(
-            AuthState.user_initial,
-            font_size="0.75rem",
-            font_weight="600",
-            color=white(0.8),
-            line_height="1",
-            user_select="none",
-        ),
-        width="2rem",
-        height="2rem",
-        border_radius="0.5rem",
-        background=white(0.06),
-        border=f"1px solid {white(0.11)}",
-        display="flex",
-        align_items="center",
-        justify_content="center",
-        cursor="pointer",
-        flex_shrink="0",
-        transition="all 0.15s ease",
-        _hover={"background": white(0.1), "border_color": white(0.2)},
-    )
+    """User avatar with initial letter. Uses user_avatar primitive."""
+    return user_avatar(initial=AuthState.user_initial)
 
 
 def _user_menu() -> rx.Component:
@@ -224,34 +224,24 @@ def _user_menu() -> rx.Component:
         rx.dropdown_menu.content(
             rx.box(
                 rx.vstack(
-                    rx.text(
+                    truncated_text(
                         rx.cond(
                             AuthState.user_display_name != "",
                             AuthState.user_display_name,
                             AuthState.user_email,
                         ),
+                        max_width="12rem",
                         size="2",
                         weight="medium",
                         color=white(0.85),
-                        style={
-                            "whiteSpace": "nowrap",
-                            "overflow": "hidden",
-                            "textOverflow": "ellipsis",
-                            "maxWidth": "12rem",
-                        },
                     ),
                     rx.cond(
                         AuthState.user_display_name != "",
-                        rx.text(
+                        truncated_text(
                             AuthState.user_email,
+                            max_width="12rem",
                             size="1",
                             color=white(0.3),
-                            style={
-                                "whiteSpace": "nowrap",
-                                "overflow": "hidden",
-                                "textOverflow": "ellipsis",
-                                "maxWidth": "12rem",
-                            },
                         ),
                         rx.fragment(),
                     ),
@@ -261,26 +251,15 @@ def _user_menu() -> rx.Component:
                 ),
                 padding="0.55rem 0.6rem 0.6rem",
             ),
-            rx.box(
-                height="1px",
-                background=white(0.07),
-                margin_x="0.4rem",
-                margin_bottom="0.25rem",
-            ),
+            divider(),
             _menu_item("settings", "Settings", href="/settings"),
-            rx.box(
-                height="1px",
-                background=white(0.07),
-                margin_x="0.4rem",
-                margin_y="0.25rem",
-            ),
+            divider(),
             _menu_item("log-out", "Sign out", on_click=AuthState.logout, danger=True),
             background="rgba(13, 13, 15, 0.97)",
-            backdrop_filter="blur(1.5rem)",
             border=f"1px solid {white(0.08)}",
-            border_radius="0.75rem",
+            border_radius=RADIUS_MD,
             padding="0.3rem",
-            box_shadow="0 1rem 2.5rem rgba(0,0,0,0.55)",
+            box_shadow=SHADOW_DROPDOWN,
             min_width="13.5rem",
             side="bottom",
             align="end",
@@ -291,27 +270,27 @@ def _user_menu() -> rx.Component:
 
 
 def _auth_section() -> rx.Component:
-    login_btn = rx.box(
-        rx.text("Login", font_size="0.8125rem", font_weight="500", color=white(0.55)),
+    login_button = rx.box(
+        rx.text("Login", size="2", weight="medium", color=white(0.55)),
         on_click=AuthState.redirect_to_login_from_current_page,
         padding="0.35rem 0.85rem",
-        border_radius="0.5rem",
+        border_radius=RADIUS_XS,
         background=white(0.04),
         border=f"1px solid {white(0.09)}",
         cursor="pointer",
-        transition="background 0.15s, border-color 0.15s",
+        transition=TRANS_DEFAULT,
         _hover={"background": white(0.08), "border_color": white(0.17)},
     )
-    return rx.cond(AuthState.is_authenticated, _user_menu(), login_btn)
+    return rx.cond(AuthState.is_authenticated, _user_menu(), login_button)
 
 
 def _logo() -> rx.Component:
     return rx.link(
         rx.text(
             "ourportfolios",
-            font_size="1.25rem",
-            font_weight="600",
-            letter_spacing="-0.02em",
+            font_size=FONT_XL,
+            font_weight=WEIGHT_SEMIBOLD,
+            letter_spacing=LETTER_SNUG,
             user_select="none",
             flex_shrink="0",
         ),
@@ -328,20 +307,20 @@ def _logo() -> rx.Component:
 
 # ── Navbar ────────────────────────────────────────────────────────────────────
 
+_NAVBAR_STYLE = {
+    "position": "fixed",
+    "top": "0",
+    "width": "100%",
+    "z_index": "50",
+    "padding_y": "1rem",
+    "background": "rgba(10, 10, 10, 0.4)",
+    "backdrop_filter": f"blur({BLUR_NAVBAR})",
+    "border_bottom": f"1px solid {white(0.09)}",
+    "box_shadow": SHADOW_NAVBAR,
+}
+
 
 def navbar() -> rx.Component:
-    # ── Shared background/blur styles ────────────────────────────────────────
-    bar_style = {
-        "position": "fixed",
-        "top": "0",
-        "width": "100%",
-        "z_index": "50",
-        "padding_y": "1rem",
-        "background": "rgba(10, 10, 10, 0.4)",
-        "backdrop_filter": "blur(18px)",
-        "border_bottom": f"1px solid {white(0.09)}",
-        "box_shadow": "0 10px 40px rgba(0,0,0,0.32)",
-    }
     # ── Mobile bar: logo + auth on row 1, full-width search on row 2 ─────────
     mobile_bar = rx.mobile_only(
         rx.box(
@@ -359,9 +338,9 @@ def navbar() -> rx.Component:
                 ),
                 spacing="2",
                 width="100%",
-                padding_x="1rem",
+                padding_x=SPACE_LG,
             ),
-            style=bar_style,
+            style=_NAVBAR_STYLE,
         ),
     )
 
@@ -375,24 +354,24 @@ def navbar() -> rx.Component:
                     _portfolio_link(),
                     _nav_hover_dropdown("Analyze", _analyze_dropdown()),
                     _nav_hover_dropdown("About", _about_dropdown()),
-                    _contact_link(),
                     spacing="6",
                     align="center",
-                    style={"flexWrap": "wrap"},
+                    flex_wrap="wrap",
                 ),
                 rx.hstack(
                     search_bar(),
                     _auth_section(),
                     spacing="3",
                     align="center",
+                    flex_wrap="wrap",
+                    gap=SPACE_SM,
                 ),
                 align="center",
                 justify="between",
                 width="100%",
-                padding_x="2rem",
-                style={"flexWrap": "wrap", "gap": "0.75rem"},
+                padding_x=SPACE_3XL,
             ),
-            style=bar_style,
+            style=_NAVBAR_STYLE,
         ),
     )
 

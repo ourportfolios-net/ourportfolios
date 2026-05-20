@@ -5,16 +5,16 @@ from typing import Literal
 import reflex as rx
 
 from ourportfolios.state.auth_state import AuthState
-from ourportfolios.styles import (
+from ourportfolios.ui.theme.colors import TEXT_MUTED, TEXT_PRIMARY, purple, white
+from ourportfolios.ui.theme.surfaces import (
     CARD_BG,
     CARD_BORDER,
     INPUT_STYLE,
     PAGE_BG,
-    TEXT_MUTED,
-    TEXT_PRIMARY,
-    purple,
-    white,
+    RADIUS_BUTTON,
+    RADIUS_CARD,
 )
+from ourportfolios.ui.tokens import TRANS_DEFAULT
 
 INPUT_OVERRIDE: dict[str, object] = {
     **INPUT_STYLE,
@@ -73,7 +73,19 @@ def text_input(
     )
 
 
-def action_btn(
+_ACTION_BUTTON_STYLE = {
+    "width": "100%",
+    "height": "3rem",
+    "background": white(0.08),
+    "border": f"1px solid {white(0.14)}",
+    "border_radius": RADIUS_BUTTON,
+    "cursor": "pointer",
+    "transition": TRANS_DEFAULT,
+    "_hover": {"background": white(0.13), "border_color": white(0.22)},
+}
+
+
+def action_button(
     label_text: str,
     on_click: object,
     *,
@@ -91,18 +103,11 @@ def action_btn(
             ),
             rx.text(label_text, size="2", weight="medium", color=TEXT_PRIMARY),
         ),
-        width="100%",
-        height="3rem",
-        background=white(0.08),
-        border=f"1px solid {white(0.14)}",
-        border_radius="0.625rem",
-        cursor="pointer",
-        transition="background 0.15s, border-color 0.15s",
-        _hover={"background": white(0.13), "border_color": white(0.22)},
         on_click=on_click,
         display="flex",
         align_items="center",
         justify_content="center",
+        style=_ACTION_BUTTON_STYLE,
     )
 
 
@@ -120,6 +125,18 @@ def divider_with_text(text: str) -> rx.Component:
         width="100%",
         align="center",
     )
+
+
+_GOOGLE_BUTTON_STYLE = {
+    "width": "100%",
+    "height": "3rem",
+    "background": white(0.04),
+    "border": f"1px solid {white(0.1)}",
+    "border_radius": RADIUS_BUTTON,
+    "cursor": "pointer",
+    "transition": TRANS_DEFAULT,
+    "_hover": {"background": white(0.08), "border_color": white(0.18)},
+}
 
 
 def google_button() -> rx.Component:
@@ -144,18 +161,11 @@ def google_button() -> rx.Component:
             justify="center",
             width="100%",
         ),
-        width="100%",
-        height="3rem",
-        background=white(0.04),
-        border=f"1px solid {white(0.1)}",
-        border_radius="0.625rem",
-        cursor="pointer",
-        transition="background 0.15s, border-color 0.15s",
-        _hover={"background": white(0.08), "border_color": white(0.18)},
         on_click=AuthState.handle_google_login,
         display="flex",
         align_items="center",
         justify_content="center",
+        style=_GOOGLE_BUTTON_STYLE,
     )
 
 
@@ -164,7 +174,7 @@ def auth_card(*children: rx.Component) -> rx.Component:
         *children,
         background=CARD_BG,
         border=CARD_BORDER,
-        border_radius="1rem",
+        border_radius=RADIUS_CARD,
         padding=rx.breakpoints(initial="1.25rem", sm="2rem"),
         width="100%",
         max_width=rx.breakpoints(initial="22rem", sm="28rem"),

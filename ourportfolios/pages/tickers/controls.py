@@ -7,19 +7,29 @@ import reflex as rx
 from ourportfolios.components.category_toggle_card import category_toggle_card
 from ourportfolios.pages.tickers.state import TickersPageState
 from ourportfolios.state import SearchBarState
-from ourportfolios.styles import (
-    BTN_GHOST_SM,
-    BTN_SECONDARY,
+from ourportfolios.ui.primitives import (
+    filter_button as filter_button_primitive,
+)
+from ourportfolios.ui.primitives import (
+    ghost_button_sm,
+    hstack,
+    search_icon,
+    search_input,
+    vstack,
+)
+from ourportfolios.ui.theme.colors import white
+from ourportfolios.ui.theme.surfaces import (
+    BUTTON_GHOST_SM,
+    BUTTON_SECONDARY,
     CHIP_STYLE,
     LABEL_STYLE,
     MODAL_BG,
     MODAL_PANEL_STYLE,
-    SEARCH_ICON_STYLE,
-    SEARCH_INPUT_STYLE,
-    TEXT_PURPLE,
-    purple,
-    white,
+    RADIUS_BUTTON,
+    RADIUS_INPUT,
+    RADIUS_PILL,
 )
+from ourportfolios.ui.tokens import SHADOW_DROPDOWN
 
 # ── Filter sliders ─────────────────────────────────────────────────────────────
 
@@ -43,34 +53,29 @@ def _metric_slider(metric_tag: str, option: str) -> rx.Component:
 
     # minWidth:0 is critical — CSS Grid children default to min-width:auto
     # which lets them expand past the column boundary. This fixes overflow.
-    return rx.vstack(
-        rx.hstack(
+    return vstack(
+        hstack(
             rx.text(
                 metric_tag,
-                style={
-                    **LABEL_STYLE,
-                    "font_size": "0.6875rem",
-                    "color": white(0.5),
-                    "white_space": "nowrap",
-                    "text_transform": "uppercase",
-                    "overflow": "hidden",
-                    "text_overflow": "ellipsis",
-                    "flex": "1",
-                    "min_width": "0",
-                    "letter_spacing": "0.04em",
-                },
+                font_size="0.6875rem",
+                color=white(0.5),
+                white_space="nowrap",
+                text_transform="uppercase",
+                overflow="hidden",
+                text_overflow="ellipsis",
+                flex="1",
+                min_width="0",
+                letter_spacing="0.04em",
             ),
             rx.text(
                 current_value[0],
                 " - ",
                 current_value[1],
-                style={
-                    "font_size": "0.6875rem",
-                    "color": white(0.4),
-                    "font_weight": "500",
-                    "white_space": "nowrap",
-                    "flex_shrink": "0",
-                },
+                font_size="0.6875rem",
+                color=white(0.4),
+                font_weight="500",
+                white_space="nowrap",
+                flex_shrink="0",
             ),
             width="100%",
             align="center",
@@ -114,10 +119,9 @@ def _metric_slider(metric_tag: str, option: str) -> rx.Component:
             radius="full",
             width="100%",
         ),
-        width="100%",
         spacing="2",
         padding="0.5em 0.7em",
-        border_radius="0.5rem",
+        border_radius=RADIUS_BUTTON,
         background=white(0.025),
         border=f"1px solid {white(0.06)}",
         # minWidth:0 stops grid items expanding past column width.
@@ -160,8 +164,8 @@ def _metrics_filter(option: str = "F") -> rx.Component:
 
 
 def _categorical_filter() -> rx.Component:
-    return rx.vstack(
-        rx.vstack(
+    return vstack(
+        vstack(
             rx.text("EXCHANGE", style={**LABEL_STYLE, "font_size": "0.75rem"}),
             rx.flex(
                 rx.foreach(
@@ -182,7 +186,7 @@ def _categorical_filter() -> rx.Component:
             ),
             spacing="2",
         ),
-        rx.vstack(
+        vstack(
             rx.text("INDUSTRY", style={**LABEL_STYLE, "font_size": "0.75rem"}),
             rx.box(
                 rx.flex(
@@ -229,7 +233,7 @@ def _filter_tab_panel(option: str, value: str) -> rx.Component:
 
 def _filter_tabs() -> rx.Component:
     return rx.tabs.root(
-        rx.hstack(
+        hstack(
             rx.tabs.list(
                 rx.tabs.trigger(
                     "Fundamental",
@@ -258,15 +262,15 @@ def _filter_tabs() -> rx.Component:
                 style={"flexShrink": "1", "minWidth": "0", "overflow": "hidden"},
             ),
             rx.button(
-                rx.hstack(
+                hstack(
                     rx.icon("filter-x", size=11),
-                    rx.text("Clear", style={"fontSize": "0.72rem"}),
+                    rx.text("Clear", font_size="0.72rem"),
                     spacing="1",
                     align="center",
                 ),
                 on_click=TickersPageState.clear_all_filters,
                 size="1",
-                style=BTN_GHOST_SM,
+                style=BUTTON_GHOST_SM,
                 flex_shrink="0",
             ),
             width="100%",
@@ -293,26 +297,14 @@ def filter_button() -> rx.Component:
     _active = TickersPageState.has_filter
     return rx.menu.root(
         rx.menu.trigger(
-            rx.button(
-                rx.hstack(
+            filter_button_primitive(
+                hstack(
                     rx.icon("filter", size=14),
                     rx.text("Filter"),
                     spacing="2",
                     align="center",
                 ),
-                size="2",
-                background=rx.cond(_active, purple(0.18), white(0.05)),
-                border=rx.cond(
-                    _active,
-                    f"1px solid {purple(0.5)}",
-                    f"1px solid {white(0.1)}",
-                ),
-                border_radius="0.5rem",
-                color=rx.cond(_active, TEXT_PURPLE, white(0.6)),
-                font_weight=rx.cond(_active, "600", "500"),
-                font_size="0.8125rem",
-                cursor="pointer",
-                transition="all 0.15s ease",
+                active=_active,
                 flex_shrink="0",
             ),
         ),
@@ -332,11 +324,10 @@ def filter_button() -> rx.Component:
             ),
             # Apply Filters footer - always visible, solid bg, above scroll content
             rx.box(
-                rx.button(
+                ghost_button_sm(
                     "Apply Filters",
                     on_click=TickersPageState.apply_filters,
-                    size="2",
-                    style=BTN_GHOST_SM,
+                    size="1",
                 ),
                 display="flex",
                 justify_content="flex-end",
@@ -382,7 +373,7 @@ def filter_button() -> rx.Component:
 
 
 def _selected_filter_chip(item: str, filter_name: str) -> rx.Component:
-    return rx.hstack(
+    return hstack(
         rx.text(item, size="1", weight="medium", color=white(0.7)),
         rx.box(
             rx.icon("x", size=10, color=white(0.3)),
@@ -402,7 +393,7 @@ def _selected_filter_chip(item: str, filter_name: str) -> rx.Component:
 def _metric_filter_chip(item: list, filter_type: str) -> rx.Component:
     metric = item[0]
     label = item[1]
-    return rx.hstack(
+    return hstack(
         rx.text(
             metric,
             ": ",
@@ -458,15 +449,14 @@ def _active_filter_chips() -> rx.Component:
 
 
 def board_toolbar() -> rx.Component:
-    return rx.hstack(
+    return hstack(
         rx.box(
-            rx.icon("search", size=14, color=white(0.25), style=SEARCH_ICON_STYLE),
-            rx.input(
+            search_icon(),
+            search_input(
                 placeholder="Search for a ticker...",
                 value=TickersPageState.search_query,
                 on_change=TickersPageState.set_search_query,
                 size="2",
-                style=SEARCH_INPUT_STYLE,
             ),
             position="relative",
             display="flex",
@@ -502,17 +492,16 @@ def board_toolbar() -> rx.Component:
 
 
 def _compare_search_suggestion(ticker_value: dict) -> rx.Component:
-    ticker = ticker_value["symbol"].to(str)
+    ticker = ticker_value["symbol"]
     industry = ticker_value["industry"].to(str)
     return rx.box(
-        rx.hstack(
-            rx.vstack(
+        hstack(
+            vstack(
                 rx.text(ticker, size="2", weight="bold", color="white"),
                 rx.text(industry, size="1", color=white(0.4)),
                 spacing="0",
                 align="start",
             ),
-            rx.spacer(),
             rx.button(
                 rx.icon("plus", size=13),
                 on_mouse_down=rx.prevent_default,
@@ -521,10 +510,12 @@ def _compare_search_suggestion(ticker_value: dict) -> rx.Component:
                     SearchBarState.clear_comparison_search(),
                 ],
                 size="1",
-                style=BTN_SECONDARY,
+                style=BUTTON_SECONDARY,
+                flex_shrink="0",
             ),
             align="center",
             width="100%",
+            justify="between",
         ),
         width="100%",
         padding="0.5em 0.75em",
@@ -539,17 +530,16 @@ def _compare_search_suggestion(ticker_value: dict) -> rx.Component:
 
 def _compare_search_bar() -> rx.Component:
     return rx.box(
-        rx.vstack(
+        vstack(
             rx.box(
-                rx.icon("search", size=14, color=white(0.25), style=SEARCH_ICON_STYLE),
-                rx.input(
+                search_icon(),
+                search_input(
                     placeholder="Add tickers to compare...",
                     value=SearchBarState.comparison_search_query,
                     on_change=SearchBarState.set_comparison_query,
                     on_blur=SearchBarState.blur_comparison_search,
                     on_focus=SearchBarState.focus_comparison_search,
                     size="2",
-                    style=SEARCH_INPUT_STYLE,
                 ),
                 position="relative",
                 display="flex",
@@ -572,12 +562,12 @@ def _compare_search_bar() -> rx.Component:
                     top="calc(100% + 0.4em)",
                     left="0",
                     z_index="200",
-                    border_radius="0.625rem",
+                    border_radius=RADIUS_INPUT,
                     border=f"1px solid {white(0.08)}",
                     background=MODAL_BG,
                     overflow="hidden",
-                    box_shadow="0 0.5rem 2rem rgba(0,0,0,0.6)",
-                    min_width=rx.breakpoints(initial="17.5rem", sm="20rem"),
+                    box_shadow=SHADOW_DROPDOWN,
+                    width="100%",
                 ),
                 rx.fragment(),
             ),
@@ -598,7 +588,7 @@ def _metric_category_card(category: str) -> rx.Component:
         body=rx.box(
             rx.foreach(
                 TickersPageState.all_metrics[category],
-                lambda metric: rx.hstack(
+                lambda metric: hstack(
                     rx.checkbox(
                         checked=TickersPageState.metric_selection_state[metric],
                         on_change=lambda _checked: TickersPageState.toggle_metric(
@@ -630,16 +620,16 @@ def _metrics_settings_dialog() -> rx.Component:
             rx.button(
                 rx.icon("settings-2", size=14),
                 size="2",
-                style=BTN_SECONDARY,
+                style=BUTTON_SECONDARY,
                 flex_shrink="0",
             ),
         ),
         rx.dialog.content(
-            rx.vstack(
-                rx.hstack(
+            vstack(
+                hstack(
                     rx.text("Metric Settings", size="5", weight="bold", color="white"),
                     rx.spacer(),
-                    rx.hstack(
+                    hstack(
                         rx.badge(
                             "Quarterly",
                             color_scheme=rx.cond(
@@ -649,7 +639,7 @@ def _metrics_settings_dialog() -> rx.Component:
                             ),
                             variant="soft",
                             size="1",
-                            style={"border_radius": "0.375rem"},
+                            style={"border_radius": RADIUS_PILL},
                         ),
                         rx.switch(
                             checked=TickersPageState.time_period == "year",
@@ -666,14 +656,14 @@ def _metrics_settings_dialog() -> rx.Component:
                             ),
                             variant="soft",
                             size="1",
-                            style={"border_radius": "0.375rem"},
+                            style={"border_radius": RADIUS_PILL},
                         ),
                         spacing="2",
                         align="center",
                     ),
                     rx.box(width="1px", height="1.2em", background=white(0.1)),
                     rx.button(
-                        rx.hstack(
+                        hstack(
                             rx.icon("import", size=13),
                             rx.text("Import Cart"),
                             spacing="2",
@@ -681,7 +671,7 @@ def _metrics_settings_dialog() -> rx.Component:
                         ),
                         on_click=TickersPageState.import_from_cart,
                         size="2",
-                        style=BTN_GHOST_SM,
+                        style=BUTTON_GHOST_SM,
                     ),
                     rx.dialog.close(
                         rx.icon(
@@ -715,19 +705,17 @@ def _metrics_settings_dialog() -> rx.Component:
                     scrollbars="vertical",
                     style={"height": "65vh"},
                 ),
-                rx.hstack(
+                hstack(
                     rx.spacer(),
-                    rx.button(
+                    ghost_button_sm(
                         "Select All",
                         on_click=TickersPageState.select_all_metrics,
                         size="2",
-                        style=BTN_GHOST_SM,
                     ),
-                    rx.button(
+                    ghost_button_sm(
                         "Clear All",
                         on_click=TickersPageState.clear_all_metrics,
                         size="2",
-                        style=BTN_GHOST_SM,
                     ),
                     spacing="2",
                     width="100%",
@@ -748,10 +736,10 @@ def _metrics_settings_dialog() -> rx.Component:
 
 
 def compare_toolbar() -> rx.Component:
-    return rx.hstack(
+    return hstack(
         _compare_search_bar(),
         rx.button(
-            rx.hstack(
+            hstack(
                 rx.cond(
                     TickersPageState.show_graphs,
                     rx.icon("eye-off", size=13),
@@ -769,7 +757,7 @@ def compare_toolbar() -> rx.Component:
             ),
             on_click=TickersPageState.toggle_graphs,
             size="2",
-            style=BTN_SECONDARY,
+            style=BUTTON_SECONDARY,
             flex_shrink="0",
         ),
         _metrics_settings_dialog(),

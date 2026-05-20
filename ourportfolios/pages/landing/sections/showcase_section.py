@@ -8,6 +8,16 @@ from ourportfolios.pages.landing.components import (
     scroll_reveal,
     shiny_text,
 )
+from ourportfolios.ui.theme.colors import white
+from ourportfolios.ui.theme.surfaces import (
+    RADIUS_CARD,
+    RADIUS_INPUT,
+    RADIUS_PILL,
+    RADIUS_SURFACE,
+)
+from ourportfolios.ui.tokens import RADIUS_5XS, RADIUS_6XS
+
+_3D_TRANSFORM = {"transformStyle": "preserve-3d"}
 
 
 def _skeleton(
@@ -19,8 +29,8 @@ def _skeleton(
     return rx.box(
         width=width,
         height=height,
-        background=f"rgba(255, 255, 255, {opacity})",
-        border_radius="0.25rem",
+        background=white(opacity),
+        border_radius=RADIUS_5XS,
         flex_shrink="0",
     )
 
@@ -59,8 +69,8 @@ def showcase_section() -> rx.Component:
                         shiny_text(
                             text="Investing simplified.",
                             speed=3,
-                            color="rgba(255, 255, 255, 0.75)",
-                            shine_color="rgba(255, 255, 255, 1)",
+                            color=white(0.75),
+                            shine_color=white(1),
                             spread=120,
                             direction="left",
                             yoyo=False,
@@ -73,7 +83,7 @@ def showcase_section() -> rx.Component:
                         rx.text(
                             "Focus on what actually matters.",
                             font_size=["1rem", "1.125rem"],
-                            color="rgba(255, 255, 255, 0.4)",
+                            color=white(0.4),
                             margin_top="2rem",
                             font_weight="300",
                             line_height="1.5",
@@ -95,7 +105,7 @@ def showcase_section() -> rx.Component:
                                                     "01",
                                                     font_size="0.875rem",
                                                     font_weight="600",
-                                                    color="rgba(255, 255, 255, 0.3)",
+                                                    color=white(0.3),
                                                 ),
                                                 rx.heading(
                                                     "Select a Framework",
@@ -110,7 +120,7 @@ def showcase_section() -> rx.Component:
                                             rx.text(
                                                 "Choose your investment strategy",
                                                 font_size="0.875rem",
-                                                color="rgba(255, 255, 255, 0.5)",
+                                                color=white(0.5),
                                                 font_weight="300",
                                             ),
                                             spacing="1",
@@ -128,7 +138,7 @@ def showcase_section() -> rx.Component:
                                                                 rx.box(
                                                                     width="1rem",
                                                                     height="0.5rem",
-                                                                    border_radius="0.125rem",
+                                                                    border_radius=RADIUS_6XS,
                                                                     background="#7C3AED",
                                                                     box_shadow="0 0 0.5rem rgba(124, 58, 237, 0.6)",
                                                                 ),
@@ -144,7 +154,7 @@ def showcase_section() -> rx.Component:
                                                             padding="1rem 1.25rem",
                                                             background="rgba(124, 58, 237, 0.1)",
                                                             border="1px solid rgba(124, 58, 237, 0.3)",
-                                                            border_radius="0.75rem",
+                                                            border_radius=RADIUS_SURFACE,
                                                         ),
                                                         # Unselected framework rows
                                                         rx.box(
@@ -152,8 +162,8 @@ def showcase_section() -> rx.Component:
                                                                 rx.box(
                                                                     width="1rem",
                                                                     height="0.5rem",
-                                                                    border_radius="0.125rem",
-                                                                    background="rgba(255, 255, 255, 0.15)",
+                                                                    border_radius=RADIUS_6XS,
+                                                                    background=white(0.15),
                                                                 ),
                                                                 _skeleton(
                                                                     width="6rem",
@@ -164,17 +174,17 @@ def showcase_section() -> rx.Component:
                                                             ),
                                                             width="100%",
                                                             padding="1rem 1.25rem",
-                                                            background="rgba(255, 255, 255, 0.02)",
-                                                            border="1px solid rgba(255, 255, 255, 0.08)",
-                                                            border_radius="0.75rem",
+                                                            background=white(0.02),
+                                                            border=f"1px solid {white(0.08)}",
+                                                            border_radius=RADIUS_SURFACE,
                                                         ),
                                                         rx.box(
                                                             rx.hstack(
                                                                 rx.box(
                                                                     width="1rem",
                                                                     height="0.5rem",
-                                                                    border_radius="0.125rem",
-                                                                    background="rgba(255, 255, 255, 0.15)",
+                                                                    border_radius=RADIUS_6XS,
+                                                                    background=white(0.15),
                                                                 ),
                                                                 _skeleton(
                                                                     width="8rem",
@@ -185,17 +195,17 @@ def showcase_section() -> rx.Component:
                                                             ),
                                                             width="100%",
                                                             padding="1rem 1.25rem",
-                                                            background="rgba(255, 255, 255, 0.02)",
-                                                            border="1px solid rgba(255, 255, 255, 0.08)",
-                                                            border_radius="0.75rem",
+                                                            background=white(0.02),
+                                                            border=f"1px solid {white(0.08)}",
+                                                            border_radius=RADIUS_SURFACE,
                                                         ),
                                                         rx.box(
                                                             rx.hstack(
                                                                 rx.box(
                                                                     width="1rem",
                                                                     height="0.5rem",
-                                                                    border_radius="0.125rem",
-                                                                    background="rgba(255, 255, 255, 0.15)",
+                                                                    border_radius=RADIUS_6XS,
+                                                                    background=white(0.15),
                                                                 ),
                                                                 _skeleton(
                                                                     width="5.5rem",
@@ -206,9 +216,9 @@ def showcase_section() -> rx.Component:
                                                             ),
                                                             width="100%",
                                                             padding="1rem 1.25rem",
-                                                            background="rgba(255, 255, 255, 0.02)",
-                                                            border="1px solid rgba(255, 255, 255, 0.08)",
-                                                            border_radius="0.75rem",
+                                                            background=white(0.02),
+                                                            border=f"1px solid {white(0.08)}",
+                                                            border_radius=RADIUS_SURFACE,
                                                         ),
                                                         spacing="2",
                                                         width="100%",
@@ -225,9 +235,9 @@ def showcase_section() -> rx.Component:
                                         ),
                                         width="100%",
                                         height="100%",
-                                        background="rgba(255, 255, 255, 0.03)",
-                                        border="1px solid rgba(255, 255, 255, 0.07)",
-                                        border_radius="0.875rem",
+                                        background=white(0.03),
+                                        border=f"1px solid {white(0.07)}",
+                                        border_radius=RADIUS_CARD,
                                         display="flex",
                                         flex_direction="column",
                                     ),
@@ -241,7 +251,7 @@ def showcase_section() -> rx.Component:
                                                     "02",
                                                     font_size="0.875rem",
                                                     font_weight="600",
-                                                    color="rgba(255, 255, 255, 0.3)",
+                                                    color=white(0.3),
                                                 ),
                                                 rx.heading(
                                                     "Analyze",
@@ -256,7 +266,7 @@ def showcase_section() -> rx.Component:
                                             rx.text(
                                                 "Review key metrics and performance",
                                                 font_size="0.875rem",
-                                                color="rgba(255, 255, 255, 0.5)",
+                                                color=white(0.5),
                                                 font_weight="300",
                                             ),
                                             spacing="1",
@@ -318,9 +328,9 @@ def showcase_section() -> rx.Component:
                                                         ),
                                                         flex="1",
                                                         padding="0.875rem",
-                                                        background="rgba(255, 255, 255, 0.02)",
-                                                        border="1px solid rgba(255, 255, 255, 0.08)",
-                                                        border_radius="0.625rem",
+                                                        background=white(0.02),
+                                                        border=f"1px solid {white(0.08)}",
+                                                        border_radius=RADIUS_INPUT,
                                                     ),
                                                     rx.box(
                                                         rx.vstack(
@@ -339,9 +349,9 @@ def showcase_section() -> rx.Component:
                                                         ),
                                                         flex="1",
                                                         padding="0.875rem",
-                                                        background="rgba(255, 255, 255, 0.02)",
-                                                        border="1px solid rgba(255, 255, 255, 0.08)",
-                                                        border_radius="0.625rem",
+                                                        background=white(0.02),
+                                                        border=f"1px solid {white(0.08)}",
+                                                        border_radius=RADIUS_INPUT,
                                                     ),
                                                     rx.box(
                                                         rx.vstack(
@@ -360,9 +370,9 @@ def showcase_section() -> rx.Component:
                                                         ),
                                                         flex="1",
                                                         padding="0.875rem",
-                                                        background="rgba(255, 255, 255, 0.02)",
-                                                        border="1px solid rgba(255, 255, 255, 0.08)",
-                                                        border_radius="0.625rem",
+                                                        background=white(0.02),
+                                                        border=f"1px solid {white(0.08)}",
+                                                        border_radius=RADIUS_INPUT,
                                                     ),
                                                     spacing="2",
                                                     width="100%",
@@ -374,7 +384,7 @@ def showcase_section() -> rx.Component:
                                                             rx.text(
                                                                 "Performance",
                                                                 font_size="0.65rem",
-                                                                color="rgba(255, 255, 255, 0.5)",
+                                                                color=white(0.5),
                                                             ),
                                                             rx.recharts.line_chart(
                                                                 rx.recharts.line(
@@ -405,21 +415,21 @@ def showcase_section() -> rx.Component:
                                                         ),
                                                         flex="1",
                                                         padding="0.75rem",
-                                                        background="rgba(255, 255, 255, 0.02)",
-                                                        border="1px solid rgba(255, 255, 255, 0.08)",
-                                                        border_radius="0.75rem",
+                                                        background=white(0.02),
+                                                        border=f"1px solid {white(0.08)}",
+                                                        border_radius=RADIUS_SURFACE,
                                                     ),
                                                     rx.box(
                                                         rx.vstack(
                                                             rx.text(
                                                                 "Growth",
                                                                 font_size="0.65rem",
-                                                                color="rgba(255, 255, 255, 0.5)",
+                                                                color=white(0.5),
                                                             ),
                                                             rx.recharts.line_chart(
                                                                 rx.recharts.line(
                                                                     data_key="v",
-                                                                    stroke="rgba(255, 255, 255, 0.35)",
+                                                                    stroke=white(0.35),
                                                                     type_="monotone",
                                                                     dot=False,
                                                                     stroke_width=2.5,
@@ -445,9 +455,9 @@ def showcase_section() -> rx.Component:
                                                         ),
                                                         flex="1",
                                                         padding="0.75rem",
-                                                        background="rgba(255, 255, 255, 0.02)",
-                                                        border="1px solid rgba(255, 255, 255, 0.08)",
-                                                        border_radius="0.75rem",
+                                                        background=white(0.02),
+                                                        border=f"1px solid {white(0.08)}",
+                                                        border_radius=RADIUS_SURFACE,
                                                     ),
                                                     spacing="2",
                                                     width="100%",
@@ -459,9 +469,9 @@ def showcase_section() -> rx.Component:
                                         ),
                                         width="100%",
                                         height="100%",
-                                        background="rgba(255, 255, 255, 0.03)",
-                                        border="1px solid rgba(255, 255, 255, 0.07)",
-                                        border_radius="0.875rem",
+                                        background=white(0.03),
+                                        border=f"1px solid {white(0.07)}",
+                                        border_radius=RADIUS_CARD,
                                         display="flex",
                                         flex_direction="column",
                                     ),
@@ -475,7 +485,7 @@ def showcase_section() -> rx.Component:
                                                     "03",
                                                     font_size="0.875rem",
                                                     font_weight="600",
-                                                    color="rgba(255, 255, 255, 0.3)",
+                                                    color=white(0.3),
                                                 ),
                                                 rx.heading(
                                                     "Rebalance",
@@ -490,7 +500,7 @@ def showcase_section() -> rx.Component:
                                             rx.text(
                                                 "Optimize your portfolio allocation",
                                                 font_size="0.875rem",
-                                                color="rgba(255, 255, 255, 0.5)",
+                                                color=white(0.5),
                                                 font_weight="300",
                                             ),
                                             spacing="1",
@@ -507,7 +517,7 @@ def showcase_section() -> rx.Component:
                                                             rx.text(
                                                                 "Current Portfolio",
                                                                 font_size="0.75rem",
-                                                                color="rgba(255, 255, 255, 0.5)",
+                                                                color=white(0.5),
                                                             ),
                                                             _skeleton(
                                                                 width="4.5rem",
@@ -524,18 +534,18 @@ def showcase_section() -> rx.Component:
                                                                 rx.box(
                                                                     width="45%",
                                                                     height="100%",
-                                                                    background="rgba(255, 255, 255, 0.3)",
+                                                                    background=white(0.3),
                                                                     border_radius="0.15rem 0 0 0.15rem",
                                                                 ),
                                                                 rx.box(
                                                                     width="30%",
                                                                     height="100%",
-                                                                    background="rgba(255, 255, 255, 0.2)",
+                                                                    background=white(0.2),
                                                                 ),
                                                                 rx.box(
                                                                     width="25%",
                                                                     height="100%",
-                                                                    background="rgba(255, 255, 255, 0.15)",
+                                                                    background=white(0.15),
                                                                     border_radius="0 0.15rem 0.15rem 0",
                                                                 ),
                                                                 spacing="0",
@@ -544,7 +554,7 @@ def showcase_section() -> rx.Component:
                                                             ),
                                                             width="100%",
                                                             height="0.75rem",
-                                                            background="rgba(255, 255, 255, 0.05)",
+                                                            background=white(0.05),
                                                             border_radius="0.15rem",
                                                             overflow="hidden",
                                                         ),
@@ -552,9 +562,9 @@ def showcase_section() -> rx.Component:
                                                     ),
                                                     width="100%",
                                                     padding="1rem",
-                                                    background="rgba(255, 255, 255, 0.02)",
-                                                    border="1px solid rgba(255, 255, 255, 0.08)",
-                                                    border_radius="0.75rem",
+                                                    background=white(0.02),
+                                                    border=f"1px solid {white(0.08)}",
+                                                    border_radius=RADIUS_SURFACE,
                                                 ),
                                                 # Rebalance suggestions
                                                 rx.box(
@@ -562,7 +572,7 @@ def showcase_section() -> rx.Component:
                                                         rx.text(
                                                             "Recommended",
                                                             font_size="0.75rem",
-                                                            color="rgba(255, 255, 255, 0.5)",
+                                                            color=white(0.5),
                                                             margin_bottom="0.5rem",
                                                         ),
                                                         rx.hstack(
@@ -570,12 +580,12 @@ def showcase_section() -> rx.Component:
                                                                 rx.text(
                                                                     "↑",
                                                                     font_size="1rem",
-                                                                    color="rgba(255, 255, 255, 0.6)",
+                                                                    color=white(0.6),
                                                                 ),
                                                                 width="1.5rem",
                                                                 height="1.5rem",
-                                                                background="rgba(255, 255, 255, 0.08)",
-                                                                border_radius="0.375rem",
+                                                                background=white(0.08),
+                                                                border_radius=RADIUS_PILL,
                                                                 display="flex",
                                                                 align_items="center",
                                                                 justify_content="center",
@@ -603,12 +613,12 @@ def showcase_section() -> rx.Component:
                                                                 rx.text(
                                                                     "↓",
                                                                     font_size="1rem",
-                                                                    color="rgba(255, 255, 255, 0.4)",
+                                                                    color=white(0.4),
                                                                 ),
                                                                 width="1.5rem",
                                                                 height="1.5rem",
-                                                                background="rgba(255, 255, 255, 0.05)",
-                                                                border_radius="0.375rem",
+                                                                background=white(0.05),
+                                                                border_radius=RADIUS_PILL,
                                                                 display="flex",
                                                                 align_items="center",
                                                                 justify_content="center",
@@ -635,9 +645,9 @@ def showcase_section() -> rx.Component:
                                                     ),
                                                     width="100%",
                                                     padding="1rem",
-                                                    background="rgba(255, 255, 255, 0.02)",
-                                                    border="1px solid rgba(255, 255, 255, 0.08)",
-                                                    border_radius="0.75rem",
+                                                    background=white(0.02),
+                                                    border=f"1px solid {white(0.08)}",
+                                                    border_radius=RADIUS_SURFACE,
                                                 ),
                                                 # Daily update badge
                                                 rx.hstack(
@@ -645,7 +655,7 @@ def showcase_section() -> rx.Component:
                                                         width="0.75rem",
                                                         height="0.5rem",
                                                         background="#7C3AED",
-                                                        border_radius="0.1rem",
+                                                        border_radius=RADIUS_6XS,
                                                         box_shadow="0 0 0.375rem rgba(124, 58, 237, 0.8)",
                                                     ),
                                                     _skeleton(
@@ -664,9 +674,9 @@ def showcase_section() -> rx.Component:
                                         ),
                                         width="100%",
                                         height="100%",
-                                        background="rgba(255, 255, 255, 0.03)",
-                                        border="1px solid rgba(255, 255, 255, 0.07)",
-                                        border_radius="0.875rem",
+                                        background=white(0.03),
+                                        border=f"1px solid {white(0.07)}",
+                                        border_radius=RADIUS_CARD,
                                         display="flex",
                                         flex_direction="column",
                                     ),
@@ -680,7 +690,7 @@ def showcase_section() -> rx.Component:
                                 skew_amount=0,
                                 easing="elastic",
                             ),
-                            style={"transformStyle": "preserve-3d"},
+                            style=_3D_TRANSFORM,
                         ),
                         width=["100%", "100%", "40.625rem"],
                         max_width="40.625rem",
@@ -697,7 +707,7 @@ def showcase_section() -> rx.Component:
                     max_width="87.5rem",
                     padding_x=["1.5rem", "2rem", "4rem"],
                     justify="center",
-                    gap=["4rem", "5rem", "6rem"],
+                    gap=["2rem", "2.5rem", "3rem"],
                     flex_direction=["column", "column", "row"],
                 ),
                 width="100%",

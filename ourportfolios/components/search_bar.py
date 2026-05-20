@@ -6,15 +6,25 @@ import reflex as rx
 
 from ourportfolios.components.graph import pct_change_badge
 from ourportfolios.state import SearchBarState
+from ourportfolios.ui.primitives import search_input_with_icon
+from ourportfolios.ui.tokens import (
+    RADIUS_MD,
+    RADIUS_XS,
+    SHADOW_SEARCH,
+    SPACE_XS,
+)
 
 
 def search_bar():
     return rx.box(
         rx.vstack(
-            rx.input(
-                rx.input.slot(rx.icon(tag="search", size=16)),
+            search_input_with_icon(
                 placeholder="Search for a ticker here!",
-                type="search",
+                value=SearchBarState.search_query,
+                on_change=SearchBarState.set_query,
+                on_blur=SearchBarState.set_display_suggestions(False),
+                on_mount=SearchBarState.set_display_suggestions(False),
+                on_focus=SearchBarState.set_display_suggestions(True),
                 custom_attrs={
                     "autocomplete": "off",
                     "name": "op_ticker_lookup",
@@ -24,23 +34,7 @@ def search_bar():
                     "data-1p-ignore": "true",
                     "data-lpignore": "true",
                 },
-                size="2",
-                value=SearchBarState.search_query,
-                on_change=SearchBarState.set_query,
-                on_blur=SearchBarState.set_display_suggestions(False),
-                on_mount=SearchBarState.set_display_suggestions(False),
-                on_focus=SearchBarState.set_display_suggestions(True),
                 width="100%",
-                background="rgba(255, 255, 255, 0.05)",
-                border=f"1px solid {rx.color('gray', 6)}",
-                border_radius="0.5rem",
-                _focus={
-                    "background": "rgba(255, 255, 255, 0.08)",
-                    "border_color": rx.color("accent", 8),
-                },
-                _hover={
-                    "background": "rgba(255, 255, 255, 0.07)",
-                },
             ),
             rx.cond(
                 SearchBarState.display_suggestion,
@@ -55,21 +49,19 @@ def search_bar():
                                 ),
                             ),
                             scrollbars="vertical",
-                            type="scroll",
+                            type="auto",
                         ),
                         width="100%",
                         max_height="15.625rem",
-                        overflow_y="auto",
                         z_index="100",
                         background="rgb(17, 17, 19)",
-                        backdrop_filter="blur(1.5rem)",
                         position="absolute",
                         top="calc(100% + 1.25rem)",
-                        border_radius="0.75rem",
+                        border_radius=RADIUS_MD,
                         border=f"1px solid {rx.color('gray', 5)}",
-                        padding="0.5rem",
+                        padding=SPACE_XS,
                         gap="0.25rem",
-                        box_shadow="0 1rem 3rem rgba(0, 0, 0, 0.45)",
+                        box_shadow=SHADOW_SEARCH,
                         direction="column",
                     ),
                     as_child=True,
@@ -109,8 +101,7 @@ def suggestion_card(value: dict[str, Any]) -> rx.Component:
                 ),
                 spacing="1",
             ),
-            rx.spacer(),
-            # pct badge
+            # pct badge column
             rx.flex(
                 rx.cond(
                     SearchBarState.outstanding_tickers.get(ticker, None),
@@ -121,8 +112,11 @@ def suggestion_card(value: dict[str, Any]) -> rx.Component:
                 align="end",
                 direction="column",
                 spacing="3",
+                flex_shrink="0",
             ),
             align="center",
+            width="100%",
+            justify="between",
             spacing="1",
         ),
         href=f"/tickers/{ticker}",
@@ -132,7 +126,7 @@ def suggestion_card(value: dict[str, Any]) -> rx.Component:
         display="block",
         width="100%",
         padding="0.625rem 0.75rem",
-        border_radius="0.5rem",
+        border_radius=RADIUS_XS,
         cursor="pointer",
         _hover={
             "background": "rgba(255, 255, 255, 0.06)",

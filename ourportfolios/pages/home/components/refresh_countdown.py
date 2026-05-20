@@ -3,7 +3,9 @@
 import reflex as rx
 
 from ourportfolios.state.home_state import HomeState
-from ourportfolios.styles import white
+from ourportfolios.ui.theme.colors import white
+from ourportfolios.ui.theme.surfaces import RADIUS_INPUT
+from ourportfolios.ui.tokens import SHADOW_CARD
 
 _CIRC = 54.85
 
@@ -80,9 +82,9 @@ def refresh_countdown_ring() -> rx.Component:
             ),
             background="rgba(14, 14, 16, 0.98)",
             border=f"1px solid {white(0.07)}",
-            border_radius="0.625rem",
+            border_radius=RADIUS_INPUT,
             padding="0.75rem 0.875rem",
-            box_shadow="0 8px 28px rgba(0,0,0,0.6)",
+            box_shadow=SHADOW_CARD,
             max_width="195px",
             z_index="200",
         ),

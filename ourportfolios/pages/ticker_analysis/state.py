@@ -30,6 +30,7 @@ class State(SessionIsolatedStateMixin, rx.State):
 
     switch_value: str = "year"
     company_control: str = "shares"
+    selected_tab: str = "performance"
 
     _data_ticker: str = ""
 
@@ -277,8 +278,11 @@ class State(SessionIsolatedStateMixin, rx.State):
         async with self:
             self._data_loaded = True
 
+    def set_selected_tab(self, value: str) -> None:
+        self.selected_tab = value
+
     @rx.event(background=True)
-    async def toggle_switch(self, *, value: bool):
+    async def toggle_switch(self, value: bool):  # noqa: FBT001
         async with self:
             if not check_session_active(self):
                 return
@@ -310,7 +314,7 @@ class State(SessionIsolatedStateMixin, rx.State):
 
         await self._load_financial_data(ticker, switch_value)
 
-    async def _load_financial_data(self, ticker: str, switch_value: str) -> None:  # noqa: C901,PLR0912,PLR0915
+    async def _load_financial_data(self, ticker: str, switch_value: str) -> None:  # noqa: C901, PLR0912, PLR0915
         """Fetch and process financial data, writing results to state.
 
         Plain coroutine (no @rx.event) so it can be directly awaited from
@@ -497,7 +501,7 @@ class State(SessionIsolatedStateMixin, rx.State):
     def get_chart_data(self, category: str) -> list[dict[str, object]]:
         return self.get_chart_data_for_category.get(category, [])
 
-    @rx.var
+    @rx.var(cache=True)
     def get_categories_list(self) -> list[str]:
         return list(self.available_metrics_by_category.keys())
 
@@ -530,7 +534,7 @@ class State(SessionIsolatedStateMixin, rx.State):
         else:
             return pie_data
 
-    @rx.var
+    @rx.var(cache=True)
     def overview(self) -> dict:
         if self.overview_df.empty:
             return {}
@@ -539,7 +543,7 @@ class State(SessionIsolatedStateMixin, rx.State):
         except (IndexError, ValueError, KeyError):
             return {}
 
-    @rx.var
+    @rx.var(cache=True)
     def profile(self) -> dict:
         if self.profile_df.empty:
             return {}
@@ -548,7 +552,7 @@ class State(SessionIsolatedStateMixin, rx.State):
         except (IndexError, ValueError, KeyError):
             return {}
 
-    @rx.var
+    @rx.var(cache=True)
     def shareholders(self) -> list[dict]:
         if self.shareholders_df.empty:
             return []
@@ -557,7 +561,7 @@ class State(SessionIsolatedStateMixin, rx.State):
         except (ValueError, KeyError, TypeError):
             return []
 
-    @rx.var
+    @rx.var(cache=True)
     def events(self) -> list[dict]:
         if self.events_df.empty:
             return []
@@ -566,7 +570,7 @@ class State(SessionIsolatedStateMixin, rx.State):
         except (ValueError, KeyError, TypeError):
             return []
 
-    @rx.var
+    @rx.var(cache=True)
     def news(self) -> list[dict]:
         if self.news_df.empty:
             return []
@@ -575,7 +579,7 @@ class State(SessionIsolatedStateMixin, rx.State):
         except (ValueError, KeyError, TypeError):
             return []
 
-    @rx.var
+    @rx.var(cache=True)
     def officers(self) -> list[dict]:
         if self.officers_df.empty:
             return []
@@ -585,5 +589,5 @@ class State(SessionIsolatedStateMixin, rx.State):
             return []
 
     @rx.event
-    def set_profile_dialog_open(self, *, value: bool):
+    def set_profile_dialog_open(self, value: bool):  # noqa: FBT001
         self.profile_dialog_open = value

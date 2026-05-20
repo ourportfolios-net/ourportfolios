@@ -9,19 +9,16 @@ from ourportfolios.pages.contacts.contact_form import (
 )
 from ourportfolios.pages.landing.sections.footer import footer
 from ourportfolios.state.contact_state import ContactState
-from ourportfolios.styles import white
+from ourportfolios.ui.primitives import surface_box
 
 
 def _form_card() -> rx.Component:
-    return rx.box(
+    return surface_box(
         rx.cond(
             ContactState.submitted,
             contact_success(),
             contact_form(),
         ),
-        background="rgba(255, 255, 255, 0.03)",
-        border=f"1px solid {white(0.06)}",
-        border_radius="1rem",
         padding=rx.breakpoints(initial="1.5rem", sm="2.5rem"),
         width="100%",
         position="relative",
@@ -60,15 +57,13 @@ def index() -> rx.Component:
                     position="relative",
                     width="100%",
                 ),
-                style={
-                    "display": "grid",
-                    "grid_template_columns": rx.breakpoints(
-                        initial="1fr",
-                        sm="1fr 32rem",
-                    ),
-                    "gap": rx.breakpoints(initial="1rem", sm="4rem"),
-                    "align_items": "center",
-                },
+                display="grid",
+                grid_template_columns=rx.breakpoints(
+                    initial="1fr",
+                    sm="1fr 32rem",
+                ),
+                gap=rx.breakpoints(initial="1rem", sm="4rem"),
+                align_items="center",
                 width="77vw",
                 margin="0 auto",
             ),

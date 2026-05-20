@@ -144,8 +144,7 @@ class FrameworkState(SessionIsolatedStateMixin, rx.State):
 
     # Private — not serialized to frontend.
 
-    # ClassVar would exclude it from state tracking entirely.
-    _all_frameworks: list[FrameworkModel] = []  # noqa: RUF012
+    _all_frameworks: list[FrameworkModel] = Field(default_factory=list)
 
     frameworks: rx.Field[list[FrameworkModel]] = rx.field(default_factory=list)
 

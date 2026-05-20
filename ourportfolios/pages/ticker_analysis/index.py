@@ -13,6 +13,8 @@ from ourportfolios.pages.ticker_analysis.price_chart import price_chart_card
 from ourportfolios.pages.ticker_analysis.state import State
 from ourportfolios.state.auth_state import AuthState
 
+_DESKTOP_DETAIL_ROW_HEIGHT = "52rem"
+
 
 def _desktop_layout() -> rx.Component:
     return rx.vstack(
@@ -21,28 +23,25 @@ def _desktop_layout() -> rx.Component:
             rx.box(
                 name_card(),
                 general_info_card(),
-                rx.box(company_profile_dialog(), style={"flexShrink": "0"}),
-                style={
-                    "display": "flex",
-                    "flexDirection": "column",
-                    "gap": "1rem",
-                    "alignSelf": "stretch",
-                    "overflow": "hidden",
-                    "width": "17rem",
-                    "minWidth": "17rem",
-                    "maxWidth": "20rem",
-                    "flexShrink": "0",
-                },
+                rx.box(company_profile_dialog(), flex_shrink="0"),
+                display="flex",
+                flex_direction="column",
+                gap="1rem",
+                align_self="stretch",
+                overflow="hidden",
+                width="17rem",
+                min_width="17rem",
+                max_width="20rem",
+                flex_shrink="0",
             ),
             # Right column — price chart directly, drives row height
             price_chart_card(),
-            style={
-                "display": "flex",
-                "flexDirection": "row",
-                "alignItems": "stretch",
-                "gap": "1rem",
-                "width": "100%",
-            },
+            display="flex",
+            flex_direction="row",
+            align_items="stretch",
+            gap="1rem",
+            width="100%",
+            flex_shrink="0",
         ),
         rx.hstack(
             key_metrics_card(),
@@ -50,7 +49,11 @@ def _desktop_layout() -> rx.Component:
             spacing="4",
             width="100%",
             align="stretch",
-            style={"flexWrap": "wrap"},
+            flex_shrink="0",
+            height=_DESKTOP_DETAIL_ROW_HEIGHT,
+            min_height=_DESKTOP_DETAIL_ROW_HEIGHT,
+            max_height=_DESKTOP_DETAIL_ROW_HEIGHT,
+            overflow="hidden",
         ),
         spacing="8",
         width="100%",
@@ -92,7 +95,11 @@ def index() -> rx.Component:
                     ),
                     width="86vw",
                     max_width="90rem",
-                    style={"minHeight": "80vh"},
+                    min_height=[
+                        "calc(100vh - 5em)",
+                        "calc(100vh - 6em)",
+                        "calc(100vh - 7em)",
+                    ],
                 ),
                 width="100%",
                 padding=["1em", "1.5em", "2em"],

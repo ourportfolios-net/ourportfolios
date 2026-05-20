@@ -1,6 +1,5 @@
 import reflex as rx
 
-from ourportfolios.components.cards import glass_card
 from ourportfolios.components.indices_grid import indices_grid
 from ourportfolios.pages.home.components.refresh_countdown import refresh_countdown_ring
 from ourportfolios.state.heatmap import (
@@ -11,15 +10,22 @@ from ourportfolios.state.heatmap import (
 )
 from ourportfolios.state.home_state import HomeState
 from ourportfolios.state.prefs_state import PrefsState
-from ourportfolios.styles import (
+from ourportfolios.ui.primitives import glass_box
+from ourportfolios.ui.theme.colors import TEXT_PRIMARY, TEXT_TERTIARY, white
+from ourportfolios.ui.theme.components import accent_button
+from ourportfolios.ui.theme.surfaces import (
     CARD_BG,
     CARD_BORDER,
+    RADIUS_2XS,
+    RADIUS_4XS,
+    RADIUS_BUTTON,
+    RADIUS_INPUT,
+    RADIUS_PILL,
+    RADIUS_SURFACE,
     SKELETON_BG,
-    TEXT_PRIMARY,
-    TEXT_TERTIARY,
-    accent_btn,
-    white,
+    TRANS_DEFAULT,
 )
+from ourportfolios.ui.tokens import TRANS_BG, TRANS_COLOR_FAST
 
 _TREEMAP_H = "38.75rem"
 
@@ -31,7 +37,7 @@ _SUBTILE_BORDER = "rgba(255, 255, 255, 0.05)"
 _PERIOD_OPTIONS = ["1D", "1W", "1M", "1Q", "1Y"]
 
 
-def _period_btn(label: str) -> rx.Component:
+def _period_button(label: str) -> rx.Component:
     active = HeatmapState.selected_period == label
     return rx.box(
         rx.text(
@@ -41,7 +47,7 @@ def _period_btn(label: str) -> rx.Component:
             color=rx.cond(active, TEXT_PRIMARY, TEXT_TERTIARY),
         ),
         padding="0.18rem 0.5rem",
-        border_radius="0.3125rem",
+        border_radius=RADIUS_4XS,
         background=rx.cond(active, white(0.09), "transparent"),
         cursor="pointer",
         on_click=[
@@ -49,7 +55,7 @@ def _period_btn(label: str) -> rx.Component:
             HomeState.load_ticker_for_period(label),
         ],
         _hover={"background": white(0.05)},
-        transition="background 0.12s ease",
+        transition=TRANS_BG,
     )
 
 
@@ -83,7 +89,7 @@ def _mini_index_card_skel() -> rx.Component:
             width="100%",
         ),
         padding="0.625rem 0.875rem",
-        border_radius="0.625rem",
+        border_radius=RADIUS_INPUT,
         background=CARD_BG,
         border=CARD_BORDER,
         width="100%",
@@ -247,7 +253,7 @@ def _ticker_subtile(t: TickerSubtile) -> rx.Component:
             justify_content="center",
             overflow="hidden",
             background=t.bg,
-            border_radius="0.375rem",
+            border_radius=RADIUS_PILL,
             border=f"1px solid {_SUBTILE_BORDER}",
             transition="filter 0.12s ease",
             _hover={"filter": "brightness(1.22)"},
@@ -300,7 +306,7 @@ def _industry_tile(tile: HeatmapTile) -> rx.Component:
             padding="0 0.625rem",
             z_index="10",
             border_bottom=f"1px solid {_SUBTILE_BORDER}",
-            border_radius="0.75rem 0.75rem 0 0",
+            border_radius=f"{RADIUS_SURFACE} {RADIUS_SURFACE} 0 0",
         ),
         rx.foreach(tile.tickers, _ticker_subtile),
         position="absolute",
@@ -308,12 +314,12 @@ def _industry_tile(tile: HeatmapTile) -> rx.Component:
         top=f"calc({tile.y}%)",
         width=f"calc({tile.w}% - 8px)",
         height=f"calc({tile.h}% - 8px)",
-        border_radius="0.75rem",
+        border_radius=RADIUS_SURFACE,
         border=_TILE_BORDER,
         background=tile.bg,
         overflow="hidden",
         cursor="pointer",
-        transition="border-color 0.15s ease, box-shadow 0.15s ease",
+        transition=TRANS_DEFAULT,
         _hover={
             "border_color": _TILE_HOVER_BORDER,
             "box_shadow": f"inset 0 0 0 1px {white(0.10)}, 0 4px 20px rgba(0,0,0,0.28)",
@@ -343,12 +349,12 @@ def _chip(c: HeatmapChip) -> rx.Component:
         ),
         href=c.url,
         padding="0.2rem 0.6rem",
-        border_radius="0.375rem",
+        border_radius=RADIUS_PILL,
         background=_TILE_BG,
         border=_TILE_BORDER,
         flex_shrink="0",
         text_decoration="none",
-        transition="border-color 0.12s ease",
+        transition=TRANS_COLOR_FAST,
         _hover={"border_color": _TILE_HOVER_BORDER},
         display="inline-flex",
     )
@@ -376,7 +382,7 @@ def _treemap() -> rx.Component:
                 position="relative",
                 width="100%",
                 height=_TREEMAP_H,
-                border_radius="0.75rem",
+                border_radius=RADIUS_SURFACE,
                 overflow="hidden",
             ),
             _chip_row(),
@@ -419,11 +425,11 @@ def _mobile_tile_row(tile: HeatmapTile) -> rx.Component:
         text_decoration="none",
         display="flex",
         padding="0.6rem 0.75rem",
-        border_radius="0.5rem",
+        border_radius=RADIUS_BUTTON,
         background=white(0.03),
         border=_TILE_BORDER,
         width="100%",
-        transition="border-color 0.12s ease, background 0.12s ease",
+        transition=TRANS_BG,
         _hover={"border_color": _TILE_HOVER_BORDER, "background": white(0.05)},
     )
 
@@ -458,11 +464,11 @@ def _mobile_chip_row(c: HeatmapChip) -> rx.Component:
         text_decoration="none",
         display="flex",
         padding="0.6rem 0.75rem",
-        border_radius="0.5rem",
+        border_radius=RADIUS_BUTTON,
         background=white(0.03),
         border=_TILE_BORDER,
         width="100%",
-        transition="border-color 0.12s ease, background 0.12s ease",
+        transition=TRANS_BG,
         _hover={"border_color": _TILE_HOVER_BORDER, "background": white(0.05)},
     )
 
@@ -477,7 +483,7 @@ def _mobile_skeleton_row() -> rx.Component:
             width="100%",
         ),
         padding="0.6rem 0.75rem",
-        border_radius="0.5rem",
+        border_radius=RADIUS_BUTTON,
         background=white(0.03),
         border=_TILE_BORDER,
         width="100%",
@@ -520,7 +526,7 @@ def _mobile_industry_view() -> rx.Component:
 
 
 def market_overview_section() -> rx.Component:
-    return glass_card(
+    return glass_box(
         rx.vstack(
             # ── Header ───────────────────────────────────────────────────
             rx.hstack(
@@ -541,10 +547,10 @@ def market_overview_section() -> rx.Component:
                 ),
                 rx.spacer(),
                 rx.hstack(
-                    *[_period_btn(p) for p in _PERIOD_OPTIONS],
+                    *[_period_button(p) for p in _PERIOD_OPTIONS],
                     spacing="0",
                     padding="0.16rem",
-                    border_radius="0.4375rem",
+                    border_radius=RADIUS_2XS,
                     background=white(0.03),
                     border=f"1px solid {white(0.06)}",
                     flex_shrink="0",
@@ -579,7 +585,7 @@ def market_overview_section() -> rx.Component:
                 align="start",
                 min_height=rx.breakpoints(initial="auto", md=_TREEMAP_H),
             ),
-            accent_btn("View Full Market", href="/market"),
+            accent_button("View Full Market", href="/market"),
             spacing="4",
             width="100%",
         ),

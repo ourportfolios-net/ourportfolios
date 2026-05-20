@@ -24,7 +24,6 @@ async def get_industry(ticker: str) -> str:
         except (ValueError, RuntimeError, KeyError):
             retry_count += 1
             if retry_count >= max_retries:
-                # print(f"Error fetching industry for {ticker}: {e}")
                 return "Unknown"
             await asyncio.sleep(0.1)
     return "Unknown"
@@ -43,17 +42,17 @@ class CartState(rx.State):
         self.is_open = not self.is_open
 
     @rx.event
-    def remove_item(self, index: int) -> None:
+    async def remove_item(self, index: int) -> None:
         self.cart_items.pop(index)
 
     @rx.event
     async def add_item(self, ticker: str):
         if any(item["name"] == ticker for item in self.cart_items):
             yield rx.toast.error(f"{ticker} already in cart!")
-        else:
-            industry = await get_industry(ticker)
-            self.cart_items.append({"name": ticker, "industry": industry})
-            yield rx.toast(f"{ticker} added to cart!")
+            return
+        industry = await get_industry(ticker)
+        self.cart_items.append({"name": ticker, "industry": industry})
+        yield rx.toast(f"{ticker} added to cart!")
 
     @rx.var
     def cart_count_label(self) -> str:
@@ -66,4 +65,4 @@ class CartState(rx.State):
 
     @rx.event
     def go_to_compare(self):
-        return rx.redirect("/compare")
+        return rx.redirect("/tickers")

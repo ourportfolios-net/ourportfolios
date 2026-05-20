@@ -3,6 +3,15 @@
 import reflex as rx
 
 from ourportfolios.state import CartState
+from ourportfolios.ui.tokens import (
+    APP_SURFACE_BG,
+    BLUR_MD,
+    RADIUS_LG,
+    SPACE_3XL,
+    SPACE_LG,
+    SPACE_SM,
+    SPACE_XL,
+)
 
 
 def _cart_item(item: dict[str, str], i: int) -> rx.Component:
@@ -35,7 +44,7 @@ def _cart_item(item: dict[str, str], i: int) -> rx.Component:
         ),
         background_color=rx.color("accent", 2),
         padding="0.8em 1em",
-        margin_bottom="0.7em",
+        margin_bottom=SPACE_SM,
         width="100%",
     )
 
@@ -53,6 +62,16 @@ def _cart_items_list() -> rx.Component:
         rx.scroll_area(items_vstack, height="25rem", width="100%"),
         items_vstack,
     )
+
+
+def _compare_from_cart_event() -> list:
+    from ourportfolios.pages.tickers.state import TickersPageState  # noqa: PLC0415
+
+    return [
+        CartState.toggle_cart,
+        TickersPageState.set_view_mode("compare"),
+        rx.redirect("/tickers"),
+    ]
 
 
 def cart_drawer_content():
@@ -73,25 +92,22 @@ def cart_drawer_content():
                     width="100%",
                     display="flex",
                     justify_content="flex-end",
-                    margin_bottom="1em",
+                    margin_bottom=SPACE_LG,
                 ),
                 rx.heading("Tickers Cart", size="6", weight="medium"),
                 rx.cond(
                     CartState.cart_items,
                     rx.box(
                         _cart_items_list(),
-                        rx.link(
-                            rx.button(
-                                rx.text("Compare"),
-                                size="3",
-                                variant="solid",
-                                on_click=CartState.toggle_cart,
-                                position="fixed",
-                                bottom="1.25rem",
-                                right="1.25rem",
-                                z_index="1000",
-                            ),
-                            href="/analyze/compare",
+                        rx.button(
+                            rx.text("Compare"),
+                            size="3",
+                            variant="solid",
+                            on_click=_compare_from_cart_event,
+                            position="fixed",
+                            bottom=SPACE_XL,
+                            right=SPACE_XL,
+                            z_index="1000",
                         ),
                         position="relative",
                         width="100%",
@@ -102,10 +118,10 @@ def cart_drawer_content():
                 align_items="start",
             ),
             width="100%",
-            padding="2em",
-            border_radius="1em",
-            backdrop_filter="blur(0.875rem)",
-            background="rgba(20, 20, 20, 0.7)",
+            padding=SPACE_3XL,
+            border_radius=RADIUS_LG,
+            backdrop_filter=f"blur({BLUR_MD})",
+            background=APP_SURFACE_BG,
         ),
         width="28em",
         padding="1.5em 1em 1em 1em",
@@ -120,8 +136,8 @@ def drawer_button():
                 rx.icon("shopping-cart", size=16),
                 on_click=CartState.toggle_cart,
                 position="fixed",
-                bottom="2em",
-                left="2em",
+                bottom=SPACE_3XL,
+                left=SPACE_3XL,
                 z_index="1000",
             ),
         ),

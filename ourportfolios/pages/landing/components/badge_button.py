@@ -4,6 +4,29 @@ from typing import Literal
 
 import reflex as rx
 
+from ourportfolios.ui.theme.colors import white
+from ourportfolios.ui.theme.surfaces import CARD_STYLE
+from ourportfolios.ui.tokens import (
+    BLUR_XL,
+    FONT_LABEL,
+    LETTER_NORMAL,
+    RADIUS_BUTTON,
+    TRANS_SLOW,
+)
+
+_BADGE_BUTTON_STYLE = {
+    "background": CARD_STYLE["background"],
+    "border": CARD_STYLE["border"],
+    "border_radius": RADIUS_BUTTON,
+    "backdrop_filter": f"blur({BLUR_XL})",
+    "cursor": "pointer",
+    "transition": TRANS_SLOW,
+    "_hover": {
+        "background": white(0.08),
+        "border": f"1px solid {white(0.1)}",
+    },
+}
+
 
 def badge_button(
     text: str,
@@ -24,8 +47,8 @@ def badge_button(
             ),
             rx.text(
                 text,
-                font_size="0.625rem",
-                letter_spacing="0.2em",
+                font_size=FONT_LABEL,
+                letter_spacing=LETTER_NORMAL,
                 text_transform="uppercase",
             ),
             spacing="2",
@@ -34,14 +57,5 @@ def badge_button(
         size=size,
         padding_x=padding_x,
         padding_y=padding_y,
-        border_radius="0.75rem",
-        background="rgba(255, 255, 255, 0.03)",
-        backdrop_filter="blur(1.5rem)",
-        border="1px solid rgba(255, 255, 255, 0.05)",
-        _hover={
-            "background": "rgba(255, 255, 255, 0.08)",
-            "border": "1px solid rgba(255, 255, 255, 0.1)",
-        },
-        transition="all 0.2s",
-        cursor="pointer",
+        style=_BADGE_BUTTON_STYLE,
     )

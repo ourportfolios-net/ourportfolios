@@ -1,4 +1,4 @@
-from ourportfolios.pages.auth.client import AUTH_AVAILABLE
+from ourportfolios.auth_config import AUTH_AVAILABLE
 
 if AUTH_AVAILABLE:
     from ourportfolios.pages.auth.callback import callback

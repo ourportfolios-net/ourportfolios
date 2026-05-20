@@ -7,8 +7,9 @@ from ourportfolios.components.navbar import navbar
 from ourportfolios.pages.settings.components import settings_layout
 from ourportfolios.pages.settings.state import SettingsState
 from ourportfolios.state.auth_state import AuthState
-from ourportfolios.styles import PAGE_BG, TEXT_MUTED, TEXT_PRIMARY
 from ourportfolios.ui.layout import app_shell
+from ourportfolios.ui.theme.colors import TEXT_MUTED, TEXT_PRIMARY
+from ourportfolios.ui.theme.surfaces import PAGE_BG
 
 
 def _page_body() -> rx.Component:

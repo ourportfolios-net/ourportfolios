@@ -15,17 +15,22 @@ from ourportfolios.pages.framework.framework_cards import (
 )
 from ourportfolios.pages.framework.framework_dialog import framework_dialog
 from ourportfolios.pages.framework.state import FrameworkState
-from ourportfolios.styles import white
+from ourportfolios.ui.primitives import (
+    divider,
+    heading,
+    muted_text,
+    search_icon,
+    search_input,
+)
+from ourportfolios.ui.theme.surfaces import BUTTON_SECONDARY, RADIUS_PILL
 
 
 def _page_header() -> rx.Component:
     return rx.vstack(
         breadcrumb("/framework", tail_label="Frameworks"),
-        rx.heading("Choose Your Framework", size="8", weight="bold", color="white"),
-        rx.text(
+        heading("Choose Your Framework", level=1),
+        muted_text(
             "Select a pre-built investment strategy model to decode market noise and identify high-potential assets.",
-            size="3",
-            color="rgba(255,255,255,0.4)",
         ),
         spacing="3",
         align="start",
@@ -35,29 +40,12 @@ def _page_header() -> rx.Component:
 
 def _search_box() -> rx.Component:
     return rx.box(
-        rx.icon(
-            "search",
-            size=14,
-            color="rgba(255,255,255,0.25)",
-            position="absolute",
-            left="0.625rem",
-            top="50%",
-            transform="translateY(-50%)",
-            pointer_events="none",
-        ),
-        rx.input(
+        search_icon(),
+        search_input(
             placeholder="Search frameworks...",
             value=FrameworkState.search_query,
             on_change=FrameworkState.set_search_query,
             size="2",
-            background="rgba(255,255,255,0.04)",
-            border="1px solid rgba(255,255,255,0.08)",
-            border_radius="0.5rem",
-            color="white",
-            padding_left="2rem",
-            width="100%",
-            _placeholder={"color": "rgba(255,255,255,0.22)"},
-            _focus={"border_color": "rgba(139,92,246,0.4)", "outline": "none"},
         ),
         position="relative",
         display="flex",
@@ -68,26 +56,13 @@ def _search_box() -> rx.Component:
     )
 
 
-def _add_framework_btn() -> rx.Component:
+def _add_framework_button() -> rx.Component:
     return rx.button(
         rx.icon("plus", size=14),
         "Add Framework",
         on_click=FrameworkState.open_add_dialog,
         size="2",
-        background="rgba(255,255,255,0.05)",
-        border="1px solid rgba(255,255,255,0.1)",
-        border_radius="0.5rem",
-        color="rgba(255,255,255,0.7)",
-        font_weight="500",
-        white_space="nowrap",
-        flex_shrink="0",
-        cursor="pointer",
-        transition="all 0.15s ease",
-        _hover={
-            "background": "rgba(255,255,255,0.09)",
-            "border_color": "rgba(255,255,255,0.18)",
-            "color": "white",
-        },
+        style={**BUTTON_SECONDARY, "border_radius": RADIUS_PILL},
     )
 
 
@@ -103,7 +78,7 @@ def _toolbar() -> rx.Component:
         ),
         rx.hstack(
             _search_box(),
-            _add_framework_btn(),
+            _add_framework_button(),
             spacing="2",
             align="center",
             flex_shrink="0",
@@ -129,11 +104,9 @@ def _skeleton_grid() -> rx.Component:
 def _empty_state() -> rx.Component:
     return rx.center(
         rx.vstack(
-            rx.icon("inbox", size=36, color=white(0.2)),
-            rx.text("No frameworks found", size="4", weight="medium", color=white(0.4)),
-            rx.text(
-                "Try adjusting your search or filter.", size="2", color=white(0.25),
-            ),
+            rx.icon("inbox", size=36, color="rgba(255,255,255,0.2)"),
+            rx.text("No frameworks found", size="4", weight="medium", color="rgba(255,255,255,0.4)"),
+            muted_text("Try adjusting your search or filter."),
             spacing="2",
             align="center",
         ),
@@ -167,9 +140,7 @@ def page_body() -> rx.Component:
             rx.box(
                 rx.vstack(
                     _page_header(),
-                    rx.box(
-                        height="1px", width="100%", background="rgba(255,255,255,0.06)",
-                    ),
+                    divider(),
                     _toolbar(),
                     _frameworks_grid(),
                     spacing="5",

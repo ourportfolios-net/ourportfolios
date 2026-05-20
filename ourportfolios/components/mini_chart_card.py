@@ -16,18 +16,16 @@ from dataclasses import dataclass
 
 import reflex as rx
 
-from ourportfolios.styles import CARD_BG, CARD_BORDER, TEXT_TERTIARY, purple
+from ourportfolios.ui.primitives import subtle_box
+from ourportfolios.ui.theme.colors import TEXT_TERTIARY, purple
+from ourportfolios.ui.tokens import (
+    RADIUS_5XS,
+    RADIUS_XS,
+    SPACE_LG,
+)
 
 _CHART_W = 80
 _CHART_H = 52
-
-_SHELL = {
-    "padding": "0.625rem 0.875rem",
-    "border_radius": "0.625rem",
-    "background": CARD_BG,
-    "border": CARD_BORDER,
-    "box_sizing": "border-box",
-}
 
 
 @dataclass(slots=True)
@@ -44,7 +42,7 @@ class MiniChartCardProps:
     fill_color_pos: str | None = None
 
 
-def _skel(w: str, h: str, r: str = "0.375rem") -> rx.Component:
+def _skel(w: str, h: str, r: str = RADIUS_5XS) -> rx.Component:
     return rx.skeleton(rx.box(width=w, height=h), loading=True, border_radius=r)
 
 
@@ -91,58 +89,56 @@ def mini_chart_card(
         overflow="hidden",
     )
 
-    loaded = (
-        rx.box(
-            rx.hstack(
-                rx.vstack(
-                    rx.text(card.label, size="1", weight="medium", color=TEXT_TERTIARY),
-                    rx.text(card.value, size="5", weight="bold", color="white"),
-                    rx.hstack(
-                        rx.badge(
-                            card.abs_change,
-                            color_scheme=badge_scheme,
-                            variant="soft",
-                            size="1",
-                        ),
-                        rx.badge(
-                            card.pct_change,
-                            color_scheme=badge_scheme,
-                            variant="soft",
-                            size="1",
-                        ),
-                        spacing="1",
+    loaded = subtle_box(
+        rx.hstack(
+            rx.vstack(
+                rx.text(card.label, size="1", weight="medium", color=TEXT_TERTIARY),
+                rx.text(card.value, size="5", weight="bold", color="white"),
+                rx.hstack(
+                    rx.badge(
+                        card.abs_change,
+                        color_scheme=badge_scheme,
+                        variant="soft",
+                        size="1",
                     ),
-                    spacing="0",
-                    align="start",
+                    rx.badge(
+                        card.pct_change,
+                        color_scheme=badge_scheme,
+                        variant="soft",
+                        size="1",
+                    ),
+                    spacing="1",
                 ),
-                chart,
-                align="center",
-                justify="between",
-                width="100%",
                 spacing="0",
+                align="start",
             ),
-            style=_SHELL,
+            chart,
+            align="center",
+            justify="between",
+            width="100%",
+            spacing="0",
         ),
+        padding=SPACE_LG,
     )
 
-    skeleton = rx.box(
+    skeleton = subtle_box(
         rx.hstack(
             rx.vstack(
                 _skel("3.25rem", "0.625rem"),
-                _skel("5.5rem", "1.5rem", "0.375rem"),
+                _skel("5.5rem", "1.5rem", RADIUS_5XS),
                 rx.hstack(
-                    _skel("3rem", "1rem", "0.5rem"),
-                    _skel("3.5rem", "1rem", "0.5rem"),
+                    _skel("3rem", "1rem", RADIUS_XS),
+                    _skel("3.5rem", "1rem", RADIUS_XS),
                     spacing="1",
                 ),
                 spacing="1",
             ),
             rx.spacer(),
-            _skel(f"{card.chart_w}px", f"{card.chart_h}px", "0.375rem"),
+            _skel(f"{card.chart_w}px", f"{card.chart_h}px", RADIUS_5XS),
             align="center",
             width="100%",
         ),
-        style=_SHELL,
+        padding=SPACE_LG,
     )
 
     return rx.cond(card.value, loaded, skeleton)

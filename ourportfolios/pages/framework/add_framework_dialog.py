@@ -5,19 +5,24 @@ import reflex as rx
 
 from ourportfolios.components.common_dialog import CommonDialogConfig, common_dialog
 from ourportfolios.pages.framework.state import FrameworkState, MetricModel
-from ourportfolios.styles import (
-    BTN_GHOST,
-    BTN_GHOST_SM,
-    BTN_SECONDARY,
+from ourportfolios.ui.primitives import (
+    ghost_button,
+    ghost_button_sm,
+    label_text,
+    select_input,
+    text_area_input,
+    text_input,
+)
+from ourportfolios.ui.theme import (
+    BUTTON_SECONDARY,
     DELETE_HOVER,
     ERROR_BORDER,
     ERROR_COLOR,
     ERROR_SHADOW,
     INPUT_STYLE,
-    LABEL_STYLE,
-    SELECT_STYLE,
     white,
 )
+from ourportfolios.ui.theme.surfaces import RADIUS_BUTTON, RADIUS_INPUT
 
 # Character limit for ~500 words
 DESC_CHAR_LIMIT = 3000
@@ -25,7 +30,7 @@ DESC_CHAR_LIMIT = 3000
 
 def field(label: str, control: rx.Component) -> rx.Component:
     return rx.vstack(
-        rx.text(label, style=LABEL_STYLE),
+        label_text(label),
         control,
         spacing="1",
         width="100%",
@@ -63,7 +68,7 @@ def metric_item(metric: MetricModel, index: int) -> rx.Component:
             padding="0.6em 0.75em",
             background=white(0.035),
             border=f"1px solid {white(0.09)}",
-            border_radius="0.625em",
+            border_radius=RADIUS_INPUT,
             width="100%",
             transition="border-color 0.15s ease",
             _hover={
@@ -90,7 +95,7 @@ def metric_item(metric: MetricModel, index: int) -> rx.Component:
                     height="2.2em",
                     background=white(0.04),
                     border=f"1px solid {white(0.08)}",
-                    border_radius="0.5em",
+                    border_radius=RADIUS_BUTTON,
                     margin="-0.6em auto",
                     transition="opacity 0.15s ease",
                     opacity=rx.cond(bridge_visible, "1", "0"),
@@ -119,19 +124,18 @@ def add_metric_selector() -> rx.Component:
         rx.vstack(
             field(
                 "Category",
-                rx.select(
-                    FrameworkState.available_categories,
+                select_input(
+                    items=FrameworkState.available_categories,
                     value=FrameworkState.new_metric_category,
                     on_change=FrameworkState.set_new_metric_category,
                     size="3",
                     width="100%",
-                    style=SELECT_STYLE,
                 ),
             ),
             field(
                 "Metric",
-                rx.select(
-                    rx.match(
+                select_input(
+                    items=rx.match(
                         FrameworkState.new_metric_category,
                         ("Per Share Value", FrameworkState.per_share_metrics),
                         ("Growth Rate", FrameworkState.growth_rate_metrics),
@@ -149,7 +153,6 @@ def add_metric_selector() -> rx.Component:
                     on_change=FrameworkState.set_new_metric_name,
                     size="3",
                     width="100%",
-                    style=SELECT_STYLE,
                 ),
             ),
             spacing="4",
@@ -157,18 +160,15 @@ def add_metric_selector() -> rx.Component:
         ),
         rx.hstack(
             rx.spacer(),
-            rx.button(
+            ghost_button(
                 "Cancel",
                 on_click=FrameworkState.close_add_metric_dialog,
-                size="2",
-                style=BTN_GHOST,
+                size="3",
             ),
-            rx.button(
+            ghost_button_sm(
                 "Add Metric",
                 on_click=FrameworkState.add_metric_to_form,
-                size="2",
                 disabled=FrameworkState.new_metric_name == "",
-                style=BTN_GHOST_SM,
             ),
             spacing="3",
             width="100%",
@@ -196,14 +196,14 @@ def add_metric_selector() -> rx.Component:
 def metrics_management_panel() -> rx.Component:
     return rx.vstack(
         rx.hstack(
-            rx.text("METRICS", style=LABEL_STYLE),
+            label_text("METRICS"),
             rx.spacer(),
             rx.button(
                 rx.icon("plus", size=12),
                 "Add",
                 on_click=FrameworkState.open_add_metric_dialog,
                 size="2",
-                style=BTN_SECONDARY,
+                style=BUTTON_SECONDARY,
             ),
             width="100%",
             align="center",
@@ -229,7 +229,7 @@ def _input_with_error(
     error_key: str,
 ) -> rx.Component:
     return rx.vstack(
-        rx.input(
+        text_input(
             placeholder=placeholder,
             value=value,
             on_change=on_change,
@@ -281,32 +281,29 @@ def add_framework_dialog() -> rx.Component:
                     rx.flex(
                         field(
                             "Industry *",
-                            rx.select(
-                                ["general", "bank", "financial_services"],
+                            select_input(
+                                items=["general", "bank", "financial_services"],
                                 value=FrameworkState.form_industry,
                                 on_change=FrameworkState.set_form_industry,
                                 size="3",
-                                style=SELECT_STYLE,
                             ),
                         ),
                         field(
                             "Scope *",
-                            rx.select(
-                                ["fundamental", "technical"],
+                            select_input(
+                                items=["fundamental", "technical"],
                                 value=FrameworkState.form_scope,
                                 on_change=FrameworkState.set_form_scope,
                                 size="3",
-                                style=SELECT_STYLE,
                             ),
                         ),
                         field(
                             "Complexity *",
-                            rx.select(
-                                ["beginner-friendly", "complex"],
+                            select_input(
+                                items=["beginner-friendly", "complex"],
                                 value=FrameworkState.form_complexity,
                                 on_change=FrameworkState.set_form_complexity,
                                 size="3",
-                                style=SELECT_STYLE,
                             ),
                         ),
                         gap="1rem",
@@ -315,7 +312,7 @@ def add_framework_dialog() -> rx.Component:
                     ),
                     rx.vstack(
                         rx.hstack(
-                            rx.text("Description", style=LABEL_STYLE),
+                            label_text("Description"),
                             rx.spacer(),
                             rx.text(
                                 f"{FrameworkState.form_description.length()} / {DESC_CHAR_LIMIT}",
@@ -324,12 +321,11 @@ def add_framework_dialog() -> rx.Component:
                             ),
                             width="100%",
                         ),
-                        rx.text_area(
+                        text_area_input(
                             placeholder="Describe this framework's strategy and goals...",
                             value=FrameworkState.form_description,
                             on_change=FrameworkState.set_form_description,
                             size="3",
-                            style=INPUT_STYLE,
                             max_length=DESC_CHAR_LIMIT,
                             min_height="12rem",
                             resize="vertical",
@@ -368,19 +364,17 @@ def add_framework_dialog() -> rx.Component:
         ),
         rx.hstack(
             rx.spacer(),
-            rx.button(
+            ghost_button(
                 "Cancel",
                 on_click=FrameworkState.close_add_dialog,
                 size="3",
-                style=BTN_GHOST,
             ),
-            rx.button(
+            ghost_button(
                 "Add Framework",
                 on_click=FrameworkState.submit_framework,
                 size="3",
                 disabled=(FrameworkState.form_title == "")
                 | (FrameworkState.form_author == ""),
-                style=BTN_GHOST,
             ),
             spacing="3",
             width="100%",

@@ -25,10 +25,7 @@ from ourportfolios.utils.preprocessing.formatters import (
 )
 from ourportfolios.utils.session_manager import (
     SessionIsolatedStateMixin,
-    session_isolated,
 )
-
-_MIN_CATEGORY_TUPLE_ITEMS = 2
 
 
 class TickersPageState(SessionIsolatedStateMixin, rx.State):
@@ -205,8 +202,11 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
             if metric_data:
                 latest_period = metric_data[-1]
                 for ticker in self.compare_list:
-                    if ticker in latest_period:
-                        latest[ticker][metric_key] = latest_period[ticker]
+                    try:
+                        if ticker in latest_period:
+                            latest[ticker][metric_key] = latest_period[ticker]
+                    except (TypeError, KeyError):
+                        pass
         return dict(latest)
 
     @rx.var
@@ -220,22 +220,29 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
             formatted_stock["symbol"] = ticker
             formatted_stock["industry"] = stock.get("industry", "Unknown")
             formatted_stock["company_name"] = stock.get("company_name", "")
-            if "market_cap" in stock:
-                formatted_stock["market_cap"] = format_large_number(
-                    stock["market_cap"],
-                    decimals=2,
-                )
-            for metric_name in self.selected_metrics:
-                if (
-                    ticker in latest_values_by_ticker
-                    and metric_name in latest_values_by_ticker[ticker]
-                ):
-                    value = latest_values_by_ticker[ticker][metric_name]
-                    formatted_stock[metric_name] = self._format_value(
-                        metric_name,
-                        value,
+            try:
+                if stock.get("market_cap") is not None:
+                    formatted_stock["market_cap"] = format_large_number(
+                        stock["market_cap"],
+                        decimals=2,
                     )
-                elif metric_name in stock:
+            except (TypeError, KeyError):
+                pass
+            for metric_name in self.selected_metrics:
+                try:
+                    if (
+                        ticker in latest_values_by_ticker
+                        and metric_name in latest_values_by_ticker[ticker]
+                    ):
+                        value = latest_values_by_ticker[ticker][metric_name]
+                        formatted_stock[metric_name] = self._format_value(
+                            metric_name,
+                            value,
+                        )
+                        continue
+                except (TypeError, KeyError):
+                    pass
+                if metric_name in stock:
                     formatted_stock[metric_name] = self._format_value(
                         metric_name,
                         stock[metric_name],
@@ -284,10 +291,13 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                 for stock in stocks:
                     ticker_value = stock.get("symbol", "")
                     ticker = ticker_value if isinstance(ticker_value, str) else ""
-                    if ticker in latest_values and metric in latest_values[ticker]:
-                        val = latest_values[ticker][metric]
-                        if val is not None and isinstance(val, (int, float)):
-                            values.append((float(val), ticker))
+                    try:
+                        if ticker in latest_values and metric in latest_values[ticker]:
+                            val = latest_values[ticker][metric]
+                            if val is not None and isinstance(val, (int, float)):
+                                values.append((float(val), ticker))
+                    except (TypeError, KeyError):
+                        pass
                 if values:
                     best_ticker = (min if metric in lower_is_better else max)(
                         values,
@@ -525,12 +535,10 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
             tbs.selected_exchange = set(self.applied_exchange)
 
     @rx.event
-    @session_isolated
     async def get_all_industries(self) -> None:
         self.industry_filter = await self._load_industries()
 
     @rx.event
-    @session_isolated
     async def get_all_exchanges(self) -> None:
         self.exchange_filter = await self._load_exchanges()
 
@@ -717,32 +725,25 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         self.show_graphs = not self.show_graphs
 
     @rx.event
-    @session_isolated
     async def toggle_time_period(self, *, checked: bool) -> None:
         async with self:
             self.time_period = "year" if checked else "quarter"
         await self.fetch_historical_data()
 
     @rx.event(background=True)
-    @session_isolated
-    async def add_ticker_to_compare(self, ticker: str):  # noqa: C901,PLR0911,PLR0912,PLR0915
+    async def add_ticker_to_compare(self, ticker: str):
         # ── Phase 1: guard + optimistic update
         duplicate = False
         time_period_copy = "quarter"
         needs_metrics = False
-        try:
-            async with self:
-                if not self.is_mounted():
-                    return
-                if ticker in self.compare_list:
-                    duplicate = True
-                else:
-                    self.is_loading_data = True
-                    time_period_copy = self.time_period
-                    self.compare_list = [*self.compare_list, ticker]
-                    needs_metrics = not self.all_metrics
-        except asyncio.CancelledError:
-            return
+        async with self:
+            if ticker in self.compare_list:
+                duplicate = True
+            else:
+                self.is_loading_data = True
+                time_period_copy = self.time_period
+                self.compare_list = [*self.compare_list, ticker]
+                needs_metrics = not self.all_metrics
 
         if duplicate:
             yield rx.toast.error(f"{ticker} is already in the comparison!")
@@ -759,7 +760,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                         OverviewORM.market_cap,
                         ProfileORM.company_name,
                     )
-                    .join(ProfileORM, OverviewORM.symbol == ProfileORM.symbol)
+                    .outerjoin(ProfileORM, OverviewORM.symbol == ProfileORM.symbol)
                     .where(OverviewORM.symbol == ticker)
                 )
                 result = await session.execute(stmt)
@@ -777,31 +778,26 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                         period=time_period_copy,
                     )
                     all_metrics = {}
-                try:
-                    async with self:
-                        if not self.is_mounted():
-                            return
-                        self.stocks = [*self.stocks, dict(row)]
-                        cache_key = f"{ticker}_{time_period_copy}"
-                        self._data_cache[cache_key] = data
-                        self.historical_data = (
-                            self._merge_one_ticker_into_historical_data(
-                                ticker,
-                                data,
-                                self.historical_data,
-                                time_period_copy,
-                            )
+                async with self:
+                    self.stocks = [*self.stocks, dict(row)]
+                    cache_key = f"{ticker}_{time_period_copy}"
+                    self._data_cache[cache_key] = data
+                    self.historical_data = (
+                        self._merge_one_ticker_into_historical_data(
+                            ticker,
+                            data,
+                            self.historical_data,
+                            time_period_copy,
                         )
-                        if all_metrics and not self.all_metrics:
-                            self.all_metrics = all_metrics
-                        if not self.selected_metrics and self.all_metrics:
-                            all_m: list[str] = []
-                            for ms in self.all_metrics.values():
-                                all_m.extend(ms)
-                            self.selected_metrics = all_m
-                            self.pending_metrics = list(all_m)
-                except asyncio.CancelledError:
-                    return
+                    )
+                    if all_metrics and not self.all_metrics:
+                        self.all_metrics = all_metrics
+                    if not self.selected_metrics and self.all_metrics:
+                        all_m: list[str] = []
+                        for ms in self.all_metrics.values():
+                            all_m.extend(ms)
+                        self.selected_metrics = all_m
+                        self.pending_metrics = list(all_m)
                 yield rx.toast.success(
                     f"{ticker} added to Compare",
                     action={
@@ -812,32 +808,18 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                     duration=5000,
                 )
             else:
-                try:
-                    async with self:
-                        if not self.is_mounted():
-                            return
-                        self.compare_list = [
-                            t for t in self.compare_list if t != ticker
-                        ]
-                except asyncio.CancelledError:
-                    return
-                yield rx.toast.error(f"No data found for {ticker}")
-        except (ValueError, KeyError, RuntimeError):
-            try:
                 async with self:
                     self.compare_list = [t for t in self.compare_list if t != ticker]
-            except asyncio.CancelledError:
-                return
+                yield rx.toast.error(f"No data found for {ticker}")
+        except Exception:  # noqa: BLE001
+            async with self:
+                self.compare_list = [t for t in self.compare_list if t != ticker]
             yield rx.toast.error(f"Error loading {ticker}")
         finally:
-            try:
-                async with self:
-                    self.is_loading_data = False
-            except asyncio.CancelledError:
-                pass
+            async with self:
+                self.is_loading_data = False
 
     @rx.event
-    @session_isolated
     async def import_from_cart(self) -> None:
         async with self:
             cart_state = await self.get_state(CartState)
@@ -846,7 +828,6 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         await self.fetch_historical_data()
 
     @rx.event
-    @session_isolated
     async def fetch_stocks_from_compare(self) -> None:
         async with self:
             if not self.compare_list:
@@ -863,7 +844,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                         OverviewORM.market_cap,
                         ProfileORM.company_name,
                     )
-                    .join(ProfileORM, OverviewORM.symbol == ProfileORM.symbol)
+                    .outerjoin(ProfileORM, OverviewORM.symbol == ProfileORM.symbol)
                     .where(OverviewORM.symbol.in_(compare_list_copy))
                 )
                 result = await session.execute(stmt)
@@ -874,12 +855,10 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
             self.stocks = stocks
 
     @rx.event
-    @session_isolated
     async def discover_all_metrics_from_db(self) -> None:
         self.all_metrics = await self._discover_metrics()
 
     @rx.event
-    @session_isolated
     async def fetch_historical_data(self) -> None:
         async with self:
             if not self.compare_list:
@@ -924,7 +903,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                 self.is_loading_historical = False
 
     @staticmethod
-    def _merge_one_ticker_into_historical_data(  # noqa: C901,PLR0912
+    def _merge_one_ticker_into_historical_data(  # noqa: C901, PLR0912
         ticker: str,
         ticker_data: object,
         existing: dict[str, list[dict[str, object]]],
@@ -940,14 +919,9 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         ticker_metric_periods: defaultdict[str, dict[str, object]] = defaultdict(dict)
         new_periods_ordered: list[str] = []
         for raw_category_data in categorized_ratios.values():
-            if (
-                not isinstance(raw_category_data, tuple)
-                or len(raw_category_data) < _MIN_CATEGORY_TUPLE_ITEMS
-            ):
+            if not isinstance(raw_category_data, list) or not raw_category_data:
                 continue
-            category_data = raw_category_data[1]
-            if not isinstance(category_data, list) or not category_data:
-                continue
+            category_data = raw_category_data
             df = pd.DataFrame(category_data)
             if df.empty:
                 continue
@@ -957,13 +931,13 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                 df["period"] = (
                     "Q" + df["Quarter"].astype(str) + " " + df["Year"].astype(str)
                 )
-                df = df.sort_values(by=["Year", "Quarter"], ascending=False)
+                df = df.sort_values(by=["Year", "Quarter"], ascending=True)
             else:
                 if "Quarter" in df.columns:
                     continue
                 df["period"] = df["Year"].astype(str)
-                df = df.sort_values(by="Year", ascending=False)
-            df = df.head(max_periods)
+                df = df.sort_values(by="Year", ascending=True)
+            df = df.tail(max_periods)
             available_columns = [
                 c for c in df.columns if c not in {"Year", "Quarter", "period"}
             ]
@@ -993,7 +967,7 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
         return result
 
     @staticmethod
-    def _extract_historical_data_static(  # noqa: C901,PLR0912
+    def _extract_historical_data_static(  # noqa: C901, PLR0912
         ticker_data: dict[str, object],
         time_period: str,
     ) -> dict[str, list[dict[str, object]]]:
@@ -1011,14 +985,9 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
             if not isinstance(categorized_ratios, dict):
                 continue
             for raw_category_data in categorized_ratios.values():
-                if (
-                    not isinstance(raw_category_data, tuple)
-                    or len(raw_category_data) < _MIN_CATEGORY_TUPLE_ITEMS
-                ):
+                if not isinstance(raw_category_data, list) or not raw_category_data:
                     continue
-                category_data = raw_category_data[1]
-                if not isinstance(category_data, list) or not category_data:
-                    continue
+                category_data = raw_category_data
                 df = pd.DataFrame(category_data)
                 if df.empty:
                     continue
@@ -1028,13 +997,13 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
                     df["period"] = (
                         "Q" + df["Quarter"].astype(str) + " " + df["Year"].astype(str)
                     )
-                    df = df.sort_values(by=["Year", "Quarter"], ascending=False)
+                    df = df.sort_values(by=["Year", "Quarter"], ascending=True)
                 else:
                     if "Quarter" in df.columns:
                         continue
                     df["period"] = df["Year"].astype(str)
-                    df = df.sort_values(by="Year", ascending=False)
-                df = df.head(max_periods)
+                    df = df.sort_values(by="Year", ascending=True)
+                df = df.tail(max_periods)
                 available_columns = [
                     c for c in df.columns if c not in {"Year", "Quarter", "period"}
                 ]
@@ -1067,8 +1036,11 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
             if metric_data:
                 latest_period = metric_data[-1]
                 for ticker in compare_list:
-                    if ticker in latest_period:
-                        latest[ticker][metric_key] = latest_period[ticker]
+                    try:
+                        if ticker in latest_period:
+                            latest[ticker][metric_key] = latest_period[ticker]
+                    except (TypeError, KeyError):
+                        pass
         return dict(latest)
 
     @staticmethod

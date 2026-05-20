@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import reflex as rx
 
-from ourportfolios.components.cards import glass_card
 from ourportfolios.pages.home.components.card_shell import (
     CARD_HEADER_HEIGHT,
     CARD_PREVIEW_SURFACE_HEIGHT,
@@ -14,7 +13,11 @@ from ourportfolios.pages.home.components.card_shell import (
 )
 from ourportfolios.state.framework_state import GlobalFrameworkState
 from ourportfolios.state.home_state import HomeState
-from ourportfolios.styles import PREVIEW_BOX_STYLE, accent_btn, blue, green, white
+from ourportfolios.ui.primitives import glass_box
+from ourportfolios.ui.theme.colors import TEXT_TERTIARY, blue, green, white
+from ourportfolios.ui.theme.components import accent_button
+from ourportfolios.ui.theme.surfaces import PREVIEW_BOX_STYLE
+from ourportfolios.ui.tokens import RADIUS_5XS, RADIUS_BUTTON, RADIUS_PILL
 
 _HUB_CSS = """
 .hub-card { contain: layout style; }
@@ -51,7 +54,7 @@ def _compare_col(color: str) -> rx.Component:
         rx.box(
             width="3.5rem",
             height="0.75rem",
-            border_radius="0.25rem",
+            border_radius=RADIUS_5XS,
             background=color,
             class_name="compare-bar-inner",
             # No style prop — transform/transition handled entirely by CSS class above
@@ -67,7 +70,7 @@ def _compare_row(col1: str, col2: str) -> rx.Component:
         rx.box(
             width="3.5rem",
             height="1.25rem",
-            border_radius="0.375rem",
+            border_radius=RADIUS_PILL,
             background=white(0.06),
         ),
         _compare_col(col1),
@@ -76,7 +79,7 @@ def _compare_row(col1: str, col2: str) -> rx.Component:
         align="center",
         width="100%",
         padding="0.5rem 0.625rem",
-        border_radius="0.5rem",
+        border_radius=RADIUS_BUTTON,
         background=white(0.02),
         border=f"1px solid {white(0.04)}",
     )
@@ -102,7 +105,7 @@ def _perf_bar(hover_width: str, hover_color: str) -> rx.Component:
         rx.box(
             width="1.875rem",
             height="0.6875rem",
-            border_radius="0.25rem",
+            border_radius=RADIUS_5XS,
             background=white(0.06),
         ),
         rx.box(
@@ -110,7 +113,7 @@ def _perf_bar(hover_width: str, hover_color: str) -> rx.Component:
                 class_name="perf-bar-fill",
                 width="100%",
                 height="100%",
-                border_radius="0.25rem",
+                border_radius=RADIUS_5XS,
                 # Only CSS variable set inline — safe, no specificity conflict
                 style={
                     "--bar-scale": scale,
@@ -121,7 +124,7 @@ def _perf_bar(hover_width: str, hover_color: str) -> rx.Component:
             width="100%",
             height="0.6875rem",
             background=white(0.04),
-            border_radius="0.25rem",
+            border_radius=RADIUS_5XS,
             overflow="hidden",
             flex="1",
         ),
@@ -183,7 +186,7 @@ def _hub_card(  # noqa: PLR0913
                     rx.text(
                         description,
                         size="2",
-                        color=white(0.38),
+                        color=TEXT_TERTIARY,
                         line_height="1.65",
                         style={
                             "display": "-webkit-box",
@@ -203,7 +206,7 @@ def _hub_card(  # noqa: PLR0913
             ),
             preview,
             rx.spacer(),
-            accent_btn(cta_label, on_click=on_click),
+            accent_button(cta_label, on_click=on_click),
             spacing="4",
             width="100%",
             height="100%",
@@ -293,7 +296,7 @@ def _skeleton_row(icon_name: str, index: int) -> rx.Component:
                 rx.icon(icon_name, size=15, color=white(0.2)),
                 background=white(0.05),
                 border=f"1px solid {white(0.06)}",
-                border_radius="0.5rem",
+                border_radius=RADIUS_BUTTON,
                 padding="0.4375rem",
                 display="flex",
                 align_items="center",
@@ -330,7 +333,7 @@ def _glass_row(icon_name: str, title: str, description: str) -> rx.Component:
             rx.icon(icon_name, size=15, color=white(0.55)),
             background=white(0.06),
             border=f"1px solid {white(0.08)}",
-            border_radius="0.5rem",
+            border_radius=RADIUS_BUTTON,
             padding="0.4375rem",
             display="flex",
             align_items="center",
@@ -447,7 +450,7 @@ def select_framework_card() -> rx.Component:
                     rx.text(
                         "Define your strategy. Choose from Growth, Value, or Dividend focused models.",
                         size="2",
-                        color=white(0.38),
+                        color=TEXT_TERTIARY,
                         line_height="1.65",
                         style=HUB_CARD_TEXT_CLAMP,
                     ),
@@ -462,7 +465,7 @@ def select_framework_card() -> rx.Component:
             ),
             _framework_preview(),
             rx.spacer(),
-            accent_btn("Browse Frameworks", href="/framework"),
+            accent_button("Browse Frameworks", href="/framework"),
             spacing="4",
             width="100%",
             height="100%",
@@ -486,7 +489,7 @@ def select_framework_card() -> rx.Component:
 def selected_framework_card():
     return rx.cond(
         GlobalFrameworkState.has_selected_framework,
-        glass_card(
+        glass_box(
             rx.vstack(
                 rx.text(
                     "Selected Framework",
@@ -537,7 +540,7 @@ def selected_framework_card():
                         min_width="0",
                     ),
                     rx.spacer(),
-                    accent_btn(
+                    accent_button(
                         "Change",
                         icon="refresh-cw",
                         href="/framework",
@@ -553,7 +556,7 @@ def selected_framework_card():
             padding="1.125rem 1.25rem",
             width="100%",
         ),
-        glass_card(
+        glass_box(
             rx.vstack(
                 rx.text(
                     "Selected Framework",
@@ -578,7 +581,7 @@ def selected_framework_card():
                     width="100%",
                 ),
                 rx.spacer(),
-                accent_btn("Select Framework", href="/framework"),
+                accent_button("Select Framework", href="/framework"),
                 spacing="3",
                 align="start",
                 width="100%",

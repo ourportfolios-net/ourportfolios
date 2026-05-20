@@ -6,9 +6,14 @@ from ourportfolios.components.graph import pct_change_badge
 from ourportfolios.pages.tickers.state import TickersPageState
 from ourportfolios.state import TickerBoardState
 from ourportfolios.state.cart_state import CartState
-from ourportfolios.styles import (
-    BTN_GHOST_XS,
-    CARD_BG,
+from ourportfolios.ui.primitives import (
+    ghost_button_xs,
+    icon_button_xs,
+    skeleton_box,
+    surface_box,
+)
+from ourportfolios.ui.theme import (
+    BUTTON_COMPARE,
     CARD_BORDER,
     DIVIDER,
     TEXT_MUTED,
@@ -16,16 +21,7 @@ from ourportfolios.styles import (
     TEXT_TERTIARY,
     white,
 )
-
-_COMPARE_BTN: dict[str, object] = {
-    **BTN_GHOST_XS,
-    "color": "rgba(139,92,246,0.55)",
-    "_hover": {
-        "background": "rgba(139,92,246,0.1)",
-        "color": "rgba(139,92,246,0.9)",
-        "border_color": "rgba(139,92,246,0.3)",
-    },
-}
+from ourportfolios.ui.theme.surfaces import RADIUS_CARD, RADIUS_PILL
 
 _SKELETON_ROW_COUNT = 12
 _BOARD_H = "42em"
@@ -53,30 +49,23 @@ def _compact_number(val: float) -> rx.Component:
     )
 
 
-def _cart_btn(symbol: str) -> rx.Component:
-    return rx.button(
-        rx.icon("shopping-cart", size=13),
+def _cart_button(symbol: str) -> rx.Component:
+    return icon_button_xs(
+        "shopping-cart",
         on_click=[rx.stop_propagation, CartState.add_item(symbol)],
-        size="1",
-        style=BTN_GHOST_XS,
     )
 
 
-def _compare_btn(symbol: str) -> rx.Component:
-    return rx.button(
-        rx.icon("between_horizontal_start", size=13),
+def _compare_button(symbol: str) -> rx.Component:
+    return icon_button_xs(
+        "between_horizontal_start",
         on_click=[rx.stop_propagation, TickersPageState.add_ticker_to_compare(symbol)],
-        size="1",
-        style=_COMPARE_BTN,
+        style=BUTTON_COMPARE,
     )
 
 
 def _skel(w: str, h: str = "0.8125rem") -> rx.Component:
-    return rx.skeleton(
-        rx.box(width=w, height=h),
-        loading=True,
-        border_radius="0.3125rem",
-    )
+    return skeleton_box(width=w, height=h, radius="0.3125rem")
 
 
 # ── Sort indicator ─────────────────────────────────────────────────────────────
@@ -181,7 +170,7 @@ def ticker_row(ticker: dict) -> rx.Component:
             # LEFT — identity
             rx.vstack(
                 rx.hstack(
-                    # Symbol wrapped in rx.link so right-click → open in new tab
+                    # Symbol wrapped in rx.link so right-click -> open in new tab
                     rx.link(
                         rx.text(
                             symbol,
@@ -203,7 +192,7 @@ def ticker_row(ticker: dict) -> rx.Component:
                             variant="soft",
                             color_scheme="gray",
                             size="1",
-                            border_radius="0.375rem",
+                            border_radius=RADIUS_PILL,
                             font_size="0.625rem",
                             letter_spacing="0.03em",
                             max_width=rx.breakpoints(initial="5rem", sm="7rem"),
@@ -278,10 +267,10 @@ def ticker_row(ticker: dict) -> rx.Component:
                 ),
                 # Actions — stop_propagation prevents row navigation
                 rx.hstack(
-                    rx.tooltip(_cart_btn(symbol), content="Add to cart"),
+                    rx.tooltip(_cart_button(symbol), content="Add to cart"),
                     rx.box(
                         rx.tooltip(
-                            _compare_btn(symbol),
+                            _compare_button(symbol),
                             content="Add to comparison",
                         ),
                         display=rx.breakpoints(initial="none", sm="flex"),
@@ -352,17 +341,14 @@ def _skeleton_row() -> rx.Component:
 
 
 def skeleton_list() -> rx.Component:
-    return rx.box(
+    return surface_box(
         rx.vstack(
             *[_skeleton_row() for _ in range(_SKELETON_ROW_COUNT)],
             spacing="0",
             width="100%",
         ),
-        border_radius="0.875rem",
-        border=CARD_BORDER,
-        background=CARD_BG,
+        padding="0",
         overflow="hidden",
-        width="100%",
     )
 
 
@@ -372,12 +358,9 @@ def skeleton_list() -> rx.Component:
 def _empty_state() -> rx.Component:
     return rx.center(
         rx.vstack(
-            rx.box(
+            surface_box(
                 rx.icon("search-x", size=28, color=TEXT_MUTED),
                 padding="1.25em",
-                border_radius="0.875rem",
-                background=CARD_BG,
-                border=CARD_BORDER,
                 display="flex",
                 align_items="center",
                 justify_content="center",
@@ -404,14 +387,12 @@ def _empty_state() -> rx.Component:
                 ),
                 rx.fragment(),
             ),
-            rx.button(
+            ghost_button_xs(
                 "Retry",
                 on_click=[
                     TickerBoardState.load_tickers,
                     TickersPageState.auto_load_data,
                 ],
-                size="1",
-                style=BTN_GHOST_XS,
             ),
             spacing="3",
             align="center",
@@ -441,9 +422,9 @@ def new_ticker_board() -> rx.Component:
                     type="hover",
                     style={"flex": "1", "width": "100%"},
                 ),
-                border_radius="0.875rem",
+                border_radius=RADIUS_CARD,
                 border=CARD_BORDER,
-                background=CARD_BG,
+                background="rgba(255, 255, 255, 0.03)",
                 overflow="hidden",
                 width="100%",
                 height=_BOARD_H,

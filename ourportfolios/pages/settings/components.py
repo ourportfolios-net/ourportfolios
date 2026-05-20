@@ -9,31 +9,39 @@ from ourportfolios.components.category_toggle_card import category_toggle_card
 from ourportfolios.components.common_dialog import CommonDialogConfig, common_dialog
 from ourportfolios.pages.settings.state import DEFAULT_PERIOD_OPTIONS, SettingsState
 from ourportfolios.state.auth_state import AuthState
-from ourportfolios.styles import (
-    BTN_GHOST_SM,
-    CARD_BG,
+from ourportfolios.ui.primitives import (
+    body_text,
+    divider,
+    heading,
+    icon_container,
+    label_text,
+    muted_text,
+    spacer,
+    subheading,
+    surface_box,
+)
+from ourportfolios.ui.theme import (
+    BUTTON_GHOST_SM,
     CARD_BORDER,
-    DIVIDER,
     ERROR_COLOR,
     INPUT_STYLE,
-    LABEL_STYLE,
     TEXT_MUTED,
     TEXT_PRIMARY,
-    TEXT_SECONDARY,
-    TEXT_TERTIARY,
-    icon_box,
     red,
     white,
 )
+from ourportfolios.ui.theme.surfaces import (
+    RADIUS_4XS,
+    RADIUS_BUTTON,
+    RADIUS_PILL,
+    RADIUS_SURFACE,
+)
+from ourportfolios.ui.tokens import RADIUS_2XS
 
 # Type Aliases for cleaner code
 StyleDict = dict[str, Any]
 EventHandler = rx.event.EventSpec | list[rx.event.EventSpec] | Callable | Any
 # ── Primitives ────────────────────────────────────────────────────────────────
-
-
-def _divider() -> rx.Component:
-    return rx.box(height="1px", background=DIVIDER, width="100%")
 
 
 def _input_compact_style() -> StyleDict:
@@ -54,9 +62,9 @@ def _input_dialog_style() -> StyleDict:
     }
 
 
-def _ghost_btn_style() -> StyleDict:
+def _ghost_button_style() -> StyleDict:
     return {
-        **BTN_GHOST_SM,
+        **BUTTON_GHOST_SM,
         "height": "2.125rem",
         "padding": "0 0.875rem",
         "display": "inline-flex",
@@ -68,28 +76,15 @@ def _ghost_btn_style() -> StyleDict:
     }
 
 
-def _label(text: str | rx.Var[str]) -> rx.Component:
-    return rx.text(text, style=LABEL_STYLE)
-
-
-def _dialog_label(text: str | rx.Var[str]) -> rx.Component:
-    return rx.text(
-        text,
-        size="2",
-        font_weight="500",
-        color=TEXT_SECONDARY,
-    )
-
-
-def _ghost_btn(label: str, on_click: EventHandler) -> rx.Component:
+def _ghost_button(label: str, on_click: EventHandler) -> rx.Component:
     return rx.box(
         rx.text(label, size="2", font_weight="500"),
         on_click=on_click,
-        **_ghost_btn_style(),
+        **_ghost_button_style(),
     )
 
 
-def _loading_btn(
+def _loading_button(
     label: str,
     on_click: EventHandler,
     *,
@@ -107,7 +102,7 @@ def _loading_btn(
             rx.text(label, size="2", font_weight="500"),
         ),
         on_click=on_click,
-        **_ghost_btn_style(),
+        **_ghost_button_style(),
     )
 
 
@@ -121,7 +116,7 @@ def _feedback(msg: str | rx.Var[str], *, is_error: bool = False) -> rx.Component
     )
 
 
-def _password_action_btn() -> rx.Component:
+def _password_action_button() -> rx.Component:
     return rx.text(
         "Change password",
         size="1",
@@ -156,28 +151,22 @@ def _dlg_header(
 ) -> rx.Component:
     return rx.hstack(
         rx.vstack(
-            rx.text(
-                title,
-                size="4",
-                weight="bold",
-                color=TEXT_PRIMARY,
-                letter_spacing="-0.02em",
-            ),
+            heading(title, level=3, letter_spacing="-0.02em"),
             rx.cond(
                 subtitle != "",
-                rx.text(subtitle, size="2", color=TEXT_TERTIARY),
+                muted_text(subtitle),
                 rx.fragment(),
             ),
             spacing="0",
             align="start",
         ),
-        rx.spacer(),
+        spacer(),
         rx.dialog.close(
             rx.box(
                 rx.icon("x", size=15, color=white(0.35)),
                 on_click=on_close,
                 padding="0.3rem",
-                border_radius="0.375rem",
+                border_radius=RADIUS_PILL,
                 background="transparent",
                 border="1px solid transparent",
                 cursor="pointer",
@@ -199,14 +188,7 @@ def _dlg_header(
 
 
 def _card(*children: rx.Component, border: str = CARD_BORDER) -> rx.Component:
-    return rx.box(
-        *children,
-        background=CARD_BG,
-        border=border,
-        border_radius="0.875rem",
-        width="100%",
-        overflow="hidden",
-    )
+    return surface_box(*children, padding="0", border=border, overflow="hidden")
 
 
 def _card_header(
@@ -216,16 +198,10 @@ def _card_header(
     color: str = "purple",
 ) -> rx.Component:
     return rx.hstack(
-        icon_box(icon_name, color=color),
+        icon_container(icon_name, color=color),
         rx.vstack(
-            rx.text(
-                title,
-                size="3",
-                weight="bold",
-                color=TEXT_PRIMARY,
-                letter_spacing="-0.01em",
-            ),
-            rx.text(subtitle, size="2", color=TEXT_TERTIARY),
+            subheading(title, color=TEXT_PRIMARY, letter_spacing="-0.01em"),
+            muted_text(subtitle),
             spacing="0",
         ),
         spacing="3",
@@ -251,7 +227,7 @@ def _password_dialog() -> rx.Component:
 
     content = rx.vstack(
         rx.vstack(
-            _dialog_label("Current password"),
+            body_text("Current password", font_weight="500"),
             rx.input(
                 placeholder="Current password",
                 value=SettingsState.old_password,
@@ -269,7 +245,7 @@ def _password_dialog() -> rx.Component:
         ),
         rx.vstack(
             rx.vstack(
-                _dialog_label("New password"),
+                body_text("New password", font_weight="500"),
                 rx.input(
                     placeholder="At least 8 characters",
                     value=SettingsState.new_password,
@@ -286,7 +262,7 @@ def _password_dialog() -> rx.Component:
                 align="start",
             ),
             rx.vstack(
-                _dialog_label("Confirm new password"),
+                body_text("Confirm new password", font_weight="500"),
                 rx.input(
                     placeholder="Repeat your new password",
                     value=SettingsState.confirm_password,
@@ -311,8 +287,8 @@ def _password_dialog() -> rx.Component:
             rx.fragment(),
         ),
         rx.hstack(
-            _ghost_btn("Cancel", on_click=SettingsState.close_password_dialog),
-            _loading_btn(
+            _ghost_button("Cancel", on_click=SettingsState.close_password_dialog),
+            _loading_button(
                 "Update password",
                 on_click=SettingsState.save_password,
                 loading_var=SettingsState.loading_password,
@@ -346,23 +322,21 @@ def _password_dialog() -> rx.Component:
 
 def _delete_dialog() -> rx.Component:
     content = rx.vstack(
-        rx.text(
+        body_text(
             "This permanently removes all your data. There is no way to undo this.",
-            size="2",
             color=white(0.62),
         ),
         rx.vstack(
             rx.flex(
-                rx.text("Type", size="2", color=white(0.58)),
-                rx.text(
+                body_text("Type", color=white(0.58)),
+                body_text(
                     SettingsState.delete_confirmation_token,
-                    size="2",
                     font_weight="700",
                     font_family="monospace",
                     color=red(0.82),
                     letter_spacing="0.02em",
                 ),
-                rx.text("to confirm.", size="2", color=white(0.58)),
+                body_text("to confirm.", color=white(0.58)),
                 gap="0.35rem",
                 align="center",
                 width="100%",
@@ -384,9 +358,9 @@ def _delete_dialog() -> rx.Component:
             _feedback(SettingsState.delete_error, is_error=True),
             rx.fragment(),
         ),
-        _divider(),
+        divider(),
         rx.hstack(
-            _ghost_btn("Cancel", on_click=SettingsState.close_delete_dialog),
+            _ghost_button("Cancel", on_click=SettingsState.close_delete_dialog),
             rx.box(
                 rx.cond(
                     SettingsState.loading_delete,
@@ -408,7 +382,7 @@ def _delete_dialog() -> rx.Component:
                 padding="0 0.875rem",
                 background=red(0.07),
                 border=f"1px solid {red(0.18)}",
-                border_radius="0.4375rem",
+                border_radius=RADIUS_2XS,
                 cursor="pointer",
                 transition="all 0.15s ease",
                 _hover={"background": red(0.12), "border_color": red(0.3)},
@@ -450,7 +424,7 @@ def profile_panel() -> rx.Component:
                         rx.flex(
                             rx.hstack(
                                 rx.vstack(
-                                    rx.text("Display name", size="1", color=TEXT_MUTED),
+                                    label_text("Display name"),
                                     rx.cond(
                                         SettingsState.display_name_editing,
                                         rx.input(
@@ -459,11 +433,10 @@ def profile_panel() -> rx.Component:
                                             **_input_compact_style(),
                                             max_width="20rem",
                                         ),
-                                        rx.text(
+                                        body_text(
                                             SettingsState.display_name,
-                                            size="3",
-                                            color=TEXT_PRIMARY,
                                             font_weight="500",
+                                            color=TEXT_PRIMARY,
                                         ),
                                     ),
                                     spacing="1",
@@ -482,7 +455,7 @@ def profile_panel() -> rx.Component:
                                         "Cancel",
                                         SettingsState.cancel_display_name_edit,
                                     ),
-                                    _loading_btn(
+                                    _loading_button(
                                         "Save",
                                         on_click=SettingsState.save_display_name,
                                         loading_var=SettingsState.loading_save,
@@ -504,12 +477,8 @@ def profile_panel() -> rx.Component:
                         rx.flex(
                             rx.hstack(
                                 rx.icon("mail", size=13, color=white(0.28)),
-                                rx.text("Email", size="1", color=TEXT_MUTED),
-                                rx.text(
-                                    AuthState.user_email,
-                                    size="2",
-                                    color=TEXT_PRIMARY,
-                                ),
+                                label_text("Email"),
+                                body_text(AuthState.user_email, color=TEXT_PRIMARY),
                                 spacing="2",
                                 align="center",
                                 min_width="0",
@@ -531,12 +500,12 @@ def profile_panel() -> rx.Component:
                         rx.flex(
                             rx.hstack(
                                 rx.icon("lock-keyhole", size=13, color=white(0.28)),
-                                rx.text("Password", size="1", color=TEXT_MUTED),
-                                rx.text("••••••••", size="2", color=TEXT_PRIMARY),
+                                label_text("Password"),
+                                body_text("••••••••", color=TEXT_PRIMARY),
                                 spacing="2",
                                 align="center",
                             ),
-                            _password_action_btn(),
+                            _password_action_button(),
                             align="center",
                             width="100%",
                             gap="1rem",
@@ -549,7 +518,7 @@ def profile_panel() -> rx.Component:
                     width="100%",
                     background=white(0.015),
                     border=f"1px solid {white(0.06)}",
-                    border_radius="0.75rem",
+                    border_radius=RADIUS_SURFACE,
                     padding=rx.breakpoints(initial="0.75rem", md="1rem"),
                 ),
                 spacing="3",
@@ -584,17 +553,8 @@ def delete_card() -> rx.Component:
     return _card(
         rx.flex(
             rx.vstack(
-                rx.text(
-                    "Delete account",
-                    size="2",
-                    weight="medium",
-                    color=TEXT_PRIMARY,
-                ),
-                rx.text(
-                    "Permanently removes your account and all associated data.",
-                    size="2",
-                    color=TEXT_MUTED,
-                ),
+                subheading("Delete account", color=TEXT_PRIMARY),
+                muted_text("Permanently removes your account and all associated data."),
                 spacing="1",
                 align="start",
                 flex="1",
@@ -606,7 +566,7 @@ def delete_card() -> rx.Component:
                 padding="0 0.875rem",
                 background=red(0.05),
                 border=f"1px solid {red(0.14)}",
-                border_radius="0.4375rem",
+                border_radius=RADIUS_2XS,
                 cursor="pointer",
                 transition="all 0.15s ease",
                 _hover={"background": red(0.1), "border_color": red(0.26)},
@@ -649,7 +609,7 @@ def _exp_card(label: str, description: str) -> rx.Component:
 # ── Period toggle ─────────────────────────────────────────────────────────────
 
 
-def _period_btn(period: str) -> rx.Component:
+def _period_button(period: str) -> rx.Component:
     is_active = SettingsState.default_chart_period == period
     return rx.box(
         rx.text(
@@ -661,7 +621,7 @@ def _period_btn(period: str) -> rx.Component:
         on_click=SettingsState.set_default_chart_period(period),
         height="1.625rem",
         padding="0 0.5625rem",
-        border_radius="0.3125rem",
+        border_radius=RADIUS_4XS,
         background=rx.cond(is_active, white(0.09), "transparent"),
         border=rx.cond(is_active, f"1px solid {white(0.14)}", "1px solid transparent"),
         cursor="pointer",
@@ -686,16 +646,9 @@ def preferences_panel() -> rx.Component:
         rx.box(
             rx.vstack(
                 rx.vstack(
-                    rx.text(
-                        "Experience level",
-                        size="2",
-                        weight="medium",
-                        color=TEXT_PRIMARY,
-                    ),
-                    rx.text(
+                    subheading("Experience level", color=TEXT_PRIMARY),
+                    muted_text(
                         "Affects UI complexity, tooltips, and suggested frameworks.",
-                        size="2",
-                        color=TEXT_MUTED,
                     ),
                     spacing="1",
                     align="start",
@@ -723,29 +676,20 @@ def preferences_panel() -> rx.Component:
         rx.box(
             rx.flex(
                 rx.vstack(
-                    rx.text(
-                        "Default chart period",
-                        size="2",
-                        weight="medium",
-                        color=TEXT_PRIMARY,
-                    ),
-                    rx.text(
-                        "The timeframe shown when you first open any ticker.",
-                        size="2",
-                        color=TEXT_MUTED,
-                    ),
+                    subheading("Default chart period", color=TEXT_PRIMARY),
+                    muted_text("The timeframe shown when you first open any ticker."),
                     spacing="0",
                     align="start",
                     flex="1",
                 ),
                 rx.hstack(
-                    *[_period_btn(p) for p in DEFAULT_PERIOD_OPTIONS],
+                    *[_period_button(p) for p in DEFAULT_PERIOD_OPTIONS],
                     spacing="0",
                     gap="0.125rem",
                     padding="0.1875rem",
                     background=white(0.03),
                     border=f"1px solid {white(0.07)}",
-                    border_radius="0.4375rem",
+                    border_radius=RADIUS_2XS,
                     flex_shrink="0",
                 ),
                 align="center",
@@ -766,13 +710,13 @@ def preferences_panel() -> rx.Component:
                     _feedback(SettingsState.save_error, is_error=True),
                     rx.cond(
                         SettingsState.prefs_dirty,
-                        rx.text("Unsaved changes", size="2", color=TEXT_MUTED),
+                        muted_text("Unsaved changes"),
                         rx.fragment(),
                     ),
                 ),
             ),
-            rx.spacer(),
-            _loading_btn(
+            spacer(),
+            _loading_button(
                 "Save changes",
                 on_click=SettingsState.save_all,
                 loading_var=SettingsState.loading_save,
@@ -808,7 +752,7 @@ def _nav_item(tab: str, icon_name: str, label: str) -> rx.Component:
         ),
         on_click=SettingsState.set_active_tab(tab),
         padding=rx.breakpoints(initial="0.4rem 0.625rem", md="0.5rem 0.75rem"),
-        border_radius="0.5rem",
+        border_radius=RADIUS_BUTTON,
         background=rx.cond(is_active, white(0.05), "transparent"),
         border=rx.cond(is_active, f"1px solid {white(0.09)}", "1px solid transparent"),
         cursor="pointer",

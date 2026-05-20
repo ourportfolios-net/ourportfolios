@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 import httpx
 import reflex as rx
 from reflex.event import EventCallback, EventSpec
-from supabase_auth.errors import AuthApiError
+from supabase_auth.errors import AuthError
 
 from ourportfolios.auth_config import (
     AUTH_AVAILABLE,
@@ -409,7 +409,7 @@ class AuthState(rx.State):
                 async with self:
                     self._store_session(response.user)
                 return None
-        except (AttributeError, TypeError, ValueError, AuthApiError):
+        except (AuthError, AttributeError, TypeError, ValueError):
             async with self:
                 self._clear_session()
             return None
@@ -472,19 +472,18 @@ class AuthState(rx.State):
                 ]
             self.error = "Invalid credentials."
             return rx.toast.error("Invalid email or password.", **_TOAST)
-        except (ValueError, RuntimeError) as e:
+        except (AuthError, ValueError, RuntimeError) as e:
             msg: str = str(e).lower()
             if "email not confirmed" in msg:
                 self.show_resend = True
                 self.error = "Please confirm your email before signing in."
             else:
-                self.error = str(e)
-                return rx.toast.error(f"Sign in failed: {e}", **_TOAST)
+                self.error = "Invalid email or password."
         finally:
             self.loading = False
 
     @rx.event
-    async def handle_register(self) -> list[EventSpec] | EventSpec:
+    async def handle_register(self) -> list[EventSpec] | EventSpec | None:
         if not AUTH_AVAILABLE:
             self._clear_form()
             destination: str = self._consume_intended_route()
@@ -495,7 +494,7 @@ class AuthState(rx.State):
 
         if self.password != self.confirm_password:
             self.error = "Passwords do not match."
-            return rx.toast.error("Passwords do not match.", **_TOAST)
+            return None
 
         self.loading = True
         self.error = ""
@@ -525,14 +524,9 @@ class AuthState(rx.State):
                         **_TOAST,
                     ),
                 ]
-            self.error = "Registration failed."
-            return rx.toast.error(
-                "Registration failed. Please try again.",
-                **_TOAST,
-            )
-        except (ValueError, RuntimeError) as e:
+            self.error = "Registration failed. Please try again."
+        except (AuthError, ValueError, RuntimeError) as e:
             self.error = str(e)
-            return rx.toast.error(f"Registration failed: {e}", **_TOAST)
         finally:
             self.loading = False
 
@@ -551,9 +545,8 @@ class AuthState(rx.State):
                 "Confirmation email resent. Check your inbox.",
                 **_TOAST,
             )
-        except (ValueError, RuntimeError) as e:
+        except (AuthError, ValueError, RuntimeError) as e:
             self.error = str(e)
-            return rx.toast.error(f"Failed to resend: {e}", **_TOAST)
         finally:
             self.resend_loading = False
 
@@ -575,7 +568,7 @@ class AuthState(rx.State):
             )
             url: str = f"{SUPABASE_URL}/auth/v1/authorize?{params}"
             return rx.redirect(url)
-        except (ValueError, RuntimeError) as e:
+        except (AuthError, ValueError, RuntimeError) as e:
             self.error = str(e)
             return rx.toast.error(f"Google sign in failed: {e}", **_TOAST)
 
@@ -602,7 +595,7 @@ class AuthState(rx.State):
                         **_TOAST,
                     ),
                 ]
-        except (ValueError, RuntimeError) as e:
+        except (AuthError, ValueError, RuntimeError) as e:
             self.error = str(e)
 
         return [
@@ -676,7 +669,7 @@ class AuthState(rx.State):
                     **_TOAST,
                 ),
             ]
-        except (ValueError, RuntimeError) as e:
+        except (AuthError, ValueError, RuntimeError) as e:
             self.error = str(e)
             return [
                 rx.redirect("/auth"),
@@ -735,7 +728,7 @@ class AuthState(rx.State):
                 supabase: Client = get_supabase()
                 supabase.auth.reset_password_email(self.forgot_email.strip())
             self.forgot_sent = True
-        except (ValueError, RuntimeError) as e:
+        except (AuthError, ValueError, RuntimeError) as e:
             self.forgot_error = str(e)
         finally:
             self.forgot_loading = False
@@ -763,7 +756,7 @@ class AuthState(rx.State):
             if response.session and response.user:
                 self._store_session(response.user, response.session)
                 return rx.redirect("/auth/reset-password")
-        except (ValueError, RuntimeError):
+        except (AuthError, ValueError, RuntimeError):
             self._clear_session()
 
         return [
@@ -790,7 +783,7 @@ class AuthState(rx.State):
             self.reset_new_password = ""
             self.reset_confirm_password = ""
             return rx.toast.success("Password updated! Please sign in.", **_TOAST)
-        except (ValueError, RuntimeError) as e:
+        except (AuthError, ValueError, RuntimeError) as e:
             self.reset_error = str(e)
             return rx.toast.error(f"Failed to update password: {e}", **_TOAST)
         finally:

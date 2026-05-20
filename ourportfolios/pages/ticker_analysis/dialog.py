@@ -4,9 +4,22 @@ import reflex as rx
 
 from ourportfolios.components.common_dialog import CommonDialogConfig, common_dialog
 from ourportfolios.pages.ticker_analysis.state import State
-from ourportfolios.styles import CARD_BORDER, white
+from ourportfolios.ui.primitives import surface_box
+from ourportfolios.ui.theme.colors import white
+from ourportfolios.ui.theme.surfaces import RADIUS_INPUT
+from ourportfolios.ui.tokens import TRANS_DEFAULT
 
-_CARD_RADIUS = "0.625rem"
+_PROFILE_TEXT_STYLE = {
+    "whiteSpace": "pre-wrap",
+    "wordWrap": "break-word",
+    "textAlign": "justify",
+    "lineHeight": "1.6",
+}
+
+_DIALOG_TRIGGER_HOVER = {
+    "background": white(0.045),
+    "border_color": white(0.13),
+}
 
 
 def company_profile_dialog():
@@ -18,12 +31,7 @@ def company_profile_dialog():
                 profile_data.get(content_key, ""),
                 size="3",
                 weight="regular",
-                style={
-                    "whiteSpace": "pre-wrap",
-                    "wordWrap": "break-word",
-                    "textAlign": "justify",
-                    "lineHeight": "1.6",
-                },
+                style=_PROFILE_TEXT_STYLE,
             ),
             value=tab_value,
             padding_top="0.8em",
@@ -52,7 +60,7 @@ def company_profile_dialog():
     )
 
     return rx.fragment(
-        rx.box(
+        surface_box(
             rx.hstack(
                 rx.icon("info", size=15, color=white(0.5)),
                 rx.text("More info", size="2", weight="medium", color=white(0.7)),
@@ -65,15 +73,9 @@ def company_profile_dialog():
             width="100%",
             on_click=State.set_profile_dialog_open(True),
             background=white(0.025),
-            border=CARD_BORDER,
-            border_radius=_CARD_RADIUS,
-            style={
-                "transition": "all 0.15s ease",
-                "_hover": {
-                    "background": white(0.045),
-                    "border_color": white(0.13),
-                },
-            },
+            border_radius=RADIUS_INPUT,
+            transition=TRANS_DEFAULT,
+            _hover=_DIALOG_TRIGGER_HOVER,
         ),
         common_dialog(
             dialog_content,

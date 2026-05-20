@@ -2,16 +2,14 @@ import reflex as rx
 
 from ourportfolios.pages.auth.components import (
     INPUT_OVERRIDE,
-    action_btn,
+    action_button,
     label,
     text_input,
 )
 from ourportfolios.state.contact_state import ContactState
-from ourportfolios.styles import (
-    TEXT_PRIMARY,
-    TEXT_TERTIARY,
-    white,
-)
+from ourportfolios.ui.primitives import heading, muted_text
+from ourportfolios.ui.theme import TEXT_PRIMARY, TEXT_TERTIARY, white
+from ourportfolios.ui.theme.surfaces import RADIUS_BUTTON
 
 # ── Intent chip selector state ─────────────────────────────────────────────
 
@@ -131,7 +129,7 @@ def _form_fields() -> rx.Component:
 
 
 def _submit_button() -> rx.Component:
-    return action_btn(
+    return action_button(
         "Send message",
         ContactState.submit,
         loading=ContactState.is_submitting,
@@ -152,18 +150,14 @@ def contact_form() -> rx.Component:
 def contact_success() -> rx.Component:
     return rx.vstack(
         rx.icon("check_check", size=32, color=white(0.6)),
-        rx.text(
-            "Message sent!",
-            size="6",
-            color=TEXT_PRIMARY,
-        ),
-        rx.text(
+        heading("Message sent!", level=2, color=TEXT_PRIMARY),
+        muted_text(
             "We'll get back to you as soon as possible.",
             size="2",
             color=TEXT_TERTIARY,
             text_align="center",
         ),
-        action_btn(
+        action_button(
             "Send another",
             ContactState.reset_form,
             loading=False,
@@ -255,7 +249,7 @@ def _intent_chip(
         ],
         cursor="pointer",
         padding="0.45rem 0.85rem",
-        border_radius="0.5rem",
+        border_radius=RADIUS_BUTTON,
         border=rx.cond(
             is_selected,
             f"1px solid {white(0.25)}",

@@ -10,9 +10,35 @@ from ourportfolios.pages.ticker_analysis.performance_cards import (
 )
 from ourportfolios.pages.ticker_analysis.state import State
 from ourportfolios.state.framework_state import GlobalFrameworkState
-from ourportfolios.styles import CARD_BORDER, TEXT_PURPLE, purple, white
+from ourportfolios.ui.primitives import skeleton_box
+from ourportfolios.ui.theme import CARD_BORDER, TEXT_PURPLE, purple, white
+from ourportfolios.ui.theme.surfaces import RADIUS_SURFACE
 
-_CARD_RADIUS = "0.625rem"
+_CARD_RADIUS = RADIUS_SURFACE
+
+_FRAMEWORK_LINK_STYLE = {
+    "backgroundColor": purple(0.1),
+    "border": f"1px solid {purple(0.3)}",
+    "borderRadius": "0.375rem",
+    "color": TEXT_PURPLE,
+    "transition": "all 0.15s ease",
+    "_hover": {
+        "backgroundColor": purple(0.18),
+        "borderColor": purple(0.45),
+    },
+}
+
+_SELECT_LINK_STYLE = {
+    "backgroundColor": purple(0.12),
+    "border": f"1px solid {purple(0.35)}",
+    "borderRadius": "0.375rem",
+    "color": TEXT_PURPLE,
+    "transition": "all 0.15s ease",
+    "_hover": {
+        "backgroundColor": purple(0.22),
+        "borderColor": purple(0.5),
+    },
+}
 
 
 def _financial_statement_content(
@@ -25,19 +51,8 @@ def _financial_statement_content(
             rx.vstack(
                 *[
                     rx.vstack(
-                        rx.skeleton(
-                            rx.box(
-                                height="1.75rem",
-                                width="11.25rem",
-                            ),
-                            loading=True,
-                            style={"border_radius": "0.375rem"},
-                        ),
-                        rx.skeleton(
-                            rx.box(height="7.5rem", width="100%"),
-                            loading=True,
-                            style={"border_radius": "0.375rem"},
-                        ),
+                        skeleton_box(width="11.25rem", height="1.75rem"),
+                        skeleton_box(width="100%", height="7.5rem"),
                         spacing="2",
                         width="100%",
                     )
@@ -58,7 +73,8 @@ def _financial_statement_content(
             width="100%",
             padding_top="2em",
             padding_left="0.5em",
-            style={"display": "block", "textAlign": "left"},
+            display="block",
+            text_align="left",
         ),
     )
 
@@ -71,166 +87,164 @@ def key_metrics_card():
     ]
 
     return rx.box(
-        rx.vstack(
-            rx.tabs.root(
-                rx.hstack(
-                    # Tabs on the left
-                    rx.tabs.list(
-                        rx.tabs.trigger("Performance", value="performance"),
-                        rx.tabs.trigger("Financial Statements", value="statement"),
-                        flex_shrink="0",
+        rx.tabs.root(
+            rx.hstack(
+                # Tabs on the left
+                rx.tabs.list(
+                    rx.tabs.trigger("Performance", value="performance"),
+                    rx.tabs.trigger("Financial Statements", value="statement"),
+                    flex_shrink="0",
+                ),
+                rx.spacer(),
+                # Framework indicator inline with tabs
+                rx.cond(
+                    GlobalFrameworkState.has_selected_framework,
+                    rx.link(
+                        rx.hstack(
+                            rx.icon("target", size=13),
+                            rx.text(
+                                GlobalFrameworkState.framework_display_name,
+                                size="2",
+                                weight="medium",
+                                white_space="nowrap",
+                            ),
+                            rx.icon("external-link", size=11),
+                            spacing="2",
+                            align="center",
+                            padding="0.35em 0.65em",
+                            style=_FRAMEWORK_LINK_STYLE,
+                        ),
+                        href="/framework",
+                        underline="none",
                     ),
-                    rx.spacer(),
-                    # Framework indicator inline with tabs
-                    rx.cond(
-                        GlobalFrameworkState.has_selected_framework,
+                    rx.hstack(
+                        rx.icon("target", size=13, color=white(0.35)),
+                        rx.text(
+                            "No framework selected.",
+                            size="2",
+                            color=white(0.45),
+                            white_space="nowrap",
+                        ),
                         rx.link(
                             rx.hstack(
-                                rx.icon("target", size=13),
-                                rx.text(
-                                    GlobalFrameworkState.framework_display_name,
-                                    size="2",
-                                    weight="medium",
-                                    white_space="nowrap",
-                                ),
-                                rx.icon("external-link", size=11),
-                                spacing="2",
+                                rx.icon("arrow-right", size=12),
+                                rx.text("Select", size="2", weight="bold"),
+                                spacing="1",
                                 align="center",
-                                padding="0.35em 0.65em",
-                                style={
-                                    "backgroundColor": purple(0.1),
-                                    "border": f"1px solid {purple(0.3)}",
-                                    "borderRadius": "0.375rem",
-                                    "color": TEXT_PURPLE,
-                                    "transition": "all 0.15s ease",
-                                    "_hover": {
-                                        "backgroundColor": purple(0.18),
-                                        "borderColor": purple(0.45),
-                                    },
-                                },
+                                padding="0.3em 0.6em",
+                                style=_SELECT_LINK_STYLE,
                             ),
                             href="/framework",
                             underline="none",
                         ),
-                        rx.hstack(
-                            rx.icon("target", size=13, color=white(0.35)),
-                            rx.text(
-                                "No framework selected.",
-                                size="2",
-                                color=white(0.45),
-                                white_space="nowrap",
-                            ),
-                            rx.link(
-                                rx.hstack(
-                                    rx.icon("arrow-right", size=12),
-                                    rx.text("Select", size="2", weight="bold"),
-                                    spacing="1",
-                                    align="center",
-                                    padding="0.3em 0.6em",
-                                    style={
-                                        "backgroundColor": purple(0.12),
-                                        "border": f"1px solid {purple(0.35)}",
-                                        "borderRadius": "0.375rem",
-                                        "color": TEXT_PURPLE,
-                                        "transition": "all 0.15s ease",
-                                        "_hover": {
-                                            "backgroundColor": purple(0.22),
-                                            "borderColor": purple(0.5),
-                                        },
-                                    },
-                                ),
-                                href="/framework",
-                                underline="none",
-                            ),
-                            spacing="2",
-                            align="center",
-                        ),
-                    ),
-                    # Quarterly / Yearly toggle on the far right
-                    rx.hstack(
-                        rx.badge(
-                            "Quarterly",
-                            color_scheme=rx.cond(
-                                State.switch_value == "quarter",
-                                "violet",
-                                "gray",
-                            ),
-                            variant="soft",
-                            size="1",
-                            style={"border_radius": "0.375rem"},
-                        ),
-                        rx.switch(
-                            checked=State.switch_value == "year",
-                            on_change=State.toggle_switch,
-                        ),
-                        rx.badge(
-                            "Yearly",
-                            color_scheme=rx.cond(
-                                State.switch_value == "year",
-                                "violet",
-                                "gray",
-                            ),
-                            variant="soft",
-                            size="1",
-                            style={"border_radius": "0.375rem"},
-                        ),
-                        justify="center",
-                        align="center",
                         spacing="2",
-                        flex_shrink="0",
+                        align="center",
                     ),
-                    width="100%",
+                ),
+                # Quarterly / Yearly toggle on the far right
+                rx.hstack(
+                    rx.badge(
+                        "Quarterly",
+                        color_scheme=rx.cond(
+                            State.switch_value == "quarter",
+                            "violet",
+                            "gray",
+                        ),
+                        variant="soft",
+                        size="1",
+                        border_radius="0.375rem",
+                    ),
+                    rx.switch(
+                        checked=State.switch_value == "year",
+                        on_change=State.toggle_switch,
+                    ),
+                    rx.badge(
+                        "Yearly",
+                        color_scheme=rx.cond(
+                            State.switch_value == "year",
+                            "violet",
+                            "gray",
+                        ),
+                        variant="soft",
+                        size="1",
+                        border_radius="0.375rem",
+                    ),
+                    justify="center",
                     align="center",
-                    spacing="3",
-                    style={"flexWrap": "wrap"},
+                    spacing="2",
+                    flex_shrink="0",
                 ),
-                rx.tabs.content(
-                    performance_cards(),
-                    value="performance",
-                    padding_top="1em",
-                ),
-                rx.tabs.content(
-                    rx.fragment(
-                        rx.box(
-                            rx.scroll_area(
-                                rx.box(
-                                    _financial_statement_content(
-                                        financial_statement_tabs,
-                                    ),
-                                    width="max-content",
-                                ),
-                                scrollbars="horizontal",
-                                type="hover",
-                                height="100%",
-                            ),
-                            display=["block", "block", "none"],
-                            height="calc(100vh - 17rem)",
-                            width="100%",
-                            padding_left="1rem",
-                        ),
-                        rx.box(
-                            _financial_statement_content(financial_statement_tabs),
-                            display=["none", "none", "block"],
-                            width="100%",
-                        ),
-                    ),
-                    value="statement",
-                    padding_top="1em",
-                ),
-                default_value="performance",
                 width="100%",
+                align="center",
+                spacing="3",
+                flex_wrap="wrap",
+                flex_shrink="0",
             ),
-            spacing="0",
-            justify="center",
+            rx.tabs.content(
+                rx.box(
+                    performance_cards(),
+                    flex="1",
+                    overflow_y="auto",
+                ),
+                value="performance",
+                padding_top="1em",
+                flex="1",
+                min_height="0",
+                display="flex",
+                flex_direction="column",
+            ),
+            rx.tabs.content(
+                rx.box(
+                    rx.box(
+                        rx.scroll_area(
+                            rx.box(
+                                _financial_statement_content(
+                                    financial_statement_tabs,
+                                ),
+                                width="max-content",
+                            ),
+                            scrollbars="horizontal",
+                            type="hover",
+                        ),
+                        display=["block", "block", "none"],
+                        width="100%",
+                        padding_left="1rem",
+                    ),
+                    rx.box(
+                        _financial_statement_content(financial_statement_tabs),
+                        display=["none", "none", "block"],
+                        width="100%",
+                        flex="1",
+                        overflow_y="auto",
+                    ),
+                    flex="1",
+                    display="flex",
+                    flex_direction="column",
+                ),
+                value="statement",
+                padding_top="1em",
+                flex="1",
+                min_height="0",
+                display="flex",
+                flex_direction="column",
+            ),
+            value=State.selected_tab,
+            on_change=State.set_selected_tab,
             width="100%",
+            flex="1",
+            display="flex",
+            flex_direction="column",
         ),
         background=white(0.025),
         border=CARD_BORDER,
         border_radius=_CARD_RADIUS,
-        padding="1rem",
+        padding="1.25rem",
         flex="2",
         width="100%",
         min_width="0",
         max_width="100%",
+        height="100%",
+        display="flex",
+        flex_direction="column",
         overflow="hidden",
     )

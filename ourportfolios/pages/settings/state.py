@@ -1,7 +1,7 @@
 """Settings page state management."""
 
 import reflex as rx
-from supabase_auth.errors import AuthApiError
+from supabase_auth.errors import AuthError
 
 from ourportfolios.auth_config import AUTH_AVAILABLE, get_supabase
 from ourportfolios.state.auth_state import AuthState
@@ -40,7 +40,7 @@ def _restore_session(auth: AuthState) -> None:
                 auth.auth_refresh_token = (
                     refresh_response.session.refresh_token or auth.auth_refresh_token
                 )
-        except (AuthApiError, AttributeError):
+        except (AuthError, AttributeError):
             # If refresh fails, try with existing token anyway
             pass
 
@@ -265,7 +265,7 @@ class SettingsState(rx.State):
             prefs.experience_level = exp
             prefs.default_chart_period = period
 
-        except (SettingsStateError, ValueError, TypeError, AttributeError) as exc:
+        except (AuthError, SettingsStateError, ValueError, TypeError, AttributeError) as exc:
             self.save_error = str(exc)
 
     # ─────────────────────────────────────────────────────────────────────────
@@ -298,7 +298,7 @@ class SettingsState(rx.State):
             self.display_name_editing = False
             self.save_msg = "Saved"
             yield rx.toast.success("Display name updated.", **_TOAST)
-        except (SettingsStateError, ValueError, TypeError, AttributeError) as exc:
+        except (AuthError, SettingsStateError, ValueError, TypeError, AttributeError) as exc:
             self.save_error = str(exc)
             yield rx.toast.error(f"Failed to save: {exc}", **_TOAST)
         finally:
@@ -340,7 +340,7 @@ class SettingsState(rx.State):
 
             self.save_msg = "Saved"
             yield rx.toast.success("Preferences saved.", **_TOAST)
-        except (SettingsStateError, ValueError, TypeError, AttributeError) as exc:
+        except (AuthError, SettingsStateError, ValueError, TypeError, AttributeError) as exc:
             self.save_error = str(exc)
             yield rx.toast.error(f"Failed to save: {exc}", **_TOAST)
         finally:
@@ -392,7 +392,7 @@ class SettingsState(rx.State):
             self.password_dialog_open = False
             self.password_msg = MSG_CRED_UPDATED
             yield rx.toast.success("Password changed successfully.", **_TOAST)
-        except (SettingsStateError, ValueError, TypeError, AttributeError) as exc:
+        except (AuthError, SettingsStateError, ValueError, TypeError, AttributeError) as exc:
             msg = str(exc)
             if any(k in msg.lower() for k in ("invalid", "credentials", "wrong")):
                 self.password_error = MSG_CURR_CRED_INVALID
@@ -434,7 +434,7 @@ class SettingsState(rx.State):
             self.delete_dialog_open = False
             yield rx.redirect("/")
             yield rx.toast.info("Your account has been deleted.", **_TOAST)
-        except (SettingsStateError, ValueError, TypeError, AttributeError) as exc:
+        except (AuthError, SettingsStateError, ValueError, TypeError, AttributeError) as exc:
             self.delete_error = str(exc)
             yield rx.toast.error(f"Failed to delete account: {exc}", **_TOAST)
         finally:

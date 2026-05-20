@@ -11,13 +11,14 @@ from ourportfolios.pages.tickers.compare_table import compare_table, empty_compa
 from ourportfolios.pages.tickers.controls import board_toolbar, compare_toolbar
 from ourportfolios.pages.tickers.state import TickersPageState
 from ourportfolios.pages.tickers.ticker_board import new_ticker_board
-from ourportfolios.styles import BTN_SECONDARY, BTN_SECONDARY_ACTIVE, white
+from ourportfolios.ui.primitives import divider
+from ourportfolios.ui.theme import BUTTON_SECONDARY, BUTTON_SECONDARY_ACTIVE, white
 
 # ── View toggle ────────────────────────────────────────────────────────────────
-# Uses BTN_SECONDARY / BTN_SECONDARY_ACTIVE — same tokens as Sort & Filter.
+# Uses BUTTON_SECONDARY / BUTTON_SECONDARY_ACTIVE — same tokens as Sort & Filter.
 
 
-def _toggle_btn(label: str, icon_name: str, mode: str) -> rx.Component:
+def _toggle_button(label: str, icon_name: str, mode: str) -> rx.Component:
     return rx.button(
         rx.hstack(
             rx.icon(icon_name, size=14),
@@ -29,16 +30,16 @@ def _toggle_btn(label: str, icon_name: str, mode: str) -> rx.Component:
         size="2",
         style=rx.cond(
             TickersPageState.view_mode == mode,
-            BTN_SECONDARY_ACTIVE,
-            BTN_SECONDARY,
+            BUTTON_SECONDARY_ACTIVE,
+            BUTTON_SECONDARY,
         ),
     )
 
 
 def view_toggle() -> rx.Component:
     return rx.hstack(
-        _toggle_btn("Board", "layout_dashboard", "board"),
-        _toggle_btn("Compare", "between_horizontal_start", "compare"),
+        _toggle_button("Board", "layout_dashboard", "board"),
+        _toggle_button("Compare", "between_horizontal_start", "compare"),
         spacing="2",
         flex_shrink="0",
     )
@@ -99,7 +100,7 @@ def main_content() -> rx.Component:
     """Full page body below the navbar."""
     return rx.vstack(
         page_header(),
-        rx.box(height="1px", width="100%", background=white(0.06)),
+        divider(),
         toolbar_row(),
         content_area(),
         spacing="5",

@@ -9,40 +9,30 @@ from ourportfolios.pages.tickers.compare_table import compare_table, empty_compa
 from ourportfolios.pages.tickers.controls import board_toolbar, compare_toolbar
 from ourportfolios.pages.tickers.state import TickersPageState
 from ourportfolios.pages.tickers.ticker_board import new_ticker_board
-from ourportfolios.styles import DIVIDER, PAGE_BG, overlay_style, white
+from ourportfolios.ui.primitives import divider, secondary_button
+from ourportfolios.ui.theme import PAGE_BG, overlay_style, white
 
 
-def _toggle_btn(label: str, icon_name: str, mode: str) -> rx.Component:
+def _toggle_button(label: str, icon_name: str, mode: str) -> rx.Component:
     is_active = TickersPageState.view_mode == mode
-    return rx.button(
+    return secondary_button(
         rx.hstack(
             rx.icon(icon_name, size=13),
             rx.text(label),
             spacing="2",
             align="center",
         ),
+        active=is_active,
         on_click=TickersPageState.set_view_mode(mode),
         size="2",
-        background=rx.cond(is_active, white(0.09), white(0.05)),
-        border=rx.cond(
-            is_active,
-            f"1px solid {white(0.18)}",
-            f"1px solid {white(0.1)}",
-        ),
-        color=rx.cond(is_active, white(0.9), white(0.6)),
-        font_weight=rx.cond(is_active, "600", "500"),
-        font_size="0.8125rem",
-        border_radius="0.5rem",
-        cursor="pointer",
-        transition="all 0.15s ease",
         flex_shrink="0",
     )
 
 
 def view_toggle() -> rx.Component:
     return rx.hstack(
-        _toggle_btn("Board", "layout_dashboard", "board"),
-        _toggle_btn("Compare", "between_horizontal_start", "compare"),
+        _toggle_button("Board", "layout_dashboard", "board"),
+        _toggle_button("Compare", "between_horizontal_start", "compare"),
         spacing="2",
         flex_shrink="0",
     )
@@ -121,7 +111,7 @@ def content_area() -> rx.Component:
 def main_content() -> rx.Component:
     return rx.vstack(
         page_header(),
-        rx.box(height="1px", width="100%", background=DIVIDER),
+        divider(),
         toolbar_row(),
         content_area(),
         spacing="4",

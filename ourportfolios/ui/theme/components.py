@@ -5,10 +5,14 @@ from __future__ import annotations
 import reflex as rx
 
 from ourportfolios.ui.theme.colors import blue, green, indigo, purple, white
-from ourportfolios.ui.theme.surfaces import CARD_HOVER_STYLE
+from ourportfolios.ui.tokens import (
+    RADIUS_BUTTON,
+    RADIUS_INPUT,
+    TRANS_DEFAULT,
+)
 
 
-def accent_btn(
+def accent_button(
     label: str,
     icon: str = "arrow-right",
     href: str | None = None,
@@ -25,8 +29,8 @@ def accent_btn(
         padding="0.35em 0.75em",
         background=white(0.04),
         border=f"1px solid {white(0.09)}",
-        border_radius="0.5rem",
-        transition="all 0.15s ease",
+        border_radius=RADIUS_BUTTON,
+        transition=TRANS_DEFAULT,
         _hover={"background": white(0.09), "border_color": white(0.2)},
         cursor="pointer",
         align_self="flex-end",
@@ -55,15 +59,6 @@ def accent_btn(
     return inner
 
 
-def ghost_btn(
-    label: str,
-    icon: str = "arrow-right",
-    href: str | None = None,
-    on_click: object | None = None,
-) -> rx.Component:
-    return accent_btn(label, icon=icon, href=href, on_click=on_click)
-
-
 _ICON_COLORS = {
     "purple": (purple(0.12), purple(0.25), "rgba(167, 139, 250, 0.9)"),
     "blue": (blue(0.12), blue(0.25), "rgba(96, 165, 250, 0.9)"),
@@ -78,7 +73,7 @@ def icon_box(icon_name: str, color: str = "purple", size: int = 16) -> rx.Compon
         rx.icon(icon_name, size=size, color=icon_color_val),
         background=bg,
         border=f"1px solid {border}",
-        border_radius="0.625rem",
+        border_radius=RADIUS_INPUT,
         padding="0.5625rem",
         display="flex",
         align_items="center",
@@ -126,21 +121,6 @@ def glow_orb_style(color: str = "purple") -> dict:
     }
 
 
-def skeleton_box_style(
-    width: str,
-    height: str,
-    radius: str = "0.25rem",
-    opacity: float = 0.06,
-) -> dict:
-    return {
-        "width": width,
-        "height": height,
-        "border_radius": radius,
-        "background": f"rgba(255, 255, 255, {opacity})",
-        "flex_shrink": "0",
-    }
-
-
 def overlay_style(is_active: object) -> dict:
     return {
         "opacity": rx.cond(is_active, "1", "0"),
@@ -151,55 +131,4 @@ def overlay_style(is_active: object) -> dict:
     }
 
 
-LANDING_CARD = {
-    "background": "transparent",
-    "backdrop_filter": "blur(1.25rem)",
-    "border": f"1px solid {white(0.07)}",
-    "border_radius": "1.5rem",
-    "display": "flex",
-    "flex_direction": "column",
-}
 
-LANDING_METRIC_BOX = {
-    "flex": "1",
-    "padding": "0.875rem",
-    "background": white(0.02),
-    "border": f"1px solid {white(0.07)}",
-    "border_radius": "0.625rem",
-}
-
-LANDING_CHART_BOX = {
-    "flex": "1",
-    "padding": "0.75rem",
-    "background": white(0.02),
-    "border": f"1px solid {white(0.07)}",
-    "border_radius": "0.75rem",
-}
-
-LANDING_LIST_ROW = {
-    "width": "100%",
-    "padding": "1rem 1.25rem",
-    "background": white(0.02),
-    "border": f"1px solid {white(0.07)}",
-    "border_radius": "0.75rem",
-}
-
-LANDING_LIST_ROW_SELECTED = {
-    "width": "100%",
-    "padding": "1rem 1.25rem",
-    "background": purple(0.1),
-    "border": f"1px solid {purple(0.25)}",
-    "border_radius": "0.75rem",
-}
-
-
-TABLE_CELL_BORDER = f"1px solid {white(0.04)}"
-
-TICKER_CARD_STYLE = {
-    "transition": "all 0.2s ease",
-    "marginLeft": "0.6em",
-    "_hover": {"marginLeft": "0"},
-}
-
-CARD_HOVER = CARD_HOVER_STYLE
-DECISION_HUB_HOVER = {}

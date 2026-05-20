@@ -4,6 +4,7 @@ import reflex as rx
 
 from ourportfolios.components.common_dialog import CommonDialogConfig, common_dialog
 from ourportfolios.state import FinancialStatementState
+from ourportfolios.ui.tokens import FONT_SM, RADIUS_XS, SPACE_2XL, SPACE_LG
 
 titles = ["Income\nStatement", "Balance\nSheet", "Cash\nFlow"]
 RowData = dict[str, str | float | int | None]
@@ -88,14 +89,14 @@ def preview_table(
         width="12em",
         flex_shrink="0",
         justify="center",
-        padding_left="1em",
+        padding_left=SPACE_LG,
     )
 
     if show_skeleton:
         table_content = rx.skeleton(
             height="12.5rem",
             width="43em",
-            border_radius="0.5rem",
+            border_radius=RADIUS_XS,
         )
     else:
         table_content = rx.cond(
@@ -179,7 +180,7 @@ def expanded_dialog(data: TableData, idx: int) -> rx.Component:
                 ),
                 size="2",
                 variant="surface",
-                font_size="0.75rem",
+                font_size=FONT_SM,
             ),
             height="67vh",
             width="90vw",
@@ -197,7 +198,7 @@ def expanded_dialog(data: TableData, idx: int) -> rx.Component:
             width="90vw",
             height="80vh",
             max_width="90vw",
-            padding="1.5rem",
+            padding=SPACE_2XL,
             title=["Income Statement", "Balance Sheet", "Cash Flow"][idx],
         ),
     )

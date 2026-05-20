@@ -100,16 +100,14 @@ class SearchBarState(SessionIsolatedStateMixin, rx.State):
             self.suggest_tickers = result
 
     @rx.event
-    async def set_display_suggestions(self, *, state: bool):
-        await asyncio.sleep(0.2)
+    async def set_display_suggestions(self, state: bool = False):  # noqa: FBT001,FBT002
         self.display_suggestion = state
         if state:
             return SearchBarState.fetch_suggest_tickers
         return None
 
     @rx.event
-    async def set_empty_state_display_suggestions(self, *, state: bool):
-        await asyncio.sleep(0.2)
+    async def set_empty_state_display_suggestions(self, state: bool = False):  # noqa: FBT001,FBT002
         self.empty_state_display_suggestion = state
 
     async def _fetch_by_prefix(self, prefix: str) -> list[dict[str, object]]:

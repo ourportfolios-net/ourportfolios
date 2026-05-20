@@ -2,6 +2,8 @@
 
 import reflex as rx
 
+from ourportfolios.ui.tokens import TRANS_COLOR
+
 
 def _separator() -> rx.Component:
     return rx.icon(
@@ -19,7 +21,7 @@ def _segment_link(label: str, href: str) -> rx.Component:
         color="rgba(255,255,255,0.35)",
         _hover={"color": "white"},
         underline="none",
-        transition="color 0.15s ease",
+        transition=TRANS_COLOR,
     )
 
 

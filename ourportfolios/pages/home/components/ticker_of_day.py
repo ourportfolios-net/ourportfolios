@@ -1,9 +1,9 @@
 import reflex as rx
 
-from ourportfolios.components.cards import glass_card
 from ourportfolios.state.cart_state import CartState
 from ourportfolios.state.home_state import HomeState
-from ourportfolios.styles import white
+from ourportfolios.ui.primitives import glass_box, icon_button_xs
+from ourportfolios.ui.theme.colors import white
 
 
 def _skel(w: str = "100%", h: str = "0.75rem", r: str = "0.375rem") -> rx.Component:
@@ -11,7 +11,7 @@ def _skel(w: str = "100%", h: str = "0.75rem", r: str = "0.375rem") -> rx.Compon
 
 
 def _ticker_skeleton() -> rx.Component:
-    return glass_card(
+    return glass_box(
         rx.vstack(
             _skel("6.25rem", "0.625rem"),
             rx.hstack(
@@ -50,7 +50,7 @@ def ticker_of_the_day_card() -> rx.Component:
 
 
 def _ticker_real() -> rx.Component:
-    return glass_card(
+    return glass_box(
         rx.box(
             rx.link(
                 rx.box(
@@ -82,17 +82,13 @@ def _ticker_real() -> rx.Component:
                                 letter_spacing="-0.03em",
                                 line_height="1",
                             ),
-                            rx.button(
-                                rx.icon("plus", size=13),
-                                size="2",
-                                variant="outline",
+                            icon_button_xs(
+                                "plus",
                                 on_click=CartState.add_item(
                                     HomeState.ticker_of_day_symbol,
                                 ),
-                                cursor="pointer",
                                 position="relative",
                                 z_index="10",
-                                border_radius="0.4375rem",
                             ),
                             spacing="2",
                             align="end",

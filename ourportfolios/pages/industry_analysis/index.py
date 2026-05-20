@@ -36,7 +36,8 @@ def index():
                 ),
                 position="fixed",
                 justify="center",
-                style={"paddingTop": "1em", "paddingLeft": "0.5em"},
+                padding_top="1em",
+                padding_left="0.5em",
                 z_index="1",
             ),
             rx.center(

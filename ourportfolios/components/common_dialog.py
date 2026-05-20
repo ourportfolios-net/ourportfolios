@@ -5,7 +5,9 @@ from typing import Any, Literal
 
 import reflex as rx
 
-from ourportfolios.styles import MODAL_BG, white
+from ourportfolios.ui.primitives import modal_panel
+from ourportfolios.ui.theme.colors import TEXT_TERTIARY, white
+from ourportfolios.ui.tokens import SPACE_2XL, SPACE_LG, TRANS_COLOR
 
 
 @dataclass(slots=True)
@@ -16,7 +18,7 @@ class CommonDialogConfig:
     width: str = "60vw"
     height: str = "58vh"
     max_width: str | None = None
-    padding: str = "2rem"
+    padding: str = SPACE_2XL
     title: str | None = None
     title_size: Literal["1", "2", "3", "4", "5", "6", "7", "8", "9"] = "6"
     show_close_button: bool = True
@@ -34,7 +36,7 @@ def common_dialog(content: rx.Component, config: CommonDialogConfig) -> rx.Compo
 
     """
     # Build optional keyword args for max_width
-    extra_props = {}
+    extra_props: dict[str, Any] = {}
     if config.max_width:
         extra_props["max_width"] = config.max_width
 
@@ -50,7 +52,7 @@ def common_dialog(content: rx.Component, config: CommonDialogConfig) -> rx.Compo
                 user_select="none",
                 color=white(0.45),
                 _hover={"color": "white"},
-                transition="color 0.15s ease",
+                transition=TRANS_COLOR,
             ),
         )
         header_content.append(close_button)
@@ -63,7 +65,7 @@ def common_dialog(content: rx.Component, config: CommonDialogConfig) -> rx.Compo
                 config.title,
                 weight="medium",
                 size=config.title_size,
-                color=white(0.85),
+                color=TEXT_TERTIARY,
             ),
         )
 
@@ -76,7 +78,7 @@ def common_dialog(content: rx.Component, config: CommonDialogConfig) -> rx.Compo
             rx.hstack(
                 *header_content,
                 width="100%",
-                padding_bottom="1rem",
+                padding_bottom=SPACE_LG,
                 align="center",
                 justify="between" if len(header_content) > 1 else "start",
             ),
@@ -85,26 +87,35 @@ def common_dialog(content: rx.Component, config: CommonDialogConfig) -> rx.Compo
     # Add main content
     dialog_content.append(content)
 
+    # Build props for dialog.content to override Radix defaults
+    dialog_props: dict[str, object] = {
+        "width": config.width,
+        "height": config.height,
+        "max_height": config.height,
+        "padding": "0",
+        "overflow": "hidden",
+    }
+    if config.max_width:
+        dialog_props["max_width"] = config.max_width
+
     return rx.cond(
         config.is_open,
         rx.dialog.root(
-            rx.dialog.trigger(rx.button("hidden", display="none")),
             rx.dialog.content(
-                rx.vstack(
-                    *dialog_content,
-                    spacing="4",
-                    align="start",
+                modal_panel(
+                    rx.vstack(
+                        *dialog_content,
+                        spacing="4",
+                        align="start",
+                        width="100%",
+                        height="100%",
+                    ),
                     width="100%",
                     height="100%",
+                    padding=config.padding,
+                    max_width=None,
                 ),
-                width=config.width,
-                height=config.height,
-                padding=config.padding,
-                background=MODAL_BG,
-                border=f"1px solid {white(0.08)}",
-                border_radius="0.875rem",
-                box_shadow="0 1.5625rem 3.75rem rgba(0, 0, 0, 0.6)",
-                **extra_props,
+                **dialog_props,
             ),
             open=True,
             on_open_change=config.on_open_change or config.on_close,

@@ -64,11 +64,14 @@ DELETE_HOVER = "rgba(236, 93, 94, 0.85)"
 
 
 TEXT_PRIMARY = "white"
-TEXT_SECONDARY = white(0.5)
-TEXT_TERTIARY = white(0.3)
+TEXT_SECONDARY = white(0.55)
+TEXT_TERTIARY = white(0.35)
+TEXT_LABEL = white(0.35)
 TEXT_MUTED = white(0.2)
 TEXT_PURPLE = "#c4b5fd"
 TEXT_ACCENT = "#a78bfa"
+
+GLOW_PURPLE = purple(0.18)
 
 TEXT_TRUNCATE = {
     "white_space": "nowrap",

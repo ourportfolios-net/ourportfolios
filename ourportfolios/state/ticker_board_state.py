@@ -198,7 +198,7 @@ class TickerBoardState(rx.State):
     def cache_error(self) -> str:
         return self.load_error
 
-    @rx.var
+    @rx.var(cache=True)
     def get_all_tickers(self) -> list[dict[str, object]]:
         if not self.tickers_data:
             return []

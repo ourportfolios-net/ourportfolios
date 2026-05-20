@@ -4,7 +4,12 @@ from collections.abc import Callable
 
 import reflex as rx
 
-from ourportfolios.styles import white
+from ourportfolios.ui.primitives import body_text
+from ourportfolios.ui.theme.colors import white
+from ourportfolios.ui.tokens import (
+    RADIUS_SM,
+    TRANS_DEFAULT,
+)
 
 
 def category_toggle_card(
@@ -18,7 +23,7 @@ def category_toggle_card(
     card = rx.box(
         rx.vstack(
             rx.hstack(
-                rx.text(title, size="5", weight="bold", color=white(0.92)),
+                body_text(title, weight="bold", color=white(0.92)),
                 rx.spacer(),
                 rx.checkbox(
                     checked=checked,
@@ -35,13 +40,11 @@ def category_toggle_card(
             width="100%",
         ),
         padding="0.75em 0.9em",
-        border_radius="0.625rem",
+        border_radius=RADIUS_SM,
         background=white(0.025),
         border=f"1px solid {white(0.07)}",
-        style={
-            "transition": "all 0.15s ease",
-            "_hover": {"background": white(0.035), "border_color": white(0.12)},
-        },
+        _hover={"background": white(0.035), "border_color": white(0.12)},
+        transition=TRANS_DEFAULT,
         width="100%",
     )
 

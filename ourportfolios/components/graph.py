@@ -1,5 +1,7 @@
 import reflex as rx
 
+from ourportfolios.ui.tokens import SPACE_2XL
+
 
 def pct_change_badge(diff: float):
     color_scheme = rx.cond(diff > 0, "green", rx.cond(diff < 0, "red", "gray"))
@@ -36,7 +38,7 @@ def pct_change_badge(diff: float):
         size="1",
         variant="soft",
         padding="2px 6px",  # Use fixed pixels for consistent UI
-        height="1.5rem",  # Use rem or em for accessibility/consistency
+        height=SPACE_2XL,  # Use rem or em for accessibility/consistency
         min_width="fit-content",
         flex_shrink="0",
     )

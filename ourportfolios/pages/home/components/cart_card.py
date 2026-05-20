@@ -1,8 +1,9 @@
 import reflex as rx
 
-from ourportfolios.components.cards import glass_card
 from ourportfolios.state.cart_state import CartState
-from ourportfolios.styles import white
+from ourportfolios.ui.primitives import glass_box
+from ourportfolios.ui.theme.colors import white
+from ourportfolios.ui.tokens import RADIUS_4XS, RADIUS_BUTTON, TRANS_DEFAULT
 
 
 def _cart_item_row(item: dict, index: int) -> rx.Component:
@@ -17,7 +18,7 @@ def _cart_item_row(item: dict, index: int) -> rx.Component:
                 overflow="hidden",
                 text_overflow="ellipsis",
             ),
-            href=f"/analyze/{item['name']}",
+            href=f"/tickers/{item['name']}",
             underline="none",
             min_width="0",
             flex="1",
@@ -34,26 +35,26 @@ def _cart_item_row(item: dict, index: int) -> rx.Component:
             on_click=lambda: CartState.remove_item(index),
             cursor="pointer",
             padding="0.25rem",
-            border_radius="0.3125rem",
+            border_radius=RADIUS_4XS,
             display="flex",
             align_items="center",
             justify_content="center",
-            transition="all 0.15s ease",
+            transition=TRANS_DEFAULT,
             _hover={"background": white(0.06), "color": "white"},
         ),
         align="center",
         width="100%",
         padding="0.75rem 0.875rem",
-        border_radius="0.5rem",
+        border_radius=RADIUS_BUTTON,
         background=white(0.02),
         border=f"1px solid {white(0.05)}",
-        transition="all 0.15s ease",
+        transition=TRANS_DEFAULT,
         _hover={"background": white(0.035), "border_color": white(0.08)},
     )
 
 
 def cart_card() -> rx.Component:
-    return glass_card(
+    return glass_box(
         rx.vstack(
             rx.text(
                 "Comparison Cart",

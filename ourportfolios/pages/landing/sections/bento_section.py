@@ -10,6 +10,7 @@ from ourportfolios.pages.landing.components.bento_cards import (
     reliability_card,
     transparency_card,
 )
+from ourportfolios.ui.theme.colors import white
 
 
 def bento_section() -> rx.Component:
@@ -63,8 +64,8 @@ def bento_section() -> rx.Component:
                     shiny_text(
                         text="ourleverage",
                         speed=3,
-                        color="rgba(255, 255, 255, 0.75)",
-                        shine_color="rgba(255, 255, 255, 1)",
+                        color=white(0.75),
+                        shine_color=white(1),
                         spread=120,
                         direction="left",
                         yoyo=False,
@@ -78,7 +79,7 @@ def bento_section() -> rx.Component:
                     rx.text(
                         "Experience our core values.",
                         font_size="1.125rem",
-                        color="rgba(255, 255, 255, 0.4)",
+                        color=white(0.4),
                         font_weight="300",
                         line_height="1.5",
                         text_align=["center", "center", "right"],

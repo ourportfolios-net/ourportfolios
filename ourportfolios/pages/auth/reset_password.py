@@ -4,32 +4,23 @@ import reflex as rx
 
 from ourportfolios.pages.auth.components import (
     INPUT_OVERRIDE,
-    action_btn,
+    action_button,
     auth_card,
     auth_centered,
     auth_page_shell,
     label,
 )
 from ourportfolios.state.auth_state import AuthState
-from ourportfolios.styles import ERROR_COLOR, TEXT_PRIMARY, TEXT_TERTIARY, white
+from ourportfolios.ui.primitives import body_text, heading, muted_text
+from ourportfolios.ui.theme.colors import ERROR_COLOR, white
+from ourportfolios.ui.theme.surfaces import RADIUS_INPUT
 
 
 def _reset_form() -> rx.Component:
     return rx.vstack(
         rx.vstack(
-            rx.text(
-                "Set new password",
-                font_size="1.625rem",
-                weight="bold",
-                color=TEXT_PRIMARY,
-                letter_spacing="-0.025em",
-            ),
-            rx.text(
-                "Choose a new password for your account.",
-                size="2",
-                color=TEXT_TERTIARY,
-                line_height="1.6",
-            ),
+            heading("Set new password"),
+            muted_text("Choose a new password for your account."),
             spacing="1",
             align="start",
             width="100%",
@@ -40,9 +31,8 @@ def _reset_form() -> rx.Component:
             rx.vstack(
                 rx.hstack(
                     rx.icon("circle-check", size=15, color=white(0.4)),
-                    rx.text(
+                    body_text(
                         "Password updated",
-                        size="2",
                         weight="medium",
                         color=white(0.6),
                     ),
@@ -51,18 +41,15 @@ def _reset_form() -> rx.Component:
                     padding="0.6rem 0.875rem",
                     background=white(0.04),
                     border=f"1px solid {white(0.09)}",
-                    border_radius="0.625rem",
+                    border_radius=RADIUS_INPUT,
                     width="100%",
                     justify="center",
                 ),
-                rx.text(
+                muted_text(
                     "Your password has been updated. You can now sign in.",
-                    size="1",
-                    color=white(0.35),
-                    line_height="1.65",
                     text_align="center",
                 ),
-                action_btn(
+                action_button(
                     "Go to sign in",
                     rx.redirect("/auth"),
                     loading=False,
@@ -104,7 +91,7 @@ def _reset_form() -> rx.Component:
                     rx.text(AuthState.reset_error, size="1", color=ERROR_COLOR),
                     rx.text(" ", size="1"),
                 ),
-                action_btn(
+                action_button(
                     "Update password",
                     AuthState.handle_reset_password,
                     loading=AuthState.reset_loading,

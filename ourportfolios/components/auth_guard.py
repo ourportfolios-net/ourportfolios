@@ -8,9 +8,10 @@ content is revealed only after require_auth() validates the session.
 import reflex as rx
 
 from ourportfolios.state.auth_state import AuthState
+from ourportfolios.ui.tokens import APP_BG
 
 
-def page_guard(content: rx.Component, bg: str = "#090909") -> rx.Component:
+def page_guard(content: rx.Component, bg: str = APP_BG) -> rx.Component:
     """Wrap protected page content in an auth gate.
 
     Usage in any protected page's index():

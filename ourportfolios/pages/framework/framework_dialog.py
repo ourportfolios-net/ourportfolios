@@ -6,7 +6,15 @@ import reflex as rx
 
 from ourportfolios.components.common_dialog import CommonDialogConfig, common_dialog
 from ourportfolios.pages.framework.state import FrameworkState
-from ourportfolios.styles import BTN_GHOST, white
+from ourportfolios.ui.primitives import (
+    body_text,
+    divider,
+    muted_text,
+    spacer,
+    subheading,
+)
+from ourportfolios.ui.theme import BUTTON_GHOST, TEXT_PRIMARY, white
+from ourportfolios.ui.theme.surfaces import RADIUS_PILL
 
 
 def metric_badge(metric: dict[str, object]) -> rx.Component:
@@ -16,7 +24,7 @@ def metric_badge(metric: dict[str, object]) -> rx.Component:
         variant="soft",
         color_scheme="gray",
         size="2",
-        border_radius="0.375rem",
+        border_radius=RADIUS_PILL,
     )
 
 
@@ -28,12 +36,12 @@ def framework_dialog() -> rx.Component:
                 FrameworkState.selected_framework.title,
                 size=rx.breakpoints(initial="5", sm="6", lg="8"),
                 weight="bold",
+                color=TEXT_PRIMARY,
             ),
             rx.hstack(
-                rx.text("by", size="2", color=white(0.4)),
-                rx.text(
+                muted_text("by"),
+                body_text(
                     FrameworkState.selected_framework.author,
-                    size="2",
                     weight="bold",
                 ),
                 spacing="2",
@@ -58,7 +66,7 @@ def framework_dialog() -> rx.Component:
                 FrameworkState.selected_framework.source_name,
                 rx.link(
                     rx.hstack(
-                        rx.text("View Source", size="2"),
+                        body_text("View Source"),
                         rx.icon("external-link", size=13),
                         spacing="1",
                         align="center",
@@ -82,22 +90,20 @@ def framework_dialog() -> rx.Component:
             width="100%",
             wrap="wrap",
         ),
-        rx.divider(color=white(0.07)),
+        divider(),
         # Scrollable body — this is the ONLY scroll container
         rx.scroll_area(
             rx.vstack(
-                rx.text(
+                subheading(
                     FrameworkState.selected_framework.description,
-                    size="3",
                     line_height="1.8",
                     color=white(0.7),
                 ),
                 rx.cond(
                     FrameworkState.selected_framework_has_metrics,
                     rx.vstack(
-                        rx.text(
+                        subheading(
                             "Framework Metrics",
-                            size="3",
                             weight="bold",
                             color="white",
                         ),
@@ -124,10 +130,10 @@ def framework_dialog() -> rx.Component:
             width="100%",
             overflow_y="auto",
         ),
-        rx.divider(color=white(0.07)),
+        divider(),
         # Footer
         rx.hstack(
-            rx.spacer(),
+            spacer(),
             rx.button(
                 rx.hstack(
                     rx.text("Select This Framework"),
@@ -136,7 +142,7 @@ def framework_dialog() -> rx.Component:
                 ),
                 on_click=FrameworkState.select_and_navigate_framework,
                 size="3",
-                style=BTN_GHOST,
+                style=BUTTON_GHOST,
             ),
             width="100%",
         ),

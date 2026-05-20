@@ -12,15 +12,6 @@ from ourportfolios.ui.tokens import (
 )
 
 
-def clamp_lines(lines: int) -> dict[str, str]:
-    return {
-        "display": "-webkit-box",
-        "-webkit-line-clamp": str(lines),
-        "-webkit-box-orient": "vertical",
-        "overflow": "hidden",
-    }
-
-
 def page_frame(
     *children: rx.Component,
     max_width: str = PAGE_MAX_WIDTH,

@@ -3,35 +3,48 @@
 import reflex as rx
 
 from ourportfolios.pages.ticker_analysis.state import State
-from ourportfolios.styles import CARD_BORDER, white
-
-_CARD_RADIUS = "0.625rem"
+from ourportfolios.ui.primitives import skeleton_box
+from ourportfolios.ui.theme.colors import white
+from ourportfolios.ui.theme.surfaces import CARD_BORDER, RADIUS_BUTTON, RADIUS_INPUT
 
 # Responsive heights: [mobile, desktop]
-_SCROLL_HEIGHT_SHARES = ["18em", "24.3em"]
+_SCROLL_HEIGHT_SHARES = ["28em", "24.3em"]
 _SCROLL_HEIGHT_EVENTS = ["37em", "45.3em"]
 _SCROLL_HEIGHT_NEWS = ["37em", "45.3em"]
 
 
-def _skel(w: str, h: str) -> rx.Component:
-    return rx.skeleton(
-        rx.box(width=w, height=h),
-        loading=True,
-        style={"border_radius": "0.375rem"},
+def _officer_row_skeleton() -> rx.Component:
+    """Skeleton for a single officer row (name + badge on left, position below)."""
+    return rx.box(
+        rx.vstack(
+            rx.hstack(
+                skeleton_box(width="55%", height="1.25rem"),
+                rx.spacer(),
+                skeleton_box(width="4rem", height="1.25rem", radius="0.375rem"),
+                width="100%",
+                align="center",
+            ),
+            skeleton_box(width="35%", height="0.875rem"),
+            spacing="1",
+            width="100%",
+        ),
+        width="100%",
     )
 
 
 def company_info_card_skeleton() -> rx.Component:
     return rx.box(
         rx.vstack(
+            # Segmented control skeleton
             rx.hstack(
-                _skel("3.75rem", "1.75rem"),
-                _skel("3.75rem", "1.75rem"),
-                _skel("3.125rem", "1.75rem"),
+                skeleton_box(width="3.75rem", height="1.75rem"),
+                skeleton_box(width="3.75rem", height="1.75rem"),
+                skeleton_box(width="3.125rem", height="1.75rem"),
                 spacing="2",
                 width="100%",
                 justify="center",
             ),
+            # Pie chart skeleton
             rx.box(
                 rx.skeleton(
                     rx.box(width="10rem", height="10rem"),
@@ -44,24 +57,16 @@ def company_info_card_skeleton() -> rx.Component:
                 align_items="center",
                 style={"marginTop": "1.5em", "marginBottom": "1.5em"},
             ),
+            # Officers list skeleton — matches the real subtle_box container
             rx.box(
                 rx.vstack(
-                    *[
-                        rx.hstack(
-                            _skel("55%", "0.875rem"),
-                            rx.spacer(),
-                            _skel("25%", "0.875rem"),
-                            width="100%",
-                            align="center",
-                        )
-                        for _ in range(5)
-                    ],
+                    *[_officer_row_skeleton() for _ in range(6)],
                     spacing="3",
                     width="100%",
                 ),
                 background=white(0.02),
                 border=f"1px solid {white(0.05)}",
-                border_radius="0.5rem",
+                border_radius=RADIUS_BUTTON,
                 padding="0.75rem",
                 width="100%",
             ),
@@ -70,7 +75,7 @@ def company_info_card_skeleton() -> rx.Component:
         ),
         background=white(0.025),
         border=CARD_BORDER,
-        border_radius=_CARD_RADIUS,
+        border_radius=RADIUS_INPUT,
         padding="1.25rem",
         width="100%",
         flex=["1", "1", "0.6"],
@@ -125,6 +130,7 @@ def company_generic_info_card() -> rx.Component:
                             justify_content="center",
                             align_items="center",
                             style={"marginTop": "1.5em", "marginBottom": "1.5em"},
+                            flex_shrink="0",
                         ),
                         rx.box(
                             rx.scroll_area(
@@ -169,13 +175,15 @@ def company_generic_info_card() -> rx.Component:
                             ),
                             background=white(0.02),
                             border=f"1px solid {white(0.05)}",
-                            border_radius="0.5rem",
+                            border_radius=RADIUS_BUTTON,
                             padding="0.75rem",
                             width="100%",
+                            flex="1",
                         ),
-                        justify="center",
-                        align="center",
+                        justify="start",
+                        align="stretch",
                         width="100%",
+                        flex="1",
                     ),
                     rx.cond(
                         State.company_control == "events",
@@ -192,6 +200,9 @@ def company_generic_info_card() -> rx.Component:
                                             ),
                                             rx.badge(
                                                 f"{event['price_change_ratio']}%",
+                                                color_scheme="gray",
+                                                variant="surface",
+                                                high_contrast=True,
                                                 style={"border_radius": "0.375rem"},
                                             ),
                                             align="center",
@@ -204,7 +215,7 @@ def company_generic_info_card() -> rx.Component:
                                         ),
                                         background=white(0.02),
                                         border=f"1px solid {white(0.05)}",
-                                        border_radius="0.5rem",
+                                        border_radius=RADIUS_BUTTON,
                                         padding="0.75rem",
                                         width="100%",
                                     ),
@@ -235,6 +246,9 @@ def company_generic_info_card() -> rx.Component:
                                                 ),
                                                 rx.badge(
                                                     f"{news['price_change_ratio']}%",
+                                                    color_scheme="gray",
+                                                    variant="surface",
+                                                    high_contrast=True,
                                                     style={
                                                         "border_radius": "0.375rem",
                                                     },
@@ -246,7 +260,7 @@ def company_generic_info_card() -> rx.Component:
                                         ),
                                         background=white(0.02),
                                         border=f"1px solid {white(0.05)}",
-                                        border_radius="0.5rem",
+                                        border_radius=RADIUS_BUTTON,
                                         padding="0.75rem",
                                         width="100%",
                                     ),
@@ -268,7 +282,7 @@ def company_generic_info_card() -> rx.Component:
             ),
             background=white(0.025),
             border=CARD_BORDER,
-            border_radius=_CARD_RADIUS,
+            border_radius=RADIUS_INPUT,
             padding="1.25rem",
             width="100%",
             flex=["1", "1", "0.6"],

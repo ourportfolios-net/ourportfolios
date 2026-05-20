@@ -3,8 +3,18 @@
 import reflex as rx
 
 from ourportfolios.pages.tickers.state import TickersPageState
-from ourportfolios.styles import (
-    TABLE_BG,
+from ourportfolios.ui.primitives import (
+    body_text,
+    hstack,
+    muted_text,
+    scroll_area_both,
+    skeleton_box,
+    spacer,
+    subtle_box,
+    truncated_text,
+    vstack,
+)
+from ourportfolios.ui.theme.colors import (
     TEXT_TERTIARY,
     TEXT_TRUNCATE,
     TOOLTIP_CONTENT_STYLE,
@@ -13,11 +23,17 @@ from ourportfolios.styles import (
     purple,
     white,
 )
+from ourportfolios.ui.theme.surfaces import (
+    RADIUS_BUTTON,
+    RADIUS_CARD,
+    TABLE_BG,
+)
+from ourportfolios.ui.tokens import RADIUS_4XS
 
 # ── Layout constants ───────────────────────────────────────────────────────────────────────
 _TICKER_W = "11em"
 _METRIC_W_GRAPH = "10em"
-_METRIC_W_SIMPLE = "6.5em"
+_METRIC_W_SIMPLE = "9em"
 _ROW_H_GRAPH = "4.6em"
 _ROW_H_SIMPLE = "3.8em"
 _HEADER_H = "2.5em"
@@ -65,13 +81,17 @@ def _sparkline(stock: dict, metric_key: str, industry: str) -> rx.Component:
 
 def _metric_cell(stock: dict, metric_key: str, industry: str) -> rx.Component:
     ticker = stock["symbol"].to(str)
-    is_best = TickersPageState.industry_best_performers[industry][metric_key] == ticker
+    # Use try/except to handle missing keys (avoids 'in' operator on Var types)
+    try:
+        is_best = TickersPageState.industry_best_performers[industry][metric_key] == ticker
+    except (KeyError, TypeError):
+        is_best = False
     row_h = rx.cond(TickersPageState.show_graphs, _ROW_H_GRAPH, _ROW_H_SIMPLE)
     w = rx.cond(TickersPageState.show_graphs, _METRIC_W_GRAPH, _METRIC_W_SIMPLE)
     return rx.box(
-        rx.vstack(
+        vstack(
             rx.text(
-                stock[metric_key],
+                stock.get(metric_key, "N/A"),
                 size="1",
                 weight=rx.cond(is_best, "bold", "regular"),
                 color=rx.cond(is_best, "rgba(52,211,153,0.9)", white(0.6)),
@@ -109,9 +129,9 @@ def _ticker_card(stock: dict) -> rx.Component:
     company_name = stock.get("company_name", "").to(str)
     return rx.box(
         rx.box(
-            rx.hstack(
+            hstack(
                 rx.link(
-                    rx.vstack(
+                    vstack(
                         rx.text(
                             symbol,
                             weight="bold",
@@ -158,7 +178,7 @@ def _ticker_card(stock: dict) -> rx.Component:
             ),
             background=white(0.04),
             border=f"1px solid {white(0.07)}",
-            border_radius="0.5rem",
+            border_radius=RADIUS_BUTTON,
             padding="0.55em 0.7em",
             width="calc(100% - 1em)",
             transition="all 0.18s ease",
@@ -197,7 +217,7 @@ def _industry_row(industry: str) -> rx.Component:
                 color_scheme="gray",
                 size="2",
                 style={
-                    "border_radius": "0.3125rem",
+                    "border_radius": RADIUS_4XS,
                     "font_size": "0.6875rem",
                     "letter_spacing": "0.04em",
                 },
@@ -232,12 +252,12 @@ def _header_metric_col(metric_key: str) -> rx.Component:
     w = rx.cond(TickersPageState.show_graphs, _METRIC_W_GRAPH, _METRIC_W_SIMPLE)
     return rx.box(
         rx.tooltip(
-            rx.text(
+            truncated_text(
                 TickersPageState.metric_labels[metric_key],
+                max_width="100%",
                 size="1",
                 weight="medium",
                 color=white(0.45),
-                style={**TEXT_TRUNCATE, "max_width": "100%"},
             ),
             content=TickersPageState.metric_labels[metric_key],
         ),
@@ -261,18 +281,18 @@ def _skeleton_metric_cell() -> rx.Component:
     w = rx.cond(TickersPageState.show_graphs, _METRIC_W_GRAPH, _METRIC_W_SIMPLE)
     row_h = rx.cond(TickersPageState.show_graphs, _ROW_H_GRAPH, _ROW_H_SIMPLE)
     return rx.box(
-        rx.vstack(
-            rx.skeleton(
-                height="0.75rem",
+        vstack(
+            skeleton_box(
                 width="3rem",
-                border_radius="0.25rem",
+                height="0.75rem",
+                radius="0.25rem",
             ),
             rx.cond(
                 TickersPageState.show_graphs,
-                rx.skeleton(
-                    height="1.75rem",
+                skeleton_box(
                     width="80%",
-                    border_radius="0.25rem",
+                    height="1.75rem",
+                    radius="0.25rem",
                 ),
                 rx.fragment(),
             ),
@@ -296,26 +316,26 @@ def _skeleton_metric_cell() -> rx.Component:
 def _skeleton_row(ticker: str) -> rx.Component:
     """Skeleton placeholder row shown while a ticker's data is loading."""
     row_h = rx.cond(TickersPageState.show_graphs, _ROW_H_GRAPH, _ROW_H_SIMPLE)
-    return rx.hstack(
+    return hstack(
         # Sticky ticker card skeleton
         rx.box(
             rx.box(
-                rx.hstack(
-                    rx.vstack(
-                        rx.skeleton(
-                            height="0.8125rem",
+                hstack(
+                    vstack(
+                        skeleton_box(
                             width="2.75rem",
-                            border_radius="0.25rem",
+                            height="0.8125rem",
+                            radius="0.25rem",
                         ),
-                        rx.skeleton(
-                            height="0.5625rem",
+                        skeleton_box(
                             width="4.25rem",
-                            border_radius="0.25rem",
+                            height="0.5625rem",
+                            radius="0.25rem",
                         ),
                         spacing="1",
                         align="start",
                     ),
-                    rx.spacer(),
+                    spacer(),
                     rx.box(
                         rx.icon(
                             "x",
@@ -337,7 +357,7 @@ def _skeleton_row(ticker: str) -> rx.Component:
                 ),
                 background=white(0.04),
                 border=f"1px solid {white(0.07)}",
-                border_radius="0.5rem",
+                border_radius=RADIUS_BUTTON,
                 padding="0.55em 0.7em",
                 width="calc(100% - 1em)",
             ),
@@ -381,14 +401,14 @@ def compare_table() -> rx.Component:
         rx.cond(
             TickersPageState.is_loading_historical,
             rx.box(
-                rx.vstack(
+                vstack(
                     rx.icon(
                         "loader",
                         size=28,
                         color=purple(0.8),
                         style={"animation": "spin 1s linear infinite"},
                     ),
-                    rx.text("Loading data…", size="2", color=white(0.4)),
+                    muted_text("Loading data...", size="2"),
                     spacing="3",
                     align="center",
                 ),
@@ -406,30 +426,39 @@ def compare_table() -> rx.Component:
         rx.cond(
             TickersPageState.selected_metrics.length() == 0,
             rx.center(
-                rx.vstack(
-                    rx.icon("table-2", size=26, color=white(0.18)),
-                    rx.text(
-                        "No metrics selected",
-                        size="3",
-                        weight="bold",
-                        color=white(0.45),
+                vstack(
+                    subtle_box(
+                        rx.icon("table-2", size=26, color=white(0.18)),
+                        padding="1.25em",
+                        display="flex",
+                        align_items="center",
+                        justify_content="center",
                     ),
-                    rx.text(
-                        "Click the  ⚙  settings icon in the toolbar to pick metrics.",
-                        size="2",
-                        color=white(0.28),
-                        text_align="center",
+                    vstack(
+                        rx.text(
+                            "No metrics selected",
+                            size="3",
+                            weight="bold",
+                            color=white(0.45),
+                        ),
+                        body_text(
+                            "Click the  ⚙  settings icon in the toolbar to pick metrics.",
+                            color=white(0.28),
+                            text_align="center",
+                        ),
+                        spacing="1",
+                        align="center",
                     ),
-                    spacing="2",
+                    spacing="4",
                     align="center",
                 ),
                 height="18em",
                 width="100%",
             ),
-            rx.scroll_area(
+            scroll_area_both(
                 rx.box(
                     # Sticky header
-                    rx.hstack(
+                    hstack(
                         rx.box(
                             rx.text(
                                 "Symbol",
@@ -472,7 +501,7 @@ def compare_table() -> rx.Component:
                             _industry_row(item[0]),
                             rx.foreach(
                                 item[1],
-                                lambda stock: rx.hstack(
+                                lambda stock: hstack(
                                     _ticker_card(stock),
                                     rx.foreach(
                                         TickersPageState.selected_metrics,
@@ -505,9 +534,8 @@ def compare_table() -> rx.Component:
                     min_width="100%",
                     style={"isolation": "isolate"},
                 ),
-                scrollbars="both",
-                type="auto",
-                style={"width": "100%", "height": _BOARD_H},
+                height=_BOARD_H,
+                width="100%",
             ),
         ),
         rx.html(
@@ -515,7 +543,7 @@ def compare_table() -> rx.Component:
         ),
         position="relative",
         width="100%",
-        border_radius="0.875rem",
+        border_radius=RADIUS_CARD,
         border=f"1px solid {white(0.07)}",
         background=TABLE_BG,
         overflow="hidden",
@@ -524,27 +552,23 @@ def compare_table() -> rx.Component:
 
 def empty_compare_state() -> rx.Component:
     return rx.center(
-        rx.vstack(
-            rx.box(
+        vstack(
+            subtle_box(
                 rx.icon("between_horizontal_start", size=32, color=white(0.2)),
                 padding="1.25em",
-                border_radius="0.875rem",
-                background=white(0.035),
-                border=f"1px solid {white(0.07)}",
                 display="flex",
                 align_items="center",
                 justify_content="center",
             ),
-            rx.vstack(
+            vstack(
                 rx.text(
                     "No tickers added yet",
                     size="4",
                     weight="bold",
                     color=white(0.7),
                 ),
-                rx.text(
+                body_text(
                     "Use the search bar above to add tickers for comparison.",
-                    size="2",
                     color=white(0.3),
                     text_align="center",
                 ),
@@ -556,7 +580,7 @@ def empty_compare_state() -> rx.Component:
         ),
         height="24em",
         width="100%",
-        border_radius="0.875rem",
+        border_radius=RADIUS_CARD,
         border=f"1px solid {white(0.07)}",
         background=white(0.025),
     )

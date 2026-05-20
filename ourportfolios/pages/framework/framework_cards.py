@@ -7,62 +7,60 @@ from ourportfolios.pages.framework.state import (
     FrameworkModel,
     FrameworkState,
 )
-from ourportfolios.styles import (
+from ourportfolios.ui.primitives import (
+    hstack,
+    pill_toggle,
+    skeleton_box,
+    spacer,
+    vstack,
+)
+from ourportfolios.ui.theme import (
     CARD_STYLE,
-    PILL_TOGGLE,
-    PILL_TOGGLE_ACTIVE,
-    accent_btn,
+    accent_button,
     white,
 )
+from ourportfolios.ui.theme.surfaces import RADIUS_PILL
+
+_DESCRIPTION_CLAMP = {
+    "-webkit-line-clamp": "3",
+    "-webkit-box-orient": "vertical",
+}
 
 
 def _skel(w: str, h: str) -> rx.Component:
-    return rx.skeleton(
-        rx.box(width=w, height=h),
-        loading=True,
-        border_radius="0.375rem",
-    )
+    return skeleton_box(width=w, height=h)
 
 
 def skeleton_card() -> rx.Component:
     return rx.box(
-        rx.vstack(
-            rx.hstack(
-                rx.skeleton(
-                    rx.box(width="1.9375rem", height="1.9375rem"),
-                    loading=True,
-                    border_radius="0.5rem",
-                ),
-                rx.spacer(),
+        vstack(
+            rx.box(
+                spacer(),
                 _skel("4.375rem", "1.125rem"),
                 width="100%",
-                align="center",
+                display="flex",
+                justify_content="flex-end",
             ),
-            rx.vstack(
+            vstack(
                 _skel("60%", "1.25rem"),
                 _skel("100%", "0.875rem"),
                 _skel("80%", "0.875rem"),
-                _skel("90%", "0.875rem"),
                 spacing="2",
                 width="100%",
+                align="start",
             ),
-            rx.spacer(),
-            rx.vstack(
-                rx.box(height="1px", width="100%", background=white(0.05)),
-                rx.hstack(
-                    rx.vstack(
-                        _skel("2.8125rem", "0.625rem"),
-                        _skel("5rem", "0.875rem"),
-                        spacing="1",
-                        align="start",
-                    ),
-                    rx.spacer(),
-                    _skel("5.625rem", "0.875rem"),
-                    width="100%",
-                    align="center",
+            spacer(),
+            hstack(
+                vstack(
+                    _skel("2.8125rem", "0.625rem"),
+                    _skel("5rem", "0.875rem"),
+                    spacing="1",
+                    align="start",
                 ),
-                spacing="3",
+                spacer(),
+                _skel("5.625rem", "0.875rem"),
                 width="100%",
+                align="center",
             ),
             spacing="4",
             width="100%",
@@ -75,50 +73,31 @@ def skeleton_card() -> rx.Component:
 def category_filter_button(category: CategoryModel) -> rx.Component:
     is_active = FrameworkState.active_category == category.value
 
-    return rx.cond(
-        is_active,
-        rx.button(
-            category.label,
-            on_click=lambda: FrameworkState.set_active_category(category.value),
-            size="2",
-            style=PILL_TOGGLE_ACTIVE,
-        ),
-        rx.button(
-            category.label,
-            on_click=lambda: FrameworkState.set_active_category(category.value),
-            size="2",
-            style=PILL_TOGGLE,
-        ),
+    return pill_toggle(
+        category.label,
+        active=is_active,
+        on_click=lambda: FrameworkState.set_active_category(category.value),
     )
 
 
 def framework_card(framework: FrameworkModel) -> rx.Component:
     return rx.box(
-        rx.vstack(
-            rx.hstack(
-                rx.box(
-                    rx.icon("trending-up", size=15, color=white(0.5)),
-                    background=white(0.06),
-                    border_radius="0.5rem",
-                    padding="0.5rem",
-                    display="flex",
-                    align_items="center",
-                    justify_content="center",
-                ),
-                rx.spacer(),
+        vstack(
+            rx.box(
                 rx.badge(
                     framework.scope,
                     variant="soft",
                     color_scheme="gray",
                     size="1",
-                    border_radius="0.375rem",
+                    border_radius=RADIUS_PILL,
                     font_size="0.625rem",
                     letter_spacing="0.03em",
                 ),
                 width="100%",
-                align="center",
+                display="flex",
+                justify_content="flex-end",
             ),
-            rx.vstack(
+            vstack(
                 rx.text(
                     framework.title,
                     size="4",
@@ -133,42 +112,35 @@ def framework_card(framework: FrameworkModel) -> rx.Component:
                     line_height="1.65",
                     display="-webkit-box",
                     overflow="hidden",
-                    style={
-                        "-webkit-line-clamp": "3",
-                        "-webkit-box-orient": "vertical",
-                    },
+                    style=_DESCRIPTION_CLAMP,
                 ),
                 spacing="2",
                 width="100%",
+                align="start",
             ),
-            rx.spacer(),
-            rx.vstack(
-                rx.box(height="1px", width="100%", background=white(0.05)),
-                rx.hstack(
-                    rx.vstack(
-                        rx.text(
-                            "AUTHOR",
-                            size="1",
-                            color=white(0.2),
-                            weight="bold",
-                            letter_spacing="0.08em",
-                        ),
-                        rx.text(
-                            framework.author,
-                            size="2",
-                            color=white(0.6),
-                            weight="medium",
-                        ),
-                        spacing="1",
-                        align="start",
+            spacer(),
+            hstack(
+                vstack(
+                    rx.text(
+                        "AUTHOR",
+                        size="1",
+                        color=white(0.2),
+                        weight="bold",
+                        letter_spacing="0.08em",
                     ),
-                    rx.spacer(),
-                    accent_btn("View Framework"),
-                    width="100%",
-                    align="center",
+                    rx.text(
+                        framework.author,
+                        size="2",
+                        color=white(0.6),
+                        weight="medium",
+                    ),
+                    spacing="1",
+                    align="start",
                 ),
-                spacing="3",
+                spacer(),
+                accent_button("View Framework"),
                 width="100%",
+                align="center",
             ),
             spacing="4",
             width="100%",
