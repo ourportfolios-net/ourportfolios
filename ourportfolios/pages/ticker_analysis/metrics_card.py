@@ -10,16 +10,16 @@ from ourportfolios.pages.ticker_analysis.performance_cards import (
 )
 from ourportfolios.pages.ticker_analysis.state import State
 from ourportfolios.state.framework_state import GlobalFrameworkState
-from ourportfolios.ui.primitives import skeleton_box
+from ourportfolios.ui.primitives import badge, skeleton_box
 from ourportfolios.ui.theme import CARD_BORDER, TEXT_PURPLE, purple, white
-from ourportfolios.ui.theme.surfaces import RADIUS_SURFACE
+from ourportfolios.ui.tokens import RADIUS_MD, RADIUS_SM
 
-_CARD_RADIUS = RADIUS_SURFACE
+_CARD_RADIUS = RADIUS_MD
 
 _FRAMEWORK_LINK_STYLE = {
     "backgroundColor": purple(0.1),
     "border": f"1px solid {purple(0.3)}",
-    "borderRadius": "0.375rem",
+    "borderRadius": RADIUS_SM,
     "color": TEXT_PURPLE,
     "transition": "all 0.15s ease",
     "_hover": {
@@ -31,7 +31,7 @@ _FRAMEWORK_LINK_STYLE = {
 _SELECT_LINK_STYLE = {
     "backgroundColor": purple(0.12),
     "border": f"1px solid {purple(0.35)}",
-    "borderRadius": "0.375rem",
+    "borderRadius": RADIUS_SM,
     "color": TEXT_PURPLE,
     "transition": "all 0.15s ease",
     "_hover": {
@@ -62,8 +62,12 @@ def _financial_statement_content(
                 width="100%",
             ),
             width="100%",
-            padding_top="2em",
+            padding_top="0.5em",
             padding_left="0.5em",
+            flex="1",
+            min_height="0",
+            display="flex",
+            flex_direction="column",
         ),
         rx.box(
             financial_statements(
@@ -71,10 +75,12 @@ def _financial_statement_content(
                 show_skeleton=False,
             ),
             width="100%",
-            padding_top="2em",
+            padding_top="0.5em",
             padding_left="0.5em",
-            display="block",
-            text_align="left",
+            flex="1",
+            min_height="0",
+            display="flex",
+            flex_direction="column",
         ),
     )
 
@@ -118,17 +124,10 @@ def key_metrics_card():
                         underline="none",
                     ),
                     rx.hstack(
-                        rx.icon("target", size=13, color=white(0.35)),
-                        rx.text(
-                            "No framework selected.",
-                            size="2",
-                            color=white(0.45),
-                            white_space="nowrap",
-                        ),
                         rx.link(
                             rx.hstack(
+                                rx.text("Select a Framework", size="2", weight="bold"),
                                 rx.icon("arrow-right", size=12),
-                                rx.text("Select", size="2", weight="bold"),
                                 spacing="1",
                                 align="center",
                                 padding="0.3em 0.6em",
@@ -143,31 +142,19 @@ def key_metrics_card():
                 ),
                 # Quarterly / Yearly toggle on the far right
                 rx.hstack(
-                    rx.badge(
-                        "Quarterly",
-                        color_scheme=rx.cond(
-                            State.switch_value == "quarter",
-                            "violet",
-                            "gray",
-                        ),
-                        variant="soft",
-                        size="1",
-                        border_radius="0.375rem",
+                    rx.cond(
+                        State.switch_value == "quarter",
+                        badge("Quarterly", color_variant="purple"),
+                        badge("Quarterly", color_variant="gray"),
                     ),
                     rx.switch(
                         checked=State.switch_value == "year",
                         on_change=State.toggle_switch,
                     ),
-                    rx.badge(
-                        "Yearly",
-                        color_scheme=rx.cond(
-                            State.switch_value == "year",
-                            "violet",
-                            "gray",
-                        ),
-                        variant="soft",
-                        size="1",
-                        border_radius="0.375rem",
+                    rx.cond(
+                        State.switch_value == "year",
+                        badge("Yearly", color_variant="purple"),
+                        badge("Yearly", color_variant="gray"),
                     ),
                     justify="center",
                     align="center",
@@ -212,10 +199,12 @@ def key_metrics_card():
                     ),
                     rx.box(
                         _financial_statement_content(financial_statement_tabs),
-                        display=["none", "none", "block"],
                         width="100%",
                         flex="1",
+                        min_height="0",
                         overflow_y="auto",
+                        display=["none", "none", "flex"],
+                        flex_direction="column",
                     ),
                     flex="1",
                     display="flex",

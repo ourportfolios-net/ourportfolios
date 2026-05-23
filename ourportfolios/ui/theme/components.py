@@ -6,9 +6,11 @@ import reflex as rx
 
 from ourportfolios.ui.theme.colors import blue, green, indigo, purple, white
 from ourportfolios.ui.tokens import (
-    RADIUS_BUTTON,
+    BLUR_DEFAULT,
     RADIUS_INPUT,
+    RADIUS_SM,
     TRANS_DEFAULT,
+    TRANS_FAST,
 )
 
 
@@ -29,7 +31,7 @@ def accent_button(
         padding="0.35em 0.75em",
         background=white(0.04),
         border=f"1px solid {white(0.09)}",
-        border_radius=RADIUS_BUTTON,
+        border_radius=RADIUS_SM,
         transition=TRANS_DEFAULT,
         _hover={"background": white(0.09), "border_color": white(0.2)},
         cursor="pointer",
@@ -115,8 +117,8 @@ def glow_orb_style(color: str = "purple") -> dict:
         "width": "8rem",
         "height": "8rem",
         "background": colors.get(color, colors["purple"]),
-        "filter": "blur(3rem)",
-        "border_radius": "9999px",
+        "filter": f"blur({BLUR_DEFAULT})",
+        "border_radius": RADIUS_SM,
         "pointer_events": "none",
     }
 
@@ -125,10 +127,7 @@ def overlay_style(is_active: object) -> dict:
     return {
         "opacity": rx.cond(is_active, "1", "0"),
         "pointer_events": rx.cond(is_active, "auto", "none"),
-        "transition": "opacity 0.15s ease",
+        "transition": TRANS_FAST,
         "position": "absolute",
         "inset": "0",
     }
-
-
-

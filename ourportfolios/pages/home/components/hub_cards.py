@@ -17,7 +17,7 @@ from ourportfolios.ui.primitives import glass_box
 from ourportfolios.ui.theme.colors import TEXT_TERTIARY, blue, green, white
 from ourportfolios.ui.theme.components import accent_button
 from ourportfolios.ui.theme.surfaces import PREVIEW_BOX_STYLE
-from ourportfolios.ui.tokens import RADIUS_5XS, RADIUS_BUTTON, RADIUS_PILL
+from ourportfolios.ui.tokens import RADIUS_SM
 
 _HUB_CSS = """
 .hub-card { contain: layout style; }
@@ -54,7 +54,7 @@ def _compare_col(color: str) -> rx.Component:
         rx.box(
             width="3.5rem",
             height="0.75rem",
-            border_radius=RADIUS_5XS,
+            border_radius=RADIUS_SM,
             background=color,
             class_name="compare-bar-inner",
             # No style prop — transform/transition handled entirely by CSS class above
@@ -70,7 +70,7 @@ def _compare_row(col1: str, col2: str) -> rx.Component:
         rx.box(
             width="3.5rem",
             height="1.25rem",
-            border_radius=RADIUS_PILL,
+            border_radius=RADIUS_SM,
             background=white(0.06),
         ),
         _compare_col(col1),
@@ -79,7 +79,7 @@ def _compare_row(col1: str, col2: str) -> rx.Component:
         align="center",
         width="100%",
         padding="0.5rem 0.625rem",
-        border_radius=RADIUS_BUTTON,
+        border_radius=RADIUS_SM,
         background=white(0.02),
         border=f"1px solid {white(0.04)}",
     )
@@ -105,7 +105,7 @@ def _perf_bar(hover_width: str, hover_color: str) -> rx.Component:
         rx.box(
             width="1.875rem",
             height="0.6875rem",
-            border_radius=RADIUS_5XS,
+            border_radius=RADIUS_SM,
             background=white(0.06),
         ),
         rx.box(
@@ -113,7 +113,7 @@ def _perf_bar(hover_width: str, hover_color: str) -> rx.Component:
                 class_name="perf-bar-fill",
                 width="100%",
                 height="100%",
-                border_radius=RADIUS_5XS,
+                border_radius=RADIUS_SM,
                 # Only CSS variable set inline — safe, no specificity conflict
                 style={
                     "--bar-scale": scale,
@@ -124,7 +124,7 @@ def _perf_bar(hover_width: str, hover_color: str) -> rx.Component:
             width="100%",
             height="0.6875rem",
             background=white(0.04),
-            border_radius=RADIUS_5XS,
+            border_radius=RADIUS_SM,
             overflow="hidden",
             flex="1",
         ),
@@ -162,7 +162,7 @@ def _gradient_overlay(color: str) -> rx.Component:
         width="7rem",
         height="7rem",
         background=f"radial-gradient(ellipse at top right, {color}, transparent 60%)",
-        border_radius="inherit",
+        border_radius=RADIUS_SM,
         pointer_events="none",
         z_index="1",
     )
@@ -296,7 +296,7 @@ def _skeleton_row(icon_name: str, index: int) -> rx.Component:
                 rx.icon(icon_name, size=15, color=white(0.2)),
                 background=white(0.05),
                 border=f"1px solid {white(0.06)}",
-                border_radius=RADIUS_BUTTON,
+                border_radius=RADIUS_SM,
                 padding="0.4375rem",
                 display="flex",
                 align_items="center",
@@ -317,7 +317,7 @@ def _skeleton_row(icon_name: str, index: int) -> rx.Component:
             width="100%",
         ),
         padding="0.625rem 0.75rem",
-        border_radius="0.5625rem",
+        border_radius=RADIUS_SM,
         background=white(0.02),
         border=f"1px solid {white(0.04)}",
         width="100%",
@@ -333,7 +333,7 @@ def _glass_row(icon_name: str, title: str, description: str) -> rx.Component:
             rx.icon(icon_name, size=15, color=white(0.55)),
             background=white(0.06),
             border=f"1px solid {white(0.08)}",
-            border_radius=RADIUS_BUTTON,
+            border_radius=RADIUS_SM,
             padding="0.4375rem",
             display="flex",
             align_items="center",
@@ -360,7 +360,7 @@ def _glass_row(icon_name: str, title: str, description: str) -> rx.Component:
 def _framework_preview() -> rx.Component:
     return rx.box(
         rx.vstack(
-            skeleton("3.75rem", "0.5625rem"),
+            skeleton("3.75rem", RADIUS_SM),
             rx.box(
                 rx.vstack(
                     _skeleton_row("shield", 0),
@@ -410,7 +410,7 @@ def _framework_preview() -> rx.Component:
                     right="0",
                     height=CARD_HEADER_HEIGHT,
                     background=white(0.05),
-                    border_radius="0.5625rem",
+                    border_radius=RADIUS_SM,
                     border=f"1px solid {white(0.1)}",
                     overflow="hidden",
                     pointer_events="none",
@@ -439,7 +439,7 @@ def select_framework_card() -> rx.Component:
             width="7rem",
             height="7rem",
             background="radial-gradient(ellipse at top right, rgba(168, 85, 247, 0.10), transparent 60%)",
-            border_radius="inherit",
+            border_radius=RADIUS_SM,
             pointer_events="none",
             z_index="1",
         ),

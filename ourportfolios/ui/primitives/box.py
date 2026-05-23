@@ -17,16 +17,14 @@ from ourportfolios.ui.theme.surfaces import (
     SURFACE_BORDER,
 )
 from ourportfolios.ui.tokens import (
-    BLUR_NAVBAR,
-    BLUR_SM,
-    RADIUS_BUTTON,
+    BLUR_DEFAULT,
     RADIUS_CARD,
     RADIUS_INPUT,
+    RADIUS_SM,
     RADIUS_SURFACE,
-    SHADOW_DROPDOWN,
-    SHADOW_MODAL,
-    SHADOW_NAVBAR,
+    SHADOW_LG,
     TRANS_DEFAULT,
+    TRANS_FAST,
 )
 
 
@@ -61,7 +59,7 @@ def glass_box(
             "padding": padding,
             "border_radius": RADIUS_CARD,
             "background": white(0.03),
-            "backdrop_filter": f"blur({BLUR_SM})",
+            "backdrop_filter": f"blur({BLUR_DEFAULT})",
             "border": CARD_BORDER,
             "width": width,
             "transition": TRANS_DEFAULT,
@@ -131,7 +129,7 @@ def modal_panel(
             "background": MODAL_BG,
             "border": f"1px solid {white(0.08)}",
             "border_radius": RADIUS_CARD,
-            "box_shadow": SHADOW_MODAL,
+            "box_shadow": SHADOW_LG,
             **extra,
             **props,
         },
@@ -151,7 +149,7 @@ def overlay_box(
             "inset": "0",
             "opacity": rx.cond(is_active, "1", "0"),
             "pointer_events": rx.cond(is_active, "auto", "none"),
-            "transition": "opacity 0.15s ease",
+            "transition": TRANS_FAST,
             **props,
         },
     )
@@ -244,9 +242,9 @@ def navbar_bar(
             "z_index": "50",
             "padding_y": "1rem",
             "background": "rgba(10, 10, 10, 0.4)",
-            "backdrop_filter": f"blur({BLUR_NAVBAR})",
+            "backdrop_filter": f"blur({BLUR_DEFAULT})",
             "border_bottom": f"1px solid {white(0.09)}",
-            "box_shadow": SHADOW_NAVBAR,
+            "box_shadow": SHADOW_LG,
             **props,
         },
     )
@@ -264,7 +262,7 @@ def dropdown_panel(
             "border": f"1px solid {white(0.07)}",
             "border_radius": RADIUS_SURFACE,
             "padding": "0.375rem",
-            "box_shadow": SHADOW_DROPDOWN,
+            "box_shadow": SHADOW_LG,
             **props,
         },
     )
@@ -287,7 +285,7 @@ def user_avatar(
         **{
             "width": "2rem",
             "height": "2rem",
-            "border_radius": RADIUS_BUTTON,
+            "border_radius": RADIUS_SM,
             "background": white(0.06),
             "border": f"1px solid {white(0.11)}",
             "display": "flex",

@@ -22,7 +22,7 @@ from ourportfolios.ui.theme import (
     INPUT_STYLE,
     white,
 )
-from ourportfolios.ui.theme.surfaces import RADIUS_BUTTON, RADIUS_INPUT
+from ourportfolios.ui.tokens import RADIUS_MD, RADIUS_SM
 
 # Character limit for ~500 words
 DESC_CHAR_LIMIT = 3000
@@ -68,7 +68,7 @@ def metric_item(metric: MetricModel, index: int) -> rx.Component:
             padding="0.6em 0.75em",
             background=white(0.035),
             border=f"1px solid {white(0.09)}",
-            border_radius=RADIUS_INPUT,
+            border_radius=RADIUS_MD,
             width="100%",
             transition="border-color 0.15s ease",
             _hover={
@@ -95,7 +95,7 @@ def metric_item(metric: MetricModel, index: int) -> rx.Component:
                     height="2.2em",
                     background=white(0.04),
                     border=f"1px solid {white(0.08)}",
-                    border_radius=RADIUS_BUTTON,
+                    border_radius=RADIUS_SM,
                     margin="-0.6em auto",
                     transition="opacity 0.15s ease",
                     opacity=rx.cond(bridge_visible, "1", "0"),

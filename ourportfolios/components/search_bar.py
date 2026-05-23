@@ -6,12 +6,12 @@ import reflex as rx
 
 from ourportfolios.components.graph import pct_change_badge
 from ourportfolios.state import SearchBarState
-from ourportfolios.ui.primitives import search_input_with_icon
+from ourportfolios.ui.primitives import badge, search_input_with_icon
 from ourportfolios.ui.tokens import (
     RADIUS_MD,
-    RADIUS_XS,
-    SHADOW_SEARCH,
-    SPACE_XS,
+    RADIUS_SM,
+    SHADOW_LG,
+    SPACE_SM,
 )
 
 
@@ -59,9 +59,9 @@ def search_bar():
                         top="calc(100% + 1.25rem)",
                         border_radius=RADIUS_MD,
                         border=f"1px solid {rx.color('gray', 5)}",
-                        padding=SPACE_XS,
+                        padding=SPACE_SM,
                         gap="0.25rem",
-                        box_shadow=SHADOW_SEARCH,
+                        box_shadow=SHADOW_LG,
                         direction="column",
                     ),
                     as_child=True,
@@ -91,14 +91,7 @@ def suggestion_card(value: dict[str, Any]) -> rx.Component:
                     weight="medium",
                 ),
                 # industry tag
-                rx.badge(
-                    industry,
-                    size="2",
-                    weight="regular",
-                    variant="surface",
-                    color_scheme="violet",
-                    radius="medium",
-                ),
+                badge(industry, color_variant="violet"),
                 spacing="1",
             ),
             # pct badge column
@@ -126,7 +119,7 @@ def suggestion_card(value: dict[str, Any]) -> rx.Component:
         display="block",
         width="100%",
         padding="0.625rem 0.75rem",
-        border_radius=RADIUS_XS,
+        border_radius=RADIUS_SM,
         cursor="pointer",
         _hover={
             "background": "rgba(255, 255, 255, 0.06)",

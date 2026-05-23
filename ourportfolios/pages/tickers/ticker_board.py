@@ -7,13 +7,13 @@ from ourportfolios.pages.tickers.state import TickersPageState
 from ourportfolios.state import TickerBoardState
 from ourportfolios.state.cart_state import CartState
 from ourportfolios.ui.primitives import (
+    badge,
     ghost_button_xs,
     icon_button_xs,
     skeleton_box,
     surface_box,
 )
 from ourportfolios.ui.theme import (
-    BUTTON_COMPARE,
     CARD_BORDER,
     DIVIDER,
     TEXT_MUTED,
@@ -21,7 +21,7 @@ from ourportfolios.ui.theme import (
     TEXT_TERTIARY,
     white,
 )
-from ourportfolios.ui.theme.surfaces import RADIUS_CARD, RADIUS_PILL
+from ourportfolios.ui.theme.surfaces import RADIUS_CARD
 
 _SKELETON_ROW_COUNT = 12
 _BOARD_H = "42em"
@@ -60,7 +60,6 @@ def _compare_button(symbol: str) -> rx.Component:
     return icon_button_xs(
         "between_horizontal_start",
         on_click=[rx.stop_propagation, TickersPageState.add_ticker_to_compare(symbol)],
-        style=BUTTON_COMPARE,
     )
 
 
@@ -187,18 +186,12 @@ def ticker_row(ticker: dict) -> rx.Component:
                     ),
                     rx.cond(
                         industry != "",
-                        rx.badge(
+                        badge(
                             industry,
-                            variant="soft",
-                            color_scheme="gray",
-                            size="1",
-                            border_radius=RADIUS_PILL,
-                            font_size="0.625rem",
-                            letter_spacing="0.03em",
+                            color_variant="plum",
                             max_width=rx.breakpoints(initial="5rem", sm="7rem"),
                             overflow="hidden",
                             text_overflow="ellipsis",
-                            white_space="nowrap",
                         ),
                         rx.fragment(),
                     ),

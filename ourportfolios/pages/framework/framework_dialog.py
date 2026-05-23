@@ -7,6 +7,7 @@ import reflex as rx
 from ourportfolios.components.common_dialog import CommonDialogConfig, common_dialog
 from ourportfolios.pages.framework.state import FrameworkState
 from ourportfolios.ui.primitives import (
+    badge,
     body_text,
     divider,
     muted_text,
@@ -14,18 +15,11 @@ from ourportfolios.ui.primitives import (
     subheading,
 )
 from ourportfolios.ui.theme import BUTTON_GHOST, TEXT_PRIMARY, white
-from ourportfolios.ui.theme.surfaces import RADIUS_PILL
 
 
 def metric_badge(metric: dict[str, object]) -> rx.Component:
     # metric is a Reflex Var inside rx.foreach — must use [] not .get()
-    return rx.badge(
-        metric["name"],
-        variant="soft",
-        color_scheme="gray",
-        size="2",
-        border_radius=RADIUS_PILL,
-    )
+    return badge(metric["name"], color_variant="gray")
 
 
 def framework_dialog() -> rx.Component:
@@ -51,16 +45,11 @@ def framework_dialog() -> rx.Component:
         ),
         # Badges / source link
         rx.hstack(
-            rx.badge(FrameworkState.selected_framework.scope, variant="soft", size="2"),
-            rx.badge(
-                FrameworkState.selected_framework.complexity,
-                color_scheme=rx.cond(
-                    FrameworkState.selected_framework.complexity == "complex",
-                    "red",
-                    "green",
-                ),
-                variant="soft",
-                size="2",
+            badge(FrameworkState.selected_framework.scope, color_variant="gray"),
+            rx.cond(
+                FrameworkState.selected_framework.complexity == "complex",
+                badge(FrameworkState.selected_framework.complexity, color_variant="red"),
+                badge(FrameworkState.selected_framework.complexity, color_variant="green"),
             ),
             rx.cond(
                 FrameworkState.selected_framework.source_name,

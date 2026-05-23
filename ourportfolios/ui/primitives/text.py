@@ -6,6 +6,7 @@ from typing import cast
 
 import reflex as rx
 
+from ourportfolios.ui.primitives.badge import badge
 from ourportfolios.ui.theme.colors import (
     TEXT_ACCENT,
     TEXT_MUTED,
@@ -19,7 +20,7 @@ from ourportfolios.ui.tokens import (
     LETTER_NORMAL,
     LETTER_SNUG,
     LETTER_TIGHT,
-    TRANS_COLOR,
+    TRANS_DEFAULT,
     WEIGHT_BOLD,
     WEIGHT_EXTRABOLD,
     WEIGHT_REGULAR,
@@ -197,7 +198,7 @@ def nav_link_text(
             "color": white(0.5),
             "text_decoration": "none",
             "_hover": {"color": "white"},
-            "transition": TRANS_COLOR,
+            "transition": TRANS_DEFAULT,
             **props,
         },
     )
@@ -216,12 +217,4 @@ def badge_text(
         **props: Additional Reflex badge props.
 
     """
-    return rx.badge(
-        text,
-        **{
-            "color_scheme": scheme,
-            "variant": "soft",
-            "size": "1",
-            **props,
-        },
-    )
+    return badge(text, color_variant=scheme, **props)

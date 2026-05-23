@@ -10,22 +10,21 @@ from ourportfolios.state.heatmap import (
 )
 from ourportfolios.state.home_state import HomeState
 from ourportfolios.state.prefs_state import PrefsState
-from ourportfolios.ui.primitives import glass_box
+from ourportfolios.ui.primitives import badge, glass_box
 from ourportfolios.ui.theme.colors import TEXT_PRIMARY, TEXT_TERTIARY, white
 from ourportfolios.ui.theme.components import accent_button
 from ourportfolios.ui.theme.surfaces import (
     CARD_BG,
     CARD_BORDER,
-    RADIUS_2XS,
-    RADIUS_4XS,
-    RADIUS_BUTTON,
-    RADIUS_INPUT,
-    RADIUS_PILL,
-    RADIUS_SURFACE,
     SKELETON_BG,
     TRANS_DEFAULT,
 )
-from ourportfolios.ui.tokens import TRANS_BG, TRANS_COLOR_FAST
+from ourportfolios.ui.tokens import (
+    RADIUS_INPUT,
+    RADIUS_SM,
+    RADIUS_SURFACE,
+    TRANS_FAST,
+)
 
 _TREEMAP_H = "38.75rem"
 
@@ -47,7 +46,7 @@ def _period_button(label: str) -> rx.Component:
             color=rx.cond(active, TEXT_PRIMARY, TEXT_TERTIARY),
         ),
         padding="0.18rem 0.5rem",
-        border_radius=RADIUS_4XS,
+        border_radius=RADIUS_SM,
         background=rx.cond(active, white(0.09), "transparent"),
         cursor="pointer",
         on_click=[
@@ -55,7 +54,7 @@ def _period_button(label: str) -> rx.Component:
             HomeState.load_ticker_for_period(label),
         ],
         _hover={"background": white(0.05)},
-        transition=TRANS_BG,
+        transition=TRANS_FAST,
     )
 
 
@@ -173,12 +172,7 @@ def _ticker_content(t: TickerSubtile) -> rx.Component:
                 color=white(0.95),
                 text_align="center",
             ),
-            rx.badge(
-                t.pct_label,
-                color_scheme=t.pct_color_scheme,
-                variant="soft",
-                size="1",
-            ),
+            badge(t.pct_label, color_variant=t.pct_color_scheme),
             spacing="1",
             align="center",
         ),
@@ -192,12 +186,7 @@ def _ticker_content(t: TickerSubtile) -> rx.Component:
                     color=white(0.92),
                     text_align="center",
                 ),
-                rx.badge(
-                    t.pct_label,
-                    color_scheme=t.pct_color_scheme,
-                    variant="soft",
-                    size="1",
-                ),
+                badge(t.pct_label, color_variant=t.pct_color_scheme),
                 spacing="1",
                 align="center",
             ),
@@ -211,12 +200,7 @@ def _ticker_content(t: TickerSubtile) -> rx.Component:
                         color=white(0.88),
                         text_align="center",
                     ),
-                    rx.badge(
-                        t.pct_label,
-                        color_scheme=t.pct_color_scheme,
-                        variant="soft",
-                        size="1",
-                    ),
+                    badge(t.pct_label, color_variant=t.pct_color_scheme),
                     spacing="0",
                     align="center",
                 ),
@@ -228,12 +212,7 @@ def _ticker_content(t: TickerSubtile) -> rx.Component:
                         color=white(0.80),
                         text_align="center",
                     ),
-                    rx.badge(
-                        t.pct_label,
-                        color_scheme=t.pct_color_scheme,
-                        variant="soft",
-                        size="1",
-                    ),
+                    badge(t.pct_label, color_variant=t.pct_color_scheme),
                     spacing="0",
                     align="center",
                 ),
@@ -253,7 +232,7 @@ def _ticker_subtile(t: TickerSubtile) -> rx.Component:
             justify_content="center",
             overflow="hidden",
             background=t.bg,
-            border_radius=RADIUS_PILL,
+            border_radius=RADIUS_SM,
             border=f"1px solid {_SUBTILE_BORDER}",
             transition="filter 0.12s ease",
             _hover={"filter": "brightness(1.22)"},
@@ -282,13 +261,7 @@ def _industry_tile(tile: HeatmapTile) -> rx.Component:
                     overflow="hidden",
                     text_overflow="ellipsis",
                 ),
-                rx.badge(
-                    tile.pct_label,
-                    color_scheme=tile.pct_color_scheme,
-                    variant="soft",
-                    size="1",
-                    flex_shrink="0",
-                ),
+                badge(tile.pct_label, color_variant=tile.pct_color_scheme, flex_shrink="0"),
                 spacing="2",
                 align="center",
                 overflow="hidden",
@@ -337,24 +310,18 @@ def _chip(c: HeatmapChip) -> rx.Component:
                 color=white(0.55),
                 white_space="nowrap",
             ),
-            rx.badge(
-                c.pct_label,
-                color_scheme=c.pct_color_scheme,
-                variant="soft",
-                size="1",
-                flex_shrink="0",
-            ),
+            badge(c.pct_label, color_variant=c.pct_color_scheme, flex_shrink="0"),
             spacing="2",
             align="center",
         ),
         href=c.url,
         padding="0.2rem 0.6rem",
-        border_radius=RADIUS_PILL,
+        border_radius=RADIUS_SM,
         background=_TILE_BG,
         border=_TILE_BORDER,
         flex_shrink="0",
         text_decoration="none",
-        transition=TRANS_COLOR_FAST,
+        transition=TRANS_FAST,
         _hover={"border_color": _TILE_HOVER_BORDER},
         display="inline-flex",
     )
@@ -409,13 +376,7 @@ def _mobile_tile_row(tile: HeatmapTile) -> rx.Component:
                 white_space="nowrap",
                 min_width="0",
             ),
-            rx.badge(
-                tile.pct_label,
-                color_scheme=tile.pct_color_scheme,
-                variant="soft",
-                size="1",
-                flex_shrink="0",
-            ),
+            badge(tile.pct_label, color_variant=tile.pct_color_scheme, flex_shrink="0"),
             spacing="3",
             align="center",
             width="100%",
@@ -425,11 +386,11 @@ def _mobile_tile_row(tile: HeatmapTile) -> rx.Component:
         text_decoration="none",
         display="flex",
         padding="0.6rem 0.75rem",
-        border_radius=RADIUS_BUTTON,
+        border_radius=RADIUS_SM,
         background=white(0.03),
         border=_TILE_BORDER,
         width="100%",
-        transition=TRANS_BG,
+        transition=TRANS_FAST,
         _hover={"border_color": _TILE_HOVER_BORDER, "background": white(0.05)},
     )
 
@@ -448,13 +409,7 @@ def _mobile_chip_row(c: HeatmapChip) -> rx.Component:
                 white_space="nowrap",
                 min_width="0",
             ),
-            rx.badge(
-                c.pct_label,
-                color_scheme=c.pct_color_scheme,
-                variant="soft",
-                size="1",
-                flex_shrink="0",
-            ),
+            badge(c.pct_label, color_variant=c.pct_color_scheme, flex_shrink="0"),
             spacing="3",
             align="center",
             width="100%",
@@ -464,11 +419,11 @@ def _mobile_chip_row(c: HeatmapChip) -> rx.Component:
         text_decoration="none",
         display="flex",
         padding="0.6rem 0.75rem",
-        border_radius=RADIUS_BUTTON,
+        border_radius=RADIUS_SM,
         background=white(0.03),
         border=_TILE_BORDER,
         width="100%",
-        transition=TRANS_BG,
+        transition=TRANS_FAST,
         _hover={"border_color": _TILE_HOVER_BORDER, "background": white(0.05)},
     )
 
@@ -483,7 +438,7 @@ def _mobile_skeleton_row() -> rx.Component:
             width="100%",
         ),
         padding="0.6rem 0.75rem",
-        border_radius=RADIUS_BUTTON,
+        border_radius=RADIUS_SM,
         background=white(0.03),
         border=_TILE_BORDER,
         width="100%",
@@ -550,7 +505,7 @@ def market_overview_section() -> rx.Component:
                     *[_period_button(p) for p in _PERIOD_OPTIONS],
                     spacing="0",
                     padding="0.16rem",
-                    border_radius=RADIUS_2XS,
+                    border_radius=RADIUS_SM,
                     background=white(0.03),
                     border=f"1px solid {white(0.06)}",
                     flex_shrink="0",

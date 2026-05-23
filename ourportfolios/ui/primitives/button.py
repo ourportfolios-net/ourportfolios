@@ -23,10 +23,8 @@ from ourportfolios.ui.theme.surfaces import (
 from ourportfolios.ui.tokens import (
     FONT_BASE,
     FONT_SM,
-    RADIUS_4XS,
-    TRANS_BG,
-    TRANS_COLOR,
-    TRANS_OPACITY,
+    RADIUS_SM,
+    TRANS_DEFAULT,
     WEIGHT_REGULAR,
 )
 
@@ -348,7 +346,7 @@ def nav_link(
             "color": white(0.5),
             "text_decoration": "none",
             "_hover": {"color": "white"},
-            "transition": TRANS_COLOR,
+            "transition": TRANS_DEFAULT,
             **props,
         },
     )
@@ -379,7 +377,7 @@ def locked_link(
             "cursor": "pointer",
             "title": "Sign in to access",
             "_hover": {"opacity": "0.6"},
-            "transition": TRANS_OPACITY,
+            "transition": TRANS_DEFAULT,
             **props,
         },
     )
@@ -440,12 +438,12 @@ def period_button(
         ),
         **{
             "padding": "0.18rem 0.5rem",
-            "border_radius": RADIUS_4XS,
+            "border_radius": RADIUS_SM,
             "background": rx.cond(active, purple(0.18), "transparent"),
             "cursor": "pointer",
             "on_click": on_click,
             "_hover": {"background": rx.cond(active, purple(0.28), white(0.05))},
-            "transition": TRANS_BG,
+            "transition": TRANS_DEFAULT,
             **props,
         },
     )

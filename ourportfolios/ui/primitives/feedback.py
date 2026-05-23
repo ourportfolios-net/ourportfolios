@@ -5,7 +5,7 @@ from __future__ import annotations
 import reflex as rx
 
 from ourportfolios.ui.theme.colors import purple, white
-from ourportfolios.ui.tokens import RADIUS_FULL, SPACE_2XS, SPACE_4XL
+from ourportfolios.ui.tokens import RADIUS_SM, SPACE_SM, SPACE_XL
 
 
 def skeleton_box(
@@ -53,7 +53,7 @@ def skeleton_circle(
     """
     return rx.skeleton(
         rx.box(width=size, height=size),
-        **{"loading": True, "border_radius": RADIUS_FULL, **props},
+        **{"loading": True, "border_radius": RADIUS_SM, **props},
     )
 
 
@@ -76,11 +76,11 @@ def loading_spinner(
                 speed="1s",
                 color=purple(0.7),
             ),
-            rx.text(label, size="2", color=white(0.5), margin_top=SPACE_2XS),
+            rx.text(label, size="2", color=white(0.5), margin_top=SPACE_SM),
             spacing="2",
             align="center",
         ),
-        **{"width": "100%", "padding": SPACE_4XL, **props},
+        **{"width": "100%", "padding": SPACE_XL, **props},
     )
 
 
@@ -104,5 +104,5 @@ def empty_state(
             spacing="2",
             align="center",
         ),
-        **{"width": "100%", "padding": SPACE_4XL, **props},
+        **{"width": "100%", "padding": SPACE_XL, **props},
     )

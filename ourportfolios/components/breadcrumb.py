@@ -2,7 +2,7 @@
 
 import reflex as rx
 
-from ourportfolios.ui.tokens import TRANS_COLOR
+from ourportfolios.ui.tokens import TRANS_DEFAULT
 
 
 def _separator() -> rx.Component:
@@ -21,7 +21,7 @@ def _segment_link(label: str, href: str) -> rx.Component:
         color="rgba(255,255,255,0.35)",
         _hover={"color": "white"},
         underline="none",
-        transition=TRANS_COLOR,
+        transition=TRANS_DEFAULT,
     )
 
 

@@ -16,11 +16,10 @@ from dataclasses import dataclass
 
 import reflex as rx
 
-from ourportfolios.ui.primitives import subtle_box
+from ourportfolios.ui.primitives import badge, subtle_box
 from ourportfolios.ui.theme.colors import TEXT_TERTIARY, purple
 from ourportfolios.ui.tokens import (
-    RADIUS_5XS,
-    RADIUS_XS,
+    RADIUS_SM,
     SPACE_LG,
 )
 
@@ -42,7 +41,7 @@ class MiniChartCardProps:
     fill_color_pos: str | None = None
 
 
-def _skel(w: str, h: str, r: str = RADIUS_5XS) -> rx.Component:
+def _skel(w: str, h: str, r: str = RADIUS_SM) -> rx.Component:
     return rx.skeleton(rx.box(width=w, height=h), loading=True, border_radius=r)
 
 
@@ -63,8 +62,6 @@ def mini_chart_card(
     """
     stroke_pos = card.stroke_color_pos or purple(0.85)
     fill_pos = card.fill_color_pos or purple(0.12)
-
-    badge_scheme = rx.cond(card.is_positive, "green", "red")
 
     chart = rx.box(
         rx.recharts.area_chart(
@@ -95,17 +92,15 @@ def mini_chart_card(
                 rx.text(card.label, size="1", weight="medium", color=TEXT_TERTIARY),
                 rx.text(card.value, size="5", weight="bold", color="white"),
                 rx.hstack(
-                    rx.badge(
-                        card.abs_change,
-                        color_scheme=badge_scheme,
-                        variant="soft",
-                        size="1",
+                    rx.cond(
+                        card.is_positive,
+                        badge(card.abs_change, color_variant="green"),
+                        badge(card.abs_change, color_variant="red"),
                     ),
-                    rx.badge(
-                        card.pct_change,
-                        color_scheme=badge_scheme,
-                        variant="soft",
-                        size="1",
+                    rx.cond(
+                        card.is_positive,
+                        badge(card.pct_change, color_variant="green"),
+                        badge(card.pct_change, color_variant="red"),
                     ),
                     spacing="1",
                 ),
@@ -125,16 +120,16 @@ def mini_chart_card(
         rx.hstack(
             rx.vstack(
                 _skel("3.25rem", "0.625rem"),
-                _skel("5.5rem", "1.5rem", RADIUS_5XS),
+                _skel("5.5rem", "1.5rem", RADIUS_SM),
                 rx.hstack(
-                    _skel("3rem", "1rem", RADIUS_XS),
-                    _skel("3.5rem", "1rem", RADIUS_XS),
+                    _skel("3rem", "1rem", RADIUS_SM),
+                    _skel("3.5rem", "1rem", RADIUS_SM),
                     spacing="1",
                 ),
                 spacing="1",
             ),
             rx.spacer(),
-            _skel(f"{card.chart_w}px", f"{card.chart_h}px", RADIUS_5XS),
+            _skel(f"{card.chart_w}px", f"{card.chart_h}px", RADIUS_SM),
             align="center",
             width="100%",
         ),

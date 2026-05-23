@@ -4,6 +4,7 @@ import reflex as rx
 
 from ourportfolios.pages.tickers.state import TickersPageState
 from ourportfolios.ui.primitives import (
+    badge,
     body_text,
     hstack,
     muted_text,
@@ -24,11 +25,10 @@ from ourportfolios.ui.theme.colors import (
     white,
 )
 from ourportfolios.ui.theme.surfaces import (
-    RADIUS_BUTTON,
     RADIUS_CARD,
     TABLE_BG,
 )
-from ourportfolios.ui.tokens import RADIUS_4XS
+from ourportfolios.ui.tokens import RADIUS_SM
 
 # ── Layout constants ───────────────────────────────────────────────────────────────────────
 _TICKER_W = "11em"
@@ -178,7 +178,7 @@ def _ticker_card(stock: dict) -> rx.Component:
             ),
             background=white(0.04),
             border=f"1px solid {white(0.07)}",
-            border_radius=RADIUS_BUTTON,
+            border_radius=RADIUS_SM,
             padding="0.55em 0.7em",
             width="calc(100% - 1em)",
             transition="all 0.18s ease",
@@ -211,16 +211,9 @@ def _ticker_card(stock: dict) -> rx.Component:
 def _industry_row(industry: str) -> rx.Component:
     return rx.box(
         rx.box(
-            rx.badge(
+            badge(
                 industry,
-                variant="soft",
-                color_scheme="gray",
-                size="2",
-                style={
-                    "border_radius": RADIUS_4XS,
-                    "font_size": "0.6875rem",
-                    "letter_spacing": "0.04em",
-                },
+                color_variant="gray",
             ),
             width=_TICKER_W,
             min_width=_TICKER_W,
@@ -357,7 +350,7 @@ def _skeleton_row(ticker: str) -> rx.Component:
                 ),
                 background=white(0.04),
                 border=f"1px solid {white(0.07)}",
-                border_radius=RADIUS_BUTTON,
+                border_radius=RADIUS_SM,
                 padding="0.55em 0.7em",
                 width="calc(100% - 1em)",
             ),
@@ -419,7 +412,7 @@ def compare_table() -> rx.Component:
                 justify_content="center",
                 background="rgba(9,9,9,0.75)",
                 z_index="10",
-                border_radius="0.8125rem",
+                border_radius=RADIUS_CARD,
             ),
             rx.fragment(),
         ),

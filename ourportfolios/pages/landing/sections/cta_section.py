@@ -3,6 +3,28 @@
 import reflex as rx
 
 from ourportfolios.pages.landing.components import badge_button, scroll_reveal
+from ourportfolios.ui.theme.colors import GLOW_PURPLE, TEXT_PRIMARY, white
+from ourportfolios.ui.tokens import (
+    BLUR_DEFAULT,
+    RADIUS_MD,
+    RADIUS_SM,
+    SPACE_LG,
+    SPACE_XL,
+    TRANS_DEFAULT,
+    WEIGHT_SEMIBOLD,
+)
+
+_CTA_BUTTON_STYLE = {
+    "background": white(0.7),
+    "color": "rgba(0, 0, 0, 0.85)",
+    "border_radius": RADIUS_MD,
+    "font_weight": WEIGHT_SEMIBOLD,
+    "padding_x": SPACE_XL,
+    "padding_y": SPACE_LG,
+    "cursor": "pointer",
+    "transition": TRANS_DEFAULT,
+    "_hover": {"background": white(0.95)},
+}
 
 
 def cta_section() -> rx.Component:
@@ -14,12 +36,12 @@ def cta_section() -> rx.Component:
                     rx.heading(
                         "Ready to build ourportfolios?",
                         size="8",
-                        font_weight="600",
+                        font_weight="700",
                         letter_spacing="-0.02em",
                         line_height="1.2",
-                        margin_bottom="2rem",
+                        margin_bottom=SPACE_XL,
                         text_align="center",
-                        color="rgba(255, 255, 255, 0.8)",
+                        color=TEXT_PRIMARY,
                     ),
                     rx.hstack(
                         rx.link(
@@ -31,17 +53,7 @@ def cta_section() -> rx.Component:
                                     align="center",
                                 ),
                                 size="3",
-                                background="rgba(255, 255, 255, 0.7)",
-                                color="rgba(0, 0, 0, 0.85)",
-                                border_radius="0.75rem",
-                                font_weight="600",
-                                padding_x="2rem",
-                                padding_y="0.875rem",
-                                _hover={
-                                    "background": "rgba(255, 255, 255, 0.95)",
-                                },
-                                transition="all 0.2s",
-                                cursor="pointer",
+                                style=_CTA_BUTTON_STYLE,
                             ),
                             href="/auth",
                         ),
@@ -49,8 +61,8 @@ def cta_section() -> rx.Component:
                             badge_button(
                                 "Contact us",
                                 size="3",
-                                padding_x="2rem",
-                                padding_y="0.875rem",
+                                padding_x=SPACE_XL,
+                                padding_y=SPACE_LG,
                             ),
                             href="/contacts",
                         ),
@@ -64,18 +76,18 @@ def cta_section() -> rx.Component:
                 ),
                 max_width="80rem",
                 width="100%",
-                padding="4rem",
-                background="rgba(255, 255, 255, 0.03)",
-                backdrop_filter="blur(1.5rem)",
-                border="1px solid rgba(255, 255, 255, 0.05)",
-                border_radius="3rem",
+                padding="3rem",
+                background=white(0.03),
+                backdrop_filter=f"blur({BLUR_DEFAULT})",
+                border=f"1px solid {white(0.05)}",
+                border_radius=RADIUS_SM,
                 position="relative",
                 overflow="hidden",
                 _before={
                     "content": '""',
                     "position": "absolute",
                     "inset": "0",
-                    "background": "linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, transparent 100%)",
+                    "background": f"linear-gradient(135deg, {GLOW_PURPLE} 100%, transparent 100%)",
                     "opacity": "0.3",
                     "z_index": "0",
                 },

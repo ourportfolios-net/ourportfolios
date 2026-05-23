@@ -2,7 +2,7 @@ import reflex as rx
 
 from ourportfolios.state.cart_state import CartState
 from ourportfolios.state.home_state import HomeState
-from ourportfolios.ui.primitives import glass_box, icon_button_xs
+from ourportfolios.ui.primitives import badge, glass_box, icon_button_xs
 from ourportfolios.ui.theme.colors import white
 
 
@@ -120,12 +120,14 @@ def _ticker_real() -> rx.Component:
                             min_width="0",
                         ),
                         rx.spacer(),
-                        rx.badge(
-                            HomeState.ticker_of_day_change,
-                            color_scheme="green",
-                            size="1",
-                            weight="bold",
-                            flex_shrink="0",
+                        rx.cond(
+                            HomeState.ticker_of_day_change.startswith("+"),
+                            badge(HomeState.ticker_of_day_change, color_variant="green", flex_shrink="false"),
+                            rx.cond(
+                                HomeState.ticker_of_day_change.startswith("-"),
+                                badge(HomeState.ticker_of_day_change, color_variant="red", flex_shrink="false"),
+                                badge(HomeState.ticker_of_day_change, color_variant="gray", flex_shrink="false"),
+                            ),
                         ),
                         width="100%",
                         align="center",

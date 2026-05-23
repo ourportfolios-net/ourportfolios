@@ -11,10 +11,8 @@ from ourportfolios.ui.theme.surfaces import (
     CARD_BORDER,
     INPUT_STYLE,
     PAGE_BG,
-    RADIUS_BUTTON,
-    RADIUS_CARD,
 )
-from ourportfolios.ui.tokens import TRANS_DEFAULT
+from ourportfolios.ui.tokens import RADIUS_LG, RADIUS_SM, TRANS_DEFAULT
 
 INPUT_OVERRIDE: dict[str, object] = {
     **INPUT_STYLE,
@@ -78,7 +76,7 @@ _ACTION_BUTTON_STYLE = {
     "height": "3rem",
     "background": white(0.08),
     "border": f"1px solid {white(0.14)}",
-    "border_radius": RADIUS_BUTTON,
+    "border_radius": RADIUS_SM,
     "cursor": "pointer",
     "transition": TRANS_DEFAULT,
     "_hover": {"background": white(0.13), "border_color": white(0.22)},
@@ -132,7 +130,7 @@ _GOOGLE_BUTTON_STYLE = {
     "height": "3rem",
     "background": white(0.04),
     "border": f"1px solid {white(0.1)}",
-    "border_radius": RADIUS_BUTTON,
+    "border_radius": RADIUS_SM,
     "cursor": "pointer",
     "transition": TRANS_DEFAULT,
     "_hover": {"background": white(0.08), "border_color": white(0.18)},
@@ -174,7 +172,7 @@ def auth_card(*children: rx.Component) -> rx.Component:
         *children,
         background=CARD_BG,
         border=CARD_BORDER,
-        border_radius=RADIUS_CARD,
+        border_radius=RADIUS_LG,
         padding=rx.breakpoints(initial="1.25rem", sm="2rem"),
         width="100%",
         max_width=rx.breakpoints(initial="22rem", sm="28rem"),

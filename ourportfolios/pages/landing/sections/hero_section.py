@@ -3,6 +3,26 @@
 import reflex as rx
 
 from ourportfolios.pages.landing.components import badge_button, plasma, shiny_text
+from ourportfolios.ui.theme.colors import white
+from ourportfolios.ui.tokens import (
+    RADIUS_SM,
+    SPACE_LG,
+    SPACE_XL,
+    TRANS_DEFAULT,
+    WEIGHT_SEMIBOLD,
+)
+
+_CTA_BUTTON_STYLE = {
+    "background": white(0.7),
+    "color": "rgba(0, 0, 0, 0.85)",
+    "border_radius": RADIUS_SM,
+    "font_weight": WEIGHT_SEMIBOLD,
+    "padding_x": SPACE_XL,
+    "padding_y": SPACE_LG,
+    "cursor": "pointer",
+    "transition": TRANS_DEFAULT,
+    "_hover": {"background": white(0.95)},
+}
 
 
 def hero_section() -> rx.Component:
@@ -44,14 +64,14 @@ def hero_section() -> rx.Component:
                     shiny_text(
                         text="yourportfolio starts here!",
                         speed=1.5,
-                        color="rgba(255, 255, 255, 0.7)",
-                        shine_color="rgba(255, 255, 255, 1)",
+                        color=white(0.7),
+                        shine_color=white(1),
                         spread=120,
                         direction="left",
                         yoyo=False,
                         delay=3,
                         font_size=["2.5rem", "3rem", "3.5rem", "4rem"],
-                        font_weight="550",
+                        font_weight="750",
                         line_height="1.1",
                         letter_spacing="-0.02em",
                     ),
@@ -62,7 +82,7 @@ def hero_section() -> rx.Component:
                 rx.text(
                     "Build your portfolios. We'll build ours.",
                     font_size=["1rem", "1.125rem", "1.25rem"],
-                    color="rgba(255, 255, 255, 0.4)",
+                    color=white(0.4),
                     margin_bottom="3rem",
                     max_width="36rem",
                     text_align="center",
@@ -79,17 +99,7 @@ def hero_section() -> rx.Component:
                                 align="center",
                             ),
                             size="3",
-                            background="rgba(255, 255, 255, 0.7)",
-                            color="rgba(0, 0, 0, 0.85)",
-                            border_radius="0.75rem",
-                            font_weight="600",
-                            padding_x="2rem",
-                            padding_y="0.875rem",
-                            _hover={
-                                "background": "rgba(255, 255, 255, 0.95)",
-                            },
-                            transition="all 0.2s",
-                            cursor="pointer",
+                            style=_CTA_BUTTON_STYLE,
                         ),
                         href="/auth",
                     ),

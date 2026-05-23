@@ -6,8 +6,7 @@ from ourportfolios.components.common_dialog import CommonDialogConfig, common_di
 from ourportfolios.pages.ticker_analysis.state import State
 from ourportfolios.ui.primitives import surface_box
 from ourportfolios.ui.theme.colors import white
-from ourportfolios.ui.theme.surfaces import RADIUS_INPUT
-from ourportfolios.ui.tokens import TRANS_DEFAULT
+from ourportfolios.ui.tokens import RADIUS_MD, TRANS_DEFAULT
 
 _PROFILE_TEXT_STYLE = {
     "whiteSpace": "pre-wrap",
@@ -73,7 +72,7 @@ def company_profile_dialog():
             width="100%",
             on_click=State.set_profile_dialog_open(True),
             background=white(0.025),
-            border_radius=RADIUS_INPUT,
+            border_radius=RADIUS_MD,
             transition=TRANS_DEFAULT,
             _hover=_DIALOG_TRIGGER_HOVER,
         ),

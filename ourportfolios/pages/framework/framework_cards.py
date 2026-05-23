@@ -8,6 +8,7 @@ from ourportfolios.pages.framework.state import (
     FrameworkState,
 )
 from ourportfolios.ui.primitives import (
+    badge,
     hstack,
     pill_toggle,
     skeleton_box,
@@ -19,7 +20,6 @@ from ourportfolios.ui.theme import (
     accent_button,
     white,
 )
-from ourportfolios.ui.theme.surfaces import RADIUS_PILL
 
 _DESCRIPTION_CLAMP = {
     "-webkit-line-clamp": "3",
@@ -84,15 +84,7 @@ def framework_card(framework: FrameworkModel) -> rx.Component:
     return rx.box(
         vstack(
             rx.box(
-                rx.badge(
-                    framework.scope,
-                    variant="soft",
-                    color_scheme="gray",
-                    size="1",
-                    border_radius=RADIUS_PILL,
-                    font_size="0.625rem",
-                    letter_spacing="0.03em",
-                ),
+                badge(framework.scope, color_variant="gray"),
                 width="100%",
                 display="flex",
                 justify_content="flex-end",

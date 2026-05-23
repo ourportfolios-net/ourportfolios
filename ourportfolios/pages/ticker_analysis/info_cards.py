@@ -16,9 +16,9 @@ from ourportfolios.ui.primitives import (
 from ourportfolios.ui.theme.colors import white
 from ourportfolios.ui.theme.surfaces import (
     CARD_BORDER,
-    RADIUS_BUTTON,
     RADIUS_CARD,
 )
+from ourportfolios.ui.tokens import RADIUS_SM
 
 
 def _skel(w: str, h: str, radius: str = "0.5rem") -> rx.Component:
@@ -61,8 +61,8 @@ def name_card() -> rx.Component:
                         ),
                     ),
                     loading=State.is_loading_company,
-                    style={"border_radius": "0.375rem"},
-                    border_radius=RADIUS_BUTTON,
+                    style={"border_radius": RADIUS_SM},
+                    border_radius=RADIUS_SM,
                 ),
                 position="absolute",
                 top="1.25rem",
@@ -80,8 +80,8 @@ def name_card() -> rx.Component:
                         size="9",
                     ),
                     loading=State.is_loading_company,
-                    style={"border_radius": "0.375rem"},
-                    border_radius=RADIUS_BUTTON,
+                    style={"border_radius": RADIUS_SM},
+                    border_radius=RADIUS_SM,
                 ),
                 hstack(
                     rx.skeleton(
@@ -91,10 +91,10 @@ def name_card() -> rx.Component:
                                 "HOSE",
                                 overview.get("exchange", ""),
                             ),
-                            scheme="gray",
+                            scheme="blue",
                         ),
                         loading=State.is_loading_company,
-                        style={"border_radius": "0.375rem"},
+                        style={"border_radius": RADIUS_SM},
                     ),
                     rx.skeleton(
                         badge_text(
@@ -106,7 +106,7 @@ def name_card() -> rx.Component:
                             scheme="violet",
                         ),
                         loading=State.is_loading_company,
-                        style={"border_radius": "0.375rem"},
+                        style={"border_radius": RADIUS_SM},
                     ),
                     spacing="2",
                 ),
@@ -144,7 +144,7 @@ def general_info_card() -> rx.Component:
                     weight="medium",
                 ),
                 loading=State.is_loading_company,
-                style={"border_radius": "0.375rem"},
+                style={"border_radius": RADIUS_SM},
             ),
             width="100%",
         )
@@ -182,7 +182,7 @@ def general_info_card() -> rx.Component:
                             style={"flexWrap": "wrap"},
                         ),
                         loading=State.is_loading_company,
-                        style={"border_radius": "0.375rem"},
+                        style={"border_radius": RADIUS_SM},
                     ),
                     rx.skeleton(
                         rx.link(
@@ -196,7 +196,7 @@ def general_info_card() -> rx.Component:
                             is_external=True,
                         ),
                         loading=State.is_loading_company,
-                        style={"border_radius": "0.375rem"},
+                        style={"border_radius": RADIUS_SM},
                     ),
                     spacing="1",
                     align="start",

@@ -1,9 +1,9 @@
 import reflex as rx
 
 from ourportfolios.state.cart_state import CartState
-from ourportfolios.ui.primitives import glass_box
+from ourportfolios.ui.primitives import badge, glass_box
 from ourportfolios.ui.theme.colors import white
-from ourportfolios.ui.tokens import RADIUS_4XS, RADIUS_BUTTON, TRANS_DEFAULT
+from ourportfolios.ui.tokens import RADIUS_SM, TRANS_DEFAULT
 
 
 def _cart_item_row(item: dict, index: int) -> rx.Component:
@@ -23,19 +23,13 @@ def _cart_item_row(item: dict, index: int) -> rx.Component:
             min_width="0",
             flex="1",
         ),
-        rx.badge(
-            item.get("industry", "Unknown"),
-            variant="outline",
-            color_scheme="gray",
-            size="1",
-            flex_shrink="0",
-        ),
+        badge(item.get("industry", "Unknown"), color_variant="gray", flex_shrink="0"),
         rx.box(
             rx.icon("x", size=13, color=white(0.25)),
             on_click=lambda: CartState.remove_item(index),
             cursor="pointer",
             padding="0.25rem",
-            border_radius=RADIUS_4XS,
+            border_radius=RADIUS_SM,
             display="flex",
             align_items="center",
             justify_content="center",
@@ -45,7 +39,7 @@ def _cart_item_row(item: dict, index: int) -> rx.Component:
         align="center",
         width="100%",
         padding="0.75rem 0.875rem",
-        border_radius=RADIUS_BUTTON,
+        border_radius=RADIUS_SM,
         background=white(0.02),
         border=f"1px solid {white(0.05)}",
         transition=TRANS_DEFAULT,

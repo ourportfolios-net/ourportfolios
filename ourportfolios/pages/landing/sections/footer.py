@@ -3,6 +3,7 @@
 import reflex as rx
 
 from ourportfolios.pages.landing.components import scroll_reveal
+from ourportfolios.ui.theme.colors import white
 
 
 def footer() -> rx.Component:
@@ -15,7 +16,7 @@ def footer() -> rx.Component:
                     font_size="1.25rem",
                     font_weight="600",
                     letter_spacing="-0.02em",
-                    color="rgba(255, 255, 255, 0.8)",
+                    color=white(0.8),
                 ),
                 rx.spacer(),
                 rx.hstack(
@@ -29,7 +30,7 @@ def footer() -> rx.Component:
                         font_size="0.625rem",
                         letter_spacing="0.15em",
                         text_transform="uppercase",
-                        color="rgba(255, 255, 255, 0.4)",
+                        color=white(0.4),
                         _hover={"color": "white"},
                         transition="color 0.2s",
                         is_external=True,
@@ -40,13 +41,13 @@ def footer() -> rx.Component:
                 justify="between",
                 align="start",
                 flex_direction=["column", "row"],
-                gap="4rem",
+                gap="3rem",
                 width="100%",
                 max_width="80rem",
                 margin="0 auto",
                 padding_x="2.5rem",
             ),
-            border_top="1px solid rgba(255, 255, 255, 0.05)",
+            border_top=f"1px solid {white(0.05)}",
             padding_y="5rem",
             padding_x="2.5rem",
         ),

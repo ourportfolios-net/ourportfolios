@@ -14,7 +14,7 @@ from ourportfolios.ui.primitives import (
     vstack,
 )
 from ourportfolios.ui.theme import white
-from ourportfolios.ui.theme.surfaces import RADIUS_BUTTON, RADIUS_INPUT
+from ourportfolios.ui.tokens import RADIUS_MD, RADIUS_SM
 
 # ── Static placeholder data for guest view ────────────────────────────────────
 _PLACEHOLDER_SERIES = [
@@ -40,7 +40,7 @@ _GUEST_OVERLAY_STYLE = {
     "backdropFilter": "blur(10px)",
     "WebkitBackdropFilter": "blur(10px)",
     "backgroundColor": "rgba(8, 8, 14, 0.5)",
-    "borderRadius": "0.625rem",
+    "borderRadius": RADIUS_MD,
     "zIndex": "10",
 }
 
@@ -53,15 +53,14 @@ def performance_card_skeleton():
     return surface_box(
         vstack(
             skeleton_box(width="40%", height="1.125rem"),
-            spacer(),
-            skeleton_box(width="30%", height="1.625rem"),
+            rx.box(height="0.5rem"),
+            skeleton_box(width="100%", height="12.5rem"),
             spacing="3",
             align="stretch",
-            height="100%",
+            width="100%",
         ),
-        padding="0.75rem",
+        padding="1rem",
         width="100%",
-        height="100%",
     )
 
 
@@ -75,7 +74,7 @@ def _placeholder_chart(label: str) -> rx.Component:
                 width="7rem",
                 height="1.625rem",
                 background=white(0.07),
-                border_radius=RADIUS_BUTTON,
+                border_radius=RADIUS_SM,
             ),
             align="center",
             width="100%",
@@ -133,7 +132,7 @@ def guest_overlay() -> rx.Component:
                     color=white(0.55),
                 ),
                 padding="0.35rem 0.85rem",
-                border_radius=RADIUS_BUTTON,
+                border_radius=RADIUS_SM,
                 background=white(0.04),
                 border=f"1px solid {white(0.09)}",
                 cursor="pointer",
@@ -180,7 +179,7 @@ def _guest_performance_grid() -> rx.Component:
         height="100%",
         min_height="25rem",
         overflow="hidden",
-        border_radius=RADIUS_INPUT,
+        border_radius=RADIUS_MD,
     )
 
 
@@ -192,62 +191,71 @@ def create_dynamic_chart(category: str):
         performance_card_skeleton(),
         surface_box(
             vstack(
-                subheading(category),
-                spacer(),
-                rx.cond(
-                    State.available_metrics_by_category.get(category, []) != [],
-                    rx.select(
-                        State.available_metrics_by_category[category],
-                        value=State.selected_metrics.get(category, ""),
-                        on_change=lambda value: State.set_metric_for_category(
-                            category,
-                            value,
+                rx.hstack(
+                    subheading(category, color=white(0.9)),
+                    rx.spacer(),
+                    rx.cond(
+                        State.available_metrics_by_category.get(category, []) != [],
+                        rx.box(
+                            rx.select(
+                                State.available_metrics_by_category[category],
+                                value=State.selected_metrics.get(category, ""),
+                                on_change=lambda value: State.set_metric_for_category(
+                                    category,
+                                    value,
+                                ),
+                                size="1",
+                                style={
+                                    "border_radius": RADIUS_SM,
+                                    "background": white(0.04),
+                                    "border": f"1px solid {white(0.09)}",
+                                    "color": "white",
+                                    "min_width": "8rem",
+                                    "width": "auto",
+                                },
+                            ),
+                            flex_shrink=0,
                         ),
-                        size="1",
-                        style={
-                            "border_radius": RADIUS_BUTTON,
-                            "background": white(0.04),
-                            "border": f"1px solid {white(0.09)}",
-                            "color": "white",
-                        },
+                        muted_text("No metrics", size="1"),
                     ),
-                    muted_text("No metrics", size="1"),
-                ),
-                align="center",
-                justify="between",
-                width="100%",
-            ),
-            rx.box(
-                rx.recharts.line_chart(
-                    rx.recharts.line(
-                        data_key="value",
-                        stroke=rx.color("accent", 9),
-                        stroke_width=3,
-                        type_="monotone",
-                        dot=False,
-                    ),
-                    rx.recharts.x_axis(
-                        data_key="year",
-                        angle=-45,
-                        text_anchor="end",
-                        height=60,
-                        tick={"fontSize": 14},
-                    ),
-                    rx.recharts.y_axis(tick={"fontSize": 14}),
-                    rx.recharts.tooltip(),
-                    data=State.get_chart_data_for_category[category],
                     width="100%",
-                    height=250,
-                    margin={"top": 15, "right": 30, "left": 10, "bottom": 5},
+                    align="center",
                 ),
+                rx.box(
+                    rx.recharts.line_chart(
+                        rx.recharts.line(
+                            data_key="value",
+                            stroke=rx.color("accent", 9),
+                            stroke_width=2,
+                            type_="monotone",
+                            dot=False,
+                        ),
+                        rx.recharts.x_axis(
+                            data_key="year",
+                            angle=-45,
+                            text_anchor="end",
+                            height=50,
+                            tick={"fontSize": 12},
+                        ),
+                        rx.recharts.y_axis(
+                            tick={"fontSize": 12},
+                            width=45,
+                        ),
+                        rx.recharts.tooltip(),
+                        data=State.get_chart_data_for_category[category],
+                        width="100%",
+                        height=200,
+                        margin={"top": 10, "right": 10, "left": 0, "bottom": 5},
+                    ),
+                    width="100%",
+                    height="12.5rem",
+                    overflow="hidden",
+                ),
+                spacing="3",
+                align="stretch",
                 width="100%",
-                height="15.625rem",
-                overflow="hidden",
             ),
-            spacing="2",
-            align="stretch",
-            height="100%",
-            padding="0.75rem",
+            padding="1rem",
             width="100%",
         ),
     )

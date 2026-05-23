@@ -7,7 +7,7 @@ import reflex as rx
 
 from ourportfolios.ui.primitives import modal_panel
 from ourportfolios.ui.theme.colors import TEXT_TERTIARY, white
-from ourportfolios.ui.tokens import SPACE_2XL, SPACE_LG, TRANS_COLOR
+from ourportfolios.ui.tokens import SPACE_LG, SPACE_XL, TRANS_DEFAULT
 
 
 @dataclass(slots=True)
@@ -18,7 +18,7 @@ class CommonDialogConfig:
     width: str = "60vw"
     height: str = "58vh"
     max_width: str | None = None
-    padding: str = SPACE_2XL
+    padding: str = SPACE_XL
     title: str | None = None
     title_size: Literal["1", "2", "3", "4", "5", "6", "7", "8", "9"] = "6"
     show_close_button: bool = True
@@ -52,7 +52,7 @@ def common_dialog(content: rx.Component, config: CommonDialogConfig) -> rx.Compo
                 user_select="none",
                 color=white(0.45),
                 _hover={"color": "white"},
-                transition=TRANS_COLOR,
+                transition=TRANS_DEFAULT,
             ),
         )
         header_content.append(close_button)

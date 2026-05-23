@@ -22,7 +22,8 @@ from ourportfolios.ui.primitives import (
     search_icon,
     search_input,
 )
-from ourportfolios.ui.theme.surfaces import BUTTON_SECONDARY, RADIUS_PILL
+from ourportfolios.ui.theme.surfaces import BUTTON_SECONDARY
+from ourportfolios.ui.tokens import RADIUS_SM
 
 
 def _page_header() -> rx.Component:
@@ -62,7 +63,7 @@ def _add_framework_button() -> rx.Component:
         "Add Framework",
         on_click=FrameworkState.open_add_dialog,
         size="2",
-        style={**BUTTON_SECONDARY, "border_radius": RADIUS_PILL},
+        style={**BUTTON_SECONDARY, "border_radius": RADIUS_SM},
     )
 
 

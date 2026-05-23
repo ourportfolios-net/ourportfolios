@@ -8,14 +8,15 @@ from ourportfolios.components.category_toggle_card import category_toggle_card
 from ourportfolios.pages.tickers.state import TickersPageState
 from ourportfolios.state import SearchBarState
 from ourportfolios.ui.primitives import (
-    filter_button as filter_button_primitive,
-)
-from ourportfolios.ui.primitives import (
+    badge,
     ghost_button_sm,
     hstack,
     search_icon,
     search_input,
     vstack,
+)
+from ourportfolios.ui.primitives import (
+    filter_button as filter_button_primitive,
 )
 from ourportfolios.ui.theme.colors import white
 from ourportfolios.ui.theme.surfaces import (
@@ -25,11 +26,8 @@ from ourportfolios.ui.theme.surfaces import (
     LABEL_STYLE,
     MODAL_BG,
     MODAL_PANEL_STYLE,
-    RADIUS_BUTTON,
-    RADIUS_INPUT,
-    RADIUS_PILL,
 )
-from ourportfolios.ui.tokens import SHADOW_DROPDOWN
+from ourportfolios.ui.tokens import RADIUS_MD, RADIUS_SM, SHADOW_LG
 
 # ── Filter sliders ─────────────────────────────────────────────────────────────
 
@@ -121,7 +119,7 @@ def _metric_slider(metric_tag: str, option: str) -> rx.Component:
         ),
         spacing="2",
         padding="0.5em 0.7em",
-        border_radius=RADIUS_BUTTON,
+        border_radius=RADIUS_SM,
         background=white(0.025),
         border=f"1px solid {white(0.06)}",
         # minWidth:0 stops grid items expanding past column width.
@@ -562,11 +560,11 @@ def _compare_search_bar() -> rx.Component:
                     top="calc(100% + 0.4em)",
                     left="0",
                     z_index="200",
-                    border_radius=RADIUS_INPUT,
+                    border_radius=RADIUS_MD,
                     border=f"1px solid {white(0.08)}",
                     background=MODAL_BG,
                     overflow="hidden",
-                    box_shadow=SHADOW_DROPDOWN,
+                    box_shadow=SHADOW_LG,
                     width="100%",
                 ),
                 rx.fragment(),
@@ -630,16 +628,13 @@ def _metrics_settings_dialog() -> rx.Component:
                     rx.text("Metric Settings", size="5", weight="bold", color="white"),
                     rx.spacer(),
                     hstack(
-                        rx.badge(
+                        badge(
                             "Quarterly",
-                            color_scheme=rx.cond(
+                            color_variant=rx.cond(
                                 TickersPageState.time_period == "quarter",
-                                "violet",
+                                "purple",
                                 "gray",
                             ),
-                            variant="soft",
-                            size="1",
-                            style={"border_radius": RADIUS_PILL},
                         ),
                         rx.switch(
                             checked=TickersPageState.time_period == "year",
@@ -647,16 +642,13 @@ def _metrics_settings_dialog() -> rx.Component:
                             size="2",
                             color_scheme="violet",
                         ),
-                        rx.badge(
+                        badge(
                             "Yearly",
-                            color_scheme=rx.cond(
+                            color_variant=rx.cond(
                                 TickersPageState.time_period == "year",
-                                "violet",
+                                "purple",
                                 "gray",
                             ),
-                            variant="soft",
-                            size="1",
-                            style={"border_radius": RADIUS_PILL},
                         ),
                         spacing="2",
                         align="center",

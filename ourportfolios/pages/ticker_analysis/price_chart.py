@@ -6,7 +6,6 @@ from ourportfolios.components.price_chart import PriceChartState
 from ourportfolios.pages.ticker_analysis.state import State
 from ourportfolios.ui.primitives import (
     hstack,
-    pill_button,
     skeleton_box,
     spacer,
     vstack,
@@ -16,10 +15,8 @@ from ourportfolios.ui.theme.surfaces import (
     CARD_BORDER,
     PILL_TOGGLE,
     PILL_TOGGLE_ACTIVE,
-    RADIUS_INPUT,
-    RADIUS_PILL,
 )
-from ourportfolios.ui.tokens import TRANS_DEFAULT
+from ourportfolios.ui.tokens import RADIUS_MD, RADIUS_SM, TRANS_DEFAULT
 
 _INDICATOR_ACTIVE = {
     **PILL_TOGGLE_ACTIVE,
@@ -35,7 +32,7 @@ _RSI_ACTIVE = {
     "background": purple(0.15),
     "border": f"1px solid {purple(0.4)}",
     "color": TEXT_PURPLE,
-    "border_radius": RADIUS_PILL,
+    "border_radius": RADIUS_SM,
     "cursor": "pointer",
     "transition": TRANS_DEFAULT,
 }
@@ -43,7 +40,7 @@ _RSI_ACTIVE = {
 _CHART_TYPE_TOGGLE_WRAPPER = {
     "background": white(0.02),
     "border": f"1px solid {white(0.06)}",
-    "border_radius": RADIUS_PILL,
+    "border_radius": RADIUS_SM,
     "padding": "0.2em 0.3em",
 }
 
@@ -55,7 +52,7 @@ def _ma_toggle(label: str, period_key: str) -> rx.Component:
             rx.box(
                 width="0.5rem",
                 height="0.5rem",
-                border_radius="50%",
+                border_radius=RADIUS_SM,
                 background=PriceChartState.ma_period[period_key],
                 flex_shrink="0",
             ),
@@ -64,7 +61,7 @@ def _ma_toggle(label: str, period_key: str) -> rx.Component:
             align="center",
         ),
         padding="0.25em 0.6em",
-        border_radius=RADIUS_PILL,
+        border_radius=RADIUS_SM,
         cursor="pointer",
         style=rx.cond(
             PriceChartState.selected_ma_period[period_key],
@@ -79,7 +76,7 @@ def _rsi_toggle() -> rx.Component:
     return rx.box(
         rx.text("RSI14", size="1", weight="medium"),
         padding="0.25em 0.6em",
-        border_radius=RADIUS_PILL,
+        border_radius=RADIUS_SM,
         cursor="pointer",
         style=rx.cond(
             PriceChartState.rsi_line,
@@ -95,7 +92,7 @@ def _chart_type_toggle() -> rx.Component:
         rx.box(
             rx.icon("chart-candlestick", size=14),
             padding="0.25em 0.5em",
-            border_radius=RADIUS_PILL,
+            border_radius=RADIUS_SM,
             cursor="pointer",
             display="flex",
             align_items="center",
@@ -109,7 +106,7 @@ def _chart_type_toggle() -> rx.Component:
         rx.box(
             rx.icon("chart-spline", size=14),
             padding="0.25em 0.5em",
-            border_radius=RADIUS_PILL,
+            border_radius=RADIUS_SM,
             cursor="pointer",
             display="flex",
             align_items="center",
@@ -126,23 +123,23 @@ def _chart_type_toggle() -> rx.Component:
     )
 
 
+def _interval_button(label: str) -> rx.Component:
+    active = PriceChartState.selected_interval == label
+    return rx.box(
+        rx.text(label, size="1", weight="medium"),
+        padding="0.25em 0.6em",
+        border_radius=RADIUS_SM,
+        cursor="pointer",
+        style=rx.cond(active, _INDICATOR_ACTIVE, _INDICATOR_INACTIVE),
+        on_click=PriceChartState.set_interval(label),
+    )
+
+
 def _interval_buttons() -> rx.Component:
     return hstack(
-        pill_button(
-            "1D",
-            active=PriceChartState.selected_interval == "1D",
-            on_click=PriceChartState.set_interval("1D"),
-        ),
-        pill_button(
-            "1W",
-            active=PriceChartState.selected_interval == "1W",
-            on_click=PriceChartState.set_interval("1W"),
-        ),
-        pill_button(
-            "1M",
-            active=PriceChartState.selected_interval == "1M",
-            on_click=PriceChartState.set_interval("1M"),
-        ),
+        _interval_button("1D"),
+        _interval_button("1W"),
+        _interval_button("1M"),
         spacing="1",
         align="center",
         flex_shrink="0",
@@ -220,16 +217,14 @@ def price_chart_card():
                     width="100%",
                 ),
                 hstack(
-                    spacer(),
                     _ma_toggle("MA20", "20"),
                     _ma_toggle("MA50", "50"),
                     _ma_toggle("MA100", "100"),
                     _ma_toggle("MA200", "200"),
                     align="center",
-                    spacing="2",
+                    spacing="1",
                     width="100%",
                     flex_wrap="wrap",
-                    justify="end",
                 ),
                 width="100%",
                 spacing="2",
@@ -242,7 +237,7 @@ def price_chart_card():
         ),
         background=white(0.025),
         border=CARD_BORDER,
-        border_radius=RADIUS_INPUT,
+        border_radius=RADIUS_MD,
         padding="1rem",
         flex=["none", "none", "1"],
         min_width="0",

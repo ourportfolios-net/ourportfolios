@@ -18,7 +18,7 @@ from ourportfolios.pages.auth.components import (
 from ourportfolios.state.auth_state import AuthState
 from ourportfolios.ui.primitives import body_text, heading, label_text, muted_text
 from ourportfolios.ui.theme.colors import ERROR_COLOR, white
-from ourportfolios.ui.theme.surfaces import RADIUS_INPUT
+from ourportfolios.ui.tokens import RADIUS_MD
 
 
 def _inline_link(label_text: str, on_click: object) -> rx.Component:
@@ -57,7 +57,7 @@ def _forgot_password_content() -> rx.Component:
                 padding="0.6rem 0.875rem",
                 background=white(0.04),
                 border=f"1px solid {white(0.09)}",
-                border_radius=RADIUS_INPUT,
+                border_radius=RADIUS_MD,
                 width="100%",
                 justify="center",
             ),

@@ -3,9 +3,10 @@
 import reflex as rx
 
 from ourportfolios.pages.ticker_analysis.state import State
-from ourportfolios.ui.primitives import skeleton_box
+from ourportfolios.ui.primitives import badge, skeleton_box
 from ourportfolios.ui.theme.colors import white
-from ourportfolios.ui.theme.surfaces import CARD_BORDER, RADIUS_BUTTON, RADIUS_INPUT
+from ourportfolios.ui.theme.surfaces import CARD_BORDER
+from ourportfolios.ui.tokens import RADIUS_MD, RADIUS_SM
 
 # Responsive heights: [mobile, desktop]
 _SCROLL_HEIGHT_SHARES = ["28em", "24.3em"]
@@ -66,7 +67,7 @@ def company_info_card_skeleton() -> rx.Component:
                 ),
                 background=white(0.02),
                 border=f"1px solid {white(0.05)}",
-                border_radius=RADIUS_BUTTON,
+                border_radius=RADIUS_SM,
                 padding="0.75rem",
                 width="100%",
             ),
@@ -75,7 +76,7 @@ def company_info_card_skeleton() -> rx.Component:
         ),
         background=white(0.025),
         border=CARD_BORDER,
-        border_radius=RADIUS_INPUT,
+        border_radius=RADIUS_MD,
         padding="1.25rem",
         width="100%",
         flex=["1", "1", "0.6"],
@@ -115,6 +116,12 @@ def company_generic_info_card() -> rx.Component:
                         on_change=State.set_company_control,
                         value=State.company_control,
                         size="2",
+                        style={
+                            "border_radius": RADIUS_SM,
+                            "background": white(0.03),
+                            "border": f"1px solid {white(0.07)}",
+                            "padding": "0.2em",
+                        },
                     ),
                     width="100%",
                     display="flex",
@@ -144,14 +151,9 @@ def company_generic_info_card() -> rx.Component:
                                                     weight="medium",
                                                     size="3",
                                                 ),
-                                                rx.badge(
+                                                badge(
                                                     f"{officer['officer_own_percent']}%",
-                                                    color_scheme="gray",
-                                                    variant="surface",
-                                                    high_contrast=True,
-                                                    style={
-                                                        "border_radius": "0.375rem",
-                                                    },
+                                                    color_variant="gray",
                                                 ),
                                                 align="center",
                                                 justify="between",
@@ -175,7 +177,7 @@ def company_generic_info_card() -> rx.Component:
                             ),
                             background=white(0.02),
                             border=f"1px solid {white(0.05)}",
-                            border_radius=RADIUS_BUTTON,
+                            border_radius=RADIUS_SM,
                             padding="0.75rem",
                             width="100%",
                             flex="1",
@@ -198,12 +200,14 @@ def company_generic_info_card() -> rx.Component:
                                                 weight="medium",
                                                 size="3",
                                             ),
-                                            rx.badge(
-                                                f"{event['price_change_ratio']}%",
-                                                color_scheme="gray",
-                                                variant="surface",
-                                                high_contrast=True,
-                                                style={"border_radius": "0.375rem"},
+                                            rx.cond(
+                                                event["price_change_ratio"].to(float) > 0,
+                                                badge(f"{event['price_change_ratio']}%", color_variant="green"),
+                                                rx.cond(
+                                                    event["price_change_ratio"].to(float) < 0,
+                                                    badge(f"{event['price_change_ratio']}%", color_variant="red"),
+                                                    badge(f"{event['price_change_ratio']}%", color_variant="gray"),
+                                                ),
                                             ),
                                             align="center",
                                         ),
@@ -215,7 +219,7 @@ def company_generic_info_card() -> rx.Component:
                                         ),
                                         background=white(0.02),
                                         border=f"1px solid {white(0.05)}",
-                                        border_radius=RADIUS_BUTTON,
+                                        border_radius=RADIUS_SM,
                                         padding="0.75rem",
                                         width="100%",
                                     ),
@@ -244,14 +248,14 @@ def company_generic_info_card() -> rx.Component:
                                                     news["price_change_ratio"]
                                                     != news["price_change_ratio"]
                                                 ),
-                                                rx.badge(
-                                                    f"{news['price_change_ratio']}%",
-                                                    color_scheme="gray",
-                                                    variant="surface",
-                                                    high_contrast=True,
-                                                    style={
-                                                        "border_radius": "0.375rem",
-                                                    },
+                                                rx.cond(
+                                                    news["price_change_ratio"].to(float) > 0,
+                                                    badge(f"{news['price_change_ratio']}%", color_variant="green"),
+                                                    rx.cond(
+                                                        news["price_change_ratio"].to(float) < 0,
+                                                        badge(f"{news['price_change_ratio']}%", color_variant="red"),
+                                                        badge(f"{news['price_change_ratio']}%", color_variant="gray"),
+                                                    ),
                                                 ),
                                             ),
                                             align="center",
@@ -260,7 +264,7 @@ def company_generic_info_card() -> rx.Component:
                                         ),
                                         background=white(0.02),
                                         border=f"1px solid {white(0.05)}",
-                                        border_radius=RADIUS_BUTTON,
+                                        border_radius=RADIUS_SM,
                                         padding="0.75rem",
                                         width="100%",
                                     ),
@@ -282,7 +286,7 @@ def company_generic_info_card() -> rx.Component:
             ),
             background=white(0.025),
             border=CARD_BORDER,
-            border_radius=RADIUS_INPUT,
+            border_radius=RADIUS_MD,
             padding="1.25rem",
             width="100%",
             flex=["1", "1", "0.6"],

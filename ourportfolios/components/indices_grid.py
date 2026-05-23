@@ -7,7 +7,7 @@ from ourportfolios.components.mini_chart_card import (
     mini_chart_card,
 )
 from ourportfolios.state.home_state import HomeState
-from ourportfolios.ui.tokens import RADIUS_5XS
+from ourportfolios.ui.tokens import RADIUS_SM
 
 # Must match the treemap height so the vertical scroll area is constrained
 _TREEMAP_H = "38.75rem"
@@ -92,7 +92,7 @@ def indices_grid() -> rx.Component:
                 min_width="1px",
                 overflow_x="auto",
                 overflow_y="hidden",
-                padding_bottom=RADIUS_5XS,
+                padding_bottom=RADIUS_SM,
             ),
             width="100%",
         ),

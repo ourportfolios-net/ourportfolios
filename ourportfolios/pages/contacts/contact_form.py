@@ -9,7 +9,7 @@ from ourportfolios.pages.auth.components import (
 from ourportfolios.state.contact_state import ContactState
 from ourportfolios.ui.primitives import heading, muted_text
 from ourportfolios.ui.theme import TEXT_PRIMARY, TEXT_TERTIARY, white
-from ourportfolios.ui.theme.surfaces import RADIUS_BUTTON
+from ourportfolios.ui.tokens import RADIUS_SM
 
 # ── Intent chip selector state ─────────────────────────────────────────────
 
@@ -249,7 +249,7 @@ def _intent_chip(
         ],
         cursor="pointer",
         padding="0.45rem 0.85rem",
-        border_radius=RADIUS_BUTTON,
+        border_radius=RADIUS_SM,
         border=rx.cond(
             is_selected,
             f"1px solid {white(0.25)}",

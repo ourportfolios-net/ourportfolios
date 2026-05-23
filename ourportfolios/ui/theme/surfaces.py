@@ -4,16 +4,9 @@ from __future__ import annotations
 
 from ourportfolios.ui.theme.colors import TEXT_PURPLE, purple, white
 from ourportfolios.ui.tokens import (
-    APP_BG,
-    APP_PANEL_BG,
-    APP_SURFACE_BG,
-    RADIUS_2XS,  # noqa: F401  # re-exported for other modules
-    RADIUS_4XS,  # noqa: F401  # re-exported for other modules
-    RADIUS_BUTTON,
     RADIUS_CARD,
     RADIUS_INPUT,
-    RADIUS_PILL,
-    RADIUS_SURFACE,  # noqa: F401  # re-exported for other modules
+    RADIUS_SM,
     TRANS_DEFAULT,
 )
 
@@ -29,9 +22,9 @@ SUBTLE_BORDER = f"1px solid {white(0.07)}"
 DIVIDER = white(0.05)
 SKELETON_BG = white(0.06)
 
-PAGE_BG = APP_BG
-MODAL_BG = APP_SURFACE_BG
-TABLE_BG = APP_PANEL_BG
+PAGE_BG = "#090909"
+MODAL_BG = "#111111"
+TABLE_BG = "#0d0d0d"
 
 
 CARD_STYLE = {
@@ -107,7 +100,7 @@ SEARCH_INPUT_STYLE = {
 BUTTON_PURPLE = {
     "background": purple(0.15),
     "border": f"1px solid {purple(0.35)}",
-    "border_radius": RADIUS_BUTTON,
+    "border_radius": RADIUS_SM,
     "color": TEXT_PURPLE,
     "font_weight": "600",
     "cursor": "pointer",
@@ -115,19 +108,19 @@ BUTTON_PURPLE = {
     "transition": TRANS_DEFAULT,
 }
 
-BUTTON_PURPLE_SM = {**BUTTON_PURPLE, "border_radius": RADIUS_PILL}
+BUTTON_PURPLE_SM = {**BUTTON_PURPLE, "border_radius": RADIUS_SM}
 
 BUTTON_GHOST = {
     "background": white(0.04),
     "border": f"1px solid {white(0.08)}",
-    "border_radius": RADIUS_BUTTON,
+    "border_radius": RADIUS_SM,
     "color": white(0.45),
     "cursor": "pointer",
     "_hover": {"background": white(0.07), "color": "white"},
     "transition": TRANS_DEFAULT,
 }
 
-BUTTON_GHOST_SM = {**BUTTON_GHOST, "border_radius": RADIUS_PILL}
+BUTTON_GHOST_SM = {**BUTTON_GHOST, "border_radius": RADIUS_SM}
 BUTTON_GHOST_XS = BUTTON_GHOST_SM
 
 BUTTON_COMPARE = {
@@ -143,7 +136,7 @@ BUTTON_COMPARE = {
 BUTTON_SECONDARY = {
     "background": white(0.05),
     "border": f"1px solid {white(0.1)}",
-    "border_radius": RADIUS_BUTTON,
+    "border_radius": RADIUS_SM,
     "color": white(0.6),
     "font_weight": "500",
     "font_size": "0.8125rem",
@@ -167,7 +160,7 @@ BUTTON_SECONDARY_ACTIVE = {
 BUTTON_FILTER_ACTIVE = {
     "background": purple(0.18),
     "border": f"1px solid {purple(0.5)}",
-    "border_radius": RADIUS_BUTTON,
+    "border_radius": RADIUS_SM,
     "color": TEXT_PURPLE,
     "font_weight": "600",
     "font_size": "0.8125rem",
@@ -179,7 +172,7 @@ BUTTON_FILTER_ACTIVE = {
 PILL_TOGGLE = {
     "background": white(0.03),
     "border": f"1px solid {white(0.06)}",
-    "border_radius": RADIUS_PILL,
+    "border_radius": RADIUS_SM,
     "color": white(0.35),
     "cursor": "pointer",
     "transition": TRANS_DEFAULT,
@@ -189,14 +182,14 @@ PILL_TOGGLE = {
 PILL_TOGGLE_ACTIVE = {
     "background": white(0.1),
     "border": f"1px solid {white(0.18)}",
-    "border_radius": RADIUS_PILL,
+    "border_radius": RADIUS_SM,
     "color": "white",
     "cursor": "pointer",
     "transition": TRANS_DEFAULT,
 }
 
 CHIP_STYLE = {
-    "border_radius": RADIUS_PILL,
+    "border_radius": RADIUS_SM,
     "background": white(0.05),
     "border": f"1px solid {white(0.1)}",
     "height": "1.75rem",

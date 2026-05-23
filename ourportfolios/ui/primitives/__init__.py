@@ -12,6 +12,7 @@ Organization:
     feedback.py  — Skeleton, spinner, empty state feedback primitives
 """
 
+from ourportfolios.ui.primitives.badge import badge
 from ourportfolios.ui.primitives.box import (
     chart_box,
     dropdown_panel,
@@ -100,6 +101,7 @@ __all__ = [
     "absolute_fill",
     "accent_link",
     "accent_text",
+    "badge",
     "badge_text",
     "body_text",
     "centered_container",

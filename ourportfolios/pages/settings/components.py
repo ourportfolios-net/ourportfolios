@@ -30,13 +30,7 @@ from ourportfolios.ui.theme import (
     red,
     white,
 )
-from ourportfolios.ui.theme.surfaces import (
-    RADIUS_4XS,
-    RADIUS_BUTTON,
-    RADIUS_PILL,
-    RADIUS_SURFACE,
-)
-from ourportfolios.ui.tokens import RADIUS_2XS
+from ourportfolios.ui.tokens import RADIUS_MD, RADIUS_SM
 
 # Type Aliases for cleaner code
 StyleDict = dict[str, Any]
@@ -166,7 +160,7 @@ def _dlg_header(
                 rx.icon("x", size=15, color=white(0.35)),
                 on_click=on_close,
                 padding="0.3rem",
-                border_radius=RADIUS_PILL,
+                border_radius=RADIUS_SM,
                 background="transparent",
                 border="1px solid transparent",
                 cursor="pointer",
@@ -382,7 +376,7 @@ def _delete_dialog() -> rx.Component:
                 padding="0 0.875rem",
                 background=red(0.07),
                 border=f"1px solid {red(0.18)}",
-                border_radius=RADIUS_2XS,
+                border_radius=RADIUS_SM,
                 cursor="pointer",
                 transition="all 0.15s ease",
                 _hover={"background": red(0.12), "border_color": red(0.3)},
@@ -518,7 +512,7 @@ def profile_panel() -> rx.Component:
                     width="100%",
                     background=white(0.015),
                     border=f"1px solid {white(0.06)}",
-                    border_radius=RADIUS_SURFACE,
+                    border_radius=RADIUS_MD,
                     padding=rx.breakpoints(initial="0.75rem", md="1rem"),
                 ),
                 spacing="3",
@@ -566,7 +560,7 @@ def delete_card() -> rx.Component:
                 padding="0 0.875rem",
                 background=red(0.05),
                 border=f"1px solid {red(0.14)}",
-                border_radius=RADIUS_2XS,
+                border_radius=RADIUS_SM,
                 cursor="pointer",
                 transition="all 0.15s ease",
                 _hover={"background": red(0.1), "border_color": red(0.26)},
@@ -621,7 +615,7 @@ def _period_button(period: str) -> rx.Component:
         on_click=SettingsState.set_default_chart_period(period),
         height="1.625rem",
         padding="0 0.5625rem",
-        border_radius=RADIUS_4XS,
+        border_radius=RADIUS_SM,
         background=rx.cond(is_active, white(0.09), "transparent"),
         border=rx.cond(is_active, f"1px solid {white(0.14)}", "1px solid transparent"),
         cursor="pointer",
@@ -689,7 +683,7 @@ def preferences_panel() -> rx.Component:
                     padding="0.1875rem",
                     background=white(0.03),
                     border=f"1px solid {white(0.07)}",
-                    border_radius=RADIUS_2XS,
+                    border_radius=RADIUS_SM,
                     flex_shrink="0",
                 ),
                 align="center",
@@ -752,7 +746,7 @@ def _nav_item(tab: str, icon_name: str, label: str) -> rx.Component:
         ),
         on_click=SettingsState.set_active_tab(tab),
         padding=rx.breakpoints(initial="0.4rem 0.625rem", md="0.5rem 0.75rem"),
-        border_radius=RADIUS_BUTTON,
+        border_radius=RADIUS_SM,
         background=rx.cond(is_active, white(0.05), "transparent"),
         border=rx.cond(is_active, f"1px solid {white(0.09)}", "1px solid transparent"),
         cursor="pointer",

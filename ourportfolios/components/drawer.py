@@ -3,11 +3,11 @@
 import reflex as rx
 
 from ourportfolios.state import CartState
+from ourportfolios.ui.primitives import badge
 from ourportfolios.ui.tokens import (
     APP_SURFACE_BG,
-    BLUR_MD,
+    BLUR_DEFAULT,
     RADIUS_LG,
-    SPACE_3XL,
     SPACE_LG,
     SPACE_SM,
     SPACE_XL,
@@ -24,7 +24,7 @@ def _cart_item(item: dict[str, str], i: int) -> rx.Component:
                     href=f"/tickers/{item['name']}",
                     underline="none",
                 ),
-                rx.badge(f"{item['industry']}", size="1"),
+                badge(f"{item['industry']}", color_variant="gray"),
                 spacing="3",
                 align_items="center",
             ),
@@ -118,9 +118,9 @@ def cart_drawer_content():
                 align_items="start",
             ),
             width="100%",
-            padding=SPACE_3XL,
+            padding=SPACE_XL,
             border_radius=RADIUS_LG,
-            backdrop_filter=f"blur({BLUR_MD})",
+            backdrop_filter=f"blur({BLUR_DEFAULT})",
             background=APP_SURFACE_BG,
         ),
         width="28em",
@@ -136,8 +136,8 @@ def drawer_button():
                 rx.icon("shopping-cart", size=16),
                 on_click=CartState.toggle_cart,
                 position="fixed",
-                bottom=SPACE_3XL,
-                left=SPACE_3XL,
+                bottom=SPACE_XL,
+                left=SPACE_XL,
                 z_index="1000",
             ),
         ),
