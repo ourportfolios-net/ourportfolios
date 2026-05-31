@@ -158,6 +158,10 @@ def _about_dropdown() -> rx.Component:
     )
 
 
+def _graph_link() -> rx.Component:
+    return _nav_link("Graph", "/graph")
+
+
 def _framework_link() -> rx.Component:
     return rx.cond(
         AuthState.is_authenticated,
@@ -346,6 +350,7 @@ def navbar() -> rx.Component:
             rx.hstack(
                 rx.hstack(
                     _logo(),
+                    _graph_link(),
                     _framework_link(),
                     _portfolio_link(),
                     _nav_hover_dropdown("Analyze", _analyze_dropdown()),

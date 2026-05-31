@@ -72,7 +72,7 @@ def loading_spinner(
         rx.vstack(
             rx.spinner(
                 thickness=3,
-                size="2rem",
+                size="2",
                 speed="1s",
                 color=purple(0.7),
             ),
