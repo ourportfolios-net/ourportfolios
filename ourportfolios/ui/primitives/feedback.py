@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 import reflex as rx
 
 from ourportfolios.ui.theme.colors import purple, white
@@ -25,7 +27,11 @@ def skeleton_box(
     """
     return rx.skeleton(
         rx.box(width=width, height=height),
-        **{"loading": True, "border_radius": radius, **props},
+        **cast("dict", {
+            "loading": True,
+            "border_radius": radius,
+            **props,
+        }),
     )
 
 
@@ -37,7 +43,7 @@ def skeleton_text(width: str = "100%", **props: object) -> rx.Component:
         **props: Additional Reflex skeleton props.
 
     """
-    return skeleton_box(width=width, height="0.75rem", **props)
+    return skeleton_box(width=width, height="0.75rem", **cast("dict", props))
 
 
 def skeleton_circle(
@@ -53,7 +59,11 @@ def skeleton_circle(
     """
     return rx.skeleton(
         rx.box(width=size, height=size),
-        **{"loading": True, "border_radius": RADIUS_SM, **props},
+        **cast("dict", {
+            "loading": True,
+            "border_radius": RADIUS_SM,
+            **props,
+        }),
     )
 
 
@@ -80,7 +90,11 @@ def loading_spinner(
             spacing="2",
             align="center",
         ),
-        **{"width": "100%", "padding": SPACE_XL, **props},
+        **cast("dict", {
+            "width": "100%",
+            "padding": SPACE_XL,
+            **props,
+        }),
     )
 
 
@@ -104,5 +118,9 @@ def empty_state(
             spacing="2",
             align="center",
         ),
-        **{"width": "100%", "padding": SPACE_XL, **props},
+        **cast("dict", {
+            "width": "100%",
+            "padding": SPACE_XL,
+            **props,
+        }),
     )

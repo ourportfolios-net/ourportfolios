@@ -57,13 +57,13 @@ def heading(
     letter_spacing = letter_spacings.get(level, "0")
     return rx.heading(
         text,
-        **{
+        **cast("dict", {
             "size": size,
             "font_weight": font_weight,
             "letter_spacing": letter_spacing,
             "color": TEXT_PRIMARY,
             **props,
-        },
+        }),
     )
 
 
@@ -80,12 +80,12 @@ def subheading(
     """
     return rx.text(
         text,
-        **{
+        **cast("dict", {
             "size": "3",
             "weight": "medium",
             "color": white(0.7),
             **props,
-        },
+        }),
     )
 
 
@@ -102,7 +102,11 @@ def body_text(
     """
     return rx.text(
         text,
-        **{"size": "2", "color": white(0.6), **props},
+        **cast("dict", {
+            "size": "2",
+            "color": white(0.6),
+            **props,
+        }),
     )
 
 
@@ -119,7 +123,11 @@ def label_text(
     """
     return rx.text(
         text,
-        **{"font_size": FONT_LABEL, "color": white(0.35), **props},
+        **cast("dict", {
+            "font_size": FONT_LABEL,
+            "color": white(0.35),
+            **props,
+        }),
     )
 
 
@@ -136,7 +144,11 @@ def muted_text(
     """
     return rx.text(
         text,
-        **{"size": "2", "color": TEXT_MUTED, **props},
+        **cast("dict", {
+            "size": "2",
+            "color": TEXT_MUTED,
+            **props,
+        }),
     )
 
 
@@ -153,7 +165,10 @@ def accent_text(
     """
     return rx.text(
         text,
-        **{"color": TEXT_ACCENT, **props},
+        **cast("dict", {
+            "color": TEXT_ACCENT,
+            **props,
+        }),
     )
 
 
@@ -174,9 +189,12 @@ def truncated_text(
     if max_width:
         base_style["max_width"] = max_width
     if "style" in props:
-        style_val = props.pop("style")
-        base_style.update(cast("dict[str, object]", style_val))
-    return rx.text(text, style=base_style, **props)
+        base_style.update(cast("dict[str, object]", props.pop("style")))
+    rest = {
+        "style": base_style,
+        **props,
+    }
+    return rx.text(text, **cast("dict", rest))
 
 
 def nav_link_text(
@@ -192,7 +210,7 @@ def nav_link_text(
     """
     return rx.text(
         text,
-        **{
+        **cast("dict", {
             "font_size": FONT_BASE,
             "font_weight": WEIGHT_REGULAR,
             "color": white(0.5),
@@ -200,7 +218,7 @@ def nav_link_text(
             "_hover": {"color": "white"},
             "transition": TRANS_DEFAULT,
             **props,
-        },
+        }),
     )
 
 
@@ -217,4 +235,4 @@ def badge_text(
         **props: Additional Reflex badge props.
 
     """
-    return badge(text, color_variant=scheme, **props)
+    return badge(text, color_variant=scheme, **cast("dict", props))

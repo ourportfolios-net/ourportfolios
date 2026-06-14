@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 import reflex as rx
 
 from ourportfolios.ui.theme.colors import TEXT_PURPLE, purple, white
@@ -45,7 +47,11 @@ def primary_button(
     """
     return rx.button(
         label,
-        **{"size": size, "style": BUTTON_PURPLE, **props},
+        **cast("dict", {
+            "size": size,
+            "style": BUTTON_PURPLE,
+            **props,
+        }),
     )
 
 
@@ -62,7 +68,11 @@ def primary_button_sm(
     """
     return rx.button(
         label,
-        **{"size": "1", "style": BUTTON_PURPLE_SM, **props},
+        **cast("dict", {
+            "size": "1",
+            "style": BUTTON_PURPLE_SM,
+            **props,
+        }),
     )
 
 
@@ -82,7 +92,11 @@ def ghost_button(
     """
     return rx.button(
         label,
-        **{"size": size, "style": BUTTON_GHOST, **props},
+        **cast("dict", {
+            "size": size,
+            "style": BUTTON_GHOST,
+            **props,
+        }),
     )
 
 
@@ -99,7 +113,11 @@ def ghost_button_sm(
     """
     return rx.button(
         label,
-        **{"size": "1", "style": BUTTON_GHOST_SM, **props},
+        **cast("dict", {
+            "size": "1",
+            "style": BUTTON_GHOST_SM,
+            **props,
+        }),
     )
 
 
@@ -116,12 +134,16 @@ def ghost_button_xs(
     """
     return rx.button(
         label,
-        **{"size": "1", "style": BUTTON_GHOST_XS, **props},
+        **cast("dict", {
+            "size": "1",
+            "style": BUTTON_GHOST_XS,
+            **props,
+        }),
     )
 
 
 def secondary_button(
-    label: str,
+    label: str | rx.Component,
     *,
     active: object = False,
     **props: object,
@@ -136,13 +158,15 @@ def secondary_button(
     """
     return rx.button(
         label,
-        style=rx.cond(active, BUTTON_SECONDARY_ACTIVE, BUTTON_SECONDARY),
-        **props,
+        **cast("dict", {
+            "style": rx.cond(active, BUTTON_SECONDARY_ACTIVE, BUTTON_SECONDARY),
+            **props,
+        }),
     )
 
 
 def filter_button(
-    label: str,
+    label: str | rx.Component,
     *,
     active: object = False,
     **props: object,
@@ -157,8 +181,10 @@ def filter_button(
     """
     return rx.button(
         label,
-        style=rx.cond(active, BUTTON_FILTER_ACTIVE, BUTTON_SECONDARY),
-        **props,
+        **cast("dict", {
+            "style": rx.cond(active, BUTTON_FILTER_ACTIVE, BUTTON_SECONDARY),
+            **props,
+        }),
     )
 
 
@@ -183,8 +209,10 @@ def pill_button(
             weight="medium",
             color=rx.cond(active, "white", white(0.35)),
         ),
-        style=rx.cond(active, PILL_TOGGLE_ACTIVE, PILL_TOGGLE),
-        **props,
+        **cast("dict", {
+            "style": rx.cond(active, PILL_TOGGLE_ACTIVE, PILL_TOGGLE),
+            **props,
+        }),
     )
 
 
@@ -201,7 +229,11 @@ def compare_button(
     """
     return rx.button(
         label,
-        **{"size": "1", "style": BUTTON_COMPARE, **props},
+        **cast("dict", {
+            "size": "1",
+            "style": BUTTON_COMPARE,
+            **props,
+        }),
     )
 
 
@@ -218,7 +250,10 @@ def chip_button(
     """
     return rx.box(
         rx.text(label, size="2", weight="medium", color=white(0.6)),
-        **{"style": CHIP_STYLE, **props},
+        **cast("dict", {
+            "style": CHIP_STYLE,
+            **props,
+        }),
     )
 
 
@@ -238,11 +273,15 @@ def icon_button(
         **props: Additional Reflex button props.
 
     """
-    base_style: dict[str, str | dict[str, str]] = {**BUTTON_GHOST, "padding": "0.35rem"} if style is None else style
+    base_style: dict[str, str | dict[str, str]] = (
+        {**BUTTON_GHOST, "padding": "0.35rem"} if style is None else style
+    )
     return rx.button(
         rx.icon(icon_name, size=size),
-        style=base_style,
-        **props,
+        **cast("dict", {
+            "style": base_style,
+            **props,
+        }),
     )
 
 
@@ -265,9 +304,11 @@ def icon_button_xs(
     base_style: dict[str, str | dict[str, str]] = BUTTON_GHOST_XS if style is None else style
     return rx.button(
         rx.icon(icon_name, size=size),
-        size="1",
-        style=base_style,
-        **props,
+        **cast("dict", {
+            "size": "1",
+            "style": base_style,
+            **props,
+        }),
     )
 
 
@@ -291,9 +332,11 @@ def toggle_button(
     """
     return rx.button(
         label,
-        style=rx.cond(active, BUTTON_SECONDARY_ACTIVE, BUTTON_SECONDARY),
-        on_click=on_click,
-        **props,
+        **cast("dict", {
+            "style": rx.cond(active, BUTTON_SECONDARY_ACTIVE, BUTTON_SECONDARY),
+            "on_click": on_click,
+            **props,
+        }),
     )
 
 
@@ -317,10 +360,12 @@ def pill_toggle(
     """
     return rx.button(
         label,
-        size="2",
-        style=rx.cond(active, PILL_TOGGLE_ACTIVE, PILL_TOGGLE),
-        on_click=on_click,
-        **props,
+        **cast("dict", {
+            "size": "2",
+            "style": rx.cond(active, PILL_TOGGLE_ACTIVE, PILL_TOGGLE),
+            "on_click": on_click,
+            **props,
+        }),
     )
 
 
@@ -339,8 +384,8 @@ def nav_link(
     """
     return rx.link(
         label,
-        **{
-            "href": href,
+        href=href,
+        **cast("dict", {
             "font_size": FONT_BASE,
             "font_weight": WEIGHT_REGULAR,
             "color": white(0.5),
@@ -348,7 +393,7 @@ def nav_link(
             "_hover": {"color": "white"},
             "transition": TRANS_DEFAULT,
             **props,
-        },
+        }),
     )
 
 
@@ -370,7 +415,7 @@ def locked_link(
     return rx.hstack(
         rx.text(label, font_size=FONT_SM, color=white(0.2)),
         rx.icon("lock", size=10, color=white(0.15)),
-        **{
+        **cast("dict", {
             "spacing": "1",
             "align": "center",
             "on_click": on_click,
@@ -379,7 +424,7 @@ def locked_link(
             "_hover": {"opacity": "0.6"},
             "transition": TRANS_DEFAULT,
             **props,
-        },
+        }),
     )
 
 
@@ -409,7 +454,7 @@ def accent_link(
         href=href,
         on_click=on_click,
         icon_left=icon_left,
-        **props,
+        **cast("dict", props),
     )
 
 
@@ -436,7 +481,7 @@ def period_button(
             weight="medium",
             color=rx.cond(active, TEXT_PURPLE, white(0.35)),
         ),
-        **{
+        **cast("dict", {
             "padding": "0.18rem 0.5rem",
             "border_radius": RADIUS_SM,
             "background": rx.cond(active, purple(0.18), "transparent"),
@@ -445,5 +490,5 @@ def period_button(
             "_hover": {"background": rx.cond(active, purple(0.28), white(0.05))},
             "transition": TRANS_DEFAULT,
             **props,
-        },
+        }),
     )

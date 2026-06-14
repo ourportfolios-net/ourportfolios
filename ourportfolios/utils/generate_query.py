@@ -22,7 +22,7 @@ async def get_suggest_ticker(
         return_type (str): which data-type to returns. Available options are ["query", "df"]
 
     Returns:
-        Tuple[str, Any] | pd.DataFrame: Can either returns search params or a full dataframe
+        pd.DataFrame: Can either returns search params or a full dataframe
 
     """
     # Fetch exact ticker
@@ -80,7 +80,7 @@ async def fetch_ticker(
 
     Args:
         match_query (str, optional): match query in SQLAlchemy syntax. "all" flag is uses to fetch all data. Defaults to "all".
-        params (Any, optional): passed in parameters to combine with match query. Defaults to None.
+        params (dict[str, object] | None, optional): passed in parameters to combine with match query. Defaults to None.
         return_type (str, optional): which data-type to returns. Available options are ["query", "df"]. Defaults to "df".
 
     Returns:

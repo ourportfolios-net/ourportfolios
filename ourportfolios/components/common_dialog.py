@@ -1,7 +1,8 @@
 """Common dialog component with consistent styling and close button."""
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Literal
+from typing import Literal, cast
 
 import reflex as rx
 
@@ -13,8 +14,8 @@ from ourportfolios.ui.tokens import SPACE_LG, SPACE_XL, TRANS_DEFAULT
 @dataclass(slots=True)
 class CommonDialogConfig:
     is_open: bool
-    on_close: Any
-    on_open_change: Any | None = None
+    on_close: rx.EventHandler | Callable | None
+    on_open_change: rx.EventHandler | Callable | None = None
     width: str = "60vw"
     height: str = "58vh"
     max_width: str | None = None
@@ -36,7 +37,7 @@ def common_dialog(content: rx.Component, config: CommonDialogConfig) -> rx.Compo
 
     """
     # Build optional keyword args for max_width
-    extra_props: dict[str, Any] = {}
+    extra_props: dict[str, str] = {}
     if config.max_width:
         extra_props["max_width"] = config.max_width
 
@@ -88,7 +89,7 @@ def common_dialog(content: rx.Component, config: CommonDialogConfig) -> rx.Compo
     dialog_content.append(content)
 
     # Build props for dialog.content to override Radix defaults
-    dialog_props: dict[str, object] = {
+    dialog_props: dict[str, str] = {
         "width": config.width,
         "height": config.height,
         "max_height": config.height,
@@ -115,7 +116,7 @@ def common_dialog(content: rx.Component, config: CommonDialogConfig) -> rx.Compo
                     padding=config.padding,
                     max_width=None,
                 ),
-                **dialog_props,
+                **cast("dict", dialog_props),
             ),
             open=True,
             on_open_change=config.on_open_change or config.on_close,

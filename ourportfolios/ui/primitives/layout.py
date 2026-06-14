@@ -2,15 +2,19 @@
 
 from __future__ import annotations
 
+from typing import Literal, cast
+
 import reflex as rx
 
 from ourportfolios.ui.theme.surfaces import DIVIDER
 from ourportfolios.ui.tokens import HOME_CONTENT_MAX_WIDTH, HOME_CONTENT_WIDTH
 
+_Spacing = Literal["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+
 
 def vstack(
     *children: rx.Component,
-    spacing: str = "4",
+    spacing: _Spacing = "4",
     **props: object,
 ) -> rx.Component:
     """Vertical stack with consistent defaults.
@@ -21,12 +25,12 @@ def vstack(
         **props: Additional Reflex vstack props.
 
     """
-    return rx.vstack(*children, **{"spacing": spacing, **props})
+    return rx.vstack(*children, **cast("dict", {"spacing": spacing, **props}))
 
 
 def hstack(
     *children: rx.Component,
-    spacing: str = "3",
+    spacing: _Spacing = "3",
     **props: object,
 ) -> rx.Component:
     """Horizontal stack with consistent defaults.
@@ -37,7 +41,7 @@ def hstack(
         **props: Additional Reflex hstack props.
 
     """
-    return rx.hstack(*children, **{"spacing": spacing, **props})
+    return rx.hstack(*children, **cast("dict", {"spacing": spacing, **props}))
 
 
 def section_stack(
@@ -51,7 +55,7 @@ def section_stack(
         **props: Additional Reflex vstack props.
 
     """
-    return rx.vstack(*children, **{"spacing": "5", "align": "start", "width": "100%", **props})
+    return rx.vstack(*children, **cast("dict", {"spacing": "5", "align": "start", "width": "100%", **props}))
 
 
 def content_stack(
@@ -65,7 +69,7 @@ def content_stack(
         **props: Additional Reflex vstack props.
 
     """
-    return rx.vstack(*children, **{"spacing": "4", "align": "start", "width": "100%", **props})
+    return rx.vstack(*children, **cast("dict", {"spacing": "4", "align": "start", "width": "100%", **props}))
 
 
 def inline_cluster(
@@ -79,7 +83,7 @@ def inline_cluster(
         **props: Additional Reflex hstack props.
 
     """
-    return rx.hstack(*children, **{"spacing": "2", "align": "center", **props})
+    return rx.hstack(*children, **cast("dict", {"spacing": "2", "align": "center", **props}))
 
 
 def flex_row(
@@ -93,7 +97,7 @@ def flex_row(
         **props: Additional Reflex flex props.
 
     """
-    return rx.flex(*children, **{"direction": "row", "align": "center", **props})
+    return rx.flex(*children, **cast("dict", {"direction": "row", "align": "center", **props}))
 
 
 def flex_col(
@@ -107,7 +111,7 @@ def flex_col(
         **props: Additional Reflex flex props.
 
     """
-    return rx.flex(*children, **{"direction": "column", **props})
+    return rx.flex(*children, **cast("dict", {"direction": "column", **props}))
 
 
 def spacer(**props: object) -> rx.Component:
@@ -117,7 +121,7 @@ def spacer(**props: object) -> rx.Component:
         **props: Additional Reflex spacer props.
 
     """
-    return rx.spacer(**props)
+    return rx.spacer(**cast("dict", props))
 
 
 def divider(**props: object) -> rx.Component:
@@ -127,7 +131,7 @@ def divider(**props: object) -> rx.Component:
         **props: Additional Reflex box props.
 
     """
-    return rx.box(**{"height": "1px", "width": "100%", "background": DIVIDER, **props})
+    return rx.box(**cast("dict", {"height": "1px", "width": "100%", "background": DIVIDER, **props}))
 
 
 def divider_vertical(**props: object) -> rx.Component:
@@ -137,7 +141,7 @@ def divider_vertical(**props: object) -> rx.Component:
         **props: Additional Reflex box props.
 
     """
-    return rx.box(**{"width": "1px", "height": "100%", "background": DIVIDER, **props})
+    return rx.box(**cast("dict", {"width": "1px", "height": "100%", "background": DIVIDER, **props}))
 
 
 def scroll_area_v(
@@ -155,13 +159,13 @@ def scroll_area_v(
     """
     return rx.scroll_area(
         *children,
-        **{
+        **cast("dict", {
             "scrollbars": "vertical",
             "type": "hover",
             "height": height,
             "max_height": height,
             **props,
-        },
+        }),
     )
 
 
@@ -178,7 +182,11 @@ def scroll_area_h(
     """
     return rx.scroll_area(
         *children,
-        **{"scrollbars": "horizontal", "type": "hover", **props},
+        **cast("dict", {
+            "scrollbars": "horizontal",
+            "type": "hover",
+            **props,
+        }),
     )
 
 
@@ -199,7 +207,12 @@ def scroll_area_both(
     """
     return rx.scroll_area(
         *children,
-        **{"scrollbars": "both", "height": height, "width": width, **props},
+        **cast("dict", {
+            "scrollbars": "both",
+            "height": height,
+            "width": width,
+            **props,
+        }),
     )
 
 
@@ -220,7 +233,11 @@ def grid_cols(
     """
     return rx.grid(
         *children,
-        **{"columns": columns, "gap": gap, **props},
+        **cast("dict", {
+            "columns": columns,
+            "gap": gap,
+            **props,
+        }),
     )
 
 
@@ -235,10 +252,7 @@ def centered_container(
         **props: Additional Reflex box props.
 
     """
-    return rx.center(
-        *children,
-        **{"width": "100%", **props},
-    )
+    return rx.center(*children, **cast("dict", {"width": "100%", **props}))
 
 
 def absolute_fill(
@@ -252,10 +266,7 @@ def absolute_fill(
         **props: Additional Reflex box props.
 
     """
-    return rx.box(
-        *children,
-        **{"position": "absolute", "inset": "0", **props},
-    )
+    return rx.box(*children, **cast("dict", {"position": "absolute", "inset": "0", **props}))
 
 
 def page_container(
@@ -271,12 +282,12 @@ def page_container(
     """
     return rx.box(
         *children,
-        **{
+        **cast("dict", {
             "width": HOME_CONTENT_WIDTH,
             "max_width": HOME_CONTENT_MAX_WIDTH,
             "margin": "0 auto",
             **props,
-        },
+        }),
     )
 
 
@@ -293,10 +304,10 @@ def toolbar_row(
     """
     return rx.box(
         *children,
-        **{
+        **cast("dict", {
             "position": "relative",
             "width": "100%",
             "min_height": "2.5rem",
             **props,
-        },
+        }),
     )

@@ -99,8 +99,8 @@ _VARIANTS: dict[str, dict[str, object]] = {
 
 
 def badge(
-    *children: rx.Component | str,
-    color_variant: str = "gray",
+    *children: object,
+    color_variant: str | rx.Var[str] = "gray",
     **kwargs: str | float | bool | list | dict,
 ) -> rx.Component:
     """Render a custom badge with consistent design tokens.

@@ -1,7 +1,7 @@
 """Settings page UI components."""
 
 from collections.abc import Callable
-from typing import Any
+from typing import cast
 
 import reflex as rx
 
@@ -32,8 +32,8 @@ from ourportfolios.ui.theme import (
 from ourportfolios.ui.tokens import RADIUS_MD, RADIUS_SM
 
 # Type Aliases for cleaner code
-StyleDict = dict[str, Any]
-EventHandler = rx.event.EventSpec | list[rx.event.EventSpec] | Callable | Any
+StyleDict = dict[str, object]
+EventHandler = rx.event.EventSpec | list[rx.event.EventSpec] | Callable
 # ── Primitives ────────────────────────────────────────────────────────────────
 
 
@@ -73,7 +73,7 @@ def _ghost_button(label: str, on_click: EventHandler) -> rx.Component:
     return rx.box(
         rx.text(label, size="2", font_weight="500"),
         on_click=on_click,
-        **_ghost_button_style(),
+        **cast("dict", _ghost_button_style()),
     )
 
 
@@ -95,7 +95,7 @@ def _loading_button(
             rx.text(label, size="2", font_weight="500"),
         ),
         on_click=on_click,
-        **_ghost_button_style(),
+        **cast("dict", _ghost_button_style()),
     )
 
 
@@ -230,7 +230,7 @@ def _password_dialog() -> rx.Component:
                     **password_input_attrs,
                     "name": "op_current_password",
                 },
-                **_input_dialog_style(),
+                **cast("dict", _input_dialog_style()),
             ),
             spacing="2",
             width="100%",
@@ -248,7 +248,7 @@ def _password_dialog() -> rx.Component:
                         **password_input_attrs,
                         "name": "op_new_password",
                     },
-                    **_input_dialog_style(),
+                    **cast("dict", _input_dialog_style()),
                 ),
                 spacing="2",
                 width="100%",
@@ -265,7 +265,7 @@ def _password_dialog() -> rx.Component:
                         **password_input_attrs,
                         "name": "op_confirm_password",
                     },
-                    **_input_dialog_style(),
+                    **cast("dict", _input_dialog_style()),
                 ),
                 spacing="2",
                 width="100%",
@@ -422,7 +422,7 @@ def profile_panel() -> rx.Component:
                                         rx.input(
                                             value=SettingsState.display_name_draft,
                                             on_change=SettingsState.set_display_name_draft,
-                                            **_input_compact_style(),
+                                            **cast("dict", _input_compact_style()),
                                             max_width="20rem",
                                         ),
                                         body_text(

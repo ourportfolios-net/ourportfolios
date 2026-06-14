@@ -1,10 +1,8 @@
-from typing import Any
-
 import numpy as np
 import pandas as pd
 
 
-def compute_ma(df: pd.DataFrame, ma_period: int = 200) -> list[dict[str, Any]]:
+def compute_ma(df: pd.DataFrame, ma_period: int = 200) -> list[dict[str, object]]:
     """Calculate the Moving Average (MA)."""
     df = df.copy()
     df["value"] = df["close"].ffill().rolling(window=ma_period).mean()
@@ -14,7 +12,7 @@ def compute_ma(df: pd.DataFrame, ma_period: int = 200) -> list[dict[str, Any]]:
     return df[["time", "value"]].to_dict("records")
 
 
-def compute_rsi(df: pd.DataFrame, rsi_period: int = 14) -> list[dict[str, Any]]:
+def compute_rsi(df: pd.DataFrame, rsi_period: int = 14) -> list[dict[str, object]]:
     """Calculate the Relative Strength Index (RSI)."""
     df = df.copy()
     df["diff"] = df["close"].diff()

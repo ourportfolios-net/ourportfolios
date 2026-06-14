@@ -2,7 +2,7 @@
 
 import asyncio
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import cast
 
 import pandas as pd
 
@@ -164,7 +164,7 @@ def calculate_yoy_growth(series: pd.Series) -> pd.Series:
 async def get_transformed_dataframes(
     ticker_symbol: str,
     period: str = "year",
-) -> dict[str, Any]:
+) -> dict[str, object]:
     cache_key = f"{ticker_symbol}_{period}"
     if cache_key in _cache:
         cached_data, cached_time = _cache[cache_key]
@@ -206,7 +206,7 @@ async def get_transformed_dataframes(
                 cashflow_df,
             )
 
-        result = {
+        result: dict[str, object] = cast("dict[str, object]", {
             "transformed_income_statement": income_ordered.to_dict("records")
             if not income_ordered.empty
             else [],
@@ -217,13 +217,13 @@ async def get_transformed_dataframes(
             if not cashflow_ordered.empty
             else [],
             "categorized_ratios": categorized_ratios,
-        }
+        })
 
         _cache[cache_key] = (result, datetime.now(UTC))
 
     except (ValueError, TypeError, KeyError, RuntimeError) as e:
         error_msg = f"{type(e).__name__}: {e!s}"
-        return {
+        return cast("dict[str, object]", {
             "transformed_income_statement": [],
             "transformed_balance_sheet": [],
             "transformed_cash_flow": [],
@@ -236,7 +236,7 @@ async def get_transformed_dataframes(
                 "Efficiency": [],
             },
             "error": error_msg,
-        }
+        })
     else:
         return result
 
@@ -246,7 +246,7 @@ def _extract_category(
     combined_df: pd.DataFrame,
     period: str,
     available_cols: set[str],
-) -> list[dict[str, Any]]:
+) -> list[dict[str, object]]:
     found = [m for m in metrics_list if m in available_cols]
     if not found:
         return []
@@ -438,7 +438,7 @@ def _compute_growth_rates(ratios_df: pd.DataFrame, period: str) -> list:
     return growth_df.to_dict(orient="records")
 
 
-def format_quarter_data(data_list: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def format_quarter_data(data_list: list[dict[str, object]]) -> list[dict[str, object]]:
     processed_data = []
     for item in data_list:
         processed_item = item.copy()

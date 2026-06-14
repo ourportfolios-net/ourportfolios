@@ -558,9 +558,9 @@ class TickersPageState(SessionIsolatedStateMixin, rx.State):
             sample_data = await get_transformed_dataframes("VNM", period="quarter")
             if sample_data and "categorized_ratios" in sample_data:
                 new_metrics: dict[str, list[str]] = {}
-                for category, category_data in sample_data[
+                for category, category_data in cast("dict[str, object]", sample_data[
                     "categorized_ratios"
-                ].items():
+                ]).items():
                     if not category_data:
                         continue
                     df = pd.DataFrame(category_data)

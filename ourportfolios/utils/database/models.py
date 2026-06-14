@@ -2,7 +2,6 @@
 
 import uuid
 from datetime import datetime
-from typing import Any
 
 from sqlalchemy import BigInteger, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
@@ -85,7 +84,7 @@ class FrameworkORM(Base):
     source_name: Mapped[str | None] = mapped_column(String(255))
     source_url: Mapped[str | None] = mapped_column(Text)
     industry: Mapped[str | None] = mapped_column(String(100))
-    metrics: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    metrics: Mapped[dict[str, object] | None] = mapped_column(JSONB)
     framework_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         unique=True,

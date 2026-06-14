@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import pandas as pd
 from sqlalchemy import text
@@ -91,7 +91,7 @@ _COMPANY_TABLE_QUERIES = {
 
 
 def _empty_price_history_df() -> pd.DataFrame:
-    return pd.DataFrame(columns=["time", "open", "high", "low", "close", "volume"])
+    return pd.DataFrame(columns=cast("pd.Index", ["time", "open", "high", "low", "close", "volume"]))
 
 
 def _statement_query(statement_name: str, period: str) -> TextClause:
@@ -186,7 +186,7 @@ async def _fetch_statement_async(
         async with price_engine.connect() as conn:
             result = await conn.execute(query, {"symbol": ticker_symbol})
             rows = result.fetchall()
-            df = pd.DataFrame(rows, columns=list(result.keys()))
+            df = pd.DataFrame(rows, columns=pd.Index(cast("list[str]", list(result.keys()))))
     except (SQLAlchemyError, ValueError, TypeError):
         return pd.DataFrame()
 
@@ -234,7 +234,7 @@ async def fetch_price_data_async(symbol: str) -> pd.DataFrame:
         async with company_engine.connect() as conn:
             result = await conn.execute(query, {"symbol": symbol})
             rows = result.fetchall()
-            df = pd.DataFrame(rows, columns=list(result.keys()))
+            df = pd.DataFrame(rows, columns=pd.Index(cast("list[str]", list(result.keys()))))
     except (SQLAlchemyError, ValueError, TypeError):
         return pd.DataFrame()
 
@@ -356,7 +356,7 @@ async def fetch_ratios_async(ticker_symbol: str, period: str = "year") -> pd.Dat
         async with company_engine.connect() as conn:
             result = await conn.execute(query, {"symbol": ticker_symbol})
             rows = result.fetchall()
-            df = pd.DataFrame(rows, columns=list(result.keys()))
+            df = pd.DataFrame(rows, columns=pd.Index(cast("list[str]", list(result.keys()))))
     except (SQLAlchemyError, ValueError, TypeError):
         return pd.DataFrame()
 

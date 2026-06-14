@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from typing import cast
 
 import reflex as rx
 
@@ -21,6 +22,7 @@ from ourportfolios.ui.theme.colors import (
 from ourportfolios.ui.theme.surfaces import (
     BUTTON_GHOST_SM,
     CARD_STYLE,
+    MODAL_BG,
     MODAL_PANEL_STYLE,
     SURFACE_BG,
     SURFACE_BORDER,
@@ -153,7 +155,9 @@ def detail_overlay() -> rx.Component:
             width=rx.breakpoints(initial="calc(100% - 2rem)", sm="360px", md="400px"),
             max_width="calc(100% - 2rem)",
             padding="1.25rem",
-            **MODAL_PANEL_STYLE,
+            background=MODAL_BG,
+            border=f"1px solid {white(0.08)}",
+            border_radius=RADIUS_CARD,
             opacity=0.95,
             z_index=50,
             box_shadow=SHADOW_LG,
@@ -288,7 +292,7 @@ def graph_container() -> rx.Component:
 # ── Header with inline stats ────────────────────────────────────────────
 
 
-def _stat_chip(icon: str, count: rx.Var[int], label: str) -> rx.Component:
+def _stat_chip(icon: str, count: int | rx.Var, label: str) -> rx.Component:
     return rx.hstack(
         rx.icon(icon, size=12, color=white(0.35)),
         rx.text(
@@ -364,7 +368,8 @@ def filter_bar() -> rx.Component:
 
 def _checkbox_row(
     label: str,
-    checked: rx.Var[bool],
+    *,
+    checked: rx.Var[bool] | bool,
     on_toggle: rx.event.EventHandler,
 ) -> rx.Component:
     """Create a single checkbox + label row matching the tickers metric checkbox layout."""
@@ -421,35 +426,17 @@ def settings_dialog() -> rx.Component:
                             checked=GraphState.show_node_types_category,
                             on_change=GraphState.toggle_node_types_category,
                             body=rx.box(
-                                _checkbox_row(
-                                    "Company",
-                                    GraphState.show_company_nodes,
-                                    GraphState.toggle_filter("company_nodes"),
+                                _checkbox_row("Company", checked=GraphState.show_company_nodes, on_toggle=GraphState.toggle_filter("company_nodes"),
                                 ),
-                                _checkbox_row(
-                                    "Person",
-                                    GraphState.show_person_nodes,
-                                    GraphState.set_show_person,
+                                _checkbox_row("Person", checked=GraphState.show_person_nodes, on_toggle=GraphState.set_show_person,
                                 ),
-                                _checkbox_row(
-                                    "Industry",
-                                    GraphState.show_industry_nodes,
-                                    GraphState.toggle_filter("industry_nodes"),
+                                _checkbox_row("Industry", checked=GraphState.show_industry_nodes, on_toggle=GraphState.toggle_filter("industry_nodes"),
                                 ),
-                                _checkbox_row(
-                                    "Macro Indicator",
-                                    GraphState.show_macro_indicator_nodes,
-                                    GraphState.toggle_filter("macro_indicator_nodes"),
+                                _checkbox_row("Macro Indicator", checked=GraphState.show_macro_indicator_nodes, on_toggle=GraphState.toggle_filter("macro_indicator_nodes"),
                                 ),
-                                _checkbox_row(
-                                    "Country",
-                                    GraphState.show_country_nodes,
-                                    GraphState.toggle_filter("country_nodes"),
+                                _checkbox_row("Country", checked=GraphState.show_country_nodes, on_toggle=GraphState.toggle_filter("country_nodes"),
                                 ),
-                                _checkbox_row(
-                                    "Subsidiaries",
-                                    GraphState.show_subsidiaries,
-                                    GraphState.set_show_subsidiaries,
+                                _checkbox_row("Subsidiaries", checked=GraphState.show_subsidiaries, on_toggle=GraphState.set_show_subsidiaries,
                                 ),
                                 display="grid",
                                 grid_template_columns="1fr 1fr",
@@ -462,65 +449,29 @@ def settings_dialog() -> rx.Component:
                             checked=GraphState.show_edge_categories,
                             on_change=GraphState.toggle_edge_categories,
                             body=rx.box(
-                                _checkbox_row(
-                                    "Ownership",
-                                    GraphState.show_ownership,
-                                    GraphState.toggle_filter("ownership"),
+                                _checkbox_row("Ownership", checked=GraphState.show_ownership, on_toggle=GraphState.toggle_filter("ownership"),
                                 ),
-                                _checkbox_row(
-                                    "Competition",
-                                    GraphState.show_competition,
-                                    GraphState.toggle_filter("competition"),
+                                _checkbox_row("Competition", checked=GraphState.show_competition, on_toggle=GraphState.toggle_filter("competition"),
                                 ),
-                                _checkbox_row(
-                                    "Roles / People",
-                                    GraphState.show_roles,
-                                    GraphState.toggle_filter("roles"),
+                                _checkbox_row("Roles / People", checked=GraphState.show_roles, on_toggle=GraphState.toggle_filter("roles"),
                                 ),
-                                _checkbox_row(
-                                    "Industry",
-                                    GraphState.show_industry,
-                                    GraphState.toggle_filter("industry"),
+                                _checkbox_row("Industry", checked=GraphState.show_industry, on_toggle=GraphState.toggle_filter("industry"),
                                 ),
-                                _checkbox_row(
-                                    "Macro",
-                                    GraphState.show_macro,
-                                    GraphState.toggle_filter("macro"),
+                                _checkbox_row("Macro", checked=GraphState.show_macro, on_toggle=GraphState.toggle_filter("macro"),
                                 ),
-                                _checkbox_row(
-                                    "Related Party",
-                                    GraphState.show_related_party,
-                                    GraphState.toggle_filter("related_party"),
+                                _checkbox_row("Related Party", checked=GraphState.show_related_party, on_toggle=GraphState.toggle_filter("related_party"),
                                 ),
-                                _checkbox_row(
-                                    "Guarantees",
-                                    GraphState.show_guarantees,
-                                    GraphState.toggle_filter("guarantees"),
+                                _checkbox_row("Guarantees", checked=GraphState.show_guarantees, on_toggle=GraphState.toggle_filter("guarantees"),
                                 ),
-                                _checkbox_row(
-                                    "Lends To",
-                                    GraphState.show_lends_to,
-                                    GraphState.toggle_filter("lends_to"),
+                                _checkbox_row("Lends To", checked=GraphState.show_lends_to, on_toggle=GraphState.toggle_filter("lends_to"),
                                 ),
-                                _checkbox_row(
-                                    "Joint Venture",
-                                    GraphState.show_joint_venture,
-                                    GraphState.toggle_filter("joint_venture"),
+                                _checkbox_row("Joint Venture", checked=GraphState.show_joint_venture, on_toggle=GraphState.toggle_filter("joint_venture"),
                                 ),
-                                _checkbox_row(
-                                    "Underwritten By",
-                                    GraphState.show_underwritten_by,
-                                    GraphState.toggle_filter("underwritten_by"),
+                                _checkbox_row("Underwritten By", checked=GraphState.show_underwritten_by, on_toggle=GraphState.toggle_filter("underwritten_by"),
                                 ),
-                                _checkbox_row(
-                                    "Cooperation",
-                                    GraphState.show_cooperation,
-                                    GraphState.toggle_filter("cooperation"),
+                                _checkbox_row("Cooperation", checked=GraphState.show_cooperation, on_toggle=GraphState.toggle_filter("cooperation"),
                                 ),
-                                _checkbox_row(
-                                    "State Owns",
-                                    GraphState.show_state_owns,
-                                    GraphState.toggle_filter("state_owns"),
+                                _checkbox_row("State Owns", checked=GraphState.show_state_owns, on_toggle=GraphState.toggle_filter("state_owns"),
                                 ),
                                 display="grid",
                                 grid_template_columns="1fr 1fr",
@@ -571,7 +522,7 @@ def settings_dialog() -> rx.Component:
 def loading_view() -> rx.Component:
     return rx.box(
         rx.skeleton(width="100%", height="100%", border_radius=RADIUS_CARD),
-        **{k: v for k, v in CARD_STYLE.items() if k != "min_height"},
+        **cast("dict", {k: v for k, v in CARD_STYLE.items() if k != "min_height"}),
         width="100%",
         flex="1",
     )
@@ -602,7 +553,7 @@ def error_view() -> rx.Component:
             spacing="3",
             align="center",
         ),
-        **{k: v for k, v in CARD_STYLE.items() if k != "min_height"},
+        **cast("dict", {k: v for k, v in CARD_STYLE.items() if k != "min_height"}),
         width="100%",
         flex="1",
     )
@@ -626,7 +577,7 @@ def empty_view() -> rx.Component:
             spacing="3",
             align="center",
         ),
-        **{k: v for k, v in CARD_STYLE.items() if k != "min_height"},
+        **cast("dict", {k: v for k, v in CARD_STYLE.items() if k != "min_height"}),
         width="100%",
         flex="1",
     )
@@ -690,7 +641,7 @@ def _rel_card(row: list[str]) -> rx.Component:
         border_radius=RADIUS_SM,
         background=white(0.02),
         border=f"1px solid {white(0.04)}",
-        # TODO: row[0] subscript in foreach may not compile correctly in Reflex.
+        # NOTE: row[0] subscript in foreach may not compile correctly in Reflex.
         # Re-enable focus-on-click once verified or use a bridge pattern.
         # on_click=GraphState.focus_edge(row[0]),
         cursor="default",
@@ -752,7 +703,7 @@ def _node_detail_content() -> rx.Component:
             rx.text("Relationships", size="1", weight="medium", color=TEXT_SECONDARY),
             rx.scroll_area(
                 rx.cond(
-                    GraphState.selected_edge_rows.length() > 0,
+                    GraphState.has_selected_edge_rows,
                     rx.vstack(
                         rx.foreach(GraphState.selected_edge_rows, _rel_card),  # type: ignore[arg-type]
                         spacing="2",
@@ -834,7 +785,7 @@ def _edge_detail_content() -> rx.Component:
         ),
         # Properties
         rx.cond(
-            GraphState.selected_edge_prop_rows.length() > 0,
+            GraphState.has_selected_edge_prop_rows,
             rx.vstack(
                 rx.text("Properties", size="1", weight="medium", color=TEXT_SECONDARY),
                 rx.scroll_area(

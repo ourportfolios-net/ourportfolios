@@ -709,14 +709,14 @@ window.showCategorySkeleton = function(category) {
     overlay.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;'
         + 'z-index:99;pointer-events:none;display:flex;flex-direction:column;'
         + 'align-items:center;justify-content:flex-start;padding-top:60px;';
-    
+
     var label = document.createElement('div');
     label.style.cssText = 'display:flex;align-items:center;gap:10px;'
         + 'padding:8px 16px;background:rgba(0,0,0,0.55);'
         + 'border-radius:8px;color:rgba(255,255,255,0.7);'
         + 'font-size:13px;font-family:sans-serif;';
     label.textContent = 'Loading ' + category + ' data' + String.fromCharCode(8230);
-    
+
     // Three pulsing dots
     var dots = document.createElement('span');
     dots.style.cssText = 'display:inline-flex;gap:4px;';
@@ -730,7 +730,7 @@ window.showCategorySkeleton = function(category) {
     label.appendChild(dots);
     overlay.appendChild(label);
     container.appendChild(overlay);
-    
+
     // Inject CSS animation if not already present
     if (!document.getElementById('cy-skeleton-style')) {
         var style = document.createElement('style');

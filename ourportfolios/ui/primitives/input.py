@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 import reflex as rx
 
 from ourportfolios.ui.theme.colors import white
@@ -17,7 +19,7 @@ from ourportfolios.ui.tokens import FONT_LABEL, FONT_SM
 def text_input(
     *,
     placeholder: str = "",
-    value: object = None,
+    value: rx.Var[str] | str | None = None,
     on_change: object = None,
     **props: object,
 ) -> rx.Component:
@@ -31,20 +33,20 @@ def text_input(
 
     """
     return rx.input(
-        **{
+        **cast("dict", {
             "placeholder": placeholder,
             "value": value,
             "on_change": on_change,
             "style": INPUT_STYLE,
             **props,
-        },
+        }),
     )
 
 
 def search_input(
     *,
     placeholder: str = "Search...",
-    value: object = None,
+    value: rx.Var[str] | str | None = None,
     on_change: object = None,
     **props: object,
 ) -> rx.Component:
@@ -58,23 +60,23 @@ def search_input(
 
     """
     return rx.input(
-        **{
+        **cast("dict", {
             "placeholder": placeholder,
             "value": value,
             "on_change": on_change,
             "style": SEARCH_INPUT_STYLE,
             **props,
-        },
+        }),
     )
 
 
 def search_input_with_icon(
     *,
     placeholder: str = "Search...",
-    value: object = None,
+    value: rx.Var[str] | str | None = None,
     on_change: object = None,
     icon: str = "search",
-    custom_attrs: dict[str, str] | None = None,
+    custom_attrs: dict[str, str | rx.Var[str]] | None = None,
     **props: object,
 ) -> rx.Component:
     """Create a search input with icon slot.
@@ -90,14 +92,14 @@ def search_input_with_icon(
     """
     return rx.input(
         rx.input.slot(rx.icon(tag=icon, size=16)),
-        **{
+        **cast("dict", {
             "placeholder": placeholder,
             "value": value,
             "on_change": on_change,
             "custom_attrs": custom_attrs,
             "style": {**SEARCH_INPUT_STYLE, "padding_left": "0"},
             **props,
-        },
+        }),
     )
 
 
@@ -109,14 +111,17 @@ def select_input(**props: object) -> rx.Component:
 
     """
     return rx.select(
-        **{"style": SELECT_STYLE, **props},
+        **cast("dict", {
+            "style": SELECT_STYLE,
+            **props,
+        }),
     )
 
 
 def text_area_input(
     *,
     placeholder: str = "",
-    value: object = None,
+    value: rx.Var[str] | str | None = None,
     on_change: object = None,
     rows: int = 4,
     **props: object,
@@ -132,14 +137,14 @@ def text_area_input(
 
     """
     return rx.text_area(
-        **{
+        **cast("dict", {
             "placeholder": placeholder,
             "value": value,
             "on_change": on_change,
             "rows": str(rows),
             "style": INPUT_STYLE,
             **props,
-        },
+        }),
     )
 
 
@@ -152,7 +157,12 @@ def search_icon(**props: object) -> rx.Component:
     """
     return rx.icon(
         "search",
-        **{"size": 14, "color": white(0.25), "style": SEARCH_ICON_STYLE, **props},
+        **cast("dict", {
+            "size": 14,
+            "color": white(0.25),
+            "style": SEARCH_ICON_STYLE,
+            **props,
+        }),
     )
 
 
@@ -180,7 +190,12 @@ def form_field(
             rx.text(error, font_size=FONT_SM, color="rgba(255, 100, 100, 0.8)"),
             rx.fragment(),
         ),
-        **{"spacing": "1", "align": "start", "width": "100%", **props},
+        **cast("dict", {
+            "spacing": "1",
+            "align": "start",
+            "width": "100%",
+            **props,
+        }),
     )
 
 
@@ -194,5 +209,9 @@ def _label_text(text: str | rx.Var[str], **props: object) -> rx.Component:
     """
     return rx.text(
         text,
-        **{"font_size": FONT_LABEL, "color": white(0.35), **props},
+        **cast("dict", {
+            "font_size": FONT_LABEL,
+            "color": white(0.35),
+            **props,
+        }),
     )

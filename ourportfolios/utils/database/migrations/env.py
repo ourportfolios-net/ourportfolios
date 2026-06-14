@@ -1,14 +1,17 @@
 import os
 from importlib import import_module
 from logging.config import fileConfig
-from typing import Any, cast
+from typing import TYPE_CHECKING, cast
+
+if TYPE_CHECKING:
+    from types import ModuleType
 
 from dotenv import load_dotenv
 from sqlalchemy import engine_from_config, pool
 
 from ourportfolios.utils.database.models import Base
 
-context = cast("Any", import_module("alembic.context"))
+context = cast("ModuleType", import_module("alembic.context"))
 
 load_dotenv()
 

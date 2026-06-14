@@ -1,6 +1,8 @@
 """Search bar UI component with ticker suggestions."""
 
-from typing import Any
+from __future__ import annotations
+
+from typing import Protocol, TypeVar
 
 import reflex as rx
 
@@ -13,6 +15,15 @@ from ourportfolios.ui.tokens import (
     SHADOW_LG,
     SPACE_SM,
 )
+
+_T = TypeVar("_T")
+
+
+class _SuggestionVar(Protocol):
+    """Reflex Var proxy used inside rx.foreach — supports subscript and .to()."""
+
+    def __getitem__(self, key: str) -> _SuggestionVar: ...
+    def to(self, __type: type[_T], /) -> _T: ...
 
 
 def search_bar():
@@ -76,9 +87,9 @@ def search_bar():
     )
 
 
-def suggestion_card(value: dict[str, Any]) -> rx.Component:
-    ticker = value["symbol"].to(str)
-    industry = value["industry"].to(str)
+def suggestion_card(value: _SuggestionVar) -> rx.Component:
+    ticker: str = value["symbol"].to(str)
+    industry: str = value["industry"].to(str)
     pct_price_change: float = value["pct_price_change"].to(float)
 
     return rx.link(

@@ -8,7 +8,7 @@ from __future__ import annotations
 import json
 import logging
 import time
-from typing import Any, ClassVar
+from typing import ClassVar, cast
 
 import reflex as rx
 
@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 # Module-level graph cache (shared across all user sessions)
 # Module-level cache uses a mutable container to avoid "global" statements
 # ---------------------------------------------------------------------------
-_CACHE: dict[str, Any] = {"graph": None, "timestamp": 0.0}
+_CACHE: dict[str, object] = {"graph": None, "timestamp": 0.0}
 CACHE_TTL_SECONDS: int = 3600  # 1 hour — graph data changes infrequently
 
 # ---------------------------------------------------------------------------
@@ -222,7 +222,7 @@ class GraphState(rx.State):
 
     def __init__(self, *args: object, **kwargs: object) -> None:
         """Initialize state with empty mutable fields."""
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, **cast("dict", kwargs))
         self.selected_prop_rows = []
         self.selected_edge_rows = []
         self.selected_edge_prop_rows = []
@@ -297,7 +297,7 @@ class GraphState(rx.State):
     hidden_edges: list[str]
 
     # ── Lazy loading ───────────────────────────────────────────────────────
-    categories_loaded: list[str] = []
+    categories_loaded: list[str]
     category_loading: str = ""
 
     # ── Visible counts (updated from client-side via _applyFilters) ────────
@@ -328,8 +328,9 @@ class GraphState(rx.State):
 
     @rx.var
     def has_graph_data(self) -> bool:
-        """True when graph_json contains actual node elements (fallback for
-        visible_node_count which is 0 until client reports back).
+        """Return whether graph_json contains actual node elements.
+
+        Fallback for visible_node_count which is 0 until client reports back.
         """
         if not self.categories_loaded:
             return False
@@ -338,7 +339,17 @@ class GraphState(rx.State):
             elements = data.get("elements", [])
             return any(el.get("group") == "nodes" for el in elements)
         except (json.JSONDecodeError, TypeError):
-            return None
+            return False
+
+    @rx.var
+    def has_selected_edge_rows(self) -> bool:
+        """Whether there are selected edge rows."""
+        return len(self.selected_edge_rows) > 0
+
+    @rx.var
+    def has_selected_edge_prop_rows(self) -> bool:
+        """Whether there are selected edge property rows."""
+        return len(self.selected_edge_prop_rows) > 0
 
     @rx.var
     def has_selection(self) -> bool:
@@ -373,7 +384,7 @@ class GraphState(rx.State):
     # ── Setters ─────────────────────────────────────────────────────────────
 
     @rx.event
-    def set_search_query(self, value: str) -> None:
+    def set_search_query(self, value: str):
         """Update search query and apply JS filter."""
         self.search_query = value
         q = str(self.search_query)
@@ -386,9 +397,8 @@ class GraphState(rx.State):
         )
 
     # ── Filter helper: build JS that updates _filterState + calls _applyFilters ─
-    def _emit_filter_script(self):
-        """Build ``call_script`` JS that updates ``window._filterState`` and
-        calls ``window._applyFilters()``.
+    def _emit_filter_script(self) -> object:
+        """Build call_script JS that updates _filterState and calls _applyFilters.
 
         IMPORTANT: Reflex state vars return proxy objects, not plain Python
         values.  ``bool()`` and ``str()`` cast these to native types so
@@ -481,7 +491,7 @@ class GraphState(rx.State):
     # ── Lazy-loading toggles ────────────────────────────────────────────────
 
     @rx.event
-    def set_show_person(self, value: bool):
+    def set_show_person(self, *, value: bool):
         """Toggle Person visibility and trigger lazy fetch if needed."""
         self.show_person_nodes = value
         if value and "person" not in self.categories_loaded:
@@ -490,7 +500,7 @@ class GraphState(rx.State):
         return self._emit_filter_script()
 
     @rx.event
-    def set_show_subsidiaries(self, value: bool):
+    def set_show_subsidiaries(self, *, value: bool):
         """Toggle Subsidiaries visibility and trigger lazy fetch if needed."""
         self.show_subsidiaries = value
         if value and "subsidiaries" not in self.categories_loaded:
@@ -507,8 +517,10 @@ class GraphState(rx.State):
             return
 
         try:
-            settings = _get_settings()  # type: ignore[misc]
-            queries = GraphQueries.from_settings(settings.falkordb)  # type: ignore[misc]
+            if _get_settings is None or GraphQueries is None:
+                return
+            settings = _get_settings()
+            queries = GraphQueries.from_settings(settings.falkordb)
             try:
                 category_data = await queries.export_graph_json(
                     max_edges=50000,
@@ -519,7 +531,7 @@ class GraphState(rx.State):
             finally:
                 await queries.close()
         except Exception:
-            logger.exception(f"Failed to fetch category '{category}'")
+            logger.exception("Failed to fetch category '%s'", category)
             async with self:
                 self.category_loading = ""
             return
@@ -576,7 +588,6 @@ class GraphState(rx.State):
             self.categories_loaded = [*self.categories_loaded, category]
             self.category_loading = ""
 
-        cat_label = category.capitalize()
         yield rx.call_script(
             f"window._graphData = {merged_json};"
             f"if (window._cy) {{"
@@ -684,7 +695,7 @@ class GraphState(rx.State):
         return self._emit_filter_script()
 
     @rx.event
-    def toggle_node_visibility(self, node_id: str) -> None:
+    def toggle_node_visibility(self, node_id: str):
         """Toggle visibility of a node in the Cytoscape graph."""
         if not node_id:
             return None
@@ -699,7 +710,7 @@ class GraphState(rx.State):
         )
 
     @rx.event
-    def toggle_edge_visibility(self, edge_id: str) -> None:
+    def toggle_edge_visibility(self, edge_id: str):
         """Toggle visibility of an edge in the Cytoscape graph."""
         if not edge_id:
             return None
@@ -745,6 +756,11 @@ class GraphState(rx.State):
         if not data:
             return
 
+        self._extract_node_properties(data, node_id)
+        self.selected_edge_rows = self._build_node_relationship_rows(data, node_id)
+
+    def _extract_node_properties(self, data: dict, node_id: str) -> None:
+        """Extract and set node properties from graph data."""
         for node in data.get("nodes", []):
             if node.get("id") == node_id:
                 labels = node.get("labels", [])
@@ -769,10 +785,11 @@ class GraphState(rx.State):
                 ]
                 break
 
-        # Build structured relationship rows for card display.
-        # Each row: [edge_id, direction, rel_label, other_name, detail]
+    def _build_node_relationship_rows(
+        self, data: dict, node_id: str,
+    ) -> list[list[str]]:
+        """Build relationship rows for a node click."""
         rows: list[list[str]] = []
-        # Build a quick lookup for linked-node names
         node_names: dict[str, str] = {}
         for n in data.get("nodes", []):
             p = n.get("properties", {})
@@ -790,22 +807,19 @@ class GraphState(rx.State):
             rel_type = e.get("relationship", "UNKNOWN")
             rel_label = _EDGE_LABELS.get(rel_type, rel_type.replace("_", " "))
             ep = e.get("properties", {})
-            # Reconstruct the Cytoscape edge ID
             eid = src + "--" + rel_type + "--" + tgt
             sp = ep.get("stake_percent")
             if sp is not None:
                 eid += "--" + str(sp)
-            # Direction
             if src == node_id:
                 direction = "out"
                 other_name = node_names.get(tgt, tgt)
             else:
                 direction = "in"
                 other_name = node_names.get(src, src)
-            # Detail line: key property
             detail = _format_edge_detail(rel_type, ep)
             rows.append([eid, direction, rel_label, other_name, detail])
-        self.selected_edge_rows = rows
+        return rows
 
     @rx.event
     def handle_edge_click(self, edge_id: str) -> None:
@@ -879,7 +893,7 @@ class GraphState(rx.State):
             self.handle_node_click(self.selected_edge_target_id)
 
     @rx.event
-    def focus_edge(self, edge_id: str) -> None:
+    def focus_edge(self, edge_id: str):
         """Zoom the graph to a specific edge and select it."""
         if not edge_id:
             return None
@@ -897,21 +911,21 @@ class GraphState(rx.State):
     # ── Zoom controls ───────────────────────────────────────────────────────
 
     @rx.event
-    def zoom_in(self) -> None:
+    def zoom_in(self):
         """Zoom in the Cytoscape graph."""
         return rx.call_script(
             "if (typeof window.zoomIn === 'function') { window.zoomIn(); }",
         )
 
     @rx.event
-    def zoom_out(self) -> None:
+    def zoom_out(self):
         """Zoom out the Cytoscape graph."""
         return rx.call_script(
             "if (typeof window.zoomOut === 'function') { window.zoomOut(); }",
         )
 
     @rx.event
-    def zoom_fit(self) -> None:
+    def zoom_fit(self):
         """Fit the Cytoscape graph to view."""
         return rx.call_script(
             "if (typeof window.zoomFit === 'function') { window.zoomFit(); }",
@@ -933,8 +947,10 @@ class GraphState(rx.State):
             )
 
         try:
-            settings = _get_settings()  # type: ignore[misc]
-            queries = GraphQueries.from_settings(settings.falkordb)  # type: ignore[misc]
+            if _get_settings is None or GraphQueries is None:
+                return None, "Internal error: ourgraph not initialized"
+            settings = _get_settings()
+            queries = GraphQueries.from_settings(settings.falkordb)
             try:
                 graph_data = await queries.export_graph_json(
                     max_edges=50000,
@@ -944,24 +960,24 @@ class GraphState(rx.State):
                 )
             finally:
                 await queries.close()
-
-            _CACHE["graph"] = graph_data
-            _CACHE["timestamp"] = time.time()
-            return graph_data, None
-
         except Exception:
             logger.exception("Failed to load graph data")
             return None, (
                 "Failed to connect to FalkorDB. "
                 "Ensure the database is running and accessible."
             )
+        else:
+            _CACHE["graph"] = graph_data
+            _CACHE["timestamp"] = time.time()
+            return graph_data, None
 
     @rx.event(background=True)
-    async def load_graph(self) -> None:
+    async def load_graph(self):
         """Load graph data from FalkorDB via ourgraph library."""
         # ── Check module-level cache first ────────────────────────────────────
-        cache_graph = _CACHE.get("graph")
-        cache_ts: float = _CACHE.get("timestamp", 0.0)  # type: ignore[assignment]
+        cache_graph: object = _CACHE.get("graph")
+        cache_ts_val = _CACHE.get("timestamp", 0.0)
+        cache_ts: float = cache_ts_val if isinstance(cache_ts_val, (int, float)) else 0.0
         if cache_graph is not None and time.time() - cache_ts < CACHE_TTL_SECONDS:
             cached_json = json.dumps(cache_graph)
             async with self:
@@ -1002,7 +1018,7 @@ class GraphState(rx.State):
         yield self._emit_filter_script()
 
     @rx.event(background=True)
-    async def refresh_graph(self) -> None:
+    async def refresh_graph(self):
         """Refresh graph data from the database (bypasses cache)."""
         # Destroy old Cytoscape instance so _tryInitCyGraph re-initializes
         yield rx.call_script(

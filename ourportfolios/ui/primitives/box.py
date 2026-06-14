@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 import reflex as rx
 
 from ourportfolios.ui.theme.colors import purple, white
@@ -43,7 +45,13 @@ def surface_box(
     }
     if hover:
         style.update(CARD_HOVER_STYLE)
-    return rx.box(*children, **{"style": style, **props})
+    if "style" in props:
+        style.update(cast("dict[str, object]", props.pop("style")))
+    rest = {
+        "style": style,
+        **props,
+    }
+    return rx.box(*children, **cast("dict", rest))
 
 
 def glass_box(
@@ -55,7 +63,7 @@ def glass_box(
     """Glass-morphism card with backdrop blur."""
     return rx.box(
         *children,
-        **{
+        **cast("dict", {
             "padding": padding,
             "border_radius": RADIUS_CARD,
             "background": white(0.03),
@@ -68,7 +76,7 @@ def glass_box(
                 "border_color": white(0.13),
             },
             **props,
-        },
+        }),
     )
 
 
@@ -80,13 +88,13 @@ def subtle_box(
     """Subtle surface for nested/secondary content."""
     return rx.box(
         *children,
-        **{
+        **cast("dict", {
             "padding": padding,
             "border_radius": RADIUS_INPUT,
             "background": SUBTLE_BG,
             "border": SUBTLE_BORDER,
             **props,
-        },
+        }),
     )
 
 
@@ -98,13 +106,13 @@ def section_container(
     """Section-level container with standard section padding."""
     return rx.box(
         *children,
-        **{
+        **cast("dict", {
             "padding": padding,
             "border_radius": RADIUS_CARD,
             "background": SURFACE_BG,
             "border": SURFACE_BORDER,
             **props,
-        },
+        }),
     )
 
 
@@ -122,7 +130,7 @@ def modal_panel(
         extra["max_width"] = max_width
     return rx.box(
         *children,
-        **{
+        **cast("dict", {
             "width": width,
             "height": height,
             "padding": padding,
@@ -132,7 +140,7 @@ def modal_panel(
             "box_shadow": SHADOW_LG,
             **extra,
             **props,
-        },
+        }),
     )
 
 
@@ -144,14 +152,14 @@ def overlay_box(
     """Overlay container that shows/hides based on a condition."""
     return rx.box(
         *children,
-        **{
+        **cast("dict", {
             "position": "absolute",
             "inset": "0",
             "opacity": rx.cond(is_active, "1", "0"),
             "pointer_events": rx.cond(is_active, "auto", "none"),
             "transition": TRANS_FAST,
             **props,
-        },
+        }),
     )
 
 
@@ -165,7 +173,8 @@ def icon_container(
     """Icon inside a styled container box."""
     return rx.box(
         rx.icon(icon_name, size=size, color=icon_color(color)),
-        **{"style": icon_box_style(color=color, size=container_size), **props},
+        style=icon_box_style(color=color, size=container_size),
+        **cast("dict", props),
     )
 
 
@@ -176,14 +185,14 @@ def metric_box(
     """Small metric display box used in landing page cards."""
     return rx.box(
         *children,
-        **{
+        **cast("dict", {
             "flex": "1",
             "padding": "0.875rem",
             "background": white(0.02),
             "border": f"1px solid {white(0.07)}",
             "border_radius": RADIUS_INPUT,
             **props,
-        },
+        }),
     )
 
 
@@ -194,14 +203,14 @@ def chart_box(
     """Chart container box used in landing page cards."""
     return rx.box(
         *children,
-        **{
+        **cast("dict", {
             "flex": "1",
             "padding": "0.75rem",
             "background": white(0.02),
             "border": f"1px solid {white(0.07)}",
             "border_radius": RADIUS_SURFACE,
             **props,
-        },
+        }),
     )
 
 
@@ -213,7 +222,7 @@ def list_row(
     """List row item used in landing page ticker lists."""
     return rx.box(
         *children,
-        **{
+        **cast("dict", {
             "width": "100%",
             "padding": "1rem 1.25rem",
             "background": rx.cond(selected, purple(0.1), white(0.02)),
@@ -224,7 +233,7 @@ def list_row(
             ),
             "border_radius": RADIUS_SURFACE,
             **props,
-        },
+        }),
     )
 
 
@@ -235,7 +244,7 @@ def navbar_bar(
     """Create a fixed navigation bar with blur backdrop."""
     return rx.box(
         *children,
-        **{
+        **cast("dict", {
             "position": "fixed",
             "top": "0",
             "width": "100%",
@@ -246,7 +255,7 @@ def navbar_bar(
             "border_bottom": f"1px solid {white(0.09)}",
             "box_shadow": SHADOW_LG,
             **props,
-        },
+        }),
     )
 
 
@@ -257,14 +266,14 @@ def dropdown_panel(
     """Dropdown/hover-card panel with dark surface styling."""
     return rx.box(
         *children,
-        **{
+        **cast("dict", {
             "background": "rgba(13, 13, 15, 0.97)",
             "border": f"1px solid {white(0.07)}",
             "border_radius": RADIUS_SURFACE,
             "padding": "0.375rem",
             "box_shadow": SHADOW_LG,
             **props,
-        },
+        }),
     )
 
 
@@ -282,7 +291,7 @@ def user_avatar(
             line_height="1",
             user_select="none",
         ),
-        **{
+        **cast("dict", {
             "width": "2rem",
             "height": "2rem",
             "border_radius": RADIUS_SM,
@@ -296,7 +305,7 @@ def user_avatar(
             "transition": TRANS_DEFAULT,
             "_hover": {"background": white(0.1), "border_color": white(0.2)},
             **props,
-        },
+        }),
     )
 
 
@@ -306,5 +315,6 @@ def glow_orb(
 ) -> rx.Component:
     """Create a decorative glow orb for card backgrounds."""
     return rx.box(
-        **{"style": glow_orb_style(color=color), **props},
+        style=glow_orb_style(color=color),
+        **cast("dict", props),
     )

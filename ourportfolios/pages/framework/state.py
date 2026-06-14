@@ -2,7 +2,6 @@
 
 import uuid
 from collections.abc import AsyncGenerator
-from typing import Any
 
 import reflex as rx
 from pydantic import BaseModel, Field
@@ -40,7 +39,7 @@ class FrameworkORM(Base):
     source_name: Mapped[str | None] = mapped_column(String(255))
     source_url: Mapped[str | None] = mapped_column(Text)
     industry: Mapped[str | None] = mapped_column(String(100))
-    metrics: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    metrics: Mapped[dict[str, object] | None] = mapped_column(JSONB)
     framework_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         unique=True,
@@ -112,7 +111,7 @@ class MetricModel(BaseModel):
 
 
 def _orm_to_framework_model(row: FrameworkORM) -> FrameworkModel:
-    metrics: list[dict[str, Any]] = [
+    metrics: list[dict[str, object]] = [
         {"name": name, "type": mr.category, "order": mr.display_order}
         for mr in sorted(row.metric_rows or [], key=lambda m: m.display_order or 0)
         for name in mr.metrics

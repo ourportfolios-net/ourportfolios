@@ -326,16 +326,16 @@ class State(SessionIsolatedStateMixin, rx.State):
             if "error" in result:
                 async with self:
                     self._is_loading_financial = False
-                    self.error_financial = result["error"]
+                    self.error_financial = cast("str", result["error"])
                 return
 
             async with self:
                 if not self._is_mounted:
                     return
                 self.transformed_dataframes = result
-                self.income_statement = result.get("transformed_income_statement", [])
-                self.balance_sheet = result.get("transformed_balance_sheet", [])
-                self.cash_flow = result.get("transformed_cash_flow", [])
+                self.income_statement = cast("list[dict[str, object]]", result.get("transformed_income_statement", []))
+                self.balance_sheet = cast("list[dict[str, object]]", result.get("transformed_balance_sheet", []))
+                self.cash_flow = cast("list[dict[str, object]]", result.get("transformed_cash_flow", []))
 
         except (ValueError, RuntimeError, KeyError) as e:
             async with self:
@@ -365,7 +365,7 @@ class State(SessionIsolatedStateMixin, rx.State):
         categorized_ratios = transformed_dataframes.get("categorized_ratios", {})
         all_available_metrics: dict[str, list[str]] = {}
 
-        for category, financial_data in categorized_ratios.items():
+        for category, financial_data in cast("dict[str, object]", categorized_ratios).items():
             rows = self._extract_category_rows(financial_data)
             if rows:
                 excluded_columns = {"Year", "Quarter", "Date", "Period"}

@@ -18,7 +18,7 @@ from ourportfolios.ui.theme import BUTTON_GHOST, TEXT_PRIMARY, white
 
 def metric_badge(metric: dict[str, object]) -> rx.Component:
     # metric is a Reflex Var inside rx.foreach — must use [] not .get()
-    return badge(metric["name"], color_variant="gray")
+    return badge(cast("str", metric["name"]), color_variant="gray")
 
 
 def framework_dialog() -> rx.Component:
@@ -44,11 +44,11 @@ def framework_dialog() -> rx.Component:
         ),
         # Badges / source link
         rx.hstack(
-            badge(FrameworkState.selected_framework.scope, color_variant="gray"),
+            badge(cast("str", FrameworkState.selected_framework.scope), color_variant="gray"),
             rx.cond(
                 FrameworkState.selected_framework.complexity == "complex",
-                badge(FrameworkState.selected_framework.complexity, color_variant="red"),
-                badge(FrameworkState.selected_framework.complexity, color_variant="green"),
+                badge(cast("str", FrameworkState.selected_framework.complexity), color_variant="red"),
+                badge(cast("str", FrameworkState.selected_framework.complexity), color_variant="green"),
             ),
             rx.cond(
                 FrameworkState.selected_framework.source_name,
