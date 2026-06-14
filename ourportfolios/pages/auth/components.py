@@ -109,22 +109,6 @@ def action_button(
     )
 
 
-def divider_with_text(text: str) -> rx.Component:
-    return rx.hstack(
-        rx.box(flex="1", height="1px", background=white(0.07)),
-        rx.text(
-            text,
-            size="1",
-            color=TEXT_MUTED,
-            white_space="nowrap",
-            padding_x="0.75rem",
-        ),
-        rx.box(flex="1", height="1px", background=white(0.07)),
-        width="100%",
-        align="center",
-    )
-
-
 _GOOGLE_BUTTON_STYLE = {
     "width": "100%",
     "height": "3rem",

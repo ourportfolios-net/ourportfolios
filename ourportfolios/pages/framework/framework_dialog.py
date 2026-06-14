@@ -9,7 +9,6 @@ from ourportfolios.pages.framework.state import FrameworkState
 from ourportfolios.ui.primitives import (
     badge,
     body_text,
-    divider,
     muted_text,
     spacer,
     subheading,
@@ -79,7 +78,6 @@ def framework_dialog() -> rx.Component:
             width="100%",
             wrap="wrap",
         ),
-        divider(),
         # Scrollable body — this is the ONLY scroll container
         rx.scroll_area(
             rx.vstack(
@@ -119,7 +117,6 @@ def framework_dialog() -> rx.Component:
             width="100%",
             overflow_y="auto",
         ),
-        divider(),
         # Footer
         rx.hstack(
             spacer(),

@@ -36,10 +36,25 @@ def _badge_content(diff: float) -> rx.Component:
 def pct_change_badge(diff: float):
     return rx.cond(
         diff > 0,
-        badge(_badge_content(diff), color_variant="green", min_width="fit-content", flex_shrink="false"),
+        badge(
+            _badge_content(diff),
+            color_variant="green",
+            min_width="fit-content",
+            flex_shrink="false",
+        ),
         rx.cond(
             diff < 0,
-            badge(_badge_content(diff), color_variant="red", min_width="fit-content", flex_shrink="false"),
-            badge(_badge_content(diff), color_variant="gray", min_width="fit-content", flex_shrink="false"),
+            badge(
+                _badge_content(diff),
+                color_variant="red",
+                min_width="fit-content",
+                flex_shrink="false",
+            ),
+            badge(
+                _badge_content(diff),
+                color_variant="gray",
+                min_width="fit-content",
+                flex_shrink="false",
+            ),
         ),
     )

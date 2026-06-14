@@ -9,7 +9,6 @@ from ourportfolios.pages.auth.components import (
     auth_card,
     auth_centered,
     auth_page_shell,
-    divider_with_text,
     google_button,
     label,
     session_check_screen,
@@ -195,7 +194,6 @@ def _login_form() -> rx.Component:
             loading=AuthState.loading,
             loading_label="Signing in…",
         ),
-        divider_with_text("or"),
         google_button(),
         _footer_row(
             "Don't have an account?",
@@ -289,7 +287,6 @@ def _register_form() -> rx.Component:
             loading=AuthState.loading,
             loading_label="Creating account…",
         ),
-        divider_with_text("or"),
         google_button(),
         muted_text(
             "By creating an account you agree to our terms of service and privacy policy.",

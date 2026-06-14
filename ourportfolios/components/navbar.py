@@ -5,7 +5,6 @@ import reflex as rx
 from ourportfolios.components.search_bar import search_bar
 from ourportfolios.state.auth_state import AuthState
 from ourportfolios.ui.primitives import (
-    divider,
     dropdown_panel,
     locked_link,
     nav_link,
@@ -251,9 +250,7 @@ def _user_menu() -> rx.Component:
                 ),
                 padding="0.55rem 0.6rem 0.6rem",
             ),
-            divider(),
             _menu_item("settings", "Settings", href="/settings"),
-            divider(),
             _menu_item("log-out", "Sign out", on_click=AuthState.logout, danger=True),
             background="rgba(13, 13, 15, 0.97)",
             border=f"1px solid {white(0.08)}",

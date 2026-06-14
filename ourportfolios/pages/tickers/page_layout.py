@@ -11,7 +11,6 @@ from ourportfolios.pages.tickers.compare_table import compare_table, empty_compa
 from ourportfolios.pages.tickers.controls import board_toolbar, compare_toolbar
 from ourportfolios.pages.tickers.state import TickersPageState
 from ourportfolios.pages.tickers.ticker_board import new_ticker_board
-from ourportfolios.ui.primitives import divider
 from ourportfolios.ui.theme import BUTTON_SECONDARY, BUTTON_SECONDARY_ACTIVE, white
 
 # ── View toggle ────────────────────────────────────────────────────────────────
@@ -100,7 +99,6 @@ def main_content() -> rx.Component:
     """Full page body below the navbar."""
     return rx.vstack(
         page_header(),
-        divider(),
         toolbar_row(),
         content_area(),
         spacing="5",

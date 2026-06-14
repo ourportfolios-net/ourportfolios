@@ -9,7 +9,7 @@ from ourportfolios.pages.tickers.compare_table import compare_table, empty_compa
 from ourportfolios.pages.tickers.controls import board_toolbar, compare_toolbar
 from ourportfolios.pages.tickers.state import TickersPageState
 from ourportfolios.pages.tickers.ticker_board import new_ticker_board
-from ourportfolios.ui.primitives import divider, secondary_button
+from ourportfolios.ui.primitives import secondary_button
 from ourportfolios.ui.theme import PAGE_BG, overlay_style, white
 
 
@@ -111,7 +111,6 @@ def content_area() -> rx.Component:
 def main_content() -> rx.Component:
     return rx.vstack(
         page_header(),
-        divider(),
         toolbar_row(),
         content_area(),
         spacing="4",

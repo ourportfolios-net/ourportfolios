@@ -11,7 +11,6 @@ from ourportfolios.pages.settings.state import DEFAULT_PERIOD_OPTIONS, SettingsS
 from ourportfolios.state.auth_state import AuthState
 from ourportfolios.ui.primitives import (
     body_text,
-    divider,
     heading,
     icon_container,
     label_text,
@@ -352,7 +351,6 @@ def _delete_dialog() -> rx.Component:
             _feedback(SettingsState.delete_error, is_error=True),
             rx.fragment(),
         ),
-        divider(),
         rx.hstack(
             _ghost_button("Cancel", on_click=SettingsState.close_delete_dialog),
             rx.box(

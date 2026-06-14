@@ -6,6 +6,7 @@ import json
 
 import reflex as rx
 
+from ourportfolios.components.category_toggle_card import category_toggle_card
 from ourportfolios.ui.primitives.button import ghost_button_sm, icon_button_xs
 from ourportfolios.ui.primitives.input import search_input_with_icon
 from ourportfolios.ui.theme.colors import (
@@ -18,17 +19,17 @@ from ourportfolios.ui.theme.colors import (
     white,
 )
 from ourportfolios.ui.theme.surfaces import (
-    CARD_BG,
-    CARD_BORDER,
+    BUTTON_GHOST_SM,
     CARD_STYLE,
-    DIVIDER,
+    MODAL_PANEL_STYLE,
     SURFACE_BG,
     SURFACE_BORDER,
 )
 from ourportfolios.ui.tokens import (
+    BLUR_DEFAULT,
     RADIUS_CARD,
     RADIUS_SM,
-    TRANS_DEFAULT,
+    SHADOW_LG,
 )
 
 from ._cytoscape import _CYTOSCAPE_JS
@@ -57,34 +58,44 @@ def _all_scripts() -> rx.Component:
         ),
         rx.script("""
             window._reflexSend = function(eventName, payload) {
+                console.log('[cy] _reflexSend called:', eventName, JSON.stringify(payload));
                 try {
-                    // Route through hidden Reflex inputs/buttons for reliable
-                    // event delivery.  Reflex 0.9.x internal dispatch APIs may
-                    // silently drop events; native DOM events go through the
-                    // normal React pipeline.
                     if (eventName === 'graph_state.handle_edge_click') {
                         var inp = document.getElementById('__cy_edge_id');
+                        console.log('[cy] _reflexSend: found edge input:', !!inp);
                         if (inp) {
                             var nativeInputValueSetter = Object.getOwnPropertyDescriptor(
                                 window.HTMLInputElement.prototype, 'value'
                             ).set;
                             nativeInputValueSetter.call(inp, payload.edge_id || '');
                             inp.dispatchEvent(new Event('input', {bubbles: true}));
+                            console.log('[cy] _reflexSend: dispatched input on edge input');
                         }
                     } else if (eventName === 'graph_state.handle_node_click') {
                         var inp2 = document.getElementById('__cy_node_id');
+                        console.log('[cy] _reflexSend: found node input:', !!inp2);
                         if (inp2) {
                             var setter2 = Object.getOwnPropertyDescriptor(
                                 window.HTMLInputElement.prototype, 'value'
                             ).set;
                             setter2.call(inp2, payload.node_id || '');
                             inp2.dispatchEvent(new Event('input', {bubbles: true}));
+                            console.log('[cy] _reflexSend: dispatched input on node input');
                         }
                     } else if (eventName === 'graph_state.handle_background_click') {
                         var btn3 = document.getElementById('__cy_bg_btn');
                         if (btn3) { btn3.click(); }
+                    } else if (eventName === 'graph_state.set_visible_counts') {
+                        var inp4 = document.getElementById('__cy_counts');
+                        if (inp4) {
+                            var setter4 = Object.getOwnPropertyDescriptor(
+                                window.HTMLInputElement.prototype, 'value'
+                            ).set;
+                            setter4.call(inp4, JSON.stringify(payload));
+                            inp4.dispatchEvent(new Event('input', {bubbles: true}));
+                        }
                     }
-                } catch(e) { console.error('[cy]', e); }
+                } catch(e) { console.error('[cy] _reflexSend error:', e); }
             };
         """),
         rx.script(_CYTOSCAPE_JS),
@@ -94,7 +105,8 @@ def _all_scripts() -> rx.Component:
             window._graphData = null;
             window._tryInitCyGraph = function() {
                 var container = document.getElementById('cy-graph');
-                if (!container || !window._graphData || !window._graphData.nodes) return;
+                if (!container || !window._graphData) return;
+                if (!window._graphData.nodes || window._graphData.nodes.length === 0) return;
                 if (window._cy) return; // already initialized
                 if (typeof window.cytoscape === 'undefined' || typeof window.initCyGraph !== 'function') {
                     setTimeout(window._tryInitCyGraph, 200);
@@ -117,18 +129,38 @@ def _all_scripts() -> rx.Component:
                     }
                 };
                 startObserving();
-                // Also poll as a fallback
-                setInterval(function() {
-                    if (window._graphData && !window._cy && document.getElementById('cy-graph')) {
-                        window._tryInitCyGraph();
-                    }
-                }, 1000);
             })();
         """),
     )
 
 
 # ── Graph container ──────────────────────────────────────────────────────
+
+
+def detail_overlay() -> rx.Component:
+    """Info overlay — hidden until a node/edge is clicked, then shown at bottom-right."""
+    return rx.cond(
+        GraphState.has_selection,
+        rx.box(
+            rx.cond(
+                GraphState.selected_node_id != "",
+                _node_detail_content(),
+                _edge_detail_content(),
+            ),
+            position="absolute",
+            bottom="1rem",
+            right="1rem",
+            width=rx.breakpoints(initial="calc(100% - 2rem)", sm="360px", md="400px"),
+            max_width="calc(100% - 2rem)",
+            padding="1.25rem",
+            **MODAL_PANEL_STYLE,
+            opacity=0.95,
+            z_index=50,
+            box_shadow=SHADOW_LG,
+            backdrop_filter=f"blur({BLUR_DEFAULT})",
+        ),
+        rx.fragment(),
+    )
 
 
 def graph_container() -> rx.Component:
@@ -141,7 +173,7 @@ def graph_container() -> rx.Component:
     """
     return rx.box(
         rx.html(
-            '<div id="cy-graph" style="width:100%;height:100%;min-height:480px;"></div>',
+            '<div id="cy-graph" style="width:100%;height:100%;min-height:560px;"></div>',
         ),
         # Hidden bridge inputs — JS sets value + dispatches input event
         rx.input(
@@ -162,9 +194,89 @@ def graph_container() -> rx.Component:
             on_click=GraphState.handle_background_click,
             style={"display": "none"},
         ),
+        rx.input(
+            id="__cy_counts",
+            value="",
+            on_change=GraphState.set_visible_counts,
+            style={"display": "none"},
+        ),
+        detail_overlay(),
+        # Zoom controls (bottom-left)
+        rx.box(
+            rx.hstack(
+                icon_button_xs("zoom-in", size=16, on_click=GraphState.zoom_in),
+                icon_button_xs("zoom-out", size=16, on_click=GraphState.zoom_out),
+                icon_button_xs("maximize-2", size=16, on_click=GraphState.zoom_fit),
+                spacing="1",
+                padding="0.35rem",
+                border_radius=RADIUS_SM,
+                background="rgba(0,0,0,0.6)",
+                backdrop_filter=f"blur({BLUR_DEFAULT})",
+            ),
+            position="absolute",
+            bottom="1rem",
+            left="1rem",
+            z_index=45,
+        ),
+        # Category loading skeleton (top-center, below hint)
+        rx.cond(
+            GraphState.category_loading != "",
+            rx.box(
+                rx.hstack(
+                    rx.html(
+                        '<span style="display:inline-flex;gap:4px;">'
+                        '<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.5);display:inline-block;animation:pulse 1.2s ease-in-out 0s infinite;"></span>'
+                        '<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.5);display:inline-block;animation:pulse 1.2s ease-in-out 0.2s infinite;"></span>'
+                        '<span style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.5);display:inline-block;animation:pulse 1.2s ease-in-out 0.4s infinite;"></span>'
+                        '</span>'
+                        '<style>@keyframes pulse { 0%,100% { opacity:0.2; } 50% { opacity:1; } }</style>',
+                    ),
+                    rx.text(
+                        rx.text.span(GraphState.category_loading),
+                        " data loading",
+                        size="1",
+                        color=white(0.6),
+                    ),
+                    spacing="2",
+                    align="center",
+                ),
+                position="absolute",
+                top="0.5rem",
+                left="50%",
+                transform="translateX(-50%)",
+                z_index=60,
+                padding="0.35rem 0.85rem",
+                border_radius=RADIUS_SM,
+                background="rgba(0,0,0,0.7)",
+                backdrop_filter=f"blur({BLUR_DEFAULT})",
+                pointer_events="none",
+            ),
+            rx.fragment(),
+        ),
+        # Helper hint (top-center)
+        rx.cond(
+            ~GraphState.has_selection & ~GraphState.loading & (GraphState.error == ""),
+            rx.box(
+                rx.text(
+                    "Rings = industry groups \u00b7 Lines = relationships",
+                    size="1",
+                    color="rgba(255,255,255,0.3)",
+                    font_style="italic",
+                ),
+                position="absolute",
+                top="0.5rem",
+                left="50%",
+                transform="translateX(-50%)",
+                z_index=40,
+                padding="0.25rem 0.75rem",
+                border_radius=RADIUS_SM,
+                background="rgba(0,0,0,0.6)",
+                backdrop_filter=f"blur({BLUR_DEFAULT})",
+            ),
+            rx.fragment(),
+        ),
         width="100%",
-        flex="1",
-        min_height="480px",
+        height="100%",
         position="relative",
         background=SURFACE_BG,
         border=SURFACE_BORDER,
@@ -209,7 +321,6 @@ def page_header() -> rx.Component:
         rx.spacer(),
         rx.hstack(
             _stat_chip("circle", GraphState.node_count, "nodes"),
-            rx.divider(orientation="vertical", height="1rem", border_color=DIVIDER),
             _stat_chip("minus", GraphState.edge_count, "edges"),
             spacing="3",
             align="center",
@@ -227,75 +338,9 @@ def page_header() -> rx.Component:
 # ── Pill toggles (replace checkboxes) ───────────────────────────────────
 
 
-def _pill_toggle(
-    icon_name: str,
-    label: str,
-    active: rx.Var[bool],
-    on_toggle: rx.event.EventHandler,
-) -> rx.Component:
-    """A pill-shaped toggle shown in the filter bar."""
-    return rx.box(
-        rx.hstack(
-            rx.icon(icon_name, size=12),
-            rx.text(label, size="1"),
-            spacing="1",
-            align="center",
-        ),
-        padding_x="0.55rem",
-        padding_y="0.25rem",
-        border_radius=RADIUS_SM,
-        cursor="pointer",
-        transition=TRANS_DEFAULT,
-        background=rx.cond(active, white(0.08), white(0.02)),
-        border=rx.cond(
-            active,
-            f"1px solid {white(0.18)}",
-            f"1px solid {white(0.05)}",
-        ),
-        color=rx.cond(active, "white", white(0.5)),
-        font_weight=rx.cond(active, "600", "400"),
-        _hover={"background": white(0.08), "color": "white"},
-        on_click=[on_toggle, GraphState.apply_filters],
-    )
-
-
 def filter_bar() -> rx.Component:
-    """Pill-style filter toggles + search input using the shared search primitive."""
+    """Search input + refresh — relationship toggles moved to Settings."""
     return rx.hstack(
-        rx.hstack(
-            _pill_toggle(
-                "link",
-                "Ownership",
-                GraphState.show_ownership,
-                GraphState.toggle_ownership,
-            ),
-            _pill_toggle(
-                "swords",
-                "Compete",
-                GraphState.show_competition,
-                GraphState.toggle_competition,
-            ),
-            _pill_toggle(
-                "users",
-                "People",
-                GraphState.show_roles,
-                GraphState.toggle_roles,
-            ),
-            _pill_toggle(
-                "factory",
-                "Industry",
-                GraphState.show_industry,
-                GraphState.toggle_industry,
-            ),
-            _pill_toggle(
-                "globe",
-                "Macro",
-                GraphState.show_macro,
-                GraphState.toggle_macro,
-            ),
-            spacing="2",
-            flex_wrap="wrap",
-        ),
         rx.spacer(),
         rx.hstack(
             search_input_with_icon(
@@ -317,6 +362,209 @@ def filter_bar() -> rx.Component:
     )
 
 
+def _checkbox_row(
+    label: str,
+    checked: rx.Var[bool],
+    on_toggle: rx.event.EventHandler,
+) -> rx.Component:
+    """Create a single checkbox + label row matching the tickers metric checkbox layout."""
+    return rx.hstack(
+        rx.checkbox(
+            checked=checked,
+            on_change=on_toggle,
+            size="1",
+            color_scheme="violet",
+        ),
+        rx.text(label, size="2", color=white(0.65)),
+        spacing="2",
+        align="center",
+    )
+
+
+def settings_dialog() -> rx.Component:
+    """Render a settings dialog matching the tickers metrics settings dialog structure."""
+    return rx.dialog.root(
+        rx.dialog.trigger(
+            rx.button(
+                rx.icon("settings-2", size=14),
+                size="2",
+                style=BUTTON_GHOST_SM,
+                flex_shrink="0",
+            ),
+        ),
+        rx.dialog.content(
+            rx.vstack(
+                rx.hstack(
+                    rx.text("Graph Settings", size="5", weight="bold", color="white"),
+                    rx.spacer(),
+                    rx.dialog.close(
+                        rx.icon(
+                            "x",
+                            size=18,
+                            style={
+                                "cursor": "pointer",
+                                "color": white(0.4),
+                                "transition": "color 0.15s ease",
+                                "_hover": {"color": "white"},
+                            },
+                        ),
+                    ),
+                    width="100%",
+                    align="center",
+                    spacing="3",
+                ),
+                rx.box(height="1px", width="100%", background=white(0.06)),
+                rx.scroll_area(
+                    rx.box(
+                        category_toggle_card(
+                            title="Node Types",
+                            checked=GraphState.show_node_types_category,
+                            on_change=GraphState.toggle_node_types_category,
+                            body=rx.box(
+                                _checkbox_row(
+                                    "Company",
+                                    GraphState.show_company_nodes,
+                                    GraphState.toggle_filter("company_nodes"),
+                                ),
+                                _checkbox_row(
+                                    "Person",
+                                    GraphState.show_person_nodes,
+                                    GraphState.set_show_person,
+                                ),
+                                _checkbox_row(
+                                    "Industry",
+                                    GraphState.show_industry_nodes,
+                                    GraphState.toggle_filter("industry_nodes"),
+                                ),
+                                _checkbox_row(
+                                    "Macro Indicator",
+                                    GraphState.show_macro_indicator_nodes,
+                                    GraphState.toggle_filter("macro_indicator_nodes"),
+                                ),
+                                _checkbox_row(
+                                    "Country",
+                                    GraphState.show_country_nodes,
+                                    GraphState.toggle_filter("country_nodes"),
+                                ),
+                                _checkbox_row(
+                                    "Subsidiaries",
+                                    GraphState.show_subsidiaries,
+                                    GraphState.set_show_subsidiaries,
+                                ),
+                                display="grid",
+                                grid_template_columns="1fr 1fr",
+                                gap="0.45em 1em",
+                                width="100%",
+                            ),
+                        ),
+                        category_toggle_card(
+                            title="Edge Categories",
+                            checked=GraphState.show_edge_categories,
+                            on_change=GraphState.toggle_edge_categories,
+                            body=rx.box(
+                                _checkbox_row(
+                                    "Ownership",
+                                    GraphState.show_ownership,
+                                    GraphState.toggle_filter("ownership"),
+                                ),
+                                _checkbox_row(
+                                    "Competition",
+                                    GraphState.show_competition,
+                                    GraphState.toggle_filter("competition"),
+                                ),
+                                _checkbox_row(
+                                    "Roles / People",
+                                    GraphState.show_roles,
+                                    GraphState.toggle_filter("roles"),
+                                ),
+                                _checkbox_row(
+                                    "Industry",
+                                    GraphState.show_industry,
+                                    GraphState.toggle_filter("industry"),
+                                ),
+                                _checkbox_row(
+                                    "Macro",
+                                    GraphState.show_macro,
+                                    GraphState.toggle_filter("macro"),
+                                ),
+                                _checkbox_row(
+                                    "Related Party",
+                                    GraphState.show_related_party,
+                                    GraphState.toggle_filter("related_party"),
+                                ),
+                                _checkbox_row(
+                                    "Guarantees",
+                                    GraphState.show_guarantees,
+                                    GraphState.toggle_filter("guarantees"),
+                                ),
+                                _checkbox_row(
+                                    "Lends To",
+                                    GraphState.show_lends_to,
+                                    GraphState.toggle_filter("lends_to"),
+                                ),
+                                _checkbox_row(
+                                    "Joint Venture",
+                                    GraphState.show_joint_venture,
+                                    GraphState.toggle_filter("joint_venture"),
+                                ),
+                                _checkbox_row(
+                                    "Underwritten By",
+                                    GraphState.show_underwritten_by,
+                                    GraphState.toggle_filter("underwritten_by"),
+                                ),
+                                _checkbox_row(
+                                    "Cooperation",
+                                    GraphState.show_cooperation,
+                                    GraphState.toggle_filter("cooperation"),
+                                ),
+                                _checkbox_row(
+                                    "State Owns",
+                                    GraphState.show_state_owns,
+                                    GraphState.toggle_filter("state_owns"),
+                                ),
+                                display="grid",
+                                grid_template_columns="1fr 1fr",
+                                gap="0.45em 1em",
+                                width="100%",
+                            ),
+                        ),
+                        display="grid",
+                        grid_template_columns="repeat(auto-fill, minmax(min(16rem, 100%), 1fr))",
+                        gap="0.65em",
+                        width="100%",
+                    ),
+                    type="auto",
+                    scrollbars="vertical",
+                    style={"height": "65vh"},
+                ),
+                rx.hstack(
+                    rx.spacer(),
+                    ghost_button_sm(
+                        "Select All",
+                        on_click=GraphState.select_all_filters,
+                    ),
+                    ghost_button_sm(
+                        "Clear All",
+                        on_click=GraphState.clear_all_filters,
+                    ),
+                    spacing="2",
+                    width="100%",
+                    flex_shrink="0",
+                ),
+                spacing="4",
+                width="100%",
+                overflow="hidden",
+            ),
+            width=rx.breakpoints(initial="95vw", md="82vw"),
+            max_width="100rem",
+            overflow="hidden",
+            style={**MODAL_PANEL_STYLE, "overflowX": "hidden"},
+        ),
+        open=GraphState.settings_dialog_open,
+        on_open_change=GraphState.handle_settings_dialog_change,
+    )
+
+
 # ── Loading / Error / Empty ─────────────────────────────────────────────
 
 
@@ -326,7 +574,6 @@ def loading_view() -> rx.Component:
         **{k: v for k, v in CARD_STYLE.items() if k != "min_height"},
         width="100%",
         flex="1",
-        min_height="480px",
     )
 
 
@@ -347,16 +594,9 @@ def error_view() -> rx.Component:
                 max_width="360px",
                 text_align="center",
             ),
-            rx.button(
-                rx.hstack(
-                    rx.icon("refresh-cw", size=12),
-                    rx.text("Retry"),
-                    spacing="2",
-                ),
+            ghost_button_sm(
+                "Retry",
                 on_click=GraphState.refresh_graph,
-                color_scheme="purple",
-                variant="soft",
-                size="1",
                 margin_top="0.5rem",
             ),
             spacing="3",
@@ -365,7 +605,6 @@ def error_view() -> rx.Component:
         **{k: v for k, v in CARD_STYLE.items() if k != "min_height"},
         width="100%",
         flex="1",
-        min_height="480px",
     )
 
 
@@ -379,16 +618,9 @@ def empty_view() -> rx.Component:
                 size="1",
                 color=TEXT_MUTED,
             ),
-            rx.button(
-                rx.hstack(
-                    rx.icon("refresh-cw", size=12),
-                    rx.text("Load Graph"),
-                    spacing="2",
-                ),
+            ghost_button_sm(
+                "Retry",
                 on_click=GraphState.refresh_graph,
-                color_scheme="purple",
-                variant="soft",
-                size="1",
                 margin_top="0.75rem",
             ),
             spacing="3",
@@ -397,7 +629,6 @@ def empty_view() -> rx.Component:
         **{k: v for k, v in CARD_STYLE.items() if k != "min_height"},
         width="100%",
         flex="1",
-        min_height="480px",
     )
 
 
@@ -417,7 +648,7 @@ def _prop_row(row: list[str]) -> rx.Component:
 
 
 def _rel_card(row: list[str]) -> rx.Component:
-    """A single relationship card — clickable, zooms to the edge.
+    """Build a single relationship card — clickable, zooms to the edge.
 
     row: [edge_id, direction("in"|"out"), rel_label, other_name, detail]
 
@@ -459,9 +690,10 @@ def _rel_card(row: list[str]) -> rx.Component:
         border_radius=RADIUS_SM,
         background=white(0.02),
         border=f"1px solid {white(0.04)}",
-        cursor="pointer",
-        _hover={"background": white(0.05), "border_color": white(0.1)},
-        on_click=GraphState.focus_edge(row[0]),  # type: ignore[index, arg-type]
+        # TODO: row[0] subscript in foreach may not compile correctly in Reflex.
+        # Re-enable focus-on-click once verified or use a bridge pattern.
+        # on_click=GraphState.focus_edge(row[0]),
+        cursor="default",
         width="100%",
     )
 
@@ -478,36 +710,42 @@ def _eye_button(hidden: rx.Var[bool], on_toggle: rx.event.EventHandler) -> rx.Co
 def _node_detail_content() -> rx.Component:
     """Content shown when a node is selected — title, type, relationships."""
     return rx.vstack(
-        # Header: title + eye button
+        # Header row: title + Analyze button --- eye + X
         rx.hstack(
             rx.heading(
                 GraphState.selected_node_title,
-                size="3",
+                size="5",
                 weight="bold",
                 color=TEXT_PRIMARY,
+            ),
+            rx.cond(
+                GraphState.selected_node_ticker != "",
+                rx.link(
+                    rx.button(
+                        rx.hstack(
+                            rx.icon("external-link", size=12),
+                            rx.text("Analyze", size="1"),
+                            spacing="1",
+                            align="center",
+                        ),
+                        size="1",
+                        style=BUTTON_GHOST_SM,
+                        display="inline-flex",
+                        align_items="center",
+                    ),
+                    href=f"/tickers/{GraphState.selected_node_ticker}",
+                ),
+                rx.fragment(),
             ),
             rx.spacer(),
             _eye_button(
                 GraphState.selected_node_hidden,
                 GraphState.toggle_node_visibility(GraphState.selected_node_id),  # type: ignore[arg-type]
             ),
+            icon_button_xs("x", size=14, on_click=GraphState.handle_background_click),
+            spacing="2",
             align="center",
             width="100%",
-        ),
-        # Ticker link (Company nodes only)
-        rx.cond(
-            GraphState.selected_node_ticker != "",
-            rx.link(
-                ghost_button_sm(
-                    rx.hstack(
-                        rx.icon("external-link", size=10),
-                        rx.text("Analyze", size="1"),
-                        spacing="1",
-                    ),
-                ),
-                href=f"/tickers/{GraphState.selected_node_ticker}",
-            ),
-            rx.fragment(),
         ),
         # Relationships
         rx.vstack(
@@ -527,14 +765,14 @@ def _node_detail_content() -> rx.Component:
                         font_style="italic",
                     ),
                 ),
-                type="auto",
+                type="hover",
                 scrollbars="vertical",
                 style={"maxHeight": "340px"},
             ),
             spacing="2",
             width="100%",
         ),
-        spacing="4",
+        spacing="3",
         align="start",
         width="100%",
     )
@@ -566,16 +804,27 @@ def _edge_detail_content() -> rx.Component:
                 GraphState.edge_source_hidden,
                 GraphState.toggle_node_visibility(GraphState.selected_edge_source_id),  # type: ignore[arg-type]
             ),
-            align="start",
+            icon_button_xs("x", size=14, on_click=GraphState.handle_background_click),
+            align="center",
             width="100%",
         ),
         # Connection
         rx.vstack(
             rx.text("Connection", size="1", weight="medium", color=TEXT_SECONDARY),
             rx.hstack(
-                rx.text(GraphState.selected_edge_source_name, size="1", color=TEXT_PRIMARY, weight="medium"),
+                rx.text(
+                    GraphState.selected_edge_source_name,
+                    size="1",
+                    color=TEXT_PRIMARY,
+                    weight="medium",
+                ),
                 rx.icon("arrow-right", size=12, color=white(0.25)),
-                rx.text(GraphState.selected_edge_target_name, size="1", color=TEXT_PRIMARY, weight="medium"),
+                rx.text(
+                    GraphState.selected_edge_target_name,
+                    size="1",
+                    color=TEXT_PRIMARY,
+                    weight="medium",
+                ),
                 spacing="2",
                 align="center",
                 width="100%",
@@ -594,7 +843,7 @@ def _edge_detail_content() -> rx.Component:
                         spacing="0",
                         width="100%",
                     ),
-                    type="auto",
+                    type="hover",
                     scrollbars="vertical",
                     style={"maxHeight": "200px"},
                 ),
@@ -607,57 +856,6 @@ def _edge_detail_content() -> rx.Component:
         align="start",
         width="100%",
     )
-
-
-def _empty_detail_content() -> rx.Component:
-    """Content shown when nothing is selected."""
-    return rx.vstack(
-        rx.icon("mouse-pointer-click", size=22, color=white(0.08)),
-        rx.text(
-            "Click a node or edge to inspect",
-            size="1",
-            color=TEXT_MUTED,
-            text_align="center",
-        ),
-        spacing="2",
-        align="center",
-        justify="center",
-        width="100%",
-        min_height="260px",
-    )
-
-
-def node_detail_panel() -> rx.Component:
-    """Side/overlay panel showing selected node or edge details.
-
-    Matches the graph container height via flex stretch on the parent row
-    and uses rx.scroll_area for internal scrolling.
-    """
-    return rx.box(
-        rx.scroll_area(
-            rx.cond(
-                GraphState.selected_node_id != "",
-                _node_detail_content(),
-                rx.cond(
-                    GraphState.selected_edge_id != "",
-                    _edge_detail_content(),
-                    _empty_detail_content(),
-                ),
-            ),
-            type="auto",
-            scrollbars="vertical",
-        ),
-        padding="1rem",
-        width="100%",
-        min_height="480px",
-        background=CARD_BG,
-        border=CARD_BORDER,
-        border_radius=RADIUS_CARD,
-        overflow="hidden",
-    )
-
-
-# ── Layout composition ──────────────────────────────────────────────────
 
 
 def _graph_area() -> rx.Component:
@@ -675,7 +873,7 @@ def _graph_area() -> rx.Component:
                 GraphState.error != "",
                 error_view(),
                 rx.cond(
-                    (GraphState.node_count == 0) & ~GraphState.loading,
+                    (~GraphState.has_graph_data) & ~GraphState.loading,
                     empty_view(),
                     graph_container(),
                 ),
@@ -683,36 +881,26 @@ def _graph_area() -> rx.Component:
         ),
         width="100%",
         flex="1",
-        min_height="480px",
+        min_height="0",  # was "560px" — let flex parent control
         display="flex",
         flex_direction="column",
     )
 
 
 def main_content() -> rx.Component:
-    """Full page composition: header -> filters -> graph + detail panel.
+    """Full page composition: header -> filters -> full-width graph.
 
-    Uses natural document flow — no fixed heights that would create
-    nested scroll contexts.  The graph and detail panel stretch to
-    match each other via the flex parent's align-items: stretch.
+    The graph card spans the entire page width with the detail panel
+    as a floating overlay at the bottom-right when a node/edge is clicked.
     """
     return rx.vstack(
         page_header(),
         filter_bar(),
-        rx.flex(
-            _graph_area(),
-            rx.box(
-                node_detail_panel(),
-                width=rx.breakpoints(initial="100%", lg="260px"),
-                flex_shrink="0",
-                flex_grow="0",
-            ),
-            spacing="4",
-            direction=rx.breakpoints(initial="column", lg="row"),
-            align="stretch",
-            width="100%",
-        ),
+        settings_dialog(),
+        _graph_area(),
         spacing="4",
         width="100%",
         align="start",
+        flex="1",
+        min_height="0",
     )

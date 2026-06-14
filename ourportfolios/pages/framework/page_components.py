@@ -16,7 +16,6 @@ from ourportfolios.pages.framework.framework_cards import (
 from ourportfolios.pages.framework.framework_dialog import framework_dialog
 from ourportfolios.pages.framework.state import FrameworkState
 from ourportfolios.ui.primitives import (
-    divider,
     heading,
     muted_text,
     search_icon,
@@ -141,7 +140,6 @@ def page_body() -> rx.Component:
             rx.box(
                 rx.vstack(
                     _page_header(),
-                    divider(),
                     _toolbar(),
                     _frameworks_grid(),
                     spacing="5",

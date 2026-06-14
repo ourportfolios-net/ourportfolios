@@ -1,89 +1,23 @@
-"""Cytoscape.js JavaScript engine embedded as a Python string for rx.script."""
+"""Cytoscape.js JavaScript engine embedded as a Python string for rx.script.
+
+Now reads pre-formatted elements from the server response
+(``graphData.elements``), eliminating client-side ``_formatElements()``
+and hardcoded style constants.
+"""
 
 _CYTOSCAPE_JS = """
 // ── Cytoscape.js Graph Engine ──────────────────────────────────────────────
 window._cy = null;
 window._fullElements = [];
 
-// ── Edge label helpers ────────────────────────────────────────────────────
-function _edgeLabel(rtype) {
-    var map = {
-        'HOLDS_STAKE_IN': 'owns',
-        'SUBSIDIARY_OF': 'subsidiary',
-        'COMPETES_WITH': 'competes',
-        'IS_OFFICER': 'officer',
-        'IS_BOARD_MEMBER': 'board member',
-        'IS_FOUNDER': 'founder',
-        'IS_EXECUTIVE': 'executive',
-        'BELONGS_TO': 'belongs to',
-        'BELONGS_TO_INDUSTRY': 'belongs to',
-        'AFFECTS_SECTOR': 'affects',
-        'AFFECTS_INDUSTRY': 'affects',
-        'HAS_MACRO_INDICATOR': 'macro',
-        'AUDITED_BY': 'audited by',
-        'RELATED_PARTY_TRANSACTION': 'related party',
-        'GUARANTEES': 'guarantees',
-        'LENDS_TO': 'lends to',
-        'HAS_JOINT_VENTURE_WITH': 'joint venture',
-        'UNDERWRITTEN_BY': 'underwritten by',
-        'HAS_BUSINESS_COOPERATION': 'cooperation',
-        'STATE_OWNS': 'state owns',
-    };
-    return map[rtype] || rtype.replace(/_/g, ' ');
-}
-
-function _edgeArrow(rtype) {
-    if (rtype === 'HOLDS_STAKE_IN' || rtype === 'SUBSIDIARY_OF') return 'diamond';
-    if (rtype === 'COMPETES_WITH') return 'tee';
-    if (rtype === 'IS_OFFICER' || rtype === 'IS_BOARD_MEMBER' || rtype === 'IS_FOUNDER' || rtype === 'IS_EXECUTIVE' || rtype === 'AUDITED_BY') return 'triangle';
-    if (rtype === 'BELONGS_TO' || rtype === 'BELONGS_TO_INDUSTRY') return 'none';
-    if (rtype === 'AFFECTS_SECTOR' || rtype === 'AFFECTS_INDUSTRY' || rtype === 'HAS_MACRO_INDICATOR') return 'circle';
-    return 'triangle';
-}
-
-function _edgeLineStyle(rtype) {
-    if (rtype === 'COMPETES_WITH') return 'dashed';
-    if (rtype === 'AFFECTS_SECTOR' || rtype === 'AFFECTS_INDUSTRY' || rtype === 'HAS_MACRO_INDICATOR') return 'dotted';
-    if (rtype === 'AUDITED_BY') return 'solid';
-    return 'solid';
-}
-
-function _edgeWidth(rtype) {
-    if (rtype === 'HOLDS_STAKE_IN' || rtype === 'SUBSIDIARY_OF') return 2.5;
-    if (rtype === 'COMPETES_WITH') return 2;
-    if (rtype === 'IS_OFFICER' || rtype === 'IS_BOARD_MEMBER' || rtype === 'IS_FOUNDER' || rtype === 'IS_EXECUTIVE' || rtype === 'AUDITED_BY') return 1.5;
-    if (rtype === 'BELONGS_TO' || rtype === 'BELONGS_TO_INDUSTRY') return 1;
-    if (rtype === 'AFFECTS_SECTOR' || rtype === 'AFFECTS_INDUSTRY' || rtype === 'HAS_MACRO_INDICATOR') return 1.5;
-    return 1.5;
-}
-
-function _edgeOpacity(rtype) {
-    if (rtype === 'BELONGS_TO' || rtype === 'BELONGS_TO_INDUSTRY') return 0.5;
-    if (rtype === 'AFFECTS_SECTOR' || rtype === 'AFFECTS_INDUSTRY' || rtype === 'HAS_MACRO_INDICATOR') return 0.6;
-    return 0.8;
-}
-
-// ── Node label helpers ────────────────────────────────────────────────────
-function _nodeFontSize(ntype) {
-    if (ntype === 'Company') return '13px';
-    if (ntype === 'Sector' || ntype === 'Industry') return '12px';
-    return '11px';
-}
-
-function _deriveLabel(id) {
-    // e.g. "Company:HPG" → "HPG", "Person:John" → "John"
-    var idx = id.lastIndexOf(':');
-    if (idx >= 0 && idx < id.length - 1) return id.substring(idx + 1);
-    return id;
-}
-
-// ── Style builder ─────────────────────────────────────────────────────────
+// ── Style builder (reads from server-supplied window._graphData.style) ────
 function _buildCyStyle() {
-    const nodeColors = window._nodeColors || {};
-    const nodeShapes = window._nodeShapes || {};
-    const companyTypeColors = window._companyTypeColors || {};
-    const relColors = window._relColors || {};
-    const relStyles = window._relStyles || {};
+    var styleData = (window._graphData && window._graphData.style) || {};
+    const nodeColors = styleData.nodeColors || window._nodeColors || {};
+    const nodeShapes = styleData.nodeShapes || window._nodeShapes || {};
+    const companyTypeColors = styleData.companyTypeColors || window._companyTypeColors || {};
+    const relColors = styleData.relColors || window._relColors || {};
+    const relStyles = styleData.relStyles || window._relStyles || {};
 
     const nodeStyles = Object.entries(nodeColors).map(function(entry) {
         var ntype = entry[0];
@@ -94,7 +28,7 @@ function _buildCyStyle() {
                 'background-color': color,
                 'shape': nodeShapes[ntype] || 'ellipse',
                 'label': 'data(label)',
-                'font-size': _nodeFontSize(ntype),
+                'font-size': ntype === 'Company' ? '15px' : (ntype === 'Industry' ? '13px' : '11px'),
                 'color': '#ffffff',
                 'text-outline-color': '#0f172a',
                 'text-outline-width': 2,
@@ -109,7 +43,6 @@ function _buildCyStyle() {
         };
     });
 
-    // Company type color overrides (subsidiaries, audit firms get muted colors)
     Object.entries(companyTypeColors).forEach(function(entry) {
         var ctype = entry[0];
         var color = entry[1];
@@ -119,9 +52,13 @@ function _buildCyStyle() {
         });
     });
 
-    // Sector/Industry get centered labels (inside the node)
+    // Industry nodes — use a muted version of their color
     nodeStyles.push({
-        selector: 'node[ntype="Sector"], node[ntype="Industry"]',
+        selector: 'node[ntype="Industry"]',
+        style: { 'background-color': '#f59e0b', 'border-width': 3, 'border-color': '#d97706' }
+    });
+    nodeStyles.push({
+        selector: 'node[ntype="Industry"]',
         style: {
             'text-valign': 'center',
             'text-halign': 'center',
@@ -132,19 +69,31 @@ function _buildCyStyle() {
     var edgeStyles = Object.entries(relColors).map(function(entry) {
         var rtype = entry[0];
         var color = entry[1];
-        var lstyle = relStyles[rtype] || _edgeLineStyle(rtype);
+        var lstyle = relStyles[rtype] || 'solid';
+        var arrowShape = rtype === 'HOLDS_STAKE_IN' || rtype === 'SUBSIDIARY_OF' ? 'diamond'
+            : rtype === 'COMPETES_WITH' ? 'tee'
+            : rtype === 'IS_OFFICER' || rtype === 'IS_BOARD_MEMBER' || rtype === 'IS_FOUNDER' || rtype === 'IS_EXECUTIVE' ? 'triangle'
+            : rtype === 'BELONGS_TO_INDUSTRY' ? 'none'
+            : rtype === 'AFFECTS_SECTOR' || rtype === 'AFFECTS_INDUSTRY' || rtype === 'HAS_MACRO_INDICATOR' ? 'circle'
+            : 'triangle';
+        var edgeWidth = rtype === 'HOLDS_STAKE_IN' || rtype === 'SUBSIDIARY_OF' ? 2.5
+            : rtype === 'COMPETES_WITH' ? 2
+            : 1.5;
+        var edgeOpacity = rtype === 'BELONGS_TO_INDUSTRY' ? 0.5
+            : rtype === 'AFFECTS_SECTOR' || rtype === 'AFFECTS_INDUSTRY' || rtype === 'HAS_MACRO_INDICATOR' ? 0.6
+            : 0.8;
         return {
             selector: 'edge[rtype="' + rtype + '"]',
             style: {
                 'line-color': color,
                 'target-arrow-color': color,
-                'target-arrow-shape': _edgeArrow(rtype),
+                'target-arrow-shape': arrowShape,
                 'line-style': lstyle,
-                'width': _edgeWidth(rtype),
-                'line-opacity': _edgeOpacity(rtype),
+                'width': edgeWidth,
+                'line-opacity': edgeOpacity,
                 'curve-style': (rtype === 'HOLDS_STAKE_IN' || rtype === 'SUBSIDIARY_OF') ? 'bezier' : 'haystack',
                 'label': 'data(label)',
-                'font-size': '7px',
+                'font-size': '8px',
                 'color': 'rgba(255,255,255,0.5)',
                 'text-outline-color': '#0f172a',
                 'text-outline-width': 1,
@@ -164,10 +113,10 @@ function _buildCyStyle() {
             {
                 selector: 'node',
                 style: {
-                    'width': 'mapData(size, 0, 100, 20, 50)',
-                    'height': 'mapData(size, 0, 100, 20, 50)',
+                    'width': 'mapData(size, 0, 100, 32, 65)',
+                    'height': 'mapData(size, 0, 100, 32, 65)',
                     'border-width': 2,
-                    'border-color': '#1e293b',
+                    'border-color': '#334155',
                     'transition-property': 'background-color, border-color, border-width',
                     'transition-duration': '0.2s',
                 }
@@ -233,94 +182,73 @@ function _buildCyStyle() {
         ]);
 }
 
-function _formatElements(graphJson) {
-    var data = typeof graphJson === 'string' ? JSON.parse(graphJson) : graphJson;
-    if (!data || !data.nodes) return [];
-
-    var elements = [];
-    var i, node, edge, ntype, props, label, degree, eid;
-
-    for (i = 0; i < data.nodes.length; i++) {
-        node = data.nodes[i];
-        ntype = (node.labels && node.labels[0]) || 'Unknown';
-        props = node.properties || {};
-        label = props.name || props.person_name || props.symbol || _deriveLabel(node.id);
-        degree = data.edges
-            ? data.edges.filter(function(e) { return e.source === node.id || e.target === node.id; }).length
-            : 0;
-        elements.push({
-            group: 'nodes',
-            data: Object.assign({}, props, {
-                id: node.id,
-                label: label,
-                ntype: ntype,
-                size: Math.min(50, Math.max(20, 15 + degree * 3)),
-            })
-        });
+// ── Format elements (reads server-precomputed elements) ──
+function _formatElements(graphData) {
+    if (graphData && graphData.elements && graphData.elements.length > 0) {
+        return graphData.elements;
     }
-
-    for (i = 0; i < data.edges.length; i++) {
-        edge = data.edges[i];
-        eid = edge.source + '--' + edge.relationship + '--' + edge.target;
-        if (edge.properties && edge.properties.stake_percent) {
-            eid += '--' + edge.properties.stake_percent;
-        }
-        elements.push({
-            group: 'edges',
-            data: Object.assign({}, (edge.properties || {}), {
-                id: eid,
-                source: edge.source,
-                target: edge.target,
-                rtype: edge.relationship,
-                label: _edgeLabel(edge.relationship),
-            })
-        });
-    }
-
-    return elements;
+    return [];
 }
 
-window.initCyGraph = function(graphJson) {
+window.initCyGraph = function(graphData) {
     _destroyCy();
     var container = document.getElementById('cy-graph');
     if (!container) return;
 
-    window._fullElements = _formatElements(graphJson);
+    // Update style globals from server response
+    if (graphData && graphData.style) {
+        window._nodeColors = graphData.style.nodeColors || {};
+        window._nodeShapes = graphData.style.nodeShapes || {};
+        window._companyTypeColors = graphData.style.companyTypeColors || {};
+        window._relColors = graphData.style.relColors || {};
+        window._relStyles = graphData.style.relStyles || {};
+        if (graphData.style.categoryMap) {
+            window._categoryMap = graphData.style.categoryMap;
+        }
+    }
+
+    window._fullElements = _formatElements(graphData);
+
+    if (!window._fullElements || window._fullElements.length === 0) {
+        console.warn('[cy] No elements to render — graph data may be empty');
+        return;
+    }
+
     window._cy = cytoscape({
         container: container,
         elements: window._fullElements,
         style: _buildCyStyle(),
-        layout: {
-            name: 'cose',
-            animate: 'end',
-            animationDuration: 800,
-            nodeRepulsion: 12000,
-            idealEdgeLength: 120,
-            edgeElasticity: 80,
-            gravity: 0.3,
-            numIter: 1500,
-            coolingFactor: 0.9,
-            minTemp: 0.5,
-            padding: 40,
-        },
-        minZoom: 0.15,
+        layout: { name: 'null' },  // Don't layout yet — filters + radial first
+        minZoom: 0.08,
         maxZoom: 5,
         wheelSensitivity: 0.4,
     });
 
-    // Apply default filters (hide financial edges, etc.)
+    // Apply filters, then lay out visible nodes in a deterministic radial pattern
     window._applyFilters();
+    window._applyRadialLayout();
+    window._cy.fit(window._cy.nodes(':visible'), 120);
+    window._sendVisibleCounts();
+
+    // ResizeObserver — Cytoscape needs to know when container resizes
+    var _ro = new ResizeObserver(function() {
+        if (window._cy) window._cy.resize();
+    });
+    _ro.observe(container);
 
     window._cy.on('tap', 'node', function(evt) {
         var node = evt.target;
         var nodeId = node.id();
+        console.log('[cy] node tap:', nodeId);
         window._cy.nodes().unselect();
         window._cy.edges().unselect();
         node.select();
-        // Connected-component highlight
-        window._showConnectedComponent(node);
+        window._showImmediateNeighbors(node);
         if (window._reflexSend) {
+            console.log('[cy] calling _reflexSend for node:', nodeId);
             window._reflexSend('graph_state.handle_node_click', {node_id: nodeId});
+        } else {
+            console.error('[cy] _reflexSend is NOT DEFINED');
         }
     });
 
@@ -330,7 +258,7 @@ window.initCyGraph = function(graphJson) {
         window._cy.nodes().unselect();
         window._cy.edges().unselect();
         edge.select();
-        // Keep connected component visible when inspecting an edge
+        window._showEdgeEndpoints(edge);
         if (window._reflexSend) {
             window._reflexSend('graph_state.handle_edge_click', {edge_id: edgeId});
         }
@@ -340,8 +268,8 @@ window.initCyGraph = function(graphJson) {
         if (evt.target === window._cy) {
             window._cy.nodes().unselect();
             window._cy.edges().unselect();
-            // Clear component highlight — show everything again
             window._cy.elements().show();
+            window._applyFilters();
             if (window._reflexSend) {
                 window._reflexSend('graph_state.handle_background_click', {});
             }
@@ -349,56 +277,120 @@ window.initCyGraph = function(graphJson) {
     });
 }
 
-window._showConnectedComponent = function(startNode) {
+// ── Node click highlight ────────────────────────────────────────────────────
+window._showImmediateNeighbors = function(node) {
     if (!window._cy) return;
-    // BFS to find all nodes reachable from startNode
-    var visited = {};
-    var queue = [startNode];
-    visited[startNode.id()] = true;
-    while (queue.length > 0) {
-        var current = queue.shift();
-        current.connectedEdges().forEach(function(edge) {
-            var other = edge.source().id() === current.id() ? edge.target() : edge.source();
-            if (!visited[other.id()]) {
-                visited[other.id()] = true;
-                queue.push(other);
-            }
+    try {
+        var fs = window._filterState;
+        var neighborIds = {};
+        neighborIds[node.id()] = true;
+        node.connectedEdges().forEach(function(edge) {
+            var other = edge.source().id() === node.id() ? edge.target() : edge.source();
+            neighborIds[other.id()] = true;
         });
-    }
-    // First, apply category filters to edges (respect user toggles)
-    window._cy.batch(function() {
-        window._cy.edges().forEach(function(edge) {
-            var rtype = edge.data('rtype') || '';
-            var cat = 'other';
-            for (var c in window._categoryMap) {
-                if (window._categoryMap[c].indexOf(rtype) >= 0) { cat = c; break; }
-            }
-            if (cat === 'other' || window._filterState[cat]) {
-                edge.show();
-            } else {
-                edge.hide();
-            }
+
+        // Nodes batch: apply node visibility first so edge .visible() sees it
+        window._cy.batch(function() {
+            window._cy.nodes().forEach(function(n) {
+                var ntype = n.data('ntype') || '';
+                if (fs.nodeType && fs.nodeType[ntype] === false) {
+                    n.hide();
+                    return;
+                }
+                var companyType = n.data('company_type') || '';
+                if (ntype === 'Company' && companyType === 'subsidiary' && !fs.showSubsidiaries) {
+                    n.hide();
+                    return;
+                }
+                if (neighborIds[n.id()]) {
+                    n.show();
+                } else {
+                    n.hide();
+                }
+            });
         });
-        // Show only nodes in the connected component that have visible edges
-        window._cy.nodes().forEach(function(node) {
-            if (visited[node.id()]) {
-                var hasVisible = false;
-                node.connectedEdges().forEach(function(e) { if (e.visible()) hasVisible = true; });
-                if (hasVisible) { node.show(); } else { node.hide(); }
-            } else {
-                node.hide();
-            }
+
+        // Edges batch: now .visible() reflects the fresh node state
+        window._cy.batch(function() {
+            window._cy.edges().forEach(function(e) {
+                var rtype = e.data('rtype') || '';
+                var cat = '';
+                for (var c in window._categoryMap) {
+                    if (window._categoryMap[c].indexOf(rtype) >= 0) { cat = c; break; }
+                }
+                if (fs[cat] && e.source().visible() && e.target().visible()) {
+                    e.show();
+                } else {
+                    e.hide();
+                }
+            });
         });
-    });
-    // Fit the view
-    var component = window._cy.nodes(':visible');
-    if (component.length > 0) {
-        window._cy.animate({
-            fit: { eles: component, padding: 50 },
-            duration: 200,
-            easing: 'ease-in-out-cubic',
+
+        var visible = window._cy.nodes(':visible');
+        if (visible.length > 0) {
+            window._cy.animate({
+                fit: { eles: visible, padding: 50 },
+                duration: 200,
+                easing: 'ease-in-out-cubic',
+            });
+        }
+    } catch(e) { console.error('[cy] _showImmediateNeighbors error:', e); }
+};
+
+// ── Edge click highlight ────────────────────────────────────────────────────
+window._showEdgeEndpoints = function(edge) {
+    if (!window._cy) return;
+    try {
+        var fs = window._filterState;
+        var src = edge.source();
+        var tgt = edge.target();
+
+        // Nodes batch: apply node visibility first so edge .visible() sees it
+        window._cy.batch(function() {
+            window._cy.nodes().forEach(function(n) {
+                var ntype = n.data('ntype') || '';
+                if (fs.nodeType && fs.nodeType[ntype] === false) {
+                    n.hide();
+                    return;
+                }
+                var companyType = n.data('company_type') || '';
+                if (ntype === 'Company' && companyType === 'subsidiary' && !fs.showSubsidiaries) {
+                    n.hide();
+                    return;
+                }
+                if (n.id() === src.id() || n.id() === tgt.id()) {
+                    n.show();
+                } else {
+                    n.hide();
+                }
+            });
         });
-    }
+
+        // Edges batch: now .visible() reflects the fresh node state
+        window._cy.batch(function() {
+            window._cy.edges().forEach(function(e) {
+                var rtype = e.data('rtype') || '';
+                var cat = '';
+                for (var c in window._categoryMap) {
+                    if (window._categoryMap[c].indexOf(rtype) >= 0) { cat = c; break; }
+                }
+                if (fs[cat] && e.source().visible() && e.target().visible()) {
+                    e.show();
+                } else {
+                    e.hide();
+                }
+            });
+        });
+
+        var visible = window._cy.nodes(':visible');
+        if (visible.length > 0) {
+            window._cy.animate({
+                fit: { eles: visible, padding: 50 },
+                duration: 200,
+                easing: 'ease-in-out-cubic',
+            });
+        }
+    } catch(e) { console.error('[cy] _showEdgeEndpoints error:', e); }
 };
 
 function _destroyCy() {
@@ -409,83 +401,215 @@ function _destroyCy() {
 window._categoryMap = {
     'ownership': ['HOLDS_STAKE_IN', 'SUBSIDIARY_OF'],
     'competition': ['COMPETES_WITH'],
-    'roles': ['IS_OFFICER', 'IS_BOARD_MEMBER', 'IS_FOUNDER', 'IS_EXECUTIVE', 'AUDITED_BY'],
-    'industry': ['BELONGS_TO', 'BELONGS_TO_INDUSTRY'],
-    'macro': ['AFFECTS_SECTOR', 'AFFECTS_INDUSTRY', 'HAS_MACRO_INDICATOR'],
+    'roles': ['IS_OFFICER', 'IS_BOARD_MEMBER', 'IS_FOUNDER', 'IS_EXECUTIVE'],
+    'industry': ['BELONGS_TO_INDUSTRY'],
+    'macro': ['AFFECTS_INDUSTRY', 'HAS_MACRO_INDICATOR'],
+    'related_party': ['RELATED_PARTY_TRANSACTION'],
+    'guarantees': ['GUARANTEES'],
+    'lends_to': ['LENDS_TO'],
+    'joint_venture': ['HAS_JOINT_VENTURE_WITH'],
+    'underwritten_by': ['UNDERWRITTEN_BY'],
+    'cooperation': ['HAS_BUSINESS_COOPERATION'],
+    'state_owns': ['STATE_OWNS'],
 };
 
 window._filterState = {
     ownership: true,
     competition: true,
-    roles: true,
+    roles: false,
     industry: true,
-    macro: false,
-    financial: false,  // hidden by default — utility edges
+    macro: true,
+    related_party: true,
+    guarantees: true,
+    lends_to: true,
+    joint_venture: true,
+    underwritten_by: true,
+    cooperation: true,
+    state_owns: true,
     search: '',
+    nodeType: {
+        Company: true,
+        Person: false,
+        Industry: true,
+        MacroIndicator: false,
+        Country: false,
+    },
+    showSubsidiaries: false,
 };
 
 window._applyFilters = function() {
     if (!window._cy) return;
-    var fs = window._filterState;
-    var q = (fs.search || '').toLowerCase().trim();
+    try {
+        console.log('[cy] _applyFilters called, cy:', !!window._cy, 'ownership:', window._filterState.ownership, 'person:', window._filterState.nodeType && window._filterState.nodeType.Person);
+        // Diagnostic: count nodes by type
+        var ntypeCounts = {};
+        window._cy.nodes().forEach(function(n) { var t = n.data('ntype') || '?'; ntypeCounts[t] = (ntypeCounts[t] || 0) + 1; });
+        console.log('[cy] _applyFilters node types in graph:', JSON.stringify(ntypeCounts));
+        var fs = window._filterState;
+        var q = (fs.search || '').toLowerCase().trim();
 
-    window._cy.batch(function() {
-        window._cy.edges().forEach(function(edge) {
-            var rtype = edge.data('rtype') || '';
-            var cat = 'other';
-            for (var c in window._categoryMap) {
-                if (window._categoryMap[c].indexOf(rtype) >= 0) { cat = c; break; }
-            }
-            if (cat === 'other' || fs[cat]) {
-                edge.show();
-            } else {
-                edge.hide();
-            }
-        });
-
-        // Show nodes that have at least one visible edge, plus search matches
-        window._cy.nodes().forEach(function(node) {
-            var hasVisibleEdge = false;
-            node.connectedEdges().forEach(function(e) { if (e.visible()) hasVisibleEdge = true; });
-            if (hasVisibleEdge) {
-                node.show();
-            } else if (q) {
-                var label = (node.data('label') || '').toLowerCase();
-                var ntype = (node.data('ntype') || '').toLowerCase();
-                if (label.indexOf(q) >= 0 || ntype.indexOf(q) >= 0) {
-                    node.show();
+        // ── NODES (batch 1): apply type/subsidiary visibility first ──
+        //   Must complete BEFORE edges check .visible() — inside a single
+        //   batch(), .visible() returns the pre-batch state, so edge
+        //   visibility would be wrong if we batch nodes + edges together.
+        window._cy.batch(function() {
+            window._cy.nodes().forEach(function(node) {
+                var ntype = node.data('ntype') || '';
+                // Node type filter
+                if (fs.nodeType && fs.nodeType[ntype] === false) {
+                    node.hide();
                     return;
                 }
-                node.hide();
-            } else {
-                node.hide();
+                // Subsidiary filter
+                var companyType = node.data('company_type') || '';
+                if (ntype === 'Company' && companyType === 'subsidiary' && !fs.showSubsidiaries) {
+                    node.hide();
+                    return;
+                }
+                // Show node if it passes all filters — no edge dependency
+                node.show();
+            });
+        });
+
+        // ── EDGES + SEARCH (batch 2): now .visible() sees fresh node state ──
+        window._cy.batch(function() {
+            window._cy.edges().forEach(function(edge) {
+                var rtype = edge.data('rtype') || '';
+                var cat = '';
+                for (var c in window._categoryMap) {
+                    if (window._categoryMap[c].indexOf(rtype) >= 0) { cat = c; break; }
+                }
+                // Edge is visible only if category enabled AND both endpoints visible
+                if (fs[cat] && edge.source().visible() && edge.target().visible()) {
+                    edge.show();
+                } else {
+                    edge.hide();
+                }
+            });
+
+            // ── SEARCH: highlight matching nodes and zoom to first match ──
+            window._cy.nodes().removeClass('highlighted');
+            window._cy.nodes().removeClass('match-found');
+            if (q) {
+                var matches = [];
+                window._cy.nodes().forEach(function(node) {
+                    var label = (node.data('label') || '').toLowerCase();
+                    var symbol = (node.data('symbol') || '').toLowerCase();
+                    var nameField = (node.data('name') || '').toLowerCase();
+                    if (label.indexOf(q) >= 0 || symbol.indexOf(q) >= 0 || nameField.indexOf(q) >= 0) {
+                        node.addClass('highlighted');
+                        matches.push(node);
+                    }
+                });
+                if (matches.length > 0) {
+                    // Ensure the first match is visible (show its parents/neighbors)
+                    window._cy.animate({
+                        fit: { eles: matches, padding: 80 },
+                        duration: 400,
+                        easing: 'ease-in-out-cubic',
+                    });
+                }
+            }
+        });
+    } catch(e) { console.error('[cy] _applyFilters error:', e); }
+    // Report visible counts to the server
+    window._sendVisibleCounts();
+};
+
+window._sendVisibleCounts = function() {
+    try {
+        if (!window._cy) return;
+        var visibleNodes = window._cy.nodes(':visible').length;
+        var visibleEdges = window._cy.edges(':visible').length;
+        if (window._reflexSend) {
+            window._reflexSend('graph_state.set_visible_counts', {nodes: visibleNodes, edges: visibleEdges});
+        }
+    } catch(e) { /* silent */ }
+};
+
+window._applyRadialLayout = function() {
+    if (!window._cy) return;
+    try {
+        var visibleNodes = window._cy.nodes(':visible');
+        if (visibleNodes.length === 0) return;
+
+        // Build industry → [companies] map from BELONGS_TO_INDUSTRY edges
+        var industryNodes = {};
+        var industryMembers = {};
+        var unaffiliated = [];
+
+        visibleNodes.forEach(function(n) {
+            if (n.data('ntype') === 'Industry') {
+                industryNodes[n.id()] = n;
+                industryMembers[n.id()] = [];
             }
         });
 
-        // Highlight search matches
-        window._cy.nodes().removeClass('highlighted');
-        if (q) {
-            window._cy.nodes().forEach(function(node) {
-                var label = (node.data('label') || '').toLowerCase();
-                var ntype = (node.data('ntype') || '').toLowerCase();
-                if (label.indexOf(q) >= 0 || ntype.indexOf(q) >= 0) {
-                    node.addClass('highlighted');
+        window._cy.edges(':visible').forEach(function(e) {
+            if (e.data('rtype') === 'BELONGS_TO_INDUSTRY') {
+                var src = e.source(), tgt = e.target();
+                if (src.data('ntype') === 'Industry' && tgt.data('ntype') === 'Company') {
+                    industryMembers[src.id()].push(tgt);
+                } else if (tgt.data('ntype') === 'Industry' && src.data('ntype') === 'Company') {
+                    industryMembers[tgt.id()].push(src);
                 }
+            }
+        });
+
+        // Collect unaffiliated visible nodes (Person nodes, etc.)
+        visibleNodes.forEach(function(n) {
+            if (n.data('ntype') !== 'Industry') {
+                var hasIndustry = false;
+                for (var indId in industryMembers) {
+                    if (industryMembers[indId].indexOf(n) >= 0) {
+                        hasIndustry = true;
+                        break;
+                    }
+                }
+                if (!hasIndustry) unaffiliated.push(n);
+            }
+        });
+
+        var indIds = Object.keys(industryNodes);
+        var numIndustries = indIds.length;
+        if (numIndustries === 0) return;
+
+        // Big circle for industry nodes
+        var bigRadius = Math.max(350, numIndustries * 60);
+        var centerX = 0, centerY = 0;
+
+        indIds.forEach(function(indId, i) {
+            var angle = (2 * Math.PI * i) / numIndustries - Math.PI / 2;
+            var indX = centerX + bigRadius * Math.cos(angle);
+            var indY = centerY + bigRadius * Math.sin(angle);
+            industryNodes[indId].position({x: indX, y: indY});
+
+            // Member companies in a ring around their industry
+            var members = industryMembers[indId];
+            var numMembers = members.length;
+            var smallRadius = Math.min(160, Math.max(70, numMembers * 10));
+
+            members.forEach(function(company, j) {
+                var cAngle = (2 * Math.PI * j) / numMembers;
+                company.position({
+                    x: indX + smallRadius * Math.cos(cAngle),
+                    y: indY + smallRadius * Math.sin(cAngle)
+                });
+            });
+        });
+
+        // Unaffiliated nodes in a wide ring outside
+        if (unaffiliated.length > 0) {
+            var outerRadius = bigRadius + 200;
+            unaffiliated.forEach(function(n, i) {
+                var angle = (2 * Math.PI * i) / unaffiliated.length;
+                n.position({
+                    x: centerX + outerRadius * Math.cos(angle),
+                    y: centerY + outerRadius * Math.sin(angle)
+                });
             });
         }
-    });
-};
-
-window.setFilter = function(category, enabled) {
-    window._filterState[category] = enabled;
-    // Clear component highlight, apply global filters, then
-    // re-highlight if a node is selected.
-    var selected = window._cy ? window._cy.nodes(':selected') : null;
-    window._cy.elements().show();
-    window._applyFilters();
-    if (selected && selected.length > 0) {
-        window._showConnectedComponent(selected[0]);
-    }
+    } catch(e) { console.error('[cy] _applyRadialLayout error:', e); }
 };
 
 window.setSearch = function(query) {
@@ -493,24 +617,36 @@ window.setSearch = function(query) {
     window._applyFilters();
 };
 
-window.filterCy = function(searchQuery, showOwnership, showCompetition, showRoles, showIndustry, showMacro) {
-    // Legacy bridge — maps the old Reflex state to new filter system
+window.filterCy = function(searchQuery, showOwnership, showCompetition, showRoles, showIndustry, showMacro, nodeTypeState, showSubsidiaries, showRelatedParty, showGuarantees, showLendsTo, showJointVenture, showUnderwrittenBy, showCooperation, showStateOwns) {
     window._filterState.ownership = showOwnership !== false;
     window._filterState.competition = showCompetition !== false;
     window._filterState.roles = showRoles !== false;
     window._filterState.industry = showIndustry !== false;
     window._filterState.macro = showMacro !== false;
+    window._filterState.related_party = showRelatedParty !== false;
+    window._filterState.guarantees = showGuarantees !== false;
+    window._filterState.lends_to = showLendsTo !== false;
+    window._filterState.joint_venture = showJointVenture !== false;
+    window._filterState.underwritten_by = showUnderwrittenBy !== false;
+    window._filterState.cooperation = showCooperation !== false;
+    window._filterState.state_owns = showStateOwns !== false;
+    window._filterState.showSubsidiaries = showSubsidiaries === true;
+    if (nodeTypeState) {
+        window._filterState.nodeType = nodeTypeState;
+    }
     window._filterState.search = searchQuery || '';
-    // Re-apply component highlight if a node is selected
-    var selected = window._cy ? window._cy.nodes(':selected') : null;
-    if (selected && selected.length > 0) {
-        window._showConnectedComponent(selected[0]);
+    var selectedNode = window._cy ? window._cy.nodes(':selected') : null;
+    var selectedEdge = window._cy ? window._cy.edges(':selected') : null;
+    if (selectedNode && selectedNode.length > 0) {
+        window._showImmediateNeighbors(selectedNode[0]);
+    } else if (selectedEdge && selectedEdge.length > 0) {
+        window._showEdgeEndpoints(selectedEdge[0]);
     } else {
         window._applyFilters();
     }
 }
 
-// ── Per-element visibility toggle (eye / eye-off) ──────────────────────────
+// ── Per-element visibility toggle ──────────────────────────────────────────
 window.toggleCyNodeVisibility = function(nodeId) {
     if (!window._cy) return;
     var el = window._cy.getElementById(nodeId);
@@ -527,7 +663,7 @@ window.toggleCyEdgeVisibility = function(edgeId) {
     el.style('opacity', current >= 1 ? 0.12 : 1);
 }
 
-// ── Zoom to a specific edge ────────────────────────────────────────────────
+// ── Zoom ───────────────────────────────────────────────────────────────────
 window.focusEdge = function(edgeId) {
     if (!window._cy) return;
     var edge = window._cy.getElementById(edgeId);
@@ -541,4 +677,86 @@ window.focusEdge = function(edgeId) {
         easing: 'ease-in-out-cubic',
     });
 }
+
+window.zoomIn = function() {
+    if (window._cy) {
+        window._cy.zoom({
+            level: window._cy.zoom() * 1.3,
+            renderedPosition: { x: window.innerWidth/2, y: window.innerHeight/2 }
+        });
+    }
+};
+window.zoomOut = function() {
+    if (window._cy) {
+        window._cy.zoom({
+            level: window._cy.zoom() * 0.7,
+            renderedPosition: { x: window.innerWidth/2, y: window.innerHeight/2 }
+        });
+    }
+};
+window.zoomFit = function() {
+    if (window._cy) window._cy.fit(window._cy.nodes(':visible'), 60);
+};
+
+// ── Category skeleton overlay (lazy loading indicator) ────────────────────
+window._skeletonEl = null;
+window.showCategorySkeleton = function(category) {
+    window.hideCategorySkeleton();
+    var container = document.getElementById('cy-graph');
+    if (!container) return;
+    var overlay = document.createElement('div');
+    overlay.id = 'cy-skeleton-overlay';
+    overlay.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;'
+        + 'z-index:99;pointer-events:none;display:flex;flex-direction:column;'
+        + 'align-items:center;justify-content:flex-start;padding-top:60px;';
+    
+    var label = document.createElement('div');
+    label.style.cssText = 'display:flex;align-items:center;gap:10px;'
+        + 'padding:8px 16px;background:rgba(0,0,0,0.55);'
+        + 'border-radius:8px;color:rgba(255,255,255,0.7);'
+        + 'font-size:13px;font-family:sans-serif;';
+    label.textContent = 'Loading ' + category + ' data' + String.fromCharCode(8230);
+    
+    // Three pulsing dots
+    var dots = document.createElement('span');
+    dots.style.cssText = 'display:inline-flex;gap:4px;';
+    for (var i = 0; i < 3; i++) {
+        var dot = document.createElement('span');
+        dot.style.cssText = 'width:6px;height:6px;border-radius:50%;'
+            + 'background:rgba(255,255,255,0.5);display:inline-block;'
+            + 'animation:pulse 1.2s ease-in-out ' + (i * 0.2) + 's infinite;';
+        dots.appendChild(dot);
+    }
+    label.appendChild(dots);
+    overlay.appendChild(label);
+    container.appendChild(overlay);
+    
+    // Inject CSS animation if not already present
+    if (!document.getElementById('cy-skeleton-style')) {
+        var style = document.createElement('style');
+        style.id = 'cy-skeleton-style';
+        style.textContent = '@keyframes pulse { 0%,100% { opacity:0.2; } 50% { opacity:1; } }';
+        document.head.appendChild(style);
+    }
+    window._skeletonEl = overlay;
+};
+
+window.hideCategorySkeleton = function() {
+    if (window._skeletonEl && window._skeletonEl.parentNode) {
+        window._skeletonEl.parentNode.removeChild(window._skeletonEl);
+    }
+    window._skeletonEl = null;
+};
+
+window.mergeCategoryData = function(newElements) {
+    if (!window._cy) return;
+    window.hideCategorySkeleton();
+    window._cy.add(newElements);
+    window._applyFilters();
+    // Re-apply radial layout so new nodes get positioned in their
+    // industry ring or outer ring as appropriate.
+    window._applyRadialLayout();
+    window._cy.fit(window._cy.nodes(':visible'), 120);
+    window._sendVisibleCounts();
+};
 """
