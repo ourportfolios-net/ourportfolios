@@ -8,6 +8,7 @@ from typing import cast
 import reflex as rx
 
 from ourportfolios.components.category_toggle_card import category_toggle_card
+from ourportfolios.components.drawer import drawer_button
 from ourportfolios.ui.primitives.button import ghost_button_sm, icon_button_xs
 from ourportfolios.ui.primitives.input import search_input_with_icon
 from ourportfolios.ui.theme.colors import (
@@ -174,6 +175,9 @@ def graph_container() -> rx.Component:
     to the Reflex Python backend. JS sets the input value and
     dispatches an 'input' event; Reflex's on_change fires the
     corresponding state handler.
+
+    Node/edge count badge is displayed at top-right (like the
+    "Rings = industry groups" hint used to be).
     """
     return rx.box(
         rx.html(
@@ -222,7 +226,7 @@ def graph_container() -> rx.Component:
             left="1rem",
             z_index=45,
         ),
-        # Category loading skeleton (top-center, below hint)
+        # Category loading skeleton (top-center)
         rx.cond(
             GraphState.category_loading != "",
             rx.box(
@@ -257,27 +261,48 @@ def graph_container() -> rx.Component:
             ),
             rx.fragment(),
         ),
-        # Helper hint (top-center)
-        rx.cond(
-            ~GraphState.has_selection & ~GraphState.loading & (GraphState.error == ""),
-            rx.box(
-                rx.text(
-                    "Rings = industry groups \u00b7 Lines = relationships",
-                    size="1",
-                    color="rgba(255,255,255,0.3)",
-                    font_style="italic",
+        # Node/edge count badge (top-right corner, like the old Rings hint)
+        rx.box(
+            rx.hstack(
+                rx.cond(
+                    GraphState.loading,
+                    rx.hstack(
+                        rx.skeleton(rx.box(width="2.5rem", height="0.85rem"), border_radius="0.25rem"),
+                        rx.text("nodes", size="1", color="rgba(255,255,255,0.5)"),
+                        spacing="1",
+                        align="center",
+                    ),
+                    rx.hstack(
+                        rx.text(
+                            rx.text.span(GraphState.node_count, weight="bold", color="rgba(255,255,255,0.85)"),
+                            " nodes",
+                            size="1",
+                            color="rgba(255,255,255,0.5)",
+                            as_="span",
+                        ),
+                        rx.text("\u00b7", size="1", color="rgba(255,255,255,0.2)"),
+                        rx.text(
+                            rx.text.span(GraphState.edge_count, weight="bold", color="rgba(255,255,255,0.85)"),
+                            " edges",
+                            size="1",
+                            color="rgba(255,255,255,0.5)",
+                            as_="span",
+                        ),
+                        spacing="1",
+                        align="center",
+                    ),
                 ),
-                position="absolute",
-                top="0.5rem",
-                left="50%",
-                transform="translateX(-50%)",
-                z_index=40,
-                padding="0.25rem 0.75rem",
-                border_radius=RADIUS_SM,
-                background="rgba(0,0,0,0.6)",
-                backdrop_filter=f"blur({BLUR_DEFAULT})",
+                spacing="2",
+                align="center",
             ),
-            rx.fragment(),
+            position="absolute",
+            top="0.5rem",
+            right="0.75rem",
+            z_index=40,
+            padding="0.3rem 0.75rem",
+            border_radius=RADIUS_SM,
+            background="rgba(0,0,0,0.55)",
+            pointer_events="none",
         ),
         width="100%",
         height="100%",
@@ -295,12 +320,27 @@ def graph_container() -> rx.Component:
 def _stat_chip(icon: str, count: int | rx.Var, label: str) -> rx.Component:
     return rx.hstack(
         rx.icon(icon, size=12, color=white(0.35)),
-        rx.text(
-            rx.text.span(count, weight="bold", color=TEXT_PRIMARY),
-            f" {label}",
-            size="1",
-            color=TEXT_TERTIARY,
-            as_="span",
+        rx.cond(
+            GraphState.loading,
+            rx.hstack(
+                rx.skeleton(
+                    rx.box(width="3rem", height="1rem"),
+                    border_radius="0.25rem",
+                ),
+                rx.skeleton(
+                    rx.box(width="2.5rem", height="1rem"),
+                    border_radius="0.25rem",
+                ),
+                spacing="1",
+                align="center",
+            ),
+            rx.text(
+                rx.text.span(count, weight="bold", color=TEXT_PRIMARY),
+                f" {label}",
+                size="1",
+                color=TEXT_TERTIARY,
+                as_="span",
+            ),
         ),
         spacing="1",
         align="center",
@@ -308,7 +348,7 @@ def _stat_chip(icon: str, count: int | rx.Var, label: str) -> rx.Component:
 
 
 def page_header() -> rx.Component:
-    """Title and live node/edge stats in one compact block."""
+    """Title only — node/edge counts moved to inside the graph container."""
     return rx.hstack(
         rx.hstack(
             rx.icon("share-2", size=20, color=purple(0.65)),
@@ -323,16 +363,6 @@ def page_header() -> rx.Component:
             align="center",
         ),
         rx.spacer(),
-        rx.hstack(
-            _stat_chip("circle", GraphState.node_count, "nodes"),
-            _stat_chip("minus", GraphState.edge_count, "edges"),
-            spacing="3",
-            align="center",
-            padding="0.4rem 0.85rem",
-            border_radius=RADIUS_SM,
-            background=white(0.025),
-            border=f"1px solid {white(0.04)}",
-        ),
         spacing="4",
         align="center",
         width="100%",
@@ -343,7 +373,7 @@ def page_header() -> rx.Component:
 
 
 def filter_bar() -> rx.Component:
-    """Search input + refresh — relationship toggles moved to Settings."""
+    """Search input + settings button (with label) + reload on the right."""
     return rx.hstack(
         rx.spacer(),
         rx.hstack(
@@ -354,6 +384,32 @@ def filter_bar() -> rx.Component:
                 width="100%",
                 max_width="220px",
                 flex_shrink="0",
+            ),
+            # Settings button with text label + reload button
+            rx.dialog.root(
+                rx.dialog.trigger(
+                    rx.button(
+                        rx.icon("settings-2", size=14),
+                        rx.text("Graph Settings", size="2", color=white(0.7)),
+                        size="2",
+                        style=BUTTON_GHOST_SM,
+                        flex_shrink="0",
+                    ),
+                ),
+                rx.dialog.content(
+                    _settings_content(),
+                    width=rx.breakpoints(initial="95vw", md="85vw"),
+                    max_width="100rem",
+                    min_height="28rem",
+                    display="flex",
+                    flex_direction="column",
+                    style={
+                        "max_height": "90vh",
+                        **MODAL_PANEL_STYLE,
+                    },
+                ),
+                open=GraphState.settings_dialog_open,
+                on_open_change=GraphState.handle_settings_dialog_change,
             ),
             icon_button_xs("rotate-cw", size=16, on_click=GraphState.refresh_graph),
             spacing="2",
@@ -372,147 +428,292 @@ def _checkbox_row(
     checked: rx.Var[bool] | bool,
     on_toggle: rx.event.EventHandler,
 ) -> rx.Component:
-    """Create a single checkbox + label row matching the tickers metric checkbox layout."""
+    """Create a single checkbox + label row — larger text for settings cards."""
     return rx.hstack(
         rx.checkbox(
             checked=checked,
             on_change=on_toggle,
-            size="1",
+            size="2",
             color_scheme="violet",
         ),
-        rx.text(label, size="2", color=white(0.65)),
+        rx.text(label, size="3", color=white(0.7), weight="medium"),
         spacing="2",
         align="center",
     )
 
 
-def settings_dialog() -> rx.Component:
-    """Render a settings dialog matching the tickers metrics settings dialog structure."""
-    return rx.dialog.root(
-        rx.dialog.trigger(
-            rx.button(
-                rx.icon("settings-2", size=14),
-                size="2",
-                style=BUTTON_GHOST_SM,
+def _visual_legend() -> rx.Component:
+    """Synced mini Cytoscape preview showing example node types and edge styles.
+
+    The preview reflects the current filter state in real-time:
+    deselecting COMPANY in Node Types hides the Company node here too.
+    """
+    return rx.box(
+        rx.html(
+            '<div id="cy-legend" style="width:100%;height:420px;"></div>',
+        ),
+        flex="2",
+        min_width="0",
+        min_height="420px",
+        border_radius=RADIUS_CARD,
+        background=white(0.015),
+        border=f"1px solid {white(0.07)}",
+        overflow="hidden",
+        display="flex",
+        flex_direction="column",
+    )
+
+
+def _ticker_toggle_card() -> rx.Component:
+    """Scrollable card listing Company tickers grouped by industry, in 2-column layout."""
+    return rx.box(
+        rx.vstack(
+            rx.text("Tickers", size="3", weight="bold", color=white(0.92)),
+            rx.scroll_area(
+                rx.vstack(
+                    rx.foreach(
+                        GraphState.ticker_paired_rows,
+                        lambda row: rx.vstack(
+                            # Industry header (only first row in each group)
+                            rx.cond(
+                                row["is_first_in_group"],
+                                rx.hstack(
+                                    rx.checkbox(
+                                        checked=row["all_visible"],
+                                        on_change=lambda: GraphState.toggle_industry(row["industry_name"]),  # type: ignore[arg-type]
+                                        size="2",
+                                        color_scheme="violet",
+                                    ),
+                                    rx.text(
+                                        row["industry_name"],
+                                        size="2",
+                                        weight="bold",
+                                        color=white(0.85),
+                                    ),
+                                    spacing="2",
+                                    align="center",
+                                    width="100%",
+                                ),
+                            ),
+                            # Ticker row — 2 columns
+                            rx.hstack(
+                                # Left ticker
+                                rx.hstack(
+                                    rx.checkbox(
+                                        checked=row["visible_left"],
+                                        on_change=lambda: GraphState.toggle_ticker(row["ticker_left"]),  # type: ignore[arg-type]
+                                        size="1",
+                                        color_scheme="violet",
+                                    ),
+                                    rx.text(
+                                        row["ticker_left"],
+                                        size="1",
+                                        color=white(0.65),
+                                    ),
+                                    spacing="2",
+                                    align="center",
+                                    width="50%",
+                                ),
+                                # Right ticker (or blank)
+                                rx.cond(
+                                    row["has_right"],
+                                    rx.hstack(
+                                        rx.checkbox(
+                                            checked=row["visible_right"],
+                                            on_change=lambda: GraphState.toggle_ticker(row["ticker_right"]),  # type: ignore[arg-type]
+                                            size="1",
+                                            color_scheme="violet",
+                                        ),
+                                        rx.text(
+                                            row["ticker_right"],
+                                            size="1",
+                                            color=white(0.65),
+                                        ),
+                                        spacing="2",
+                                        align="center",
+                                        width="50%",
+                                    ),
+                                    rx.box(width="50%"),
+                                ),
+                                spacing="1",
+                                align="center",
+                                width="100%",
+                                padding="0.05rem 0",
+                            ),
+                            spacing="0",
+                            align="start",
+                            width="100%",
+                        ),
+                    ),
+                    spacing="0",
+                    align="start",
+                    width="100%",
+                ),
+                type="hover",
+                scrollbars="vertical",
+                style={"maxHeight": "440px", "width": "100%"},
+            ),
+            spacing="2",
+            align="start",
+            width="100%",
+        ),
+        padding="0.75em 0.9em",
+        border_radius=RADIUS_SM,
+        background=white(0.025),
+        border=f"1px solid {white(0.07)}",
+        width="100%",
+    )
+
+
+def _settings_content() -> rx.Component:
+    """Content of the settings dialog (no trigger/wrapper).
+
+    Two-panel layout: left = synced mini preview, right = larger filter cards.
+    Filters sync to the mini graph in real-time while the dialog is open.
+    """
+    return rx.vstack(
+        # ── Header: title | cart toggle | close ─────────────────
+        rx.hstack(
+            rx.text("Graph Settings", size="5", weight="bold", color="white"),
+            rx.spacer(),
+            # Compact cart-only toggle (left of close button)
+            rx.hstack(
+                rx.checkbox(
+                    checked=GraphState.show_only_cart_items,
+                    on_change=GraphState.toggle_cart_only,
+                    size="2",
+                    color_scheme="violet",
+                ),
+                rx.text("Cart items only", size="2", color=white(0.65)),
+                spacing="2",
+                align="center",
+            ),
+            rx.box(
+                width="1px",
+                height="1.5em",
+                background=white(0.1),
+            ),
+            rx.dialog.close(
+                rx.box(
+                    rx.icon("x", size=18, color=white(0.4)),
+                    cursor="pointer",
+                    transition="color 0.15s ease",
+                    _hover={"color": "white"},
+                    display="inline-flex",
+                    align_items="center",
+                ),
+            ),
+            width="100%",
+            align="center",
+            spacing="3",
+        ),
+        # ── Three-panel body ───────────────────────────────────
+        rx.hstack(
+            # Left: synced preview
+            _visual_legend(),
+            # Middle: Node Types + Edge Categories
+            rx.box(
+                rx.vstack(
+                    category_toggle_card(
+                        title="Nodes",
+                        title_size="3",
+                        checked=GraphState.show_node_types_category,
+                        on_change=GraphState.toggle_node_types_category,
+                        body=rx.box(
+                            _checkbox_row("Company", checked=GraphState.show_company_nodes, on_toggle=GraphState.toggle_filter("company_nodes"),
+                            ),
+                            _checkbox_row("Person", checked=GraphState.show_person_nodes, on_toggle=GraphState.set_show_person,
+                            ),
+                            _checkbox_row("Industry", checked=GraphState.show_industry_nodes, on_toggle=GraphState.toggle_filter("industry_nodes"),
+                            ),
+                            _checkbox_row("Macro Indicator", checked=GraphState.show_macro_indicator_nodes, on_toggle=GraphState.toggle_filter("macro_indicator_nodes"),
+                            ),
+                            _checkbox_row("Country", checked=GraphState.show_country_nodes, on_toggle=GraphState.toggle_filter("country_nodes"),
+                            ),
+                            _checkbox_row("Subsidiaries", checked=GraphState.show_subsidiaries, on_toggle=GraphState.set_show_subsidiaries,
+                            ),
+                            display="grid",
+                            grid_template_columns="1fr 1fr",
+                            gap="0.5em 1.25em",
+                            width="100%",
+                        ),
+                    ),
+                    category_toggle_card(
+                        title="Edges",
+                        title_size="3",
+                        checked=GraphState.show_edge_categories,
+                        on_change=GraphState.toggle_edge_categories,
+                        body=rx.box(
+                            _checkbox_row("Ownership", checked=GraphState.show_ownership, on_toggle=GraphState.toggle_filter("ownership"),
+                            ),
+                            _checkbox_row("Competition", checked=GraphState.show_competition, on_toggle=GraphState.toggle_filter("competition"),
+                            ),
+                            _checkbox_row("Roles / People", checked=GraphState.show_roles, on_toggle=GraphState.toggle_filter("roles"),
+                            ),
+                            _checkbox_row("Industry", checked=GraphState.show_industry, on_toggle=GraphState.toggle_filter("industry"),
+                            ),
+                            _checkbox_row("Macro", checked=GraphState.show_macro, on_toggle=GraphState.toggle_filter("macro"),
+                            ),
+                            _checkbox_row("Related Party", checked=GraphState.show_related_party, on_toggle=GraphState.toggle_filter("related_party"),
+                            ),
+                            _checkbox_row("Guarantees", checked=GraphState.show_guarantees, on_toggle=GraphState.toggle_filter("guarantees"),
+                            ),
+                            _checkbox_row("Lends To", checked=GraphState.show_lends_to, on_toggle=GraphState.toggle_filter("lends_to"),
+                            ),
+                            _checkbox_row("Joint Venture", checked=GraphState.show_joint_venture, on_toggle=GraphState.toggle_filter("joint_venture"),
+                            ),
+                            _checkbox_row("Underwritten By", checked=GraphState.show_underwritten_by, on_toggle=GraphState.toggle_filter("underwritten_by"),
+                            ),
+                            _checkbox_row("Cooperation", checked=GraphState.show_cooperation, on_toggle=GraphState.toggle_filter("cooperation"),
+                            ),
+                            _checkbox_row("State Owns", checked=GraphState.show_state_owns, on_toggle=GraphState.toggle_filter("state_owns"),
+                            ),
+                            display="grid",
+                            grid_template_columns="1fr 1fr",
+                            gap="0.5em 1.25em",
+                            width="100%",
+                        ),
+                    ),
+                    spacing="4",
+                    align="start",
+                    width="100%",
+                ),
+                flex="1",
+                min_width="0",
+                display="flex",
+                flex_direction="column",
+            ),
+            # Right: ticker toggle card (scrollable, on the outer right)
+            rx.box(
+                _ticker_toggle_card(),
+                width=rx.breakpoints(initial="100%", md="22rem"),
                 flex_shrink="0",
+                display="flex",
+                flex_direction="column",
             ),
+            spacing="5",
+            align="stretch",
+            width="100%",
+            flex="1",
+            min_height="0",
         ),
-        rx.dialog.content(
-            rx.vstack(
-                rx.hstack(
-                    rx.text("Graph Settings", size="5", weight="bold", color="white"),
-                    rx.spacer(),
-                    rx.dialog.close(
-                        rx.icon(
-                            "x",
-                            size=18,
-                            style={
-                                "cursor": "pointer",
-                                "color": white(0.4),
-                                "transition": "color 0.15s ease",
-                                "_hover": {"color": "white"},
-                            },
-                        ),
-                    ),
-                    width="100%",
-                    align="center",
-                    spacing="3",
-                ),
-                rx.box(height="1px", width="100%", background=white(0.06)),
-                rx.scroll_area(
-                    rx.box(
-                        category_toggle_card(
-                            title="Node Types",
-                            checked=GraphState.show_node_types_category,
-                            on_change=GraphState.toggle_node_types_category,
-                            body=rx.box(
-                                _checkbox_row("Company", checked=GraphState.show_company_nodes, on_toggle=GraphState.toggle_filter("company_nodes"),
-                                ),
-                                _checkbox_row("Person", checked=GraphState.show_person_nodes, on_toggle=GraphState.set_show_person,
-                                ),
-                                _checkbox_row("Industry", checked=GraphState.show_industry_nodes, on_toggle=GraphState.toggle_filter("industry_nodes"),
-                                ),
-                                _checkbox_row("Macro Indicator", checked=GraphState.show_macro_indicator_nodes, on_toggle=GraphState.toggle_filter("macro_indicator_nodes"),
-                                ),
-                                _checkbox_row("Country", checked=GraphState.show_country_nodes, on_toggle=GraphState.toggle_filter("country_nodes"),
-                                ),
-                                _checkbox_row("Subsidiaries", checked=GraphState.show_subsidiaries, on_toggle=GraphState.set_show_subsidiaries,
-                                ),
-                                display="grid",
-                                grid_template_columns="1fr 1fr",
-                                gap="0.45em 1em",
-                                width="100%",
-                            ),
-                        ),
-                        category_toggle_card(
-                            title="Edge Categories",
-                            checked=GraphState.show_edge_categories,
-                            on_change=GraphState.toggle_edge_categories,
-                            body=rx.box(
-                                _checkbox_row("Ownership", checked=GraphState.show_ownership, on_toggle=GraphState.toggle_filter("ownership"),
-                                ),
-                                _checkbox_row("Competition", checked=GraphState.show_competition, on_toggle=GraphState.toggle_filter("competition"),
-                                ),
-                                _checkbox_row("Roles / People", checked=GraphState.show_roles, on_toggle=GraphState.toggle_filter("roles"),
-                                ),
-                                _checkbox_row("Industry", checked=GraphState.show_industry, on_toggle=GraphState.toggle_filter("industry"),
-                                ),
-                                _checkbox_row("Macro", checked=GraphState.show_macro, on_toggle=GraphState.toggle_filter("macro"),
-                                ),
-                                _checkbox_row("Related Party", checked=GraphState.show_related_party, on_toggle=GraphState.toggle_filter("related_party"),
-                                ),
-                                _checkbox_row("Guarantees", checked=GraphState.show_guarantees, on_toggle=GraphState.toggle_filter("guarantees"),
-                                ),
-                                _checkbox_row("Lends To", checked=GraphState.show_lends_to, on_toggle=GraphState.toggle_filter("lends_to"),
-                                ),
-                                _checkbox_row("Joint Venture", checked=GraphState.show_joint_venture, on_toggle=GraphState.toggle_filter("joint_venture"),
-                                ),
-                                _checkbox_row("Underwritten By", checked=GraphState.show_underwritten_by, on_toggle=GraphState.toggle_filter("underwritten_by"),
-                                ),
-                                _checkbox_row("Cooperation", checked=GraphState.show_cooperation, on_toggle=GraphState.toggle_filter("cooperation"),
-                                ),
-                                _checkbox_row("State Owns", checked=GraphState.show_state_owns, on_toggle=GraphState.toggle_filter("state_owns"),
-                                ),
-                                display="grid",
-                                grid_template_columns="1fr 1fr",
-                                gap="0.45em 1em",
-                                width="100%",
-                            ),
-                        ),
-                        display="grid",
-                        grid_template_columns="repeat(auto-fill, minmax(min(16rem, 100%), 1fr))",
-                        gap="0.65em",
-                        width="100%",
-                    ),
-                    type="auto",
-                    scrollbars="vertical",
-                    style={"height": "65vh"},
-                ),
-                rx.hstack(
-                    rx.spacer(),
-                    ghost_button_sm(
-                        "Select All",
-                        on_click=GraphState.select_all_filters,
-                    ),
-                    ghost_button_sm(
-                        "Clear All",
-                        on_click=GraphState.clear_all_filters,
-                    ),
-                    spacing="2",
-                    width="100%",
-                    flex_shrink="0",
-                ),
-                spacing="4",
-                width="100%",
-                overflow="hidden",
+        # ── Footer: Select All / Clear All ──────────────────────
+        rx.hstack(
+            rx.spacer(),
+            ghost_button_sm(
+                "Select All",
+                on_click=GraphState.select_all_filters,
             ),
-            width=rx.breakpoints(initial="95vw", md="82vw"),
-            max_width="100rem",
-            overflow="hidden",
-            style={**MODAL_PANEL_STYLE, "overflowX": "hidden"},
+            ghost_button_sm(
+                "Clear All",
+                on_click=GraphState.clear_all_filters,
+            ),
+            spacing="2",
+            width="100%",
+            flex_shrink="0",
         ),
-        open=GraphState.settings_dialog_open,
-        on_open_change=GraphState.handle_settings_dialog_change,
+        spacing="4",
+        width="100%",
     )
 
 
@@ -817,6 +1018,7 @@ def _graph_area() -> rx.Component:
     the #cy-graph div a computed-height parent, which Cytoscape.js needs.
     """
     return rx.box(
+        drawer_button(),
         rx.cond(
             GraphState.loading,
             loading_view(),
@@ -847,7 +1049,6 @@ def main_content() -> rx.Component:
     return rx.vstack(
         page_header(),
         filter_bar(),
-        settings_dialog(),
         _graph_area(),
         spacing="4",
         width="100%",

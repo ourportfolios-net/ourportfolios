@@ -435,6 +435,9 @@ window._filterState = {
         Country: false,
     },
     showSubsidiaries: false,
+    cartOnly: false,
+    cartTickers: [],
+    hiddenTickers: [],
 };
 
 window._applyFilters = function() {
@@ -465,6 +468,25 @@ window._applyFilters = function() {
                 if (ntype === 'Company' && companyType === 'subsidiary' && !fs.showSubsidiaries) {
                     node.hide();
                     return;
+                }
+                // Cart-only filter: hide Company nodes not in the cart
+                if (fs.cartOnly && fs.cartTickers.length > 0) {
+                    var symbol = (node.data('symbol') || '').toUpperCase();
+                    var isInCart = fs.cartTickers.some(function(t) {
+                        return symbol === t.toUpperCase();
+                    });
+                    if (ntype === 'Company' && !isInCart) {
+                        node.hide();
+                        return;
+                    }
+                }
+                // Ticker visibility filter
+                if (ntype === 'Company') {
+                    var sym = (node.data('symbol') || '').toUpperCase();
+                    if (fs.hiddenTickers && fs.hiddenTickers.length > 0 && fs.hiddenTickers.indexOf(sym) >= 0) {
+                        node.hide();
+                        return;
+                    }
                 }
                 // Show node if it passes all filters — no edge dependency
                 node.show();
@@ -511,6 +533,23 @@ window._applyFilters = function() {
                 }
             }
         });
+        // ── CART-ONLY: re-show connecting non-Company nodes ──
+        if (fs.cartOnly && fs.cartTickers.length > 0) {
+            window._cy.batch(function() {
+                window._cy.nodes().forEach(function(n) {
+                    if (n.visible()) return;
+                    if (n.data('ntype') === 'Company') return;
+                    var hasVisibleNeighbor = false;
+                    n.connectedEdges().forEach(function(e) {
+                        if (e.visible()) {
+                            var other = e.source().id() === n.id() ? e.target() : e.source();
+                            if (other.visible()) hasVisibleNeighbor = true;
+                        }
+                    });
+                    if (hasVisibleNeighbor) n.show();
+                });
+            });
+        }
     } catch(e) { console.error('[cy] _applyFilters error:', e); }
     // Report visible counts to the server
     window._sendVisibleCounts();
@@ -574,8 +613,8 @@ window._applyRadialLayout = function() {
         var numIndustries = indIds.length;
         if (numIndustries === 0) return;
 
-        // Big circle for industry nodes
-        var bigRadius = Math.max(350, numIndustries * 60);
+        // Big circle for industry nodes — 2x diameter
+        var bigRadius = Math.max(700, numIndustries * 120);
         var centerX = 0, centerY = 0;
 
         indIds.forEach(function(indId, i) {
@@ -584,10 +623,10 @@ window._applyRadialLayout = function() {
             var indY = centerY + bigRadius * Math.sin(angle);
             industryNodes[indId].position({x: indX, y: indY});
 
-            // Member companies in a ring around their industry
+            // Member companies in a ring around their industry — 2x size
             var members = industryMembers[indId];
             var numMembers = members.length;
-            var smallRadius = Math.min(160, Math.max(70, numMembers * 10));
+            var smallRadius = Math.min(320, Math.max(140, numMembers * 20));
 
             members.forEach(function(company, j) {
                 var cAngle = (2 * Math.PI * j) / numMembers;
@@ -598,17 +637,39 @@ window._applyRadialLayout = function() {
             });
         });
 
-        // Unaffiliated nodes in a wide ring outside
-        if (unaffiliated.length > 0) {
-            var outerRadius = bigRadius + 200;
-            unaffiliated.forEach(function(n, i) {
-                var angle = (2 * Math.PI * i) / unaffiliated.length;
-                n.position({
-                    x: centerX + outerRadius * Math.cos(angle),
-                    y: centerY + outerRadius * Math.sin(angle)
-                });
+        // Unaffiliated nodes — place near their connected neighbors
+        unaffiliated.forEach(function(n, i) {
+            var connectedEdges = n.connectedEdges(':visible');
+            var connectedNodes = connectedEdges.connectedNodes().filter(function(nei) {
+                return nei.visible() && nei.id() !== n.id();
             });
-        }
+
+            if (connectedNodes.length > 0) {
+                // Average position of connected neighbors
+                var sumX = 0, sumY = 0, count = 0;
+                connectedNodes.forEach(function(nei) {
+                    var pos = nei.position();
+                    sumX += pos.x; sumY += pos.y; count++;
+                });
+                var avgX = sumX / count, avgY = sumY / count;
+
+                // Place near the center of connected nodes with a spread angle
+                var angle = (2 * Math.PI * (i % 12)) / 12 + (i * 0.3);
+                var offset = 65 + (i % 6) * 12;
+                n.position({
+                    x: avgX + offset * Math.cos(angle),
+                    y: avgY + offset * Math.sin(angle)
+                });
+            } else {
+                // No connections — wide outer ring
+                var angle = (2 * Math.PI * i) / Math.max(unaffiliated.length, 1);
+                var isolatedRadius = bigRadius + 450 + (i % 4) * 60;
+                n.position({
+                    x: centerX + isolatedRadius * Math.cos(angle),
+                    y: centerY + isolatedRadius * Math.sin(angle)
+                });
+            }
+        });
     } catch(e) { console.error('[cy] _applyRadialLayout error:', e); }
 };
 
@@ -631,6 +692,9 @@ window.filterCy = function(searchQuery, showOwnership, showCompetition, showRole
     window._filterState.cooperation = showCooperation !== false;
     window._filterState.state_owns = showStateOwns !== false;
     window._filterState.showSubsidiaries = showSubsidiaries === true;
+    // Preserve cart-only state (set via _emit_filter_script, not legacy callers)
+    if (window._filterState.cartOnly === undefined) window._filterState.cartOnly = false;
+    if (!window._filterState.cartTickers) window._filterState.cartTickers = [];
     if (nodeTypeState) {
         window._filterState.nodeType = nodeTypeState;
     }
@@ -754,9 +818,140 @@ window.mergeCategoryData = function(newElements) {
     window._cy.add(newElements);
     window._applyFilters();
     // Re-apply radial layout so new nodes get positioned in their
-    // industry ring or outer ring as appropriate.
+    // industry ring or outer ring. Viewport is **not** reset —
+    // no fit() call, user stays where they were looking.
     window._applyRadialLayout();
-    window._cy.fit(window._cy.nodes(':visible'), 120);
     window._sendVisibleCounts();
+};
+
+// ── Mini preview graph (inside settings dialog, synced with _filterState) ──
+window._legendElements = [
+    // LEFT — Companies (core entities, vertical)
+    { data: { id: 'l-company', label: 'Company A', ntype: 'Company' }, position: { x: 60,  y: 70 } },
+    { data: { id: 'l-company2', label: 'Company B', ntype: 'Company' }, position: { x: 60,  y: 240 } },
+    // MIDDLE LEFT — Subsidiary (to the right of Company B)
+    { data: { id: 'l-subsidiary', label: 'Subsidiary', ntype: 'Company', company_type: 'subsidiary' }, position: { x: 180, y: 240 } },
+    // MIDDLE — Person (vertically between Company A and B)
+    { data: { id: 'l-person', label: 'Person', ntype: 'Person' }, position: { x: 280, y: 155 } },
+    // RIGHT — Industry, Macro, Country (supporting context)
+    { data: { id: 'l-industry', label: 'Industry', ntype: 'Industry' }, position: { x: 460, y: 70 } },
+    { data: { id: 'l-macro', label: 'Macro', ntype: 'MacroIndicator' }, position: { x: 460, y: 200 } },
+    { data: { id: 'l-country', label: 'Country', ntype: 'Country' }, position: { x: 460, y: 330 } },
+    // ── Edge categories (show all 12) ──
+    { data: { id: 'l-e01', source: 'l-company', target: 'l-person', label: 'ownership', rtype: 'HOLDS_STAKE_IN' } },
+    { data: { id: 'l-e02', source: 'l-company', target: 'l-person', label: 'roles', rtype: 'IS_OFFICER' } },
+    { data: { id: 'l-e03', source: 'l-company2', target: 'l-company', label: 'competition', rtype: 'COMPETES_WITH' } },
+    { data: { id: 'l-e04', source: 'l-company', target: 'l-industry', label: 'industry', rtype: 'BELONGS_TO_INDUSTRY' } },
+    { data: { id: 'l-e05', source: 'l-macro', target: 'l-country', label: 'macro', rtype: 'HAS_MACRO_INDICATOR' } },
+    { data: { id: 'l-e06', source: 'l-person', target: 'l-company2', label: 'related party', rtype: 'RELATED_PARTY_TRANSACTION' } },
+    { data: { id: 'l-e07', source: 'l-company', target: 'l-company2', label: 'guarantees', rtype: 'GUARANTEES' } },
+    { data: { id: 'l-e08', source: 'l-company2', target: 'l-company', label: 'lends to', rtype: 'LENDS_TO' } },
+    { data: { id: 'l-e09', source: 'l-company', target: 'l-company2', label: 'joint venture', rtype: 'HAS_JOINT_VENTURE_WITH' } },
+    { data: { id: 'l-e10', source: 'l-company2', target: 'l-company', label: 'underwritten by', rtype: 'UNDERWRITTEN_BY' } },
+    { data: { id: 'l-e11', source: 'l-company', target: 'l-company2', label: 'cooperation', rtype: 'HAS_BUSINESS_COOPERATION' } },
+    { data: { id: 'l-e12', source: 'l-company', target: 'l-company2', label: 'state owns', rtype: 'STATE_OWNS' } },
+    // Subsidiary: Company B → Subsidiary
+    { data: { id: 'l-e13', source: 'l-company2', target: 'l-subsidiary', label: 'ownership', rtype: 'HOLDS_STAKE_IN' } },
+];
+
+window._syncLegend = function() {
+    if (!window._legendCy) return;
+    var fs = window._filterState;
+    if (!fs) return;
+    window._legendCy.batch(function() {
+        // Node visibility by type
+        window._legendCy.nodes().forEach(function(n) {
+            var ntype = n.data('ntype') || '';
+            if (fs.nodeType && fs.nodeType[ntype] === false) {
+                n.style({ 'opacity': 0.08, 'label': '' });
+            } else {
+                n.style({ 'opacity': 1, 'label': 'data(label)' });
+                // Subsidiary filter (company_type === 'subsidiary')
+                var ctype = n.data('company_type') || '';
+                if (ctype === 'subsidiary' && fs.showSubsidiaries === false) {
+                    n.style({ 'opacity': 0.08, 'label': '' });
+                }
+            }
+        });
+
+        // Edge visibility by category + endpoint visibility
+        function _hasCat(rtype) {
+            for (var c in window._categoryMap) {
+                if (window._categoryMap[c].indexOf(rtype) >= 0) return c;
+            }
+            return null;
+        }
+        window._legendCy.edges().forEach(function(e) {
+            var rtype = e.data('rtype') || '';
+            var cat = _hasCat(rtype);
+            var srcVis = e.source().style('opacity') > 0.5;
+            var tgtVis = e.target().style('opacity') > 0.5;
+            if (cat && fs[cat] && srcVis && tgtVis) {
+                e.style({ 'opacity': 1, 'label': 'data(label)' });
+            } else {
+                e.style({ 'opacity': 0.08, 'label': '' });
+            }
+        });
+    });
+};
+
+window.initCyLegend = function() {
+    var container = document.getElementById('cy-legend');
+    if (!container) {
+        console.log('[legend] container not found, retrying...');
+        setTimeout(window.initCyLegend, 200);
+        return;
+    }
+    if (typeof cytoscape === 'undefined') {
+        setTimeout(window.initCyLegend, 200);
+        return;
+    }
+
+    // Wait until the container has proper dimensions (dialog may still be animating)
+    if (!container.clientWidth || !container.clientHeight) {
+        setTimeout(window.initCyLegend, 150);
+        return;
+    }
+
+    // If instance exists and is still attached to same container, just re-center
+    if (window._legendCy) {
+        if (window._legendCy.container() === container) {
+            // Same container — just re-center and update filters
+            window._legendCy.resize();
+            window._legendCy.fit(undefined, 35);
+            window._syncLegend();
+            return;
+        }
+        // Container was replaced (Reflex re-render), destroy old instance
+        window._legendCy.destroy();
+        window._legendCy = null;
+    }
+
+    window._legendCy = cytoscape({
+        container: container,
+        elements: window._legendElements,
+        style: _buildCyStyle(),
+        layout: { name: 'preset' },
+        boxSelectionEnabled: false,
+        autoungrabify: true,
+        autounselectify: true,
+    });
+
+    // Center: resize -> fit -> lock -> apply filters
+    function _doCenter() {
+        if (!window._legendCy || !container.clientWidth) {
+            setTimeout(_doCenter, 100);
+            return;
+        }
+        window._legendCy.resize();
+        window._legendCy.fit(undefined, 35);
+        window._legendCy.userZoomingEnabled(false);
+        window._legendCy.userPanningEnabled(false);
+        window._syncLegend();
+        console.log('[legend] centered at', container.clientWidth, 'x', container.clientHeight);
+    }
+    _doCenter();
+    // Re-center after dialog transition completes (animations can shift layout)
+    setTimeout(_doCenter, 500);
 };
 """

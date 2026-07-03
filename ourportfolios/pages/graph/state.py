@@ -12,6 +12,8 @@ from typing import ClassVar, cast
 
 import reflex as rx
 
+from ourportfolios.state.cart_state import CartState
+from ourportfolios.state.cart_state import CartState
 from ourportfolios.ui.theme.colors import blue, green, purple, red
 
 # ourgraph graph_layout functions — imported here for category merge
@@ -273,6 +275,15 @@ class GraphState(rx.State):
     # ── Company sub-type ──────────────────────────────────────────────────
     show_subsidiaries: bool = False
 
+    # ── Cart-only filter (stores ticker symbols for JS bridge) ────────────
+    show_only_cart_items: bool = False
+    cart_tickers_json: str = "[]"
+
+    # ── Industry-grouped ticker visibility ───────────────────────────────
+    industry_groups: list[dict] = []  # [{name: "Technology", tickers: ["AAPL", ...]}, ...]
+    hidden_tickers: list[str] = []
+    hidden_industries: list[str] = []
+
     # ── Extended edge categories ──────────────────────────────────────────
     show_related_party: bool = True
     show_guarantees: bool = True
@@ -299,6 +310,9 @@ class GraphState(rx.State):
     # ── Lazy loading ───────────────────────────────────────────────────────
     categories_loaded: list[str]
     category_loading: str = ""
+
+    # ── Deferred filter application ───────────────────────────────────────
+    _suppress_filter_emit: bool = False
 
     # ── Visible counts (updated from client-side via _applyFilters) ────────
     visible_node_count: int = 0
@@ -400,6 +414,11 @@ class GraphState(rx.State):
     def _emit_filter_script(self) -> object:
         """Build call_script JS that updates _filterState and calls _applyFilters.
 
+        While the settings dialog is open (``_suppress_filter_emit`` is True),
+        the _filterState is still updated on the client so the mini preview
+        graph (``_syncLegend``) reflects live toggle state, but the main
+        graph's ``_applyFilters`` is deferred until the dialog closes.
+
         IMPORTANT: Reflex state vars return proxy objects, not plain Python
         values.  ``bool()`` and ``str()`` cast these to native types so
         ``json.dumps`` can serialize them.
@@ -423,6 +442,8 @@ class GraphState(rx.State):
         show_coop = bool(self.show_cooperation)
         show_state = bool(self.show_state_owns)
         show_sub = bool(self.show_subsidiaries)
+        cart_only = bool(self.show_only_cart_items)
+        cart_tickers = str(self.cart_tickers_json)
         search_q = str(self.search_query)
 
         node_type_json = json.dumps({
@@ -432,6 +453,14 @@ class GraphState(rx.State):
             "MacroIndicator": show_macro_ind,
             "Country": show_country,
         })
+
+        # When suppressed: still set _filterState but call _syncLegend
+        # instead of _applyFilters (deferred until dialog close)
+        apply_fn = (
+            "_syncLegend"
+            if self._suppress_filter_emit
+            else "_applyFilters"
+        )
 
         script = (
             f"(function(){{"
@@ -452,11 +481,27 @@ class GraphState(rx.State):
             f"window._filterState.showSubsidiaries = {json.dumps(show_sub)};"
             f"window._filterState.nodeType = {node_type_json};"
             f"window._filterState.search = {json.dumps(search_q)};"
-            f"if (typeof window._applyFilters === 'function') window._applyFilters();"
+            f"window._filterState.cartOnly = {json.dumps(cart_only)};"
+            f"window._filterState.cartTickers = {cart_tickers};"
+            f"window._filterState.hiddenTickers = {json.dumps([str(t) for t in self.hidden_tickers])};"
+            f"if (typeof window.{apply_fn} === 'function') window.{apply_fn}();"
             f"}}; tryApply();"
             f"}})()"
         )
         return rx.call_script(script)
+
+    # ── Cart-only toggle (async — needs CartState) ─────────────────────────
+
+    @rx.event
+    async def toggle_cart_only(self):
+        """Toggle cart-only view filter and read latest cart tickers."""
+        self.show_only_cart_items = not self.show_only_cart_items
+        if self.show_only_cart_items:
+            cart = await self.get_state(CartState)
+            self.cart_tickers_json = json.dumps([
+                item["name"] for item in cart.cart_items
+            ])
+        return self._emit_filter_script()
 
     # ── Generic filter toggle ────────────────────────────────────────────────
     _FILTER_TOGGLE_MAP: ClassVar[dict[str, str]] = {
@@ -479,6 +524,7 @@ class GraphState(rx.State):
         "underwritten_by": "show_underwritten_by",
         "cooperation": "show_cooperation",
         "state_owns": "show_state_owns",
+        "cart_only": "show_only_cart_items",
     }
 
     @rx.event
@@ -487,6 +533,115 @@ class GraphState(rx.State):
         attr = self._FILTER_TOGGLE_MAP[filter_name]
         setattr(self, attr, not getattr(self, attr))
         return self._emit_filter_script()
+
+    # ── Ticker-level visibility ────────────────────────────────────────────
+
+    @rx.event
+    def build_industry_groups(self):
+        """Parse graph_json elements, group Company tickers by industry.
+
+        Uses the pre-computed ``industryName`` field that ``format_elements``
+        already attaches to every Company node element.
+        """
+        try:
+            data = json.loads(self.graph_json)
+            groups: dict[str, set[str]] = {}
+
+            for el in data.get("elements", []):
+                if el.get("group") != "nodes":
+                    continue
+                ndata = el.get("data", {})
+                ntype = ndata.get("ntype", "")
+                if ntype != "Company":
+                    continue
+                symbol = ndata.get("symbol", "")
+                if not symbol:
+                    continue
+                industry = ndata.get("industryName", "") or "Other"
+                if industry not in groups:
+                    groups[industry] = set()
+                groups[industry].add(symbol.upper())
+
+            # Sort: industries alphabetically, tickers within each sector
+            self.industry_groups = [
+                {"name": ind, "tickers": sorted(tickers)}
+                for ind, tickers in sorted(groups.items())
+            ]
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+    def _sync_hidden_industries(self):
+        """Sync hidden_industries to reflect current hidden_tickers state per group."""
+        new_hidden = []
+        for g in self.industry_groups:
+            if all(t in self.hidden_tickers for t in g["tickers"]):
+                new_hidden.append(g["name"])
+        self.hidden_industries = new_hidden
+
+    @rx.event
+    def toggle_ticker(self, ticker: str):
+        """Add/remove ticker from hidden_tickers, update industry hidden state."""
+        if ticker in self.hidden_tickers:
+            self.hidden_tickers = [t for t in self.hidden_tickers if t != ticker]
+        else:
+            self.hidden_tickers = [*self.hidden_tickers, ticker]
+        self._sync_hidden_industries()
+        return self._emit_filter_script()
+
+    @rx.event
+    def toggle_industry(self, industry_name: str):
+        """Toggle all tickers in an industry on/off."""
+        group = next((g for g in self.industry_groups if g["name"] == industry_name), None)
+        if not group:
+            return self._emit_filter_script()
+        tickers = set(group["tickers"])
+        existing = set(self.hidden_tickers)
+        all_hidden = tickers.issubset(existing)
+        if all_hidden:
+            # Show all — remove tickers from hidden
+            self.hidden_tickers = [t for t in self.hidden_tickers if t not in tickers]
+            if industry_name in self.hidden_industries:
+                self.hidden_industries.remove(industry_name)
+        else:
+            # Hide all — add tickers to hidden
+            for t in tickers:
+                if t not in existing:
+                    self.hidden_tickers.append(t)
+            if industry_name not in self.hidden_industries:
+                self.hidden_industries.append(industry_name)
+        self._sync_hidden_industries()
+        return self._emit_filter_script()
+
+    @rx.var
+    def ticker_paired_rows(self) -> list[dict]:
+        """Return flat rows where each row is: industry header + paired tickers (2-column).
+
+        Each item has:
+          industry_name, all_visible, is_first_in_group,
+          ticker_left, visible_left,
+          ticker_right/visible_right/has_right (second column, may be blank)
+        """
+        result = []
+        for group in self.industry_groups:
+            tickers = group["tickers"]
+            all_visible = (
+                all(t not in self.hidden_tickers for t in tickers)
+                if tickers else True
+            )
+            for i in range(0, len(tickers), 2):
+                left = tickers[i]
+                right = tickers[i + 1] if i + 1 < len(tickers) else None
+                result.append({
+                    "industry_name": group["name"],
+                    "all_visible": all_visible,
+                    "is_first_in_group": i == 0,
+                    "ticker_left": left,
+                    "visible_left": left not in self.hidden_tickers,
+                    "ticker_right": right or "",
+                    "visible_right": False if right is None else right not in self.hidden_tickers,
+                    "has_right": right is not None,
+                })
+        return result
 
     # ── Lazy-loading toggles ────────────────────────────────────────────────
 
@@ -610,9 +765,36 @@ class GraphState(rx.State):
         self.settings_dialog_open = False
 
     @rx.event
-    def handle_settings_dialog_change(self, *, is_open: bool) -> None:
-        """Handle dialog open state change."""
+    def handle_settings_dialog_change(self, *, is_open: bool) -> object:
+        """Handle dialog open state change.
+
+        When the dialog opens:
+          - Suppress real-time filter emission (no graph re-render during selection)
+          - Initialize the mini Cytoscape legend
+
+        When the dialog closes:
+          - Re-enable filter emission and apply all pending changes at once
+          - Destroy the mini legend Cytoscape instance
+        """
         self.settings_dialog_open = is_open
+        if is_open:
+            self._suppress_filter_emit = True
+            return [
+                GraphState.build_industry_groups(),  # type: ignore[return-value]
+                rx.call_script(
+                    "if (typeof window.initCyLegend === 'function') {"
+                    "  setTimeout(window.initCyLegend, 150);"
+                    "}",
+                ),
+            ]
+        else:
+            self._suppress_filter_emit = False
+            return [
+                rx.call_script(
+                    "if (window._legendCy) { window._legendCy.destroy(); window._legendCy = null; }",
+                ),
+                self._emit_filter_script(),
+            ]
 
     @rx.event
     def toggle_node_types_category(self, *, _checked: bool = False):
@@ -668,25 +850,26 @@ class GraphState(rx.State):
 
     @rx.event
     def clear_all_filters(self):
-        """Disable all node types and edge categories except Companies + inter-company edges."""
-        self.show_company_nodes = True
+        """Disable all node types and edge categories — hides everything."""
+        self.show_company_nodes = False
         self.show_person_nodes = False
         self.show_industry_nodes = False
         self.show_macro_indicator_nodes = False
         self.show_country_nodes = False
         self.show_subsidiaries = False
-        self.show_ownership = True
-        self.show_competition = True
+        self.show_ownership = False
+        self.show_competition = False
         self.show_roles = False
         self.show_industry = False
         self.show_macro = False
-        self.show_related_party = True
-        self.show_guarantees = True
-        self.show_lends_to = True
-        self.show_joint_venture = True
-        self.show_underwritten_by = True
-        self.show_cooperation = True
-        self.show_state_owns = True
+        self.show_related_party = False
+        self.show_guarantees = False
+        self.show_lends_to = False
+        self.show_joint_venture = False
+        self.show_underwritten_by = False
+        self.show_cooperation = False
+        self.show_state_owns = False
+        self.show_only_cart_items = False
         return self._emit_filter_script()
 
     @rx.event

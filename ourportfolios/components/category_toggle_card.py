@@ -19,11 +19,12 @@ def category_toggle_card(
     on_change: Callable[..., object],
     body: rx.Component,
     on_click: Callable[..., object] | None = None,
+    title_size: str = "2",
 ) -> rx.Component:
     card = rx.box(
         rx.vstack(
             rx.hstack(
-                body_text(title, weight="bold", color=white(0.92)),
+                body_text(title, weight="bold", color=white(0.92), size=title_size),
                 rx.spacer(),
                 rx.checkbox(
                     checked=checked,
