@@ -13,7 +13,6 @@ from typing import ClassVar, cast
 import reflex as rx
 
 from ourportfolios.state.cart_state import CartState
-from ourportfolios.state.cart_state import CartState
 from ourportfolios.ui.theme.colors import blue, green, purple, red
 
 # ourgraph graph_layout functions — imported here for category merge
@@ -22,6 +21,7 @@ _build_style_json = None
 try:
     from ourgraph.graph.graph_layout import build_style_json as _bsj
     from ourgraph.graph.graph_layout import format_elements as _fe
+
     _format_elements = _fe
     _build_style_json = _bsj
 except ImportError:
@@ -280,7 +280,9 @@ class GraphState(rx.State):
     cart_tickers_json: str = "[]"
 
     # ── Industry-grouped ticker visibility ───────────────────────────────
-    industry_groups: list[dict] = []  # [{name: "Technology", tickers: ["AAPL", ...]}, ...]
+    industry_groups: list[
+        dict
+    ] = []  # [{name: "Technology", tickers: ["AAPL", ...]}, ...]
     hidden_tickers: list[str] = []
     hidden_industries: list[str] = []
 
@@ -446,21 +448,19 @@ class GraphState(rx.State):
         cart_tickers = str(self.cart_tickers_json)
         search_q = str(self.search_query)
 
-        node_type_json = json.dumps({
-            "Company": show_company,
-            "Person": show_person,
-            "Industry": show_industry,
-            "MacroIndicator": show_macro_ind,
-            "Country": show_country,
-        })
+        node_type_json = json.dumps(
+            {
+                "Company": show_company,
+                "Person": show_person,
+                "Industry": show_industry,
+                "MacroIndicator": show_macro_ind,
+                "Country": show_country,
+            }
+        )
 
         # When suppressed: still set _filterState but call _syncLegend
         # instead of _applyFilters (deferred until dialog close)
-        apply_fn = (
-            "_syncLegend"
-            if self._suppress_filter_emit
-            else "_applyFilters"
-        )
+        apply_fn = "_syncLegend" if self._suppress_filter_emit else "_applyFilters"
 
         script = (
             f"(function(){{"
@@ -498,9 +498,9 @@ class GraphState(rx.State):
         self.show_only_cart_items = not self.show_only_cart_items
         if self.show_only_cart_items:
             cart = await self.get_state(CartState)
-            self.cart_tickers_json = json.dumps([
-                item["name"] for item in cart.cart_items
-            ])
+            self.cart_tickers_json = json.dumps(
+                [item["name"] for item in cart.cart_items]
+            )
         return self._emit_filter_script()
 
     # ── Generic filter toggle ────────────────────────────────────────────────
@@ -512,7 +512,6 @@ class GraphState(rx.State):
         "macro": "show_macro",
         "company_nodes": "show_company_nodes",
         "person_nodes": "show_person_nodes",
-
         "industry_nodes": "show_industry_nodes",
         "macro_indicator_nodes": "show_macro_indicator_nodes",
         "country_nodes": "show_country_nodes",
@@ -591,7 +590,9 @@ class GraphState(rx.State):
     @rx.event
     def toggle_industry(self, industry_name: str):
         """Toggle all tickers in an industry on/off."""
-        group = next((g for g in self.industry_groups if g["name"] == industry_name), None)
+        group = next(
+            (g for g in self.industry_groups if g["name"] == industry_name), None
+        )
         if not group:
             return self._emit_filter_script()
         tickers = set(group["tickers"])
@@ -625,22 +626,25 @@ class GraphState(rx.State):
         for group in self.industry_groups:
             tickers = group["tickers"]
             all_visible = (
-                all(t not in self.hidden_tickers for t in tickers)
-                if tickers else True
+                all(t not in self.hidden_tickers for t in tickers) if tickers else True
             )
             for i in range(0, len(tickers), 2):
                 left = tickers[i]
                 right = tickers[i + 1] if i + 1 < len(tickers) else None
-                result.append({
-                    "industry_name": group["name"],
-                    "all_visible": all_visible,
-                    "is_first_in_group": i == 0,
-                    "ticker_left": left,
-                    "visible_left": left not in self.hidden_tickers,
-                    "ticker_right": right or "",
-                    "visible_right": False if right is None else right not in self.hidden_tickers,
-                    "has_right": right is not None,
-                })
+                result.append(
+                    {
+                        "industry_name": group["name"],
+                        "all_visible": all_visible,
+                        "is_first_in_group": i == 0,
+                        "ticker_left": left,
+                        "visible_left": left not in self.hidden_tickers,
+                        "ticker_right": right or "",
+                        "visible_right": False
+                        if right is None
+                        else right not in self.hidden_tickers,
+                        "has_right": right is not None,
+                    }
+                )
         return result
 
     # ── Lazy-loading toggles ────────────────────────────────────────────────
@@ -660,7 +664,10 @@ class GraphState(rx.State):
         self.show_subsidiaries = value
         if value and "subsidiaries" not in self.categories_loaded:
             self.category_loading = "Subsidiaries"
-            return [GraphState.fetch_category("subsidiaries"), self._emit_filter_script()]
+            return [
+                GraphState.fetch_category("subsidiaries"),
+                self._emit_filter_script(),
+            ]
         return self._emit_filter_script()
 
     @rx.event(background=True)
@@ -727,7 +734,11 @@ class GraphState(rx.State):
 
         # Re-run format_elements on the merged raw data
         merged_raw = {"nodes": merged_nodes, "edges": merged_edges}
-        merged_elements = _format_elements(merged_raw) if _format_elements else merged_raw["nodes"] + merged_raw["edges"]
+        merged_elements = (
+            _format_elements(merged_raw)
+            if _format_elements
+            else merged_raw["nodes"] + merged_raw["edges"]
+        )
         merged_result = {
             "elements": merged_elements,
             "nodes": merged_nodes,
@@ -787,14 +798,13 @@ class GraphState(rx.State):
                     "}",
                 ),
             ]
-        else:
-            self._suppress_filter_emit = False
-            return [
-                rx.call_script(
-                    "if (window._legendCy) { window._legendCy.destroy(); window._legendCy = null; }",
-                ),
-                self._emit_filter_script(),
-            ]
+        self._suppress_filter_emit = False
+        return [
+            rx.call_script(
+                "if (window._legendCy) { window._legendCy.destroy(); window._legendCy = null; }",
+            ),
+            self._emit_filter_script(),
+        ]
 
     @rx.event
     def toggle_node_types_category(self, *, _checked: bool = False):
@@ -969,7 +979,9 @@ class GraphState(rx.State):
                 break
 
     def _build_node_relationship_rows(
-        self, data: dict, node_id: str,
+        self,
+        data: dict,
+        node_id: str,
     ) -> list[list[str]]:
         """Build relationship rows for a node click."""
         rows: list[list[str]] = []
@@ -1160,7 +1172,9 @@ class GraphState(rx.State):
         # ── Check module-level cache first ────────────────────────────────────
         cache_graph: object = _CACHE.get("graph")
         cache_ts_val = _CACHE.get("timestamp", 0.0)
-        cache_ts: float = cache_ts_val if isinstance(cache_ts_val, (int, float)) else 0.0
+        cache_ts: float = (
+            cache_ts_val if isinstance(cache_ts_val, (int, float)) else 0.0
+        )
         if cache_graph is not None and time.time() - cache_ts < CACHE_TTL_SECONDS:
             cached_json = json.dumps(cache_graph)
             async with self:
